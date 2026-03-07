@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        padding: 38px 44px 30px;
+    }
+
+    /* ── Event Header ── */
+    .event-title {
+        font-family: var(--font-display);
+        font-size: 46px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-align: center;
+        line-height: 1;
+        margin-bottom: 8px;
+    }
+
+    .event-meta {
+        font-size: 13px;
+        color: var(--color-text-muted);
+        text-align: center;
+        letter-spacing: 0.05em;
+    }
+
+    .event-meta .sep { margin: 0 8px; }
+
+    /* ── H2H Label ── */
+    .h2h-label {
+        font-family: var(--font-display);
+        font-size: 24px;
+        letter-spacing: 0.12em;
+        color: var(--color-text-muted);
+        text-align: center;
+    }
+
+    /* ── Athletes Row (no card, on background) ── */
+    .athletes-row {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .athlete-side {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+    }
+
+    .athlete-side-left { justify-content: flex-start; }
+    .athlete-side-right { justify-content: flex-end; }
+
+    .photo-frame {
+        width: 96px;
+        height: 96px;
+        border-radius: 8px;
+        overflow: hidden;
+        flex-shrink: 0;
+        background: rgba(10, 14, 26, 0.6);
+    }
+
+    .photo-frame-left { border: 2px solid var(--color-athlete-left); }
+    .photo-frame-right { border: 2px solid var(--color-athlete-right); }
+
+    .photo-frame img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .photo-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 32px;
+        color: var(--color-text-muted);
+    }
+
+    .athlete-name {
+        font-family: var(--font-display);
+        font-size: 56px;
+        letter-spacing: 0.04em;
+        line-height: 0.95;
+        color: var(--color-text-primary);
+    }
+
+    .athlete-name-left { color: var(--color-athlete-left); }
+    .athlete-name-right { color: var(--color-athlete-right); }
+
+    .vs-label {
+        font-family: var(--font-display);
+        font-size: 22px;
+        color: var(--color-text-muted);
+        letter-spacing: 0.08em;
+        flex-shrink: 0;
+        padding: 0 12px;
+    }
+
+    /* ── Stat rows ── */
+    .stat-row {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding: 6px 0;
+    }
+
+    .stat-val {
+        font-family: var(--font-display);
+        letter-spacing: 0.03em;
+        line-height: 1;
+        width: 140px;
+        flex-shrink: 0;
+    }
+
+    .stat-val-lg { font-size: 52px; }
+    .stat-val-md { font-size: 44px; }
+
+    .val-left { color: var(--color-athlete-left); text-align: center; }
+    .val-right { color: var(--color-athlete-right); text-align: center; }
+    .val-muted { color: var(--color-text-muted); }
+
+    .stat-label {
+        font-family: var(--font-body);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--color-text-label);
+        text-align: center;
+        flex: 1;
+    }
+
+    .stat-delta {
+        font-family: var(--font-body);
+        font-size: 13px;
+        font-weight: 500;
+        width: 68px;
+        flex-shrink: 0;
+    }
+
+    .delta-left { text-align: left; color: var(--color-athlete-left); }
+    .delta-right { text-align: right; color: var(--color-athlete-right); }
+    .delta-spacer { width: 68px; flex-shrink: 0; }
+
+    /* ── Cards ── */
+    .section-card {
+        width: 100%;
+        padding: 16px 24px 10px;
+    }
+
+    .section-card .stat-row {
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(51, 65, 85, 0.25);
+    }
+
+    .section-card .stat-row:last-child { border-bottom: none; }
+
+    .section-title {
+        font-family: var(--font-display);
+        font-size: 22px;
+        letter-spacing: 0.1em;
+        color: var(--color-text-primary);
+        text-align: center;
+        margin-bottom: 4px;
+    }
+
+    .overview-card {
+        width: 100%;
+        padding: 14px 24px 8px;
+    }
+
+    .overview-card .stat-row { padding: 5px 0; }
+
+    /* ── Footer ── */
+    .footer {
+        width: 100%;
+        text-align: right;
+        font-family: var(--font-body);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        color: var(--color-text-muted);
+        text-transform: uppercase;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <!-- Event Header -->
+    <div class="event-title font-display">{{ event_name | upper }}</div>
+    <div class="event-meta">
+        {{ event_country }}
+        <span class="sep">&bull;</span>
+        {{ format_date_range(event_date_start, event_date_end) }}
+        <span class="sep">&bull;</span>
+        <span class="stars">{{ event_tier | star_rating }}</span>
+    </div>
+
+    <!-- H2H Label -->
+    <div class="h2h-label">HEAD TO HEAD</div>
+
+    <!-- Athletes Row -->
+    <div class="athletes-row">
+        <div class="athlete-side athlete-side-left">
+            <div class="photo-frame photo-frame-left">
+                {% if athlete_1_photo_url %}
+                <img src="{{ athlete_1_photo_url }}" alt="{{ athlete_1_name }}">
+                {% else %}
+                <div class="photo-placeholder">{{ athlete_1_name[0] }}</div>
+                {% endif %}
+            </div>
+            <div class="athlete-name athlete-name-left">{{ athlete_1_name.split()[0] | upper }}<br>{{ athlete_1_name.split()[1] | upper }}</div>
+        </div>
+
+        <div class="vs-label">VS</div>
+
+        <div class="athlete-side athlete-side-right">
+            <div class="athlete-name athlete-name-right" style="text-align:right;">{{ athlete_2_name.split()[0] | upper }}<br>{{ athlete_2_name.split()[1] | upper }}</div>
+            <div class="photo-frame photo-frame-right">
+                {% if athlete_2_photo_url %}
+                <img src="{{ athlete_2_photo_url }}" alt="{{ athlete_2_name }}">
+                {% else %}
+                <div class="photo-placeholder">{{ athlete_2_name[0] }}</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Overview Card -->
+    <div class="overview-card card">
+        <div class="section-title">OVERVIEW</div>
+
+        <div class="stat-row">
+            <div class="delta-spacer"></div>
+            <div class="stat-val stat-val-lg val-left{% if athlete_1_placement > athlete_2_placement %} val-muted{% endif %}">{{ athlete_1_placement | ordinal }}</div>
+            <div class="stat-label">FINAL PLACEMENT</div>
+            <div class="stat-val stat-val-lg val-right{% if athlete_2_placement > athlete_1_placement %} val-muted{% endif %}">{{ athlete_2_placement | ordinal }}</div>
+            <div class="delta-spacer"></div>
+        </div>
+
+        <div class="stat-row">
+            {% if athlete_1_heat_wins > athlete_2_heat_wins %}
+            <div class="stat-delta delta-left">(+{{ athlete_1_heat_wins - athlete_2_heat_wins }})</div>
+            {% else %}
+            <div class="delta-spacer"></div>
+            {% endif %}
+            <div class="stat-val stat-val-lg val-left{% if athlete_1_heat_wins < athlete_2_heat_wins %} val-muted{% endif %}">{{ athlete_1_heat_wins }}</div>
+            <div class="stat-label">HEAT WINS</div>
+            <div class="stat-val stat-val-lg val-right{% if athlete_2_heat_wins < athlete_1_heat_wins %} val-muted{% endif %}">{{ athlete_2_heat_wins }}</div>
+            {% if athlete_2_heat_wins > athlete_1_heat_wins %}
+            <div class="stat-delta delta-right">(+{{ athlete_2_heat_wins - athlete_1_heat_wins }})</div>
+            {% else %}
+            <div class="delta-spacer"></div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Heat Scores Card -->
+    <div class="section-card card">
+        <div class="section-title">HEAT SCORES</div>
+
+        <div class="stat-row">
+            {% if delta_best_heat < 0 %}
+            <div class="stat-delta delta-left">({{ (delta_best_heat * -1) | format_delta }})</div>
+            {% else %}
+            <div class="delta-spacer"></div>
+            {% endif %}
+            <div class="stat-val stat-val-md val-left{% if athlete_1_best_heat < athlete_2_best_heat %} val-muted{% endif %}">{{ "%.2f" | format(athlete_1_best_heat) }}</div>
+            <div class="stat-label">BEST HEAT SCORE</div>
+            <div class="stat-val stat-val-md val-right{% if athlete_2_best_heat < athlete_1_best_heat %} val-muted{% endif %}">{{ "%.2f" | format(athlete_2_best_heat) }}</div>
+            {% if delta_best_heat > 0 %}
+            <div class="stat-delta delta-right">({{ delta_best_heat | format_delta }})</div>
+            {% else %}
+            <div class="delta-spacer"></div>
+            {% endif %}
+        </div>
+
+        <div class="stat-row">
+            {% if delta_avg_heat < 0 %}
+            <div class="stat-delta delta-left">({{ (delta_avg_heat * -1) | format_delta }})</div>
+            {% else %}
+            <div class="delta-spacer"></div>
+            {% endif %}
+            <div class="stat-val stat-val-md val-left{% if athlete_1_avg_heat < athlete_2_avg_heat %} val-muted{% endif %}">{{ "%.2f" | format(athlete_1_avg_heat) }}</div>
+            <div class="stat-label">AVERAGE HEAT SCORE</div>
+            <div class="stat-val stat-val-md val-right{% if athlete_2_avg_heat < athlete_1_avg_heat %} val-muted{% endif %}">{{ "%.2f" | format(athlete_2_avg_heat) }}</div>
+            {% if delta_avg_heat > 0 %}
+            <div class="stat-delta delta-right">({{ delta_avg_heat | format_delta }})</div>
+            {% else %}
+            <div class="delta-spacer"></div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Wave Scores Card -->
+    <div class="section-card card">
+        <div class="section-title">WAVE SCORES</div>
+
+        <div class="stat-row">
+            {% if delta_best_wave < 0 %}
+            <div class="stat-delta delta-left">({{ (delta_best_wave * -1) | format_delta }})</div>
+            {% else %}
+            <div class="delta-spacer"></div>
+            {% endif %}
+            <div class="stat-val stat-val-md val-left{% if athlete_1_best_wave < athlete_2_best_wave %} val-muted{% endif %}">{{ "%.2f" | format(athlete_1_best_wave) }}</div>
+            <div class="stat-label">BEST WAVE</div>
+            <div class="stat-val stat-val-md val-right{% if athlete_2_best_wave < athlete_1_best_wave %} val-muted{% endif %}">{{ "%.2f" | format(athlete_2_best_wave) }}</div>
+            {% if delta_best_wave > 0 %}
+            <div class="stat-delta delta-right">({{ delta_best_wave | format_delta }})</div>
+            {% else %}
+            <div class="delta-spacer"></div>
+            {% endif %}
+        </div>
+
+        <div class="stat-row">
+            {% if delta_avg_wave < 0 %}
+            <div class="stat-delta delta-left">({{ (delta_avg_wave * -1) | format_delta }})</div>
+            {% else %}
+            <div class="delta-spacer"></div>
+            {% endif %}
+            <div class="stat-val stat-val-md val-left{% if athlete_1_avg_wave < athlete_2_avg_wave %} val-muted{% endif %}">{{ "%.2f" | format(athlete_1_avg_wave) }}</div>
+            <div class="stat-label">AVG. COUNTING WAVE</div>
+            <div class="stat-val stat-val-md val-right{% if athlete_2_avg_wave < athlete_1_avg_wave %} val-muted{% endif %}">{{ "%.2f" | format(athlete_2_avg_wave) }}</div>
+            {% if delta_avg_wave > 0 %}
+            <div class="stat-delta delta-right">({{ delta_avg_wave | format_delta }})</div>
+            {% else %}
+            <div class="delta-spacer"></div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">windsurfworldtourstats.com</div>
+</div>
+{% endblock %}

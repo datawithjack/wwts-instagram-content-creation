@@ -1,0 +1,124 @@
+"""Tests for Jinja2 template population."""
+from datetime import date
+
+import pytest
+
+from pipeline.templates import render_template, get_dummy_data
+
+
+class TestRenderHeadToHead:
+    def setup_method(self):
+        self.data = get_dummy_data("head_to_head")
+        self.html = render_template("head_to_head", self.data)
+
+    def test_returns_html_string(self):
+        assert isinstance(self.html, str)
+        assert "<html" in self.html
+
+    def test_contains_event_name(self):
+        assert self.data["event_name"].upper() in self.html
+
+    def test_contains_athlete_names(self):
+        for name_key in ("athlete_1_name", "athlete_2_name"):
+            parts = self.data[name_key].split()
+            for part in parts:
+                assert part.upper() in self.html
+
+    def test_contains_placements_as_ordinals(self):
+        assert "1st" in self.html
+        assert "2nd" in self.html
+
+    def test_contains_delta_values(self):
+        assert "+2.70" in self.html
+        assert "+1.80" in self.html
+
+    def test_contains_star_rating(self):
+        # 4-star event
+        assert "\u2605\u2605\u2605\u2605\u2606" in self.html
+
+    def test_contains_date_range(self):
+        assert "Jan 31 - Feb 08" in self.html
+
+    def test_contains_brand_fonts(self):
+        assert "Bebas Neue" in self.html
+        assert "Inter" in self.html
+
+    def test_contains_brand_colors(self):
+        assert "#38bdf8" in self.html  # cyan-400
+        assert "#2dd4bf" in self.html  # teal-400
+
+
+class TestRenderTop10:
+    def setup_method(self):
+        self.data = get_dummy_data("top_10")
+        self.html = render_template("top_10", self.data)
+
+    def test_returns_html_string(self):
+        assert isinstance(self.html, str)
+        assert "<html" in self.html
+
+    def test_contains_title_with_gender_and_metric(self):
+        assert "MEN'S" in self.html
+        assert "TOP 10" in self.html
+        assert "WAVES" in self.html
+        assert "2025" in self.html
+
+    def test_contains_column_headers(self):
+        assert "ATHLETE" in self.html
+        assert "SCORE" in self.html
+        assert "EVENT" in self.html
+        assert "ROUND" in self.html
+
+    def test_contains_all_10_athletes(self):
+        for entry in self.data["entries"]:
+            assert entry["athlete"] in self.html
+
+    def test_contains_scores(self):
+        for entry in self.data["entries"]:
+            assert f"{entry['score']:.2f}" in self.html
+
+    def test_contains_rank_numbers(self):
+        for i in range(1, 11):
+            assert f">{i}<" in self.html
+
+    def test_contains_footer(self):
+        assert "windsurfworldtourstats.com" in self.html.lower()
+
+    def test_contains_brand_fonts(self):
+        assert "Bebas Neue" in self.html
+        assert "Inter" in self.html
+
+
+class TestGetDummyData:
+    def test_head_to_head_has_required_fields(self):
+        data = get_dummy_data("head_to_head")
+        required = [
+            "event_name", "event_country", "event_date_start", "event_date_end",
+            "event_tier", "athlete_1_name", "athlete_2_name",
+            "athlete_1_placement", "athlete_2_placement",
+            "athlete_1_heat_wins", "athlete_2_heat_wins",
+            "athlete_1_best_heat", "athlete_2_best_heat",
+            "athlete_1_avg_heat", "athlete_2_avg_heat",
+            "athlete_1_best_wave", "athlete_2_best_wave",
+            "athlete_1_avg_wave", "athlete_2_avg_wave",
+        ]
+        for field in required:
+            assert field in data, f"Missing field: {field}"
+
+    def test_top_10_has_required_fields(self):
+        data = get_dummy_data("top_10")
+        assert "title_gender" in data
+        assert "title_metric" in data
+        assert "title_year" in data
+        assert "entries" in data
+        assert len(data["entries"]) == 10
+
+    def test_top_10_entries_have_required_fields(self):
+        data = get_dummy_data("top_10")
+        for entry in data["entries"]:
+            assert "rank" in entry
+            assert "athlete" in entry
+            assert "country" in entry
+            assert "score" in entry
+            assert "event" in entry
+            assert "round" in entry
