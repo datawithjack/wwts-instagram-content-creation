@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width={{ width|default(1080) }}, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg-gradient-start: rgba(10, 14, 26, 0.85);
+            --color-bg-gradient-end: rgba(10, 14, 26, 0.95);
+            --color-bg-card: rgba(30, 41, 59, 0.4);
+            --color-border-card: rgba(51, 65, 85, 0.5);
+            --color-athlete-left: #38bdf8;
+            --color-athlete-left-bright: #0ea5e9;
+            --color-athlete-right: #2dd4bf;
+            --color-text-primary: #FFFFFF;
+            --color-text-muted: #9ca3af;
+            --color-text-label: #9ca3af;
+            --color-rank-1st: #facc15;
+            --color-rank-2nd: #d1d5db;
+            --color-rank-3rd: #d97706;
+            --font-display: 'Bebas Neue', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: {{ width|default(1080) }}px;
+            height: {{ height|default(1350) }}px;
+            font-family: var(--font-body);
+            color: var(--color-text-primary);
+            background: #0a0e1a;
+            overflow: hidden;
+            position: relative;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        {% if bg_image_path %}
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: url('{{ bg_image_path }}') center/cover no-repeat;
+            opacity: 0.15;
+            z-index: 0;
+        }
+        {% endif %}
+
+        body::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(to bottom, rgba(10, 14, 26, 0.4), rgba(10, 14, 26, 0.7));
+            z-index: 0;
+        }
+
+        body > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .font-display {
+            font-family: var(--font-display);
+            letter-spacing: 0.05em;
+        }
+
+        .label {
+            font-family: var(--font-body);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--color-text-label);
+        }
+
+        .card {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border-card);
+            border-radius: 8px;
+        }
+
+        .text-left-athlete { color: var(--color-athlete-left); }
+        .text-right-athlete { color: var(--color-athlete-right); }
+        .text-muted { color: var(--color-text-muted); }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    {% block content %}{% endblock %}
+</body>
+</html>

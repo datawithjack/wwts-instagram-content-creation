@@ -1,0 +1,135 @@
+"""Jinja2 template population and rendering."""
+import os
+from datetime import date
+
+from jinja2 import Environment, FileSystemLoader
+
+from pipeline.helpers import (
+    ordinal,
+    format_date_range,
+    star_rating,
+    format_delta,
+    compute_deltas,
+    format_number,
+    country_flag,
+)
+
+TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "..", "templates")
+
+
+def get_jinja_env() -> Environment:
+    """Create Jinja2 environment with custom filters."""
+    env = Environment(loader=FileSystemLoader(TEMPLATES_DIR))
+    env.filters["ordinal"] = ordinal
+    env.filters["format_delta"] = format_delta
+    env.filters["star_rating"] = star_rating
+    env.filters["format_number"] = format_number
+    env.globals["format_date_range"] = format_date_range
+    env.filters["country_flag"] = country_flag
+    return env
+
+
+def render_template(template_name: str, data: dict) -> str:
+    """Render a named template with data, returning HTML string."""
+    env = get_jinja_env()
+
+    # Compute deltas for head_to_head variants
+    if template_name in ("head_to_head", "head_to_head_jump"):
+        delta_fields = ["best_heat", "avg_heat", "best_wave", "avg_wave"]
+        if template_name == "head_to_head_jump":
+            delta_fields.extend(["best_jump", "avg_jump"])
+        deltas = compute_deltas(data, delta_fields)
+        data = {**data, **deltas}
+
+    # Resolve background image path
+    assets_dir = os.path.join(os.path.dirname(__file__), "..", "assets")
+    bg_path = os.path.join(assets_dir, "backgrounds", "background-1.jpg")
+    if os.path.exists(bg_path):
+        bg_url = "file:///" + os.path.abspath(bg_path).replace(os.sep, "/")
+        data = {**data, "bg_image_path": bg_url}
+
+    # Resolve athlete photo paths to file:// URLs
+    for key in ("athlete_1_photo_url", "athlete_2_photo_url"):
+        path = data.get(key, "")
+        if path and os.path.exists(path):
+            data[key] = "file:///" + os.path.abspath(path).replace(os.sep, "/")
+
+    # Map variant names to their base template file
+    template_file_map = {
+        "site_stats_reel": "site_stats.html",
+    }
+    template_file = template_file_map.get(template_name, f"{template_name}.html")
+
+    template = env.get_template(template_file)
+    return template.render(**data)
+
+
+def _resolve_photo(filename: str) -> str:
+    """Check if a photo exists in assets/photos/ and return path or empty."""
+    assets_dir = os.path.join(os.path.dirname(__file__), "..", "assets", "photos")
+    path = os.path.join(assets_dir, filename)
+    if os.path.exists(path):
+        return os.path.abspath(path)
+    return ""
+
+
+def get_dummy_data(template_name: str) -> dict:
+    """Return dummy data for testing templates without a DB connection."""
+    if template_name == "head_to_head":
+        return {
+            "event_name": "2026 Margaret River Wave Classic",
+            "event_country": "Australia",
+            "event_date_start": date(2026, 1, 31),
+            "event_date_end": date(2026, 2, 8),
+            "event_tier": 4,
+            "athlete_1_name": "Sarah Kenyon",
+            "athlete_1_photo_url": _resolve_photo("sarak kenyon.webp"),
+            "athlete_1_placement": 1,
+            "athlete_1_heat_wins": 2,
+            "athlete_1_best_heat": 9.33,
+            "athlete_1_avg_heat": 8.85,
+            "athlete_1_best_wave": 5.00,
+            "athlete_1_avg_wave": 4.43,
+            "athlete_2_name": "Jane Seman",
+            "athlete_2_photo_url": _resolve_photo("jane seman.webp"),
+            "athlete_2_placement": 2,
+            "athlete_2_heat_wins": 1,
+            "athlete_2_best_heat": 12.03,
+            "athlete_2_avg_heat": 10.65,
+            "athlete_2_best_wave": 6.30,
+            "athlete_2_avg_wave": 5.33,
+        }
+    if template_name == "head_to_head_jump":
+        base = get_dummy_data("head_to_head")
+        base.update({
+            "athlete_1_best_jump": 7.20,
+            "athlete_1_avg_jump": 5.85,
+            "athlete_2_best_jump": 8.10,
+            "athlete_2_avg_jump": 6.40,
+        })
+        return base
+    if template_name == "top_10":
+        return {
+            "title_gender": "Men's",  # includes possessive
+            "title_metric": "Waves",
+            "title_year": 2025,
+            "entries": [
+                {"rank": 1, "athlete": "Marc Pare Rico", "country": "ES", "score": 8.83, "event": "Chile World Cup", "round": "Final"},
+                {"rank": 2, "athlete": "Takara Ishii", "country": "JP", "score": 8.80, "event": "Puerto Rico World Cup", "round": "Semi"},
+                {"rank": 3, "athlete": "Bernd Roediger", "country": "US", "score": 8.50, "event": "Puerto Rico", "round": "Quarter"},
+                {"rank": 4, "athlete": "Jaegar Stone", "country": "AU", "score": 8.33, "event": "Margaret River Wave Classic", "round": "Final"},
+                {"rank": 5, "athlete": "Jaegar Stone", "country": "AU", "score": 8.33, "event": "Margaret River Wave Classic", "round": "Final"},
+                {"rank": 6, "athlete": "Jaegar Stone", "country": "AU", "score": 8.33, "event": "Margaret River Wave Classic", "round": "Final"},
+                {"rank": 7, "athlete": "Jaegar Stone", "country": "AU", "score": 8.33, "event": "Margaret River Wave Classic", "round": "Final"},
+                {"rank": 8, "athlete": "Jaegar Stone", "country": "AU", "score": 8.33, "event": "Margaret River Wave Classic", "round": "Final"},
+                {"rank": 9, "athlete": "Jaegar Stone", "country": "AU", "score": 8.33, "event": "Margaret River Wave Classic", "round": "Final"},
+                {"rank": 10, "athlete": "Jaegar Stone", "country": "AU", "score": 8.33, "event": "Margaret River Wave Classic", "round": "Final"},
+            ],
+        }
+    if template_name in ("site_stats", "site_stats_reel"):
+        return {
+            "athletes_count": 359,
+            "scores_count": 43515,
+            "events_count": 58,
+        }
+    raise ValueError(f"No dummy data for template: {template_name}")

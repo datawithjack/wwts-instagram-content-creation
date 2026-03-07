@@ -1,0 +1,8 @@
+mysql-connector-python
+jinja2
+Pillow
+python-dotenv
+pyyaml
+requests
+playwright
+pytest

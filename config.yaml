@@ -1,0 +1,44 @@
+templates:
+  head_to_head:
+    width: 1080
+    height: 1350
+    dpr: 2
+  head_to_head_jump:
+    width: 1080
+    height: 1350
+    dpr: 2
+  top_10:
+    width: 1080
+    height: 1350
+    dpr: 2
+  site_stats:
+    width: 1080
+    height: 1350
+    dpr: 2
+  site_stats_reel:
+    width: 1080
+    height: 1920
+    dpr: 2
+  stat_of_the_day:
+    width: 1080
+    height: 1080
+    dpr: 2
+
+hashtags:
+  head_to_head:
+    - "#windsurf"
+    - "#PWA"
+    - "#wavewindsurfing"
+    - "#windsurfstats"
+  top_10:
+    - "#windsurf"
+    - "#PWA"
+    - "#topwaves"
+    - "#windsurfstats"
+  default:
+    - "#windsurf"
+    - "#PWA"
+    - "#windsurfstats"
+
+output_dir: ./output
+assets_dir: ./assets

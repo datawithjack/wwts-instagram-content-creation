@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 0 60px;
+    }
+
+    .stats-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        width: 100%;
+        max-width: 960px;
+        margin-bottom: 120px;
+        transition: opacity 0.6s ease;
+    }
+
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex: 1;
+    }
+
+    .stat-number {
+        font-family: var(--font-display);
+        font-size: 120px;
+        line-height: 1;
+        color: var(--color-text-primary);
+        letter-spacing: 0.02em;
+        opacity: 0;
+    }
+
+    .stat-label {
+        font-family: var(--font-body);
+        font-size: 18px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: var(--color-text-muted);
+        margin-top: 12px;
+        opacity: 0;
+    }
+
+    .bottom-section {
+        position: absolute;
+        bottom: 140px;
+        left: 0;
+        right: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .site-title {
+        font-family: var(--font-display);
+        font-size: 88px;
+        line-height: 1;
+        letter-spacing: 0.05em;
+        color: var(--color-athlete-left);
+        text-transform: uppercase;
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    .site-url {
+        font-family: var(--font-body);
+        font-size: 28px;
+        font-weight: 400;
+        color: var(--color-text-muted);
+        letter-spacing: 0.02em;
+        opacity: 0;
+    }
+
+    /* Animations */
+    .stat-number.animate {
+        animation: fadeIn 0.4s ease-out forwards;
+    }
+
+    .stat-label.animate {
+        animation: fadeIn 0.4s ease-out forwards;
+    }
+
+    .site-title.animate {
+        animation: slideUp 0.6s ease-out forwards;
+    }
+
+    .site-url.animate {
+        animation: fadeIn 0.5s ease-out forwards;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="stats-row">
+        <div class="stat-item">
+            <div class="stat-number" id="stat-athletes" data-target="{{ athletes_count }}">0</div>
+            <div class="stat-label" id="label-athletes">Athletes</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number" id="stat-scores" data-target="{{ scores_count }}">0</div>
+            <div class="stat-label" id="label-scores">Scores</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number" id="stat-events" data-target="{{ events_count }}">0</div>
+            <div class="stat-label" id="label-events">Events</div>
+        </div>
+    </div>
+
+    <div class="bottom-section">
+        <div class="site-title" id="site-title">Windsurf World Tour Stats</div>
+        <div class="site-url" id="site-url">windsurfworldtourstats.com</div>
+    </div>
+</div>
+
+<script>
+    // Eased count-up animation
+    function countUp(el, target, duration) {
+        const start = performance.now();
+        const format = (n) => Math.round(n).toLocaleString('en-US');
+
+        el.classList.add('animate');
+
+        function tick(now) {
+            const elapsed = now - start;
+            const progress = Math.min(elapsed / duration, 1);
+            // Ease-out cubic
+            const eased = 1 - Math.pow(1 - progress, 3);
+            el.textContent = format(target * eased);
+
+            if (progress < 1) {
+                requestAnimationFrame(tick);
+            } else {
+                el.textContent = format(target);
+            }
+        }
+        requestAnimationFrame(tick);
+    }
+
+    // Animation sequence
+    function runAnimation() {
+        const stats = document.querySelectorAll('.stat-number');
+        const labels = document.querySelectorAll('.stat-label');
+        const title = document.getElementById('site-title');
+        const url = document.getElementById('site-url');
+
+        // T=0: Fade in numbers and start counting
+        stats.forEach(el => {
+            const target = parseInt(el.dataset.target);
+            countUp(el, target, 2000);
+        });
+
+        // T=0.8s: Labels fade in
+        setTimeout(() => {
+            labels.forEach(el => el.classList.add('animate'));
+        }, 800);
+
+        // T=2.2s: Title slides up, stats dim
+        setTimeout(() => {
+            title.classList.add('animate');
+            document.querySelector('.stats-row').style.opacity = '0.5';
+        }, 2200);
+
+        // T=2.8s: URL fades in
+        setTimeout(() => {
+            url.classList.add('animate');
+        }, 2800);
+
+        // T=5s: Signal animation complete
+        setTimeout(() => {
+            document.body.dataset.animationComplete = 'true';
+        }, 5000);
+    }
+
+    // Wait for fonts then start
+    document.fonts.ready.then(() => {
+        setTimeout(runAnimation, 300);
+    });
+</script>
+{% endblock %}

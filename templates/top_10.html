@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        padding: 48px 40px 28px;
+    }
+
+    /* ── Title ── */
+    .title {
+        font-family: var(--font-display);
+        font-size: 56px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-align: center;
+        line-height: 1.05;
+        margin-bottom: 32px;
+    }
+
+    .title .year {
+        color: var(--color-athlete-left);
+    }
+
+    /* ── Table ── */
+    .table {
+        width: 100%;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .table-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .table-header {
+        display: flex;
+        align-items: center;
+        padding: 16px 24px;
+        border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+    }
+
+    .table-header span {
+        font-family: var(--font-body);
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--color-text-label);
+    }
+
+    .table-row {
+        display: flex;
+        align-items: center;
+        padding: 0 24px;
+        border-bottom: 1px solid rgba(51, 65, 85, 0.2);
+        flex: 1;
+    }
+
+    .table-row:last-child {
+        border-bottom: none;
+    }
+
+    .table-row:nth-child(odd) {
+        background: rgba(30, 41, 59, 0.3);
+    }
+
+    .table-row:nth-child(even) {
+        background: rgba(30, 41, 59, 0.1);
+    }
+
+    /* ── Columns ── */
+    .col-rank {
+        width: 48px;
+        flex-shrink: 0;
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 600;
+        color: var(--color-text-muted);
+    }
+
+    .col-flag {
+        width: 40px;
+        flex-shrink: 0;
+    }
+
+    .col-flag img {
+        width: 30px;
+        height: 22px;
+        object-fit: cover;
+        border-radius: 2px;
+        vertical-align: middle;
+    }
+
+    .col-athlete {
+        flex: 2.2;
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 500;
+        color: var(--color-text-primary);
+    }
+
+    .col-score {
+        width: 90px;
+        flex-shrink: 0;
+        text-align: center;
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 600;
+        color: var(--color-text-primary);
+    }
+
+    .col-event {
+        flex: 2.5;
+        text-align: center;
+        font-family: var(--font-body);
+        font-size: 20px;
+        color: var(--color-text-muted);
+    }
+
+    .col-round {
+        width: 90px;
+        flex-shrink: 0;
+        text-align: right;
+        font-family: var(--font-body);
+        font-size: 20px;
+        color: var(--color-text-muted);
+    }
+
+    /* ── Header column overrides ── */
+    .table-header .col-score,
+    .table-header .col-event,
+    .table-header .col-round,
+    .table-header .col-flag {
+        font-size: 14px;
+        color: var(--color-text-label);
+    }
+
+    /* ── Footer ── */
+    .footer {
+        padding-top: 20px;
+        font-family: var(--font-body);
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        color: var(--color-text-muted);
+        text-transform: uppercase;
+        text-align: right;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <!-- Title -->
+    <div class="title">
+        {{ title_gender | upper }} TOP 10 {{ title_metric | upper }} OF <span class="year">{{ title_year }}</span>
+    </div>
+
+    <!-- Table -->
+    <div class="table card">
+        <div class="table-header">
+            <span class="col-rank">#</span>
+            <span class="col-flag"></span>
+            <span class="col-athlete">ATHLETE</span>
+            <span class="col-score">SCORE</span>
+            <span class="col-event">EVENT</span>
+            <span class="col-round">ROUND</span>
+        </div>
+
+        <div class="table-body">
+        {% for entry in entries %}
+            <div class="table-row">
+                <div class="col-rank">{{ entry.rank }}</div>
+                <div class="col-flag"><img src="https://flagcdn.com/w40/{{ entry.country | lower }}.png" alt="{{ entry.country }}"></div>
+                <div class="col-athlete">{{ entry.athlete }}</div>
+                <div class="col-score">{{ "%.2f" | format(entry.score) }}</div>
+                <div class="col-event">{{ entry.event }}</div>
+                <div class="col-round">{{ entry.round }}</div>
+            </div>
+        {% endfor %}
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">windsurfworldtourstats.com</div>
+</div>
+{% endblock %}

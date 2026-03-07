@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.pyc
+output/png/*
+output/mp4/*
+assets/photos/*
+.pytest_cache/
+node_modules/
+tmp/
+!output/png/.gitkeep
+!output/mp4/.gitkeep
+!assets/photos/.gitkeep
