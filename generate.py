@@ -8,8 +8,61 @@ from datetime import datetime
 
 import yaml
 
+from pipeline.api import fetch_head_to_head, fetch_site_stats
+from pipeline.captions import build_caption
+from pipeline.db import run_query
+from pipeline.queries import build_top10_query
 from pipeline.templates import render_template, get_dummy_data
 from pipeline.renderer import render_to_png, render_to_video
+
+
+def fetch_live_data(template_name: str, args) -> dict:
+    """Fetch live data from API or DB based on template type."""
+    if template_name in ("head_to_head", "head_to_head_jump"):
+        if not all([args.event, args.athlete1, args.athlete2, args.division]):
+            print("H2H requires: --event, --athlete1, --athlete2, --division")
+            sys.exit(1)
+        return fetch_head_to_head(
+            event_id=args.event,
+            athlete1_id=args.athlete1,
+            athlete2_id=args.athlete2,
+            division=args.division,
+        )
+
+    if template_name == "top_10":
+        if not args.score_type:
+            print("Top 10 requires: --score-type (Wave or Jump)")
+            sys.exit(1)
+        sql, params = build_top10_query(
+            score_type=args.score_type,
+            sex=args.sex,
+            year=args.year,
+            event_id=args.event,
+        )
+        rows = run_query(sql, params)
+        gender_map = {"Men": "Men's", "Women": "Women's"}
+        return {
+            "title_gender": gender_map.get(args.sex, ""),
+            "title_metric": f"{args.score_type}s",
+            "title_year": args.year or "All Time",
+            "entries": [
+                {
+                    "rank": i + 1,
+                    "athlete": r["athlete"],
+                    "country": r.get("country", ""),
+                    "score": float(r["score"]),
+                    "event": r["event"],
+                    "round": r.get("round", ""),
+                }
+                for i, r in enumerate(rows)
+            ],
+        }
+
+    if template_name in ("site_stats", "site_stats_reel"):
+        return fetch_site_stats()
+
+    print(f"Live data not implemented for template: {template_name}")
+    sys.exit(1)
 
 
 def load_config():
@@ -25,11 +78,13 @@ def main():
         required=True,
         choices=["head_to_head", "head_to_head_jump", "top_10", "site_stats", "site_stats_reel", "stat_of_the_day"],
     )
-    parser.add_argument("--athlete1", help="Athlete 1 name slug")
-    parser.add_argument("--athlete2", help="Athlete 2 name slug")
-    parser.add_argument("--event", help="Event name slug")
-    parser.add_argument("--discipline", choices=["mens", "womens"])
-    parser.add_argument("--year", type=int)
+    parser.add_argument("--athlete1", type=int, help="Athlete 1 unified ID")
+    parser.add_argument("--athlete2", type=int, help="Athlete 2 unified ID")
+    parser.add_argument("--event", type=int, help="Event ID")
+    parser.add_argument("--division", choices=["Men", "Women"], help="Division for H2H")
+    parser.add_argument("--sex", choices=["Men", "Women"], help="Sex filter for top 10")
+    parser.add_argument("--score-type", choices=["Wave", "Jump"], help="Score type for top 10")
+    parser.add_argument("--year", type=int, help="Year filter for top 10")
     parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -47,6 +102,12 @@ def main():
     )
     parser.add_argument("--duration", type=int, default=6000, help="Video duration in ms")
     parser.add_argument("--output", help="Custom output path")
+    parser.add_argument(
+        "--publish",
+        choices=["now"],
+        help="Publish to Instagram after rendering",
+    )
+    parser.add_argument("--caption", help="Custom caption override")
 
     args = parser.parse_args()
     config = load_config()
@@ -61,9 +122,7 @@ def main():
     if args.dry_run:
         data = get_dummy_data(template_name)
     else:
-        # TODO: Wire up DB queries
-        print("DB mode not yet implemented. Use --dry-run for testing.")
-        sys.exit(1)
+        data = fetch_live_data(template_name, args)
 
     # Render HTML
     html = render_template(template_name, data)
@@ -98,6 +157,15 @@ def main():
         result = render_to_png(html, output_path, width=width, height=height, dpr=dpr)
 
     print(f"Rendered: {result}")
+
+    # Publish to Instagram if requested
+    if args.publish == "now":
+        from pipeline.publisher import publish as publish_to_instagram
+
+        caption = args.caption or build_caption(template_name, data, config)
+        print(f"Publishing to Instagram...")
+        pub_result = publish_to_instagram(result, caption)
+        print(f"Published! Media ID: {pub_result['media_id']}")
 
 
 if __name__ == "__main__":

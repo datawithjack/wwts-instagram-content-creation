@@ -1,0 +1,146 @@
+name: Generate Instagram Content
+
+on:
+  # Manual trigger with parameters
+  workflow_dispatch:
+    inputs:
+      template:
+        description: "Template to generate"
+        required: true
+        type: choice
+        options:
+          - head_to_head
+          - head_to_head_jump
+          - top_10
+          - site_stats
+      event:
+        description: "Event ID (for H2H and top 10)"
+        required: false
+        type: number
+      athlete1:
+        description: "Athlete 1 unified ID (for H2H)"
+        required: false
+        type: number
+      athlete2:
+        description: "Athlete 2 unified ID (for H2H)"
+        required: false
+        type: number
+      division:
+        description: "Division (for H2H)"
+        required: false
+        type: choice
+        options:
+          - Women
+          - Men
+      score_type:
+        description: "Score type (for top 10)"
+        required: false
+        type: choice
+        options:
+          - Wave
+          - Jump
+      sex:
+        description: "Sex filter (for top 10)"
+        required: false
+        type: choice
+        options:
+          - ""
+          - Men
+          - Women
+      year:
+        description: "Year filter (for top 10)"
+        required: false
+        type: number
+      publish_mode:
+        description: "Publish to Instagram (leave empty to skip)"
+        required: false
+        type: choice
+        options:
+          - ""
+          - "now"
+
+  # Scheduled: site stats every Monday at 7am UTC
+  schedule:
+    - cron: "0 7 * * 1"
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install chromium
+
+      - name: Build CLI arguments
+        id: args
+        run: |
+          # Default to site_stats for scheduled runs
+          TEMPLATE="${{ github.event.inputs.template || 'site_stats' }}"
+          ARGS="--template $TEMPLATE"
+
+          if [ "$TEMPLATE" = "head_to_head" ] || [ "$TEMPLATE" = "head_to_head_jump" ]; then
+            ARGS="$ARGS --event ${{ github.event.inputs.event }}"
+            ARGS="$ARGS --athlete1 ${{ github.event.inputs.athlete1 }}"
+            ARGS="$ARGS --athlete2 ${{ github.event.inputs.athlete2 }}"
+            ARGS="$ARGS --division ${{ github.event.inputs.division }}"
+          fi
+
+          if [ "$TEMPLATE" = "top_10" ]; then
+            ARGS="$ARGS --score-type ${{ github.event.inputs.score_type }}"
+            if [ -n "${{ github.event.inputs.sex }}" ]; then
+              ARGS="$ARGS --sex ${{ github.event.inputs.sex }}"
+            fi
+            if [ -n "${{ github.event.inputs.year }}" ]; then
+              ARGS="$ARGS --year ${{ github.event.inputs.year }}"
+            fi
+            if [ -n "${{ github.event.inputs.event }}" ]; then
+              ARGS="$ARGS --event ${{ github.event.inputs.event }}"
+            fi
+          fi
+
+          # Add publish flag for manual dispatch
+          if [ -n "${{ github.event.inputs.publish_mode }}" ]; then
+            ARGS="$ARGS --publish ${{ github.event.inputs.publish_mode }}"
+          fi
+
+          # Auto-publish for scheduled runs (site_stats)
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            ARGS="$ARGS --publish now"
+          fi
+
+          echo "cli_args=$ARGS" >> "$GITHUB_OUTPUT"
+
+      - name: Generate content
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+          MYSQL_PORT: ${{ secrets.MYSQL_PORT }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          META_INSTAGRAM_ACCOUNT_ID: ${{ secrets.META_INSTAGRAM_ACCOUNT_ID }}
+        run: |
+          python generate.py ${{ steps.args.outputs.cli_args }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: instagram-content-${{ github.run_id }}
+          path: output/
+          retention-days: 30

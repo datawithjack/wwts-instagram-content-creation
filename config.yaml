@@ -40,5 +40,8 @@ hashtags:
     - "#PWA"
     - "#windsurfstats"
 
+captions:
+  site_url: "windsurfworldtourstats.com"
+
 output_dir: ./output
 assets_dir: ./assets

@@ -6,3 +6,4 @@ pyyaml
 requests
 playwright
 pytest
+boto3
