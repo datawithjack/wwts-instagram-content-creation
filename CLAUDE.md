@@ -24,6 +24,8 @@ Automated Instagram image generation pipeline for windsurfworldtourstats.com. Pu
 | `pipeline/templates.py` | Jinja2 env, filters, render_template, get_dummy_data |
 | `pipeline/helpers.py` | Formatting helpers (ordinal, format_delta, country_flag, etc.) |
 | `pipeline/renderer.py` | Playwright render_to_png, render_to_video |
+| `pipeline/publisher.py` | Upload to R2, create/publish Instagram container via Meta Graph API |
+| `pipeline/captions.py` | Caption + hashtag generation per template |
 
 ## CLI Usage
 ```bash
@@ -42,6 +44,10 @@ python generate.py --template site_stats
 
 # Preview in browser (no PNG render)
 python generate.py --template head_to_head --dry-run --preview
+
+# Publish to Instagram after rendering
+python generate.py --template site_stats --dry-run --publish now
+python generate.py --template site_stats --dry-run --publish now --caption "Custom caption"
 ```
 
 ## Templates
@@ -64,10 +70,18 @@ python -m pytest tests/ --ignore=tests/test_renderer.py --ignore=tests/test_site
 python -m pytest tests/ -v
 ```
 
+## Publishing
+- **Flow**: Render PNG → Upload to Cloudflare R2 → Create Instagram media container → Poll until ready → Publish → Delete from R2
+- **CLI**: `--publish now` flag on any generate command
+- **Meta Graph API**: v21.0, requires permanent Page Access Token
+- **New Pages Experience**: `/me/accounts` returns empty; query page directly by ID (`1055784894276445?fields=access_token,instagram_business_account`)
+
 ## Environment Variables
-See `.env.example`. Key vars:
+See `.env`. Key vars:
 - `API_BASE_URL` — Production API (defaults to `https://api.windsurfworldtourstats.com/api/v1`)
 - `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE` — For top 10 queries
+- `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL` — Cloudflare R2
+- `META_ACCESS_TOKEN`, `META_INSTAGRAM_ACCOUNT_ID` — Meta Graph API publishing
 
 ## Brand
 - Fonts: Bebas Neue (display), Inter (body) — loaded from Google Fonts
