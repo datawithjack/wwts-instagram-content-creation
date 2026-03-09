@@ -122,3 +122,58 @@ class TestGetDummyData:
             assert "score" in entry
             assert "event" in entry
             assert "round" in entry
+
+    def test_rider_profile_has_required_fields(self):
+        data = get_dummy_data("rider_profile")
+        required = [
+            "athlete_name", "athlete_country", "athlete_photo_url",
+            "athlete_sail_number", "event_name", "event_country",
+            "event_date_start", "event_date_end", "event_tier",
+            "placement", "best_heat", "best_heat_round",
+            "best_wave", "best_jump", "avg_wave", "top_waves",
+        ]
+        for field in required:
+            assert field in data, f"Missing field: {field}"
+
+    def test_rider_profile_top_waves_structure(self):
+        data = get_dummy_data("rider_profile")
+        assert len(data["top_waves"]) == 5
+        for wave in data["top_waves"]:
+            assert "rank" in wave
+            assert "score" in wave
+            assert "round" in wave
+
+
+class TestRenderRiderProfile:
+    def setup_method(self):
+        self.data = get_dummy_data("rider_profile")
+        self.html = render_template("rider_profile", self.data)
+
+    def test_returns_html_string(self):
+        assert isinstance(self.html, str)
+        assert "<html" in self.html
+
+    def test_contains_athlete_name(self):
+        assert "MARC" in self.html
+        assert "PARE RICO" in self.html
+
+    def test_contains_event_name(self):
+        assert self.data["event_name"].upper() in self.html
+
+    def test_contains_placement_ordinal(self):
+        assert "1st" in self.html
+
+    def test_contains_stat_values(self):
+        assert "16.33" in self.html  # best heat
+        assert "8.83" in self.html   # best wave
+
+    def test_contains_top_waves_table(self):
+        for wave in self.data["top_waves"]:
+            assert f"{wave['score']:.2f}" in self.html
+
+    def test_contains_footer(self):
+        assert "windsurfworldtourstats.com" in self.html.lower()
+
+    def test_contains_brand_fonts(self):
+        assert "Bebas Neue" in self.html
+        assert "Inter" in self.html

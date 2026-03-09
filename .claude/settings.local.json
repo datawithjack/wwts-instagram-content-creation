@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "WebSearch",
+      "WebFetch(domain:docs.postiz.com)",
+      "WebFetch(domain:api.windsurfworldtourstats.com)",
+      "Bash(git add:*)"
     ]
   }
 }

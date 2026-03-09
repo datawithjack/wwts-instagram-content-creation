@@ -3,7 +3,12 @@ from datetime import date
 from unittest.mock import patch, MagicMock, call
 import pytest
 
-from pipeline.api import fetch_head_to_head, fetch_site_stats, fetch_event
+from pipeline.api import (
+    fetch_head_to_head,
+    fetch_site_stats,
+    fetch_event,
+    fetch_athlete_event_stats,
+)
 
 
 def _mock_event_response():
@@ -169,3 +174,121 @@ class TestFetchSiteStats:
 
         call_args = mock_get.call_args
         assert "/stats" in call_args[0][0]
+
+
+def _mock_athlete_stats_response():
+    return MagicMock(
+        status_code=200,
+        json=lambda: {
+            "event_id": 42,
+            "event_name": "2026 Margaret River Wave Classic",
+            "athlete": {
+                "id": 10,
+                "name": "Marc Pare Rico",
+                "country": "Spain",
+                "country_code": "ES",
+                "profile_image": "https://example.com/marc.jpg",
+                "sail_number": "E-73",
+                "overall_position": 1,
+                "sponsors": ["Severne", "Starboard"],
+            },
+            "summary": {
+                "best_heat": {
+                    "score": 16.33,
+                    "round": "Final",
+                },
+                "best_wave": 8.83,
+                "best_jump": 7.50,
+            },
+            "wave_scores": [
+                {"score": 8.83, "round": "Final"},
+                {"score": 7.60, "round": "Semi"},
+                {"score": 7.20, "round": "Quarter"},
+                {"score": 6.90, "round": "Semi"},
+                {"score": 6.50, "round": "Round 3"},
+                {"score": 6.10, "round": "Round 2"},
+            ],
+            "heat_scores": [
+                {"score": 16.33, "round": "Final"},
+                {"score": 14.10, "round": "Semi"},
+            ],
+        },
+    )
+
+
+def _mock_athlete_stats_no_jumps():
+    resp = _mock_athlete_stats_response()
+    raw = resp.json()
+    raw["summary"]["best_jump"] = None
+    resp.json = lambda: raw
+    return resp
+
+
+class TestFetchAthleteEventStats:
+    @patch("pipeline.api.requests.get")
+    def test_returns_flattened_data(self, mock_get):
+        mock_get.side_effect = [_mock_athlete_stats_response(), _mock_event_response()]
+
+        result = fetch_athlete_event_stats(event_id=42, athlete_id=10, division="Men")
+
+        assert result["athlete_name"] == "Marc Pare Rico"
+        assert result["athlete_country"] == "ES"
+        assert result["athlete_photo_url"] == "https://example.com/marc.jpg"
+        assert result["athlete_sail_number"] == "E-73"
+        assert result["placement"] == 1
+        assert result["best_heat"] == 16.33
+        assert result["best_heat_round"] == "Final"
+        assert result["best_wave"] == 8.83
+        assert result["best_jump"] == 7.50
+
+    @patch("pipeline.api.requests.get")
+    def test_includes_event_metadata(self, mock_get):
+        mock_get.side_effect = [_mock_athlete_stats_response(), _mock_event_response()]
+
+        result = fetch_athlete_event_stats(event_id=42, athlete_id=10, division="Men")
+
+        assert result["event_name"] == "2026 Margaret River Wave Classic"
+        assert result["event_country"] == "AU"
+        assert result["event_tier"] == 4
+        assert result["event_date_start"] == date(2026, 1, 31)
+        assert result["event_date_end"] == date(2026, 2, 8)
+
+    @patch("pipeline.api.requests.get")
+    def test_top_waves_limited_to_5(self, mock_get):
+        mock_get.side_effect = [_mock_athlete_stats_response(), _mock_event_response()]
+
+        result = fetch_athlete_event_stats(event_id=42, athlete_id=10, division="Men")
+
+        assert len(result["top_waves"]) == 5
+        assert result["top_waves"][0]["rank"] == 1
+        assert result["top_waves"][0]["score"] == 8.83
+        assert result["top_waves"][0]["round"] == "Final"
+
+    @patch("pipeline.api.requests.get")
+    def test_avg_wave_computed(self, mock_get):
+        mock_get.side_effect = [_mock_athlete_stats_response(), _mock_event_response()]
+
+        result = fetch_athlete_event_stats(event_id=42, athlete_id=10, division="Men")
+
+        # Average of all wave scores
+        assert "avg_wave" in result
+        assert isinstance(result["avg_wave"], float)
+
+    @patch("pipeline.api.requests.get")
+    def test_no_jumps_returns_none(self, mock_get):
+        mock_get.side_effect = [_mock_athlete_stats_no_jumps(), _mock_event_response()]
+
+        result = fetch_athlete_event_stats(event_id=42, athlete_id=10, division="Men")
+
+        assert result["best_jump"] is None
+
+    @patch("pipeline.api.requests.get")
+    def test_calls_correct_urls(self, mock_get):
+        mock_get.side_effect = [_mock_athlete_stats_response(), _mock_event_response()]
+
+        fetch_athlete_event_stats(event_id=42, athlete_id=10, division="Men")
+
+        assert mock_get.call_count == 2
+        stats_call = mock_get.call_args_list[0]
+        assert "/events/42/athletes/10/stats" in stats_call[0][0]
+        assert stats_call[1]["params"]["sex"] == "Men"

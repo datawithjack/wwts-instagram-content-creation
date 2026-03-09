@@ -7,8 +7,11 @@ import tempfile
 from datetime import datetime
 
 import yaml
+from dotenv import load_dotenv
 
-from pipeline.api import fetch_head_to_head, fetch_site_stats
+load_dotenv()
+
+from pipeline.api import fetch_head_to_head, fetch_site_stats, fetch_athlete_event_stats
 from pipeline.captions import build_caption
 from pipeline.db import run_query
 from pipeline.queries import build_top10_query
@@ -61,6 +64,16 @@ def fetch_live_data(template_name: str, args) -> dict:
     if template_name in ("site_stats", "site_stats_reel"):
         return fetch_site_stats()
 
+    if template_name == "rider_profile":
+        if not all([args.event, args.athlete1, args.division]):
+            print("Rider profile requires: --event, --athlete1, --division")
+            sys.exit(1)
+        return fetch_athlete_event_stats(
+            event_id=args.event,
+            athlete_id=args.athlete1,
+            division=args.division,
+        )
+
     print(f"Live data not implemented for template: {template_name}")
     sys.exit(1)
 
@@ -76,7 +89,7 @@ def main():
     parser.add_argument(
         "--template",
         required=True,
-        choices=["head_to_head", "head_to_head_jump", "top_10", "site_stats", "site_stats_reel", "stat_of_the_day"],
+        choices=["head_to_head", "head_to_head_jump", "top_10", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile"],
     )
     parser.add_argument("--athlete1", type=int, help="Athlete 1 unified ID")
     parser.add_argument("--athlete2", type=int, help="Athlete 2 unified ID")

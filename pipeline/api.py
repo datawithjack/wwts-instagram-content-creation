@@ -72,6 +72,53 @@ def fetch_head_to_head(
     return data
 
 
+def fetch_athlete_event_stats(event_id: int, athlete_id: int, division: str) -> dict:
+    """Fetch single athlete's stats at an event and flatten into template data."""
+    url = f"{API_BASE_URL}/events/{event_id}/athletes/{athlete_id}/stats"
+    resp = requests.get(url, params={"sex": division}, timeout=30)
+    resp.raise_for_status()
+    raw = resp.json()
+
+    event = fetch_event(event_id)
+
+    athlete = raw["athlete"]
+    summary = raw["summary"]
+
+    # Compute avg wave from all wave scores
+    wave_scores = raw.get("wave_scores", [])
+    avg_wave = round(sum(w["score"] for w in wave_scores) / len(wave_scores), 2) if wave_scores else 0.0
+
+    # Top 5 waves (already sorted desc from API)
+    top_waves = [
+        {"rank": i + 1, "score": w["score"], "round": w["round"]}
+        for i, w in enumerate(wave_scores[:5])
+    ]
+
+    data = {
+        "athlete_name": athlete["name"],
+        "athlete_country": athlete["country_code"],
+        "athlete_photo_url": athlete.get("profile_image", ""),
+        "athlete_sail_number": athlete.get("sail_number", ""),
+        "event_name": raw["event_name"],
+        "event_country": event.get("country_code", ""),
+        "event_tier": event.get("stars", 0),
+        "placement": athlete["overall_position"],
+        "best_heat": summary["best_heat"]["score"],
+        "best_heat_round": summary["best_heat"]["round"],
+        "best_wave": summary["best_wave"],
+        "best_jump": summary.get("best_jump"),
+        "avg_wave": avg_wave,
+        "top_waves": top_waves,
+    }
+
+    for date_key, template_key in [("start_date", "event_date_start"), ("end_date", "event_date_end")]:
+        raw_date = event.get(date_key)
+        if raw_date:
+            data[template_key] = date.fromisoformat(str(raw_date))
+
+    return data
+
+
 def fetch_site_stats() -> dict:
     """Fetch site-wide statistics from API."""
     url = f"{API_BASE_URL}/stats"

@@ -1,4 +1,5 @@
 """Caption generation for Instagram posts."""
+from pipeline.helpers import ordinal
 
 
 def build_caption(
@@ -20,6 +21,7 @@ def build_caption(
             "top_10": _caption_top_10,
             "site_stats": _caption_site_stats,
             "site_stats_reel": _caption_site_stats,
+            "rider_profile": _caption_rider_profile,
         }
         builder = builders.get(template_name, _caption_default)
         body = builder(data, site_url)
@@ -55,6 +57,16 @@ def _caption_site_stats(data: dict, site_url: str) -> str:
     return (
         f"{athletes} athletes. {scores} scores. {events} events.\n"
         f"Explore the data at {site_url}"
+    )
+
+
+def _caption_rider_profile(data: dict, site_url: str) -> str:
+    name = data.get("athlete_name", "")
+    event = data.get("event_name", "")
+    placement = ordinal(data.get("placement", 0))
+    return (
+        f"{name} at the {event} — {placement}.\n"
+        f"Full stats at {site_url}"
     )
 
 

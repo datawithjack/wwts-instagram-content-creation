@@ -13,6 +13,7 @@ on:
           - head_to_head_jump
           - top_10
           - site_stats
+          - rider_profile
       event:
         description: "Event ID (for H2H and top 10)"
         required: false
@@ -92,6 +93,12 @@ jobs:
             ARGS="$ARGS --event ${{ github.event.inputs.event }}"
             ARGS="$ARGS --athlete1 ${{ github.event.inputs.athlete1 }}"
             ARGS="$ARGS --athlete2 ${{ github.event.inputs.athlete2 }}"
+            ARGS="$ARGS --division ${{ github.event.inputs.division }}"
+          fi
+
+          if [ "$TEMPLATE" = "rider_profile" ]; then
+            ARGS="$ARGS --event ${{ github.event.inputs.event }}"
+            ARGS="$ARGS --athlete1 ${{ github.event.inputs.athlete1 }}"
             ARGS="$ARGS --division ${{ github.event.inputs.division }}"
           fi
 

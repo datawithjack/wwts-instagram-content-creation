@@ -49,7 +49,7 @@ def render_template(template_name: str, data: dict) -> str:
         data = {**data, "bg_image_path": bg_url}
 
     # Resolve athlete photo paths to file:// URLs
-    for key in ("athlete_1_photo_url", "athlete_2_photo_url"):
+    for key in ("athlete_1_photo_url", "athlete_2_photo_url", "athlete_photo_url"):
         path = data.get(key, "")
         if path and os.path.exists(path):
             data[key] = "file:///" + os.path.abspath(path).replace(os.sep, "/")
@@ -131,5 +131,30 @@ def get_dummy_data(template_name: str) -> dict:
             "athletes_count": 359,
             "scores_count": 43515,
             "events_count": 58,
+        }
+    if template_name == "rider_profile":
+        return {
+            "athlete_name": "Marc Pare Rico",
+            "athlete_country": "ES",
+            "athlete_photo_url": _resolve_photo("marc pare rico.webp"),
+            "athlete_sail_number": "E-73",
+            "event_name": "2026 Chile World Cup",
+            "event_country": "CL",
+            "event_date_start": date(2026, 3, 1),
+            "event_date_end": date(2026, 3, 8),
+            "event_tier": 5,
+            "placement": 1,
+            "best_heat": 16.33,
+            "best_heat_round": "Final",
+            "best_wave": 8.83,
+            "best_jump": 7.50,
+            "avg_wave": 6.12,
+            "top_waves": [
+                {"rank": 1, "score": 8.83, "round": "Final"},
+                {"rank": 2, "score": 7.60, "round": "Semi"},
+                {"rank": 3, "score": 7.20, "round": "Quarter"},
+                {"rank": 4, "score": 6.90, "round": "Semi"},
+                {"rank": 5, "score": 6.50, "round": "Round 3"},
+            ],
         }
     raise ValueError(f"No dummy data for template: {template_name}")

@@ -18,7 +18,7 @@ Automated Instagram image generation pipeline for windsurfworldtourstats.com. Pu
 ### Key Modules
 | Module | Purpose |
 |---|---|
-| `pipeline/api.py` | API client (fetch_head_to_head, fetch_site_stats, fetch_event) |
+| `pipeline/api.py` | API client (fetch_head_to_head, fetch_site_stats, fetch_event, fetch_athlete_event_stats) |
 | `pipeline/queries.py` | SQL query builders (build_top10_query) |
 | `pipeline/db.py` | MySQL connection + query runner |
 | `pipeline/templates.py` | Jinja2 env, filters, render_template, get_dummy_data |
@@ -49,6 +49,11 @@ python generate.py --template head_to_head --dry-run --preview
 - `head_to_head_jump.html` — Two-athlete comparison (wave + jump events)
 - `top_10.html` — Top 10 scores leaderboard
 - `site_stats.html` — Site-wide stat counters (with count-up animation for video)
+- `rider_profile.html` — Single athlete performance at an event
+
+## Template Layout Rules
+- HTML template layouts are manually tuned by the user. Do NOT modify template HTML/CSS layout unless explicitly asked.
+- When adding new templates, generate a working skeleton and let the user refine the visual layout.
 
 ## Testing
 ```bash

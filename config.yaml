@@ -23,6 +23,10 @@ templates:
     width: 1080
     height: 1080
     dpr: 2
+  rider_profile:
+    width: 1080
+    height: 1350
+    dpr: 2
 
 hashtags:
   head_to_head:
@@ -34,6 +38,11 @@ hashtags:
     - "#windsurf"
     - "#PWA"
     - "#topwaves"
+    - "#windsurfstats"
+  rider_profile:
+    - "#windsurf"
+    - "#PWA"
+    - "#riderprofile"
     - "#windsurfstats"
   default:
     - "#windsurf"

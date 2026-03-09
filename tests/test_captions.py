@@ -120,6 +120,37 @@ class TestHashtagFallback:
         assert "#windsurfstats" in caption
 
 
+@pytest.fixture
+def rider_profile_data():
+    return {
+        "athlete_name": "Marc Pare Rico",
+        "event_name": "2026 Chile World Cup",
+        "placement": 1,
+    }
+
+
+class TestRiderProfileCaption:
+    def test_includes_athlete_name(self, rider_profile_data, config):
+        caption = build_caption("rider_profile", rider_profile_data, config)
+        assert "Marc Pare Rico" in caption
+
+    def test_includes_event_name(self, rider_profile_data, config):
+        caption = build_caption("rider_profile", rider_profile_data, config)
+        assert "2026 Chile World Cup" in caption
+
+    def test_includes_placement(self, rider_profile_data, config):
+        caption = build_caption("rider_profile", rider_profile_data, config)
+        assert "1st" in caption
+
+    def test_includes_site_url(self, rider_profile_data, config):
+        caption = build_caption("rider_profile", rider_profile_data, config)
+        assert "windsurfworldtourstats.com" in caption
+
+    def test_includes_hashtags(self, rider_profile_data, config):
+        caption = build_caption("rider_profile", rider_profile_data, config)
+        assert "#windsurf" in caption
+
+
 class TestCaptionOverride:
     def test_custom_caption_preserves_hashtags(self, config):
         caption = build_caption(
