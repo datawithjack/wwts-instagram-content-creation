@@ -12,6 +12,7 @@ from pipeline.helpers import (
     compute_deltas,
     format_number,
     country_flag,
+    trick_type_label,
 )
 
 TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "..", "templates")
@@ -26,6 +27,7 @@ def get_jinja_env() -> Environment:
     env.filters["format_number"] = format_number
     env.globals["format_date_range"] = format_date_range
     env.filters["country_flag"] = country_flag
+    env.filters["trick_type_label"] = trick_type_label
     return env
 
 
@@ -33,13 +35,14 @@ def render_template(template_name: str, data: dict) -> str:
     """Render a named template with data, returning HTML string."""
     env = get_jinja_env()
 
-    # Compute deltas for head_to_head variants
+    # Compute deltas for head_to_head variants (skip if API already provided them)
     if template_name in ("head_to_head", "head_to_head_jump"):
-        delta_fields = ["best_heat", "avg_heat", "best_wave", "avg_wave"]
-        if template_name == "head_to_head_jump":
-            delta_fields.extend(["best_jump", "avg_jump"])
-        deltas = compute_deltas(data, delta_fields)
-        data = {**data, **deltas}
+        if "delta_best_heat" not in data:
+            delta_fields = ["best_heat", "avg_heat", "best_wave", "avg_wave"]
+            if template_name == "head_to_head_jump":
+                delta_fields.extend(["best_jump", "avg_jump"])
+            deltas = compute_deltas(data, delta_fields)
+            data = {**data, **deltas}
 
     # Resolve background image path
     assets_dir = os.path.join(os.path.dirname(__file__), "..", "assets")
@@ -84,6 +87,7 @@ def get_dummy_data(template_name: str) -> dict:
             "event_tier": 4,
             "athlete_1_name": "Sarah Kenyon",
             "athlete_1_photo_url": _resolve_photo("sarak kenyon.webp"),
+            "athlete_1_country": "gb",
             "athlete_1_placement": 1,
             "athlete_1_heat_wins": 2,
             "athlete_1_best_heat": 9.33,
@@ -92,6 +96,7 @@ def get_dummy_data(template_name: str) -> dict:
             "athlete_1_avg_wave": 4.43,
             "athlete_2_name": "Jane Seman",
             "athlete_2_photo_url": _resolve_photo("jane seman.webp"),
+            "athlete_2_country": "us",
             "athlete_2_placement": 2,
             "athlete_2_heat_wins": 1,
             "athlete_2_best_heat": 12.03,
@@ -113,17 +118,18 @@ def get_dummy_data(template_name: str) -> dict:
             "title_gender": "Men's",  # includes possessive
             "title_metric": "Waves",
             "title_year": 2025,
+            "is_per_event": False,
             "entries": [
                 {"rank": 1, "athlete": "Marc Pare Rico", "country": "ES", "score": 8.83, "event": "Chile World Cup", "round": "Final"},
-                {"rank": 2, "athlete": "Takara Ishii", "country": "JP", "score": 8.80, "event": "Puerto Rico World Cup", "round": "Semi"},
-                {"rank": 3, "athlete": "Bernd Roediger", "country": "US", "score": 8.50, "event": "Puerto Rico", "round": "Quarter"},
+                {"rank": 2, "athlete": "Takara Ishii", "country": "JP", "score": 8.80, "event": "Puerto Rico World Cup", "round": "Semi Final"},
+                {"rank": 3, "athlete": "Bernd Roediger", "country": "US", "score": 8.50, "event": "Puerto Rico", "round": "Quarter Final"},
                 {"rank": 4, "athlete": "Jaegar Stone", "country": "AU", "score": 8.33, "event": "Margaret River Wave Classic", "round": "Final"},
-                {"rank": 5, "athlete": "Jaegar Stone", "country": "AU", "score": 8.33, "event": "Margaret River Wave Classic", "round": "Final"},
-                {"rank": 6, "athlete": "Jaegar Stone", "country": "AU", "score": 8.33, "event": "Margaret River Wave Classic", "round": "Final"},
-                {"rank": 7, "athlete": "Jaegar Stone", "country": "AU", "score": 8.33, "event": "Margaret River Wave Classic", "round": "Final"},
-                {"rank": 8, "athlete": "Jaegar Stone", "country": "AU", "score": 8.33, "event": "Margaret River Wave Classic", "round": "Final"},
-                {"rank": 9, "athlete": "Jaegar Stone", "country": "AU", "score": 8.33, "event": "Margaret River Wave Classic", "round": "Final"},
-                {"rank": 10, "athlete": "Jaegar Stone", "country": "AU", "score": 8.33, "event": "Margaret River Wave Classic", "round": "Final"},
+                {"rank": 5, "athlete": "Camille Juban", "country": "GP", "score": 8.17, "event": "Chile World Cup", "round": "Semi Final"},
+                {"rank": 6, "athlete": "Antoine Martin", "country": "GP", "score": 8.00, "event": "Margaret River Wave Classic", "round": "Quarter Final"},
+                {"rank": 7, "athlete": "Robby Swift", "country": "GB", "score": 7.93, "event": "Chile World Cup", "round": "Final"},
+                {"rank": 8, "athlete": "Federico Morisio", "country": "IT", "score": 7.87, "event": "Puerto Rico World Cup", "round": "Semi Final"},
+                {"rank": 9, "athlete": "Ricardo Campello", "country": "BR", "score": 7.73, "event": "Margaret River Wave Classic", "round": "Quarter Final"},
+                {"rank": 10, "athlete": "Jake Schettewi", "country": "US", "score": 7.67, "event": "Chile World Cup", "round": "Final"},
             ],
         }
     if template_name in ("site_stats", "site_stats_reel"):

@@ -10,15 +10,34 @@
         padding: 48px 40px 28px;
     }
 
+    .event-meta {
+        margin-bottom: 28px;
+    }
+
     /* ── Title ── */
     .title {
         font-family: var(--font-display);
-        font-size: 56px;
+        font-size: 72px;
         font-weight: 700;
         letter-spacing: 0.04em;
-        text-align: center;
+        text-align: left;
         line-height: 1.05;
         margin-bottom: 32px;
+        padding: 0 24px;
+    }
+
+    .title-per-event {
+        font-family: var(--font-display);
+        font-size: 52px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-align: center;
+        line-height: 1;
+        margin-bottom: 24px;
+    }
+
+    .title-per-event .gender {
+        color: var(--color-athlete-left);
     }
 
     .title .year {
@@ -43,13 +62,13 @@
     .table-header {
         display: flex;
         align-items: center;
-        padding: 16px 24px;
+        padding: 14px 24px;
         border-bottom: 1px solid rgba(51, 65, 85, 0.6);
     }
 
     .table-header span {
         font-family: var(--font-body);
-        font-size: 14px;
+        font-size: 16px;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.1em;
@@ -78,12 +97,20 @@
 
     /* ── Columns ── */
     .col-rank {
-        width: 48px;
+        width: 40px;
         flex-shrink: 0;
         font-family: var(--font-body);
         font-size: 24px;
         font-weight: 600;
         color: var(--color-text-muted);
+    }
+
+    .col-athlete {
+        flex: 2;
+        font-family: var(--font-body);
+        font-size: 22px;
+        font-weight: 500;
+        color: var(--color-text-primary);
     }
 
     .col-flag {
@@ -99,17 +126,8 @@
         vertical-align: middle;
     }
 
-    .col-athlete {
-        flex: 2.2;
-        font-family: var(--font-body);
-        font-size: 24px;
-        font-weight: 500;
-        color: var(--color-text-primary);
-    }
-
     .col-score {
-        width: 90px;
-        flex-shrink: 0;
+        flex: 1;
         text-align: center;
         font-family: var(--font-body);
         font-size: 24px;
@@ -118,28 +136,46 @@
     }
 
     .col-event {
-        flex: 2.5;
+        flex: 2;
         text-align: center;
         font-family: var(--font-body);
-        font-size: 20px;
+        font-size: 17px;
+        line-height: 1.25;
+        color: var(--color-text-muted);
+    }
+
+    .col-heat {
+        flex: 1;
+        text-align: center;
+        font-family: var(--font-body);
+        font-size: 18px;
         color: var(--color-text-muted);
     }
 
     .col-round {
-        width: 90px;
-        flex-shrink: 0;
-        text-align: right;
+        flex: 1;
+        text-align: center;
         font-family: var(--font-body);
-        font-size: 20px;
+        font-size: 18px;
         color: var(--color-text-muted);
+    }
+
+    .col-trick {
+        flex: 1.2;
+        text-align: center;
+        font-family: var(--font-body);
+        font-size: 17px;
+        color: var(--color-athlete-left);
+        font-weight: 500;
     }
 
     /* ── Header column overrides ── */
     .table-header .col-score,
     .table-header .col-event,
+    .table-header .col-heat,
     .table-header .col-round,
-    .table-header .col-flag {
-        font-size: 14px;
+    .table-header .col-trick {
+        font-size: 16px;
         color: var(--color-text-label);
     }
 
@@ -160,31 +196,53 @@
 {% block content %}
 <div class="container">
 
+    {% if is_per_event %}
+    <!-- Event Header -->
+    {% include "includes/_event_header.html" %}
+
+    <!-- Title -->
+    <div class="title-per-event">
+        <span class="gender">{{ title_gender | upper }}</span> TOP 10 {{ title_metric | upper }}
+    </div>
+    {% else %}
     <!-- Title -->
     <div class="title">
         {{ title_gender | upper }} TOP 10 {{ title_metric | upper }} OF <span class="year">{{ title_year }}</span>
     </div>
+    {% endif %}
 
     <!-- Table -->
     <div class="table card">
         <div class="table-header">
             <span class="col-rank">#</span>
-            <span class="col-flag"></span>
             <span class="col-athlete">ATHLETE</span>
+            <span class="col-flag"></span>
             <span class="col-score">SCORE</span>
+            {% if show_trick_type %}<span class="col-trick">TYPE</span>{% endif %}
+            {% if not is_per_event %}
             <span class="col-event">EVENT</span>
+            {% endif %}
             <span class="col-round">ROUND</span>
+            {% if is_per_event %}
+            <span class="col-heat">HEAT</span>
+            {% endif %}
         </div>
 
         <div class="table-body">
         {% for entry in entries %}
             <div class="table-row">
                 <div class="col-rank">{{ entry.rank }}</div>
-                <div class="col-flag"><img src="https://flagcdn.com/w40/{{ entry.country | lower }}.png" alt="{{ entry.country }}"></div>
                 <div class="col-athlete">{{ entry.athlete }}</div>
+                <div class="col-flag"><img src="https://flagcdn.com/w40/{{ entry.country | lower }}.png" alt="{{ entry.country }}"></div>
                 <div class="col-score">{{ "%.2f" | format(entry.score) }}</div>
+                {% if show_trick_type %}<div class="col-trick">{{ entry.trick_type | trick_type_label }}</div>{% endif %}
+                {% if not is_per_event %}
                 <div class="col-event">{{ entry.event }}</div>
+                {% endif %}
                 <div class="col-round">{{ entry.round }}</div>
+                {% if is_per_event %}
+                <div class="col-heat">{{ entry.heat }}</div>
+                {% endif %}
             </div>
         {% endfor %}
         </div>
