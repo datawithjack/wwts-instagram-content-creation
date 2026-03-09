@@ -19,7 +19,7 @@
         width: 100%;
         max-width: 960px;
         margin-bottom: 120px;
-        transition: opacity 0.6s ease;
+        transition: opacity 1s ease;
     }
 
     .stat-item {
@@ -40,7 +40,7 @@
 
     .stat-label {
         font-family: var(--font-body);
-        font-size: 18px;
+        font-size: 24px;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.15em;
@@ -60,22 +60,28 @@
         gap: 16px;
     }
 
+    .bottom-section.centered {
+        position: static;
+        opacity: 0;
+    }
+
     .site-title {
         font-family: var(--font-display);
-        font-size: 88px;
+        font-size: 124px;
         line-height: 1;
         letter-spacing: 0.05em;
         color: var(--color-athlete-left);
         text-transform: uppercase;
+        text-align: center;
         opacity: 0;
         transform: translateY(30px);
     }
 
     .site-url {
         font-family: var(--font-body);
-        font-size: 28px;
+        font-size: 42px;
         font-weight: 400;
-        color: var(--color-text-muted);
+        color: var(--color-text-primary);
         letter-spacing: 0.02em;
         opacity: 0;
     }
@@ -102,9 +108,24 @@
         to { opacity: 1; }
     }
 
+    @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+    }
+
     @keyframes slideUp {
         from { opacity: 0; transform: translateY(30px); }
         to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Reel layout (1080x1920) */
+    @media (min-height: 1500px) {
+        .container {
+            justify-content: center;
+        }
+        .stats-row { margin-bottom: 0; }
+        .bottom-section { bottom: auto; }
+        .stat-number { font-size: 140px; }
     }
 </style>
 {% endblock %}
@@ -166,29 +187,38 @@
         // T=0: Fade in numbers and start counting
         stats.forEach(el => {
             const target = parseInt(el.dataset.target);
-            countUp(el, target, 2000);
+            countUp(el, target, 3000);
         });
 
-        // T=0.8s: Labels fade in
+        // T=1s: Labels fade in
         setTimeout(() => {
             labels.forEach(el => el.classList.add('animate'));
-        }, 800);
+        }, 1000);
 
-        // T=2.2s: Title slides up, stats dim
+        // T=3.5s: Stats fade out
         setTimeout(() => {
-            title.classList.add('animate');
-            document.querySelector('.stats-row').style.opacity = '0.5';
-        }, 2200);
+            const statsRow = document.querySelector('.stats-row');
+            statsRow.style.animation = 'fadeOut 0.8s ease-out forwards';
+        }, 3500);
 
-        // T=2.8s: URL fades in
+        // T=4.5s: Hide stats, show title in its place
+        setTimeout(() => {
+            document.querySelector('.stats-row').style.display = 'none';
+            const bottom = document.querySelector('.bottom-section');
+            bottom.classList.add('centered');
+            bottom.style.opacity = '1';
+            title.classList.add('animate');
+        }, 4500);
+
+        // T=5.3s: URL fades in
         setTimeout(() => {
             url.classList.add('animate');
-        }, 2800);
+        }, 5300);
 
-        // T=5s: Signal animation complete
+        // T=7s: Signal animation complete
         setTimeout(() => {
             document.body.dataset.animationComplete = 'true';
-        }, 5000);
+        }, 7000);
     }
 
     // Wait for fonts then start

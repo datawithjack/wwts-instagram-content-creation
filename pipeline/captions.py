@@ -43,6 +43,12 @@ def _caption_head_to_head(data: dict, site_url: str) -> str:
 def _caption_top_10(data: dict, site_url: str) -> str:
     gender = data.get("title_gender", "")
     metric = data.get("title_metric", "")
+    if data.get("is_per_event"):
+        event_name = data.get("event_name", "")
+        return (
+            f"Top 10 {gender} {metric} at the {event_name}.\n"
+            f"Full leaderboard at {site_url}"
+        )
     year = data.get("title_year", "")
     return (
         f"Top 10 {gender} {metric} — {year}.\n"
@@ -56,7 +62,8 @@ def _caption_site_stats(data: dict, site_url: str) -> str:
     events = f"{data.get('events_count', 0):,}"
     return (
         f"{athletes} athletes. {scores} scores. {events} events.\n"
-        f"Explore the data at {site_url}"
+        f"Explore all the data and more at windsurfworldtourstats.com. Link in bio.\n"
+        f"#windsurf #pwa #stats #wavesailing"
     )
 
 
