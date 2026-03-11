@@ -11,6 +11,10 @@ templates:
     width: 1080
     height: 1350
     dpr: 2
+  top_10_carousel:
+    width: 1080
+    height: 1350
+    dpr: 2
   site_stats:
     width: 1080
     height: 1350
@@ -35,6 +39,11 @@ hashtags:
     - "#wavewindsurfing"
     - "#windsurfstats"
   top_10:
+    - "#windsurf"
+    - "#PWA"
+    - "#topwaves"
+    - "#windsurfstats"
+  top_10_carousel:
     - "#windsurf"
     - "#PWA"
     - "#topwaves"

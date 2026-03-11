@@ -6,6 +6,9 @@ from pipeline.publisher import (
     upload_to_r2,
     delete_from_r2,
     create_container,
+    create_carousel_child,
+    create_carousel_container,
+    publish_carousel,
     check_container_status,
     wait_for_container,
     publish_container,
@@ -184,7 +187,7 @@ class TestPublishOrchestration:
         mock_delete.assert_called_once_with("https://pub.r2.dev/test-bucket/abc.png")
 
         assert result["media_id"] == "media-456"
-        assert result["image_url"] == "https://pub.r2.dev/test-bucket/abc.png"
+        assert result["media_url"] == "https://pub.r2.dev/test-bucket/abc.png"
 
     @patch("pipeline.publisher.delete_from_r2")
     @patch("pipeline.publisher.publish_container")
@@ -201,3 +204,84 @@ class TestPublishOrchestration:
             publish("output/test.png", "My caption")
 
         mock_delete.assert_called_once_with("https://pub.r2.dev/test-bucket/abc.png")
+
+
+class TestCreateCarouselChild:
+    @patch("pipeline.publisher.requests.post")
+    def test_returns_child_id(self, mock_post, meta_env):
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {"id": "child-111"},
+        )
+        mock_post.return_value.raise_for_status = MagicMock()
+
+        cid = create_carousel_child("https://example.com/img.png")
+
+        assert cid == "child-111"
+        call_kwargs = mock_post.call_args
+        assert call_kwargs[1]["params"]["is_carousel_item"] == "true"
+        assert call_kwargs[1]["params"]["image_url"] == "https://example.com/img.png"
+
+
+class TestCreateCarouselContainer:
+    @patch("pipeline.publisher.requests.post")
+    def test_returns_container_id(self, mock_post, meta_env):
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {"id": "carousel-999"},
+        )
+        mock_post.return_value.raise_for_status = MagicMock()
+
+        cid = create_carousel_container(["child-1", "child-2", "child-3"], "My caption")
+
+        assert cid == "carousel-999"
+        call_kwargs = mock_post.call_args
+        assert call_kwargs[1]["params"]["media_type"] == "CAROUSEL"
+        assert call_kwargs[1]["params"]["children"] == "child-1,child-2,child-3"
+        assert call_kwargs[1]["params"]["caption"] == "My caption"
+
+
+class TestPublishCarousel:
+    @patch("pipeline.publisher.delete_from_r2")
+    @patch("pipeline.publisher.publish_container")
+    @patch("pipeline.publisher.wait_for_container")
+    @patch("pipeline.publisher.create_carousel_container")
+    @patch("pipeline.publisher.create_carousel_child")
+    @patch("pipeline.publisher.upload_to_r2")
+    def test_full_carousel_flow(
+        self, mock_upload, mock_child, mock_carousel, mock_wait, mock_publish, mock_delete
+    ):
+        mock_upload.side_effect = [
+            "https://r2/img1.png",
+            "https://r2/img2.png",
+            "https://r2/img3.png",
+        ]
+        mock_child.side_effect = ["child-1", "child-2", "child-3"]
+        mock_carousel.return_value = "carousel-999"
+        mock_publish.return_value = "media-456"
+
+        result = publish_carousel(
+            ["out/1.png", "out/2.png", "out/3.png"], "My caption"
+        )
+
+        assert mock_upload.call_count == 3
+        assert mock_child.call_count == 3
+        mock_carousel.assert_called_once_with(
+            ["child-1", "child-2", "child-3"], "My caption"
+        )
+        mock_wait.assert_called_once_with("carousel-999")
+        mock_publish.assert_called_once_with("carousel-999")
+        assert mock_delete.call_count == 3
+        assert result["media_id"] == "media-456"
+
+    @patch("pipeline.publisher.delete_from_r2")
+    @patch("pipeline.publisher.create_carousel_child")
+    @patch("pipeline.publisher.upload_to_r2")
+    def test_cleans_up_r2_on_failure(self, mock_upload, mock_child, mock_delete):
+        mock_upload.side_effect = ["https://r2/img1.png", "https://r2/img2.png"]
+        mock_child.side_effect = Exception("API error")
+
+        with pytest.raises(Exception, match="API error"):
+            publish_carousel(["out/1.png", "out/2.png"], "caption")
+
+        assert mock_delete.call_count == 2

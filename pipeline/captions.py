@@ -19,6 +19,7 @@ def build_caption(
             "head_to_head": _caption_head_to_head,
             "head_to_head_jump": _caption_head_to_head,
             "top_10": _caption_top_10,
+            "top_10_carousel": _caption_top_10,
             "site_stats": _caption_site_stats,
             "site_stats_reel": _caption_site_stats,
             "rider_profile": _caption_rider_profile,

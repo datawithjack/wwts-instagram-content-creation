@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 80px 60px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .container::before {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 50%;
+        background: linear-gradient(to top, {{ podium_colour.bg }}, transparent);
+    }
+
+    .rank-badge {
+        font-family: var(--font-display);
+        font-size: 24px;
+        letter-spacing: 0.15em;
+        color: {{ podium_colour.accent }};
+        margin-bottom: 12px;
+        padding: 6px 20px;
+        border: 2px solid {{ podium_colour.accent }};
+        border-radius: 4px;
+        position: relative;
+    }
+
+    .athlete-flag {
+        font-size: 64px;
+        margin-bottom: 16px;
+        position: relative;
+    }
+
+    .athlete-name {
+        font-family: var(--font-display);
+        font-size: 72px;
+        letter-spacing: 0.04em;
+        line-height: 0.95;
+        margin-bottom: 24px;
+        position: relative;
+    }
+
+    .score {
+        font-family: var(--font-display);
+        font-size: 140px;
+        letter-spacing: 0.02em;
+        line-height: 1;
+        color: {{ podium_colour.accent }};
+        position: relative;
+    }
+
+    .score-label {
+        font-family: var(--font-body);
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: var(--color-text-muted);
+        margin-top: 8px;
+        position: relative;
+    }
+
+    .event-info {
+        font-family: var(--font-body);
+        font-size: 15px;
+        color: var(--color-text-muted);
+        letter-spacing: 0.05em;
+        position: absolute;
+        bottom: 40px;
+    }
+
+    .event-info .round {
+        color: {% if discipline == 'jumps' %}var(--color-athlete-right){% else %}var(--color-athlete-left){% endif %};
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="rank-badge">#1</div>
+    <div class="athlete-flag">{{ row.country | country_flag }}</div>
+    <div class="athlete-name">{{ row.athlete | upper }}</div>
+    <div class="score">{{ "%.2f" | format(row.score) }}</div>
+    <div class="score-label">{{ title_metric | upper }} Score</div>
+    <div class="event-info">
+        {{ row.event }} · <span class="round">{{ row.round }}</span>
+    </div>
+</div>
+{% endblock %}

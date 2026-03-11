@@ -58,7 +58,11 @@ def render_template(template_name: str, data: dict) -> str:
     template_file_map = {
         "site_stats_reel": "site_stats.html",
     }
-    template_file = template_file_map.get(template_name, f"{template_name}.html")
+    # Carousel slide templates live under carousel/ subdirectory
+    if template_name.startswith("carousel/"):
+        template_file = f"{template_name}.html"
+    else:
+        template_file = template_file_map.get(template_name, f"{template_name}.html")
 
     template = env.get_template(template_file)
     return template.render(**data)
@@ -113,6 +117,7 @@ def get_dummy_data(template_name: str) -> dict:
             "title_gender": "Men's",  # includes possessive
             "title_metric": "Waves",
             "title_year": 2025,
+            "is_per_event": False,
             "entries": [
                 {"rank": 1, "athlete": "Marc Pare Rico", "country": "ES", "score": 8.83, "event": "Chile World Cup", "round": "Final"},
                 {"rank": 2, "athlete": "Takara Ishii", "country": "JP", "score": 8.80, "event": "Puerto Rico World Cup", "round": "Semi"},
@@ -126,6 +131,8 @@ def get_dummy_data(template_name: str) -> dict:
                 {"rank": 10, "athlete": "Jaegar Stone", "country": "AU", "score": 8.33, "event": "Margaret River Wave Classic", "round": "Final"},
             ],
         }
+    if template_name == "top_10_carousel":
+        return get_dummy_data("top_10")
     if template_name in ("site_stats", "site_stats_reel"):
         return {
             "athletes_count": 359,

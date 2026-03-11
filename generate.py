@@ -11,12 +11,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from pipeline.api import fetch_head_to_head, fetch_site_stats, fetch_athlete_event_stats
+from pipeline.api import fetch_head_to_head, fetch_site_stats, fetch_athlete_event_stats, fetch_event_top_scores
 from pipeline.captions import build_caption
 from pipeline.db import run_query
+from pipeline.helpers import nationality_to_iso, clean_event_name
 from pipeline.queries import build_top10_query
 from pipeline.templates import render_template, get_dummy_data
-from pipeline.renderer import render_to_png, render_to_video
+from pipeline.renderer import render_to_png, render_to_video, render_carousel
 
 
 def fetch_live_data(template_name: str, args) -> dict:
@@ -32,33 +33,48 @@ def fetch_live_data(template_name: str, args) -> dict:
             division=args.division,
         )
 
-    if template_name == "top_10":
+    if template_name in ("top_10", "top_10_carousel"):
         if not args.score_type:
             print("Top 10 requires: --score-type (Wave or Jump)")
             sys.exit(1)
+
+        # Use API for per-event top 10 (no DB needed)
+        if args.event:
+            return fetch_event_top_scores(
+                event_id=args.event,
+                score_type=args.score_type,
+                sex=args.sex,
+            )
+
+        # Use DB for cross-event queries (by year or all-time)
         sql, params = build_top10_query(
             score_type=args.score_type,
             sex=args.sex,
             year=args.year,
-            event_id=args.event,
         )
         rows = run_query(sql, params)
         gender_map = {"Men": "Men's", "Women": "Women's"}
+        is_jump = args.score_type == "Jump"
+        entries = []
+        for i, r in enumerate(rows):
+            entry = {
+                "rank": i + 1,
+                "athlete": r["athlete"],
+                "country": nationality_to_iso(r.get("country", "")),
+                "score": float(r["score"]),
+                "event": clean_event_name(r["event"]),
+                "round": r.get("round", ""),
+            }
+            if is_jump:
+                entry["trick_type"] = r.get("trick_type", "")
+            entries.append(entry)
         return {
             "title_gender": gender_map.get(args.sex, ""),
             "title_metric": f"{args.score_type}s",
             "title_year": args.year or "All Time",
-            "entries": [
-                {
-                    "rank": i + 1,
-                    "athlete": r["athlete"],
-                    "country": r.get("country", ""),
-                    "score": float(r["score"]),
-                    "event": r["event"],
-                    "round": r.get("round", ""),
-                }
-                for i, r in enumerate(rows)
-            ],
+            "show_trick_type": is_jump,
+            "is_per_event": False,
+            "entries": entries,
         }
 
     if template_name in ("site_stats", "site_stats_reel"):
@@ -89,7 +105,7 @@ def main():
     parser.add_argument(
         "--template",
         required=True,
-        choices=["head_to_head", "head_to_head_jump", "top_10", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile"],
+        choices=["head_to_head", "head_to_head_jump", "top_10", "top_10_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile"],
     )
     parser.add_argument("--athlete1", type=int, help="Athlete 1 unified ID")
     parser.add_argument("--athlete2", type=int, help="Athlete 2 unified ID")
@@ -137,8 +153,25 @@ def main():
     else:
         data = fetch_live_data(template_name, args)
 
-    # Render HTML
-    html = render_template(template_name, data)
+    is_carousel = template_name == "top_10_carousel"
+
+    # Carousel preview: open all 5 slides in browser tabs
+    if is_carousel and args.preview:
+        from pipeline.carousel import build_slides
+        slides = build_slides(data)
+        for slide in slides:
+            html = render_template(f"carousel/slide_{slide['type']}", slide)
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".html", delete=False, encoding="utf-8"
+            ) as f:
+                f.write(html)
+                print(f"Preview: {f.name}")
+                webbrowser.open(f"file:///{f.name.replace(os.sep, '/')}")
+        return
+
+    # Single-template preview
+    if not is_carousel:
+        html = render_template(template_name, data)
 
     if args.preview:
         with tempfile.NamedTemporaryFile(
@@ -153,13 +186,35 @@ def main():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_dir = config.get("output_dir", "./output")
 
-    if args.video:
+    if is_carousel:
+        carousel_dir = os.path.join(output_dir, "png")
+        result_paths = render_carousel(
+            data, carousel_dir,
+            base_name=f"top_10_carousel_{timestamp}",
+            width=width, height=height, dpr=dpr,
+        )
+        for p in result_paths:
+            print(f"Rendered: {p}")
+
+        if args.publish == "now":
+            from pipeline.publisher import publish_carousel as publish_carousel_to_ig
+
+            caption = args.caption or build_caption(template_name, data, config)
+            print("Publishing carousel to Instagram...")
+            pub_result = publish_carousel_to_ig(result_paths, caption)
+            print(f"Published! Media ID: {pub_result['media_id']}")
+        return
+
+    # Auto-enable video for reel templates
+    use_video = args.video or template_name.endswith("_reel")
+
+    if use_video:
         if args.output:
             output_path = args.output
         else:
             output_path = os.path.join(output_dir, "mp4", f"{template_name}_{timestamp}.mp4")
         result = render_to_video(
-            html, output_path, width=width, height=height, dpr=dpr,
+            html, output_path, width=width, height=height, dpr=1,
             duration_ms=args.duration,
         )
     else:
@@ -176,7 +231,7 @@ def main():
         from pipeline.publisher import publish as publish_to_instagram
 
         caption = args.caption or build_caption(template_name, data, config)
-        print(f"Publishing to Instagram...")
+        print("Publishing to Instagram...")
         pub_result = publish_to_instagram(result, caption)
         print(f"Published! Media ID: {pub_result['media_id']}")
 

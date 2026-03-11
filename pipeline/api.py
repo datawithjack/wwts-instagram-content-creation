@@ -119,6 +119,38 @@ def fetch_athlete_event_stats(event_id: int, athlete_id: int, division: str) -> 
     return data
 
 
+def fetch_event_top_scores(event_id: int, score_type: str, sex: str = None) -> dict:
+    """Fetch top 10 scores for a specific event from API."""
+    url = f"{API_BASE_URL}/events/{event_id}/top-scores"
+    params = {"score_type": score_type, "limit": 10}
+    if sex:
+        params["sex"] = sex
+    resp = requests.get(url, params=params, timeout=30)
+    resp.raise_for_status()
+    raw = resp.json()
+
+    gender_map = {"Men": "Men's", "Women": "Women's"}
+    entries = []
+    for i, r in enumerate(raw.get("scores", [])):
+        entries.append({
+            "rank": i + 1,
+            "athlete": r.get("athlete", ""),
+            "country": r.get("country", ""),
+            "score": float(r.get("score", 0)),
+            "event": raw.get("event_name", ""),
+            "round": r.get("round", ""),
+        })
+
+    return {
+        "title_gender": gender_map.get(sex, ""),
+        "title_metric": f"{score_type}s",
+        "title_year": raw.get("year", ""),
+        "is_per_event": True,
+        "event_name": raw.get("event_name", ""),
+        "entries": entries,
+    }
+
+
 def fetch_site_stats() -> dict:
     """Fetch site-wide statistics from API."""
     url = f"{API_BASE_URL}/stats"

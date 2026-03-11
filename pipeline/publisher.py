@@ -21,18 +21,27 @@ def _get_r2_client():
 
 
 def upload_to_r2(file_path: str) -> str:
-    """Upload image to Cloudflare R2 and return its public URL."""
+    """Upload file to Cloudflare R2 and return its public URL."""
     bucket = os.environ["R2_BUCKET_NAME"]
     public_url = os.environ["R2_PUBLIC_URL"]
-    ext = os.path.splitext(file_path)[1]
-    key = f"{uuid.uuid4().hex}{ext}"
+    ext = os.path.splitext(file_path)[1].lstrip(".")
+    key = f"{uuid.uuid4().hex}.{ext}"
+
+    content_types = {
+        "png": "image/png",
+        "jpg": "image/jpeg",
+        "jpeg": "image/jpeg",
+        "mp4": "video/mp4",
+        "webm": "video/webm",
+    }
+    content_type = content_types.get(ext, f"application/octet-stream")
 
     client = _get_r2_client()
     client.upload_file(
         Filename=file_path,
         Bucket=bucket,
         Key=key,
-        ExtraArgs={"ContentType": f"image/{ext.lstrip('.')}"},
+        ExtraArgs={"ContentType": content_type},
     )
     return f"{public_url}/{key}"
 
@@ -48,7 +57,7 @@ def delete_from_r2(blob_url: str) -> None:
 
 
 def create_container(image_url: str, caption: str) -> str:
-    """Create a media container on Instagram. Returns container ID."""
+    """Create an image media container on Instagram. Returns container ID."""
     account_id = os.environ["META_INSTAGRAM_ACCOUNT_ID"]
     token = os.environ["META_ACCESS_TOKEN"]
 
@@ -56,6 +65,24 @@ def create_container(image_url: str, caption: str) -> str:
         f"{GRAPH_API_BASE}/{account_id}/media",
         params={
             "image_url": image_url,
+            "caption": caption,
+            "access_token": token,
+        },
+    )
+    resp.raise_for_status()
+    return resp.json()["id"]
+
+
+def create_reels_container(video_url: str, caption: str) -> str:
+    """Create a Reels media container on Instagram. Returns container ID."""
+    account_id = os.environ["META_INSTAGRAM_ACCOUNT_ID"]
+    token = os.environ["META_ACCESS_TOKEN"]
+
+    resp = requests.post(
+        f"{GRAPH_API_BASE}/{account_id}/media",
+        params={
+            "media_type": "REELS",
+            "video_url": video_url,
             "caption": caption,
             "access_token": token,
         },
@@ -109,15 +136,131 @@ def publish_container(container_id: str) -> str:
     return resp.json()["id"]
 
 
-def publish(file_path: str, caption: str) -> dict:
-    """Full publish flow: upload to R2 -> create container -> wait -> publish -> cleanup."""
-    image_url = upload_to_r2(file_path)
+def create_scheduled_container(
+    image_url: str, caption: str, publish_time: "datetime"
+) -> str:
+    """Create a scheduled image media container on Instagram.
+
+    The post will be auto-published by Meta at the specified time.
+    Returns container ID.
+    """
+    from datetime import datetime, timezone
+
+    if publish_time.tzinfo is None:
+        raise ValueError("publish_time must be timezone-aware")
+    if publish_time <= datetime.now(timezone.utc):
+        raise ValueError("publish_time must be in the future")
+
+    account_id = os.environ["META_INSTAGRAM_ACCOUNT_ID"]
+    token = os.environ["META_ACCESS_TOKEN"]
+
+    resp = requests.post(
+        f"{GRAPH_API_BASE}/{account_id}/media",
+        params={
+            "image_url": image_url,
+            "caption": caption,
+            "scheduled_publish_time": int(publish_time.timestamp()),
+            "access_token": token,
+        },
+    )
+    resp.raise_for_status()
+    return resp.json()["id"]
+
+
+def schedule_post(
+    file_path: str, caption: str, publish_time: "datetime"
+) -> dict:
+    """Upload to R2 and create a scheduled container.
+
+    Unlike publish(), does NOT delete from R2 — Meta needs the image
+    accessible until the scheduled publish time.
+    """
+    media_url = upload_to_r2(file_path)
+    container_id = create_scheduled_container(media_url, caption, publish_time)
+    return {"container_id": container_id, "image_url": media_url}
+
+
+def create_carousel_child(image_url: str) -> str:
+    """Create a carousel child container on Instagram. Returns container ID."""
+    account_id = os.environ["META_INSTAGRAM_ACCOUNT_ID"]
+    token = os.environ["META_ACCESS_TOKEN"]
+
+    resp = requests.post(
+        f"{GRAPH_API_BASE}/{account_id}/media",
+        params={
+            "image_url": image_url,
+            "is_carousel_item": "true",
+            "access_token": token,
+        },
+    )
+    resp.raise_for_status()
+    return resp.json()["id"]
+
+
+def create_carousel_container(children_ids: list[str], caption: str) -> str:
+    """Create a carousel container on Instagram. Returns container ID."""
+    account_id = os.environ["META_INSTAGRAM_ACCOUNT_ID"]
+    token = os.environ["META_ACCESS_TOKEN"]
+
+    resp = requests.post(
+        f"{GRAPH_API_BASE}/{account_id}/media",
+        params={
+            "media_type": "CAROUSEL",
+            "children": ",".join(children_ids),
+            "caption": caption,
+            "access_token": token,
+        },
+    )
+    resp.raise_for_status()
+    return resp.json()["id"]
+
+
+def publish_carousel(file_paths: list[str], caption: str) -> dict:
+    """Full carousel publish: upload all to R2 -> child containers -> carousel -> wait -> publish -> cleanup."""
+    media_urls = []
     try:
-        container_id = create_container(image_url, caption)
+        # Upload all images to R2
+        for path in file_paths:
+            media_urls.append(upload_to_r2(path))
+
+        # Create child containers
+        children_ids = []
+        for url in media_urls:
+            children_ids.append(create_carousel_child(url))
+
+        # Create carousel container
+        container_id = create_carousel_container(children_ids, caption)
         wait_for_container(container_id)
         media_id = publish_container(container_id)
     except Exception:
-        delete_from_r2(image_url)
+        for url in media_urls:
+            delete_from_r2(url)
         raise
-    delete_from_r2(image_url)
-    return {"media_id": media_id, "image_url": image_url}
+
+    # Cleanup R2
+    for url in media_urls:
+        delete_from_r2(url)
+
+    return {"media_id": media_id, "media_urls": media_urls}
+
+
+def _is_video(file_path: str) -> bool:
+    ext = os.path.splitext(file_path)[1].lower()
+    return ext in (".mp4", ".webm", ".mov")
+
+
+def publish(file_path: str, caption: str) -> dict:
+    """Full publish flow: upload to R2 -> create container -> wait -> publish -> cleanup."""
+    media_url = upload_to_r2(file_path)
+    try:
+        if _is_video(file_path):
+            container_id = create_reels_container(media_url, caption)
+        else:
+            container_id = create_container(media_url, caption)
+        wait_for_container(container_id)
+        media_id = publish_container(container_id)
+    except Exception:
+        delete_from_r2(media_url)
+        raise
+    delete_from_r2(media_url)
+    return {"media_id": media_id, "media_url": media_url}
