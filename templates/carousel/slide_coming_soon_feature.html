@@ -1,0 +1,58 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 60px 64px;
+        gap: 16px;
+    }
+
+    .feature-number {
+        font-family: var(--font-display);
+        font-size: 220px;
+        letter-spacing: 0.04em;
+        line-height: 1;
+        color: rgba(255, 255, 255, 0.06);
+        margin-bottom: -10px;
+    }
+
+    .feature-title {
+        font-family: var(--font-display);
+        font-size: 100px;
+        letter-spacing: 0.04em;
+        line-height: 1;
+        color: var(--color-text-primary);
+        margin-bottom: 16px;
+    }
+
+    .divider {
+        width: 80px;
+        height: 4px;
+        background: var(--color-discipline);
+        margin: 8px auto;
+        border-radius: 2px;
+    }
+
+    .feature-subtitle {
+        font-family: var(--font-body);
+        font-size: 32px;
+        font-weight: 400;
+        color: var(--color-text-muted);
+        letter-spacing: 0.04em;
+        line-height: 1.4;
+        max-width: 800px;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="feature-number">{{ slide_number - 1 }}</div>
+    <div class="feature-title">{{ title | upper }}</div>
+    <div class="divider"></div>
+    <div class="feature-subtitle">{{ subtitle }}</div>
+</div>
+{% endblock %}

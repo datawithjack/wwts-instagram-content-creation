@@ -63,11 +63,8 @@ def fetch_live_data(template_name: str, args) -> dict:
 
         entries = []
         for i, r in enumerate(rows):
-            # Build round string with heat number if available
             round_str = short_round_name(r.get("round", ""))
             heat = heat_label_from_id(r.get("heat_id", ""))
-            if heat:
-                round_str = f"{round_str} {heat}"
             entry = {
                 "rank": i + 1,
                 "athlete": r["athlete"],
@@ -75,6 +72,7 @@ def fetch_live_data(template_name: str, args) -> dict:
                 "score": float(r["score"]),
                 "event": clean_event_name(r["event"]),
                 "round": round_str,
+                "heat": heat,
             }
             if is_jump:
                 entry["trick_type"] = r.get("trick_type", "")
@@ -146,7 +144,7 @@ def main():
     parser.add_argument(
         "--template",
         required=True,
-        choices=["head_to_head", "head_to_head_jump", "top_10", "top_10_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile"],
+        choices=["head_to_head", "head_to_head_jump", "top_10", "top_10_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile"],
     )
     parser.add_argument("--athlete1", type=int, help="Athlete 1 unified ID")
     parser.add_argument("--athlete2", type=int, help="Athlete 2 unified ID")
@@ -189,17 +187,20 @@ def main():
     dpr = template_config.get("dpr", 2)
 
     # Get data
-    if args.dry_run:
+    if args.dry_run or template_name == "coming_soon_carousel":
         data = get_dummy_data(template_name)
     else:
         data = fetch_live_data(template_name, args)
 
-    is_carousel = template_name == "top_10_carousel"
+    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel")
 
-    # Carousel preview: open all 5 slides in browser tabs
+    # Carousel preview: open all slides in browser tabs
     if is_carousel and args.preview:
-        from pipeline.carousel import build_slides
-        slides = build_slides(data)
+        if template_name == "coming_soon_carousel":
+            slides = data["slides"]
+        else:
+            from pipeline.carousel import build_slides
+            slides = build_slides(data)
         for slide in slides:
             html = render_template(f"carousel/slide_{slide['type']}", slide)
             with tempfile.NamedTemporaryFile(
@@ -229,11 +230,22 @@ def main():
 
     if is_carousel:
         carousel_dir = os.path.join(output_dir, "png")
-        result_paths = render_carousel(
-            data, carousel_dir,
-            base_name=f"top_10_carousel_{timestamp}",
-            width=width, height=height, dpr=dpr,
-        )
+        if template_name == "coming_soon_carousel":
+            from pipeline.renderer import render_to_png
+            slides = data["slides"]
+            result_paths = []
+            os.makedirs(carousel_dir, exist_ok=True)
+            for i, slide in enumerate(slides, 1):
+                html = render_template(f"carousel/slide_{slide['type']}", slide)
+                output_path = os.path.join(carousel_dir, f"coming_soon_{timestamp}_{i}.png")
+                render_to_png(html, output_path, width=width, height=height, dpr=dpr)
+                result_paths.append(output_path)
+        else:
+            result_paths = render_carousel(
+                data, carousel_dir,
+                base_name=f"top_10_carousel_{timestamp}",
+                width=width, height=height, dpr=dpr,
+            )
         for p in result_paths:
             print(f"Rendered: {p}")
 
