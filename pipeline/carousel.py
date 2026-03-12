@@ -1,8 +1,7 @@
 """Top 10 carousel slide builder — splits 10 rows into 5 slide dicts.
 
-Supports two flows:
-- Standard (no ties): cover → hero → table(2-6) → table(7-10) → cta
-- Tied top scores: cover → tied_highlight → tied_grid → table → cta
+Unified flow (ties and no-ties handled by the same hero card):
+cover → hero(all #1s) → table(next chunk) → table(remainder) → cta
 """
 
 MEDAL_COLOURS = {
@@ -10,6 +9,9 @@ MEDAL_COLOURS = {
     "silver": "#C0C8D4",
     "bronze": "#CD7F32",
 }
+
+ACCENT_WAVES = "#00D4FF"
+ACCENT_JUMPS = "#2dd4bf"
 
 
 def _detect_top_ties(entries: list[dict]) -> list[dict]:
@@ -25,9 +27,11 @@ def _build_common(data: dict) -> dict:
     """Extract shared context fields from data."""
     discipline = data["title_metric"].lower().rstrip("s") + "s"  # "Waves" -> "waves"
     title = f"{data['title_gender'].upper()} TOP 10 {data['title_metric'].upper()}"
+    accent = ACCENT_JUMPS if discipline == "jumps" else ACCENT_WAVES
     return {
         "title": title,
         "discipline": discipline,
+        "accent_color": accent,
         "title_gender": data["title_gender"],
         "title_metric": data["title_metric"],
         "year": data.get("title_year"),
@@ -41,96 +45,68 @@ def _build_common(data: dict) -> dict:
     }
 
 
-def _build_tied_slides(common: dict, tied: list[dict], remaining: list[dict]) -> list[dict]:
-    """Build slides for the tied-top-score scenario."""
-    tie_score = tied[0]["score"]
-    metric_singular = common["title_metric"].upper().rstrip("S")
+def _build_content_slides(common: dict, rows: list[dict]) -> list[dict]:
+    """Build the 3 content slides: hero + 2 tables (or table + cta)."""
+    tied = _detect_top_ties(rows)
 
-    max_table = 5
-    table_rows = remaining[:max_table]
-    cta_rows = remaining[max_table:]
+    if tied:
+        hero_rows = tied
+        remaining = [r for r in rows if r not in tied]
+    else:
+        hero_rows = [rows[0]]
+        remaining = rows[1:]
+
+    top_score = hero_rows[0]["score"]
+    tie_count = len(hero_rows) if len(hero_rows) >= 2 else 0
 
     slides = [
-        {"type": "cover", **common},
-        {
-            "type": "tied_highlight",
-            "row": tied[0],
-            "tie_count": len(tied),
-            "tie_score": tie_score,
-            "tie_accent": MEDAL_COLOURS["gold"],
-            "tie_label": f"{metric_singular} POINT {common['title_metric'].upper()}",
-            **common,
-        },
-        {
-            "type": "tied_grid",
-            "rows": tied,
-            "tie_accent": MEDAL_COLOURS["gold"],
-            **common,
-        },
-        {
-            "type": "table",
-            "rows": table_rows,
-            "label": f"Positions {table_rows[0]['rank']}\u2013{table_rows[-1]['rank']}",
-            **common,
-        },
-    ]
-
-    if cta_rows:
-        slides.append({
-            "type": "table_cta",
-            "rows": cta_rows,
-            "label": f"Positions {cta_rows[0]['rank']}\u2013{cta_rows[-1]['rank']}",
-            **common,
-        })
-    else:
-        slides.append({"type": "cta", **common})
-
-    return slides
-
-
-def _build_standard_slides(common: dict, rows: list[dict]) -> list[dict]:
-    """Build slides for the standard (no-tie) scenario."""
-    return [
-        {"type": "cover", **common},
         {
             "type": "hero",
-            "row": rows[0],
-            "podium_colour": {"bg": "rgba(240,192,64,0.08)", "accent": MEDAL_COLOURS["gold"]},
+            "rows": hero_rows,
+            "top_score": top_score,
+            "tie_count": tie_count,
             **common,
         },
-        {
-            "type": "table",
-            "rows": rows[1:6],
-            "label": "Positions 2\u20136",
-            **common,
-        },
-        {
-            "type": "table",
-            "rows": rows[6:10],
-            "label": "Positions 7\u201310",
-            **common,
-        },
-        {"type": "cta", **common},
     ]
+
+    # Split remaining into chunks of max 5
+    max_chunk = 5
+    chunk1 = remaining[:max_chunk]
+    chunk2 = remaining[max_chunk:]
+
+    if chunk1:
+        slides.append({
+            "type": "table",
+            "rows": chunk1,
+            "label": f"Positions {chunk1[0]['rank']}\u2013{chunk1[-1]['rank']}",
+            **common,
+        })
+
+    if chunk2:
+        slides.append({
+            "type": "table",
+            "rows": chunk2,
+            "label": f"Positions {chunk2[0]['rank']}\u2013{chunk2[-1]['rank']}",
+            **common,
+        })
+
+    return slides
 
 
 def build_slides(data: dict) -> list[dict]:
     """Split top-10 data into carousel slide dicts.
 
     Expects data with keys: title_gender, title_metric, title_year, entries (list of 10).
-    Returns list of slide dicts, each with 'type' and shared context fields.
+    Returns list of 5 slide dicts: cover → hero → table → table → cta.
 
-    If 2+ entries share the top score, uses the tied flow instead of the standard flow.
+    The hero slide handles both ties and no-ties with a unified score-first card.
     """
     rows = data["entries"]
     common = _build_common(data)
-    tied = _detect_top_ties(rows)
 
-    if tied:
-        remaining = [e for e in rows if e not in tied]
-        slides = _build_tied_slides(common, tied, remaining)
-    else:
-        slides = _build_standard_slides(common, rows)
+    slides = [{"type": "cover", **common}]
+    slides.extend(_build_content_slides(common, rows))
+    slides.append({"type": "cta", **common})
 
     total = len(slides)
     for i, slide in enumerate(slides, 1):

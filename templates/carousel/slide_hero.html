@@ -1,14 +1,10 @@
-{% extends "base.html" %}
+{% extends "carousel/base_carousel.html" %}
 
-{% block head %}
+{% block carousel_head %}
 <style>
     .container {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
         align-items: center;
-        justify-content: center;
+        justify-content: space-evenly;
         text-align: center;
         padding: 80px 60px;
         position: relative;
@@ -22,98 +18,136 @@
         left: 0;
         right: 0;
         height: 50%;
-        background: linear-gradient(to top, {{ podium_colour.bg }}, transparent);
+        background: linear-gradient(to top, rgba(240,192,64,0.08), transparent);
     }
 
-    /* ── Hero-specific styles ── */
-    .hero-title {
-        font-family: var(--font-display);
-        font-size: 80px;
-        letter-spacing: 0.04em;
-        line-height: 1;
-        color: var(--color-text-primary);
-        margin-bottom: 32px;
-        position: relative;
-    }
-
+    /* ── Gold badge for #1 ── */
     .rank-badge {
         font-family: var(--font-display);
         font-size: 28px;
         letter-spacing: 0.15em;
-        color: #F0C040;
-        margin-bottom: 12px;
+        color: #0E1927;
+        background: #F0C040;
         padding: 8px 24px;
-        border: 2px solid #F0C040;
         border-radius: 4px;
         position: relative;
     }
 
-    .athlete-flag {
-        margin-bottom: 16px;
-        position: relative;
-    }
-
-    .athlete-flag img {
-        width: 80px;
-        height: 58px;
-        object-fit: cover;
-        border-radius: 4px;
-    }
-
-    .athlete-name {
+    .big-score {
         font-family: var(--font-display);
-        font-size: 72px;
-        letter-spacing: 0.04em;
-        line-height: 0.95;
-        margin-bottom: 24px;
-        position: relative;
-    }
-
-    .score {
-        font-family: var(--font-display);
-        font-size: 140px;
+        font-size: 216px;
         letter-spacing: 0.02em;
         line-height: 1;
         color: #F0C040;
         position: relative;
+        text-shadow: 0 0 50px rgba(240,192,64,0.2);
     }
 
-    .score-label {
-        font-family: var(--font-body);
-        font-size: 20px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.15em;
-        color: var(--color-text-muted);
-        margin-top: 8px;
+    /* ── Athlete rows ── */
+    .athlete-list {
         position: relative;
+        width: 100%;
+        max-width: 700px;
     }
 
-    .event-info {
+    .athlete-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 14px 0;
+    }
+
+    .athlete-row .flag img {
+        width: 40px;
+        height: 29px;
+        object-fit: cover;
+        border-radius: 2px;
+        display: block;
+    }
+
+    .athlete-row .name {
+        font-family: var(--font-display);
+        font-size: {% if tie_count >= 3 %}40px{% elif tie_count == 2 %}52px{% else %}72px{% endif %};
+        letter-spacing: 0.04em;
+        line-height: 1;
+        flex: 1;
+        text-align: left;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .athlete-row .trick {
+        display: inline-block;
         font-family: var(--font-body);
-        font-size: 20px;
+        font-size: 15px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        background: rgba(255,255,255,0.15);
+        color: #FFFFFF;
+        border-radius: 4px;
+        padding: 4px 10px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .athlete-row .detail {
+        font-family: var(--font-body);
+        font-size: 18px;
         color: var(--color-text-muted);
         letter-spacing: 0.05em;
-        position: absolute;
-        bottom: 40px;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
 
-    .event-info .round {
-        color: {% if discipline == 'jumps' %}#F0C040{% else %}#00D4FF{% endif %};
+    .athlete-row .detail .round {
+        color: #FFFFFF;
     }
+
+    /* ── Single athlete (no tie) — more spacious, centred ── */
+    {% if tie_count == 0 %}
+    .athlete-row .name {
+        font-size: 72px;
+        margin-bottom: 8px;
+        text-align: center;
+    }
+
+    .athlete-row .flag img {
+        width: 80px;
+        height: 58px;
+        border-radius: 4px;
+    }
+
+    .athlete-row {
+        flex-direction: column;
+        justify-content: center;
+        gap: 16px;
+    }
+    {% endif %}
 </style>
 {% endblock %}
 
-{% block content %}
+{% block carousel_content %}
 <div class="container">
-    <div class="hero-title">{{ title }}</div>
-    <div class="rank-badge">#1</div>
-    <div class="athlete-flag"><img src="https://flagcdn.com/w120/{{ row.country | lower }}.png" alt="{{ row.country }}"></div>
-    <div class="athlete-name">{{ row.athlete | upper }}</div>
-    <div class="score">{{ "%.2f" | format(row.score) }}</div>
-    <div class="score-label">{{ title_metric | upper }} Score</div>
-    <div class="event-info">
-        {% if not is_per_event %}{{ row.event }} · {% endif %}<span class="round">{{ row.round }}</span>
+    <div class="rank-badge">BEST {{ title_metric | upper | replace("WAVES", "WAVE") | replace("JUMPS", "JUMP") }} SCORE{% if tie_count >= 2 %}S{% endif %}</div>
+
+    <div class="big-score">{{ "%.2f" | format(top_score) }}</div>
+
+    <div class="athlete-list">
+    {% for row in rows %}
+        <div class="athlete-row">
+            <div class="flag"><img src="https://flagcdn.com/w80/{{ row.country | lower }}.png" alt="{{ row.country }}"></div>
+            <div class="name">{{ row.athlete | upper }}</div>
+            {% if show_trick_type and row.trick_type %}
+            <div class="trick">{{ row.trick_type | trick_type_label }}</div>
+            {% endif %}
+            <div class="detail">
+                {% if not is_per_event %}{{ row.event }} · {% endif %}<span class="round">{{ row.round }}{% if row.heat %} ({{ row.heat }}){% endif %}</span>
+            </div>
+        </div>
+    {% endfor %}
     </div>
+
 </div>
 {% endblock %}

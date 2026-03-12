@@ -1,48 +1,13 @@
-{% extends "base.html" %}
+{% extends "carousel/base_carousel.html" %}
+{% from "carousel/_macros.html" import table_component, slide_header, cta_block %}
 
-{% block head %}
+{% block carousel_head %}
 <style>
     .container {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
         padding: 60px 40px 40px;
     }
 
-    /* ── Table CTA slide styles ── */
-    .eyebrow {
-        font-family: var(--font-body);
-        font-size: 28px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: #00D4FF;
-        margin-bottom: 8px;
-    }
-
-    .slide-title {
-        font-family: var(--font-display);
-        font-size: 100px;
-        letter-spacing: 0.04em;
-        line-height: 1;
-        color: var(--color-text-primary);
-        margin-bottom: 12px;
-    }
-
-    .position-pill {
-        display: inline-block;
-        font-family: var(--font-display);
-        background: #00D4FF;
-        color: #0E1927;
-        border-radius: 6px;
-        padding: 6px 20px;
-        font-size: 44px;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-        margin-bottom: 24px;
-    }
-
+    /* ── Table styles ── */
     .table {
         width: 100%;
         display: flex;
@@ -77,7 +42,7 @@
     .table-row {
         display: flex;
         align-items: center;
-        padding: 36px 24px;
+        padding: 0 24px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
 
@@ -144,12 +109,12 @@
     .col-type {
         width: 140px;
         flex-shrink: 0;
-        text-align: right;
+        text-align: center;
         font-family: var(--font-body);
         font-size: 18px;
         font-weight: 600;
         line-height: 1.2;
-        color: #00D4FF;
+        color: var(--color-discipline);
         text-transform: uppercase;
         letter-spacing: 0.04em;
     }
@@ -192,7 +157,7 @@
         font-family: var(--font-body);
         font-size: 30px;
         font-weight: 600;
-        color: {% if discipline == 'jumps' %}var(--color-athlete-right){% else %}var(--color-athlete-left){% endif %};
+        color: var(--color-discipline);
         letter-spacing: 0.05em;
     }
 
@@ -205,55 +170,17 @@
         color: var(--color-text-muted);
         margin-top: 24px;
     }
-
 </style>
 {% endblock %}
 
-{% block content %}
+{% block carousel_content %}
 <div class="container">
-    {% if is_per_event and event_name %}
-    <div class="eyebrow">{{ event_name }}</div>
-    {% endif %}
-    <div class="slide-title">{{ title }}</div>
-    <div class="position-pill">{{ rows[0].rank | ordinal }} – {{ rows[-1].rank | ordinal }}</div>
+    {{ slide_header(title, event_name, is_per_event, rows[0].rank | ordinal ~ ' – ' ~ rows[-1].rank | ordinal) }}
 
-    <div class="table">
-        <div class="table-header">
-            <span class="col-rank">#</span>
-            <span class="col-flag"></span>
-            <span class="col-athlete">ATHLETE</span>
-            <span class="col-score">SCORE</span>
-            {% if is_per_event and show_trick_type %}
-            <span class="col-type">TYPE</span>
-            {% elif not is_per_event %}
-            <span class="col-event">EVENT</span>
-            {% endif %}
-        </div>
-
-        <div class="table-body">
-        {% for row in rows %}
-            <div class="table-row">
-                <div class="col-rank">{{ row.rank }}</div>
-                <div class="col-flag"><img src="https://flagcdn.com/w40/{{ row.country | lower }}.png" alt="{{ row.country }}"></div>
-                <div class="col-athlete">{{ row.athlete }}</div>
-                <div class="col-score">{{ "%.2f" | format(row.score) }}</div>
-                {% if is_per_event and show_trick_type %}
-                <div class="col-type">{{ row.trick_type | trick_type_label }}</div>
-                {% elif not is_per_event %}
-                <div class="col-event">{{ row.event }}</div>
-                {% endif %}
-            </div>
-        {% endfor %}
-        </div>
-    </div>
+    {{ table_component(rows, show_trick_type, is_per_event, '192px') }}
 
     <div class="cta-divider"></div>
 
-    <div class="cta">
-        <div class="cta-text">Full leaderboard &<br>more stats</div>
-        <div class="cta-url">windsurfworldtourstats.com</div>
-        <div class="cta-follow">Follow for more stats</div>
-    </div>
-
+    {{ cta_block(discipline) }}
 </div>
 {% endblock %}

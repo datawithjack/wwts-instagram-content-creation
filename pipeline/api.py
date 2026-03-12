@@ -5,7 +5,7 @@ from datetime import date
 import requests
 from dotenv import load_dotenv
 
-from pipeline.helpers import clean_event_name, country_code_to_iso2, nationality_to_iso
+from pipeline.helpers import clean_event_name, country_code_to_iso2, heat_label_from_id, nationality_to_iso
 
 load_dotenv()
 
@@ -162,6 +162,7 @@ def fetch_event_top_scores(event_id: int, score_type: str, sex: str = None, limi
 
     entries = []
     for i, r in enumerate(all_scores[:limit]):
+        heat_id = r.get("heat_id", "")
         entry = {
             "rank": i + 1,
             "athlete": r.get("athlete_name", ""),
@@ -169,6 +170,7 @@ def fetch_event_top_scores(event_id: int, score_type: str, sex: str = None, limi
             "score": float(r.get("score", 0)),
             "event": event_name,
             "round": r.get("round_name", ""),
+            "heat": heat_label_from_id(heat_id) if heat_id else "",
         }
         if is_jump:
             entry["trick_type"] = r.get("move_type", "")

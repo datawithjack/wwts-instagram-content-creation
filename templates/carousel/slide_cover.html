@@ -1,12 +1,8 @@
-{% extends "base.html" %}
+{% extends "carousel/base_carousel.html" %}
 
-{% block head %}
+{% block carousel_head %}
 <style>
     .container {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
         text-align: center;
@@ -14,16 +10,6 @@
     }
 
     /* ── Cover-specific styles ── */
-    .eyebrow {
-        font-family: var(--font-body);
-        font-size: 28px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: #00D4FF;
-        margin-bottom: 12px;
-    }
-
     .event-name {
         font-family: var(--font-display);
         font-size: 120px;
@@ -56,15 +42,18 @@
         margin-bottom: 24px;
     }
 
-    .cover-title .gender {
-        color: {% if discipline == 'jumps' %}#F0C040{% else %}#00D4FF{% endif %};
+    .cover-title .line {
         display: block;
+    }
+
+    .cover-title .metric {
+        color: var(--color-discipline);
     }
 
     .divider {
         width: 120px;
         height: 4px;
-        background: linear-gradient(90deg, #00D4FF, transparent);
+        background: linear-gradient(90deg, var(--color-discipline), transparent);
         margin: 24px auto;
         border-radius: 2px;
     }
@@ -81,8 +70,8 @@
     .swipe-hint {
         position: absolute;
         bottom: 40px;
-        left: 64px;
-        text-align: left;
+        right: 64px;
+        text-align: right;
         font-family: var(--font-body);
         font-size: 18px;
         color: rgba(255,255,255,0.25);
@@ -91,12 +80,12 @@
     }
 
     .swipe-hint .arrow {
-        color: #00D4FF;
+        color: var(--color-discipline);
     }
 </style>
 {% endblock %}
 
-{% block content %}
+{% block carousel_content %}
 <div class="container">
     {% if is_per_event and event_name %}
     <div class="eyebrow">PWA World Tour · {{ year }}</div>
@@ -107,7 +96,9 @@
     </div>
     {% endif %}
     <div class="cover-title">
-        <span class="gender">{{ title_gender | upper }}</span> TOP 10 {{ title_metric | upper }}
+        <span class="line">{{ title_gender | upper }}</span>
+        <span class="line">TOP 10</span>
+        <span class="line metric">{{ title_metric | upper }}</span>
     </div>
     {% if not is_per_event %}
     <div class="cover-subtitle">{{ year }} Season</div>
