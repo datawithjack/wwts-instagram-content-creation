@@ -7,31 +7,44 @@
         height: 100%;
         display: flex;
         flex-direction: column;
-        padding: 60px 40px 40px;
+        padding: 48px 64px 64px;
+    }
+
+    /* ── Table slide styles ── */
+    .eyebrow {
+        font-family: var(--font-body);
+        font-size: 28px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #00D4FF;
+        margin-bottom: 8px;
     }
 
     .slide-title {
         font-family: var(--font-display);
-        font-size: 48px;
+        font-size: 100px;
         letter-spacing: 0.04em;
-        text-align: center;
+        line-height: 1;
+        color: var(--color-text-primary);
         margin-bottom: 12px;
     }
 
-    .section-label {
-        font-family: var(--font-body);
-        font-size: 14px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: {% if discipline == 'jumps' %}var(--color-athlete-right){% else %}var(--color-athlete-left){% endif %};
-        text-align: center;
-        margin-bottom: 32px;
+    .position-pill {
+        display: inline-block;
+        font-family: var(--font-display);
+        background: #00D4FF;
+        color: #0E1927;
+        border-radius: 6px;
+        padding: 6px 20px;
+        font-size: 44px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        margin-bottom: 24px;
     }
 
     .table {
         width: 100%;
-        flex: 1;
         display: flex;
         flex-direction: column;
         overflow: hidden;
@@ -49,7 +62,7 @@
 
     .table-header span {
         font-family: var(--font-body);
-        font-size: 14px;
+        font-size: 20px;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.1em;
@@ -57,17 +70,16 @@
     }
 
     .table-body {
-        flex: 1;
         display: flex;
         flex-direction: column;
     }
 
     .table-row {
+        height: 192px;
         display: flex;
         align-items: center;
         padding: 0 24px;
-        border-bottom: 1px solid rgba(51, 65, 85, 0.2);
-        flex: 1;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
 
     .table-row:last-child {
@@ -82,23 +94,31 @@
         background: rgba(30, 41, 59, 0.1);
     }
 
+    .table-row.medal-silver {
+        background: rgba(192, 200, 212, 0.08);
+    }
+
+    .table-row.medal-bronze {
+        background: rgba(205, 127, 50, 0.08);
+    }
+
     .col-rank {
         width: 48px;
         flex-shrink: 0;
         font-family: var(--font-body);
-        font-size: 24px;
+        font-size: 28px;
         font-weight: 600;
         color: var(--color-text-muted);
     }
 
     .col-flag {
-        width: 40px;
+        width: 48px;
         flex-shrink: 0;
     }
 
     .col-flag img {
-        width: 30px;
-        height: 22px;
+        width: 36px;
+        height: 26px;
         object-fit: cover;
         border-radius: 2px;
         vertical-align: middle;
@@ -107,43 +127,38 @@
     .col-athlete {
         flex: 2.2;
         font-family: var(--font-body);
-        font-size: 24px;
+        font-size: 36px;
         font-weight: 500;
         color: var(--color-text-primary);
     }
 
     .col-score {
-        width: 90px;
+        width: 120px;
         flex-shrink: 0;
         text-align: center;
         font-family: var(--font-body);
-        font-size: 24px;
-        font-weight: 600;
+        font-size: 44px;
+        font-weight: 900;
         color: var(--color-text-primary);
     }
 
-    .col-event {
-        flex: 2.5;
-        text-align: center;
-        font-family: var(--font-body);
-        font-size: 20px;
-        color: var(--color-text-muted);
-    }
-
-    .col-round {
-        width: 90px;
+    .col-type {
+        width: 140px;
         flex-shrink: 0;
         text-align: right;
         font-family: var(--font-body);
-        font-size: 20px;
-        color: var(--color-text-muted);
+        font-size: 18px;
+        font-weight: 600;
+        line-height: 1.2;
+        color: #00D4FF;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
     }
 
     .table-header .col-score,
-    .table-header .col-event,
-    .table-header .col-round,
+    .table-header .col-type,
     .table-header .col-flag {
-        font-size: 14px;
+        font-size: 20px;
         color: var(--color-text-label);
     }
 </style>
@@ -151,8 +166,11 @@
 
 {% block content %}
 <div class="container">
+    {% if is_per_event and event_name %}
+    <div class="eyebrow">{{ event_name }}</div>
+    {% endif %}
     <div class="slide-title">{{ title }}</div>
-    <div class="section-label">{{ label }}</div>
+    <div class="position-pill">{{ rows[0].rank | ordinal }} – {{ rows[-1].rank | ordinal }}</div>
 
     <div class="table">
         <div class="table-header">
@@ -160,19 +178,21 @@
             <span class="col-flag"></span>
             <span class="col-athlete">ATHLETE</span>
             <span class="col-score">SCORE</span>
-            <span class="col-event">EVENT</span>
-            <span class="col-round">ROUND</span>
+            {% if is_per_event and show_trick_type %}
+            <span class="col-type">TYPE</span>
+            {% endif %}
         </div>
 
         <div class="table-body">
         {% for row in rows %}
-            <div class="table-row">
-                <div class="col-rank">{{ row.rank }}</div>
+            <div class="table-row{% if row.rank == 2 %} medal-silver{% elif row.rank == 3 %} medal-bronze{% endif %}">
+                <div class="col-rank"{% if row.rank == 2 %} style="color: #C0C8D4"{% elif row.rank == 3 %} style="color: #CD7F32"{% endif %}>{{ row.rank }}</div>
                 <div class="col-flag"><img src="https://flagcdn.com/w40/{{ row.country | lower }}.png" alt="{{ row.country }}"></div>
                 <div class="col-athlete">{{ row.athlete }}</div>
                 <div class="col-score">{{ "%.2f" | format(row.score) }}</div>
-                <div class="col-event">{{ row.event }}</div>
-                <div class="col-round">{{ row.round }}</div>
+                {% if is_per_event and show_trick_type %}
+                <div class="col-type">{{ row.trick_type | trick_type_label }}</div>
+                {% endif %}
             </div>
         {% endfor %}
         </div>
