@@ -1,0 +1,61 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 100px 72px;
+        gap: 40px;
+    }
+
+    .text-title {
+        font-family: var(--font-display);
+        font-size: 100px;
+        letter-spacing: 0.04em;
+        line-height: 1;
+        color: var(--color-text-primary);
+    }
+
+    .divider {
+        width: 80px;
+        height: 4px;
+        background: var(--color-discipline);
+        border-radius: 2px;
+    }
+
+    .text-lines {
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+        max-width: 900px;
+    }
+
+    .text-line {
+        font-family: var(--font-body);
+        font-size: 34px;
+        font-weight: 400;
+        color: var(--color-text-muted);
+        letter-spacing: 0.02em;
+        line-height: 1.5;
+    }
+
+    .text-line .highlight {
+        color: var(--color-discipline);
+        font-weight: 700;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="text-title">{{ title | upper }}</div>
+    <div class="divider"></div>
+    <div class="text-lines">
+        {% for line in lines %}
+        <div class="text-line">{{ line | safe }}</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

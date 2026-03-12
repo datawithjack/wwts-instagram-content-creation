@@ -1,0 +1,66 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 80px 64px;
+        gap: 24px;
+    }
+
+    .numbers-title {
+        font-family: var(--font-display);
+        font-size: 100px;
+        letter-spacing: 0.04em;
+        line-height: 1;
+        color: var(--color-text-primary);
+        margin-bottom: 24px;
+    }
+
+    .stats-list {
+        display: flex;
+        flex-direction: column;
+        gap: 40px;
+    }
+
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .stat-value {
+        font-family: var(--font-display);
+        font-size: 140px;
+        letter-spacing: 0.04em;
+        line-height: 1;
+        color: var(--color-discipline);
+    }
+
+    .stat-label {
+        font-family: var(--font-body);
+        font-size: 28px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--color-text-muted);
+        margin-top: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="numbers-title">{{ title | upper }}</div>
+    <div class="stats-list">
+        {% for stat in stats %}
+        <div class="stat-item">
+            <div class="stat-value">{{ stat.value }}</div>
+            <div class="stat-label">{{ stat.label }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

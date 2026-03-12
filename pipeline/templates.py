@@ -208,6 +208,9 @@ def get_dummy_data(template_name: str) -> dict:
                 {"rank": 10, "athlete": "Alex Mussolini", "country": "es", "score": 8.20, "event": "Gran Canaria World Cup", "round": "R3", "heat": "H38b", "trick_type": "F"},
             ],
         }
+    if template_name == "about_carousel":
+        from pipeline.about import build_about_slides
+        return {"slides": build_about_slides()}
     if template_name == "coming_soon_carousel":
         from pipeline.coming_soon import build_coming_soon_slides
         return {"slides": build_coming_soon_slides()}

@@ -1,0 +1,62 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 60px 64px;
+    }
+
+    .cover-title {
+        font-family: var(--font-display);
+        font-size: 140px;
+        letter-spacing: 0.04em;
+        line-height: 0.95;
+        color: var(--color-text-primary);
+        margin-bottom: 32px;
+    }
+
+    .divider {
+        width: 120px;
+        height: 4px;
+        background: linear-gradient(90deg, var(--color-discipline), transparent);
+        margin: 0 auto 32px;
+        border-radius: 2px;
+    }
+
+    .cover-subtitle {
+        font-family: var(--font-body);
+        font-size: 32px;
+        font-weight: 400;
+        color: var(--color-text-muted);
+        letter-spacing: 0.06em;
+    }
+
+    .swipe-hint {
+        position: absolute;
+        bottom: 40px;
+        right: 64px;
+        text-align: right;
+        font-family: var(--font-body);
+        font-size: 18px;
+        color: rgba(255,255,255,0.25);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+
+    .swipe-hint .arrow {
+        color: var(--color-discipline);
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="cover-title">{{ title | upper }}</div>
+    <div class="divider"></div>
+    <div class="cover-subtitle">{{ subtitle }}</div>
+    <div class="swipe-hint">Swipe to learn more <span class="arrow">→</span></div>
+</div>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 80px 64px;
+        gap: 48px;
+    }
+
+    .features-title {
+        font-family: var(--font-display);
+        font-size: 100px;
+        letter-spacing: 0.04em;
+        line-height: 1;
+        color: var(--color-text-primary);
+    }
+
+    .features-list {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        width: 100%;
+        max-width: 800px;
+    }
+
+    .feature-item {
+        background: var(--color-bg-card);
+        border: 1px solid var(--color-border-card);
+        border-radius: 8px;
+        padding: 32px 40px;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+    }
+
+    .feature-bullet {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--color-discipline);
+        flex-shrink: 0;
+    }
+
+    .feature-text {
+        font-family: var(--font-body);
+        font-size: 36px;
+        font-weight: 500;
+        color: var(--color-text-primary);
+        letter-spacing: 0.02em;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="features-title">{{ title | upper }}</div>
+    <div class="features-list">
+        {% for feature in features %}
+        <div class="feature-item">
+            <div class="feature-bullet"></div>
+            <div class="feature-text">{{ feature }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

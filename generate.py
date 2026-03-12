@@ -144,7 +144,7 @@ def main():
     parser.add_argument(
         "--template",
         required=True,
-        choices=["head_to_head", "head_to_head_jump", "top_10", "top_10_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile"],
+        choices=["head_to_head", "head_to_head_jump", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile"],
     )
     parser.add_argument("--athlete1", type=int, help="Athlete 1 unified ID")
     parser.add_argument("--athlete2", type=int, help="Athlete 2 unified ID")
@@ -187,16 +187,16 @@ def main():
     dpr = template_config.get("dpr", 2)
 
     # Get data
-    if args.dry_run or template_name == "coming_soon_carousel":
+    if args.dry_run or template_name in ("coming_soon_carousel", "about_carousel"):
         data = get_dummy_data(template_name)
     else:
         data = fetch_live_data(template_name, args)
 
-    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel")
+    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel")
 
     # Carousel preview: open all slides in browser tabs
     if is_carousel and args.preview:
-        if template_name == "coming_soon_carousel":
+        if template_name in ("coming_soon_carousel", "about_carousel"):
             slides = data["slides"]
         else:
             from pipeline.carousel import build_slides
@@ -230,14 +230,15 @@ def main():
 
     if is_carousel:
         carousel_dir = os.path.join(output_dir, "png")
-        if template_name == "coming_soon_carousel":
+        if template_name in ("coming_soon_carousel", "about_carousel"):
             from pipeline.renderer import render_to_png
             slides = data["slides"]
             result_paths = []
             os.makedirs(carousel_dir, exist_ok=True)
+            prefix = template_name.replace("_carousel", "")
             for i, slide in enumerate(slides, 1):
                 html = render_template(f"carousel/slide_{slide['type']}", slide)
-                output_path = os.path.join(carousel_dir, f"coming_soon_{timestamp}_{i}.png")
+                output_path = os.path.join(carousel_dir, f"{prefix}_{timestamp}_{i}.png")
                 render_to_png(html, output_path, width=width, height=height, dpr=dpr)
                 result_paths.append(output_path)
         else:

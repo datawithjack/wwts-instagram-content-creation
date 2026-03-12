@@ -20,6 +20,7 @@ def build_caption(
             "head_to_head_jump": _caption_head_to_head,
             "top_10": _caption_top_10,
             "top_10_carousel": _caption_top_10,
+            "about_carousel": _caption_about,
             "coming_soon_carousel": _caption_coming_soon,
             "site_stats": _caption_site_stats,
             "site_stats_reel": _caption_site_stats,
@@ -69,6 +70,14 @@ def _caption_rider_profile(data: dict, site_url: str) -> str:
     return (
         f"{name} at the {event} — {placement}.\n"
         f"Full stats at {site_url}"
+    )
+
+
+def _caption_about(data: dict, site_url: str) -> str:
+    return (
+        "Windsurf World Tour Stats — the data behind professional windsurfing.\n"
+        "Wave scores, jump scores, head to heads, and leaderboards.\n"
+        f"Explore at {site_url}"
     )
 
 
