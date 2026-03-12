@@ -15,19 +15,20 @@
     /* ── Event Header ── */
     .event-title {
         font-family: var(--font-display);
-        font-size: 42px;
+        font-size: 48px;
         font-weight: 700;
         letter-spacing: 0.05em;
         text-align: center;
         line-height: 1;
-        margin-bottom: 6px;
+        margin-bottom: 10px;
     }
 
     .event-meta {
-        font-size: 12px;
+        font-size: 13px;
         color: var(--color-text-muted);
         text-align: center;
         letter-spacing: 0.05em;
+        margin-bottom: 6px;
     }
 
     .event-meta .sep { margin: 0 8px; }
@@ -201,15 +202,7 @@
 {% block content %}
 <div class="container">
 
-    <!-- Event Header -->
-    <div class="event-title font-display">{{ event_name | upper }}</div>
-    <div class="event-meta">
-        {{ event_country }}
-        <span class="sep">&bull;</span>
-        {{ format_date_range(event_date_start, event_date_end) }}
-        <span class="sep">&bull;</span>
-        <span class="stars">{{ event_tier | star_rating }}</span>
-    </div>
+    {% include "includes/_event_header.html" %}
 
     <!-- H2H Label -->
     <div class="h2h-label">HEAD TO HEAD</div>

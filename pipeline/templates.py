@@ -12,6 +12,7 @@ from pipeline.helpers import (
     compute_deltas,
     format_number,
     country_flag,
+    trick_type_label,
 )
 
 TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "..", "templates")
@@ -26,6 +27,7 @@ def get_jinja_env() -> Environment:
     env.filters["format_number"] = format_number
     env.globals["format_date_range"] = format_date_range
     env.filters["country_flag"] = country_flag
+    env.filters["trick_type_label"] = trick_type_label
     return env
 
 
@@ -132,7 +134,30 @@ def get_dummy_data(template_name: str) -> dict:
             ],
         }
     if template_name == "top_10_carousel":
-        return get_dummy_data("top_10")
+        return {
+            "title_gender": "Men's",
+            "title_metric": "Jumps",
+            "title_year": 2025,
+            "is_per_event": True,
+            "event_name": "Gran Canaria World Cup",
+            "event_country": "ESP",
+            "event_date_start": "Jul 05",
+            "event_date_end": "Jul 13",
+            "event_stars": 5,
+            "show_trick_type": True,
+            "entries": [
+                {"rank": 1, "athlete": "Antoine Albert", "country": "gp", "score": 10.00, "event": "Gran Canaria World Cup", "round": "Final", "trick_type": "2xF"},
+                {"rank": 1, "athlete": "Julien Mas", "country": "fr", "score": 10.00, "event": "Gran Canaria World Cup", "round": "Semi", "trick_type": "P"},
+                {"rank": 1, "athlete": "Marc Pare Rico", "country": "es", "score": 10.00, "event": "Gran Canaria World Cup", "round": "Final", "trick_type": "F"},
+                {"rank": 1, "athlete": "Takara Ishii", "country": "jp", "score": 10.00, "event": "Gran Canaria World Cup", "round": "Quarter", "trick_type": "B"},
+                {"rank": 5, "athlete": "Jaegar Stone", "country": "au", "score": 9.50, "event": "Gran Canaria World Cup", "round": "Final", "trick_type": "F"},
+                {"rank": 6, "athlete": "Bernd Roediger", "country": "us", "score": 9.30, "event": "Gran Canaria World Cup", "round": "Semi", "trick_type": "P"},
+                {"rank": 7, "athlete": "Philip Koster", "country": "de", "score": 9.10, "event": "Gran Canaria World Cup", "round": "Quarter", "trick_type": "2xF"},
+                {"rank": 8, "athlete": "Leon Jamaer", "country": "de", "score": 8.90, "event": "Gran Canaria World Cup", "round": "Round 3", "trick_type": "B"},
+                {"rank": 9, "athlete": "Ricardo Campello", "country": "ve", "score": 8.70, "event": "Gran Canaria World Cup", "round": "Semi", "trick_type": "P"},
+                {"rank": 10, "athlete": "Alex Mussolini", "country": "es", "score": 8.50, "event": "Gran Canaria World Cup", "round": "Round 3", "trick_type": "F"},
+            ],
+        }
     if template_name in ("site_stats", "site_stats_reel"):
         return {
             "athletes_count": 359,

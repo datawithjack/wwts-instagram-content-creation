@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 80px 64px;
+    }
+
+    /* ── CTA-specific styles ── */
+    .cta-text {
+        font-family: var(--font-display);
+        font-size: 88px;
+        letter-spacing: 0.04em;
+        line-height: 1.1;
+        margin-bottom: 32px;
+    }
+
+    .cyan-rule {
+        width: 100%;
+        height: 2px;
+        background: #00D4FF;
+        margin-bottom: 24px;
+    }
+
+    .cta-url {
+        font-family: var(--font-body);
+        font-size: 30px;
+        font-weight: 600;
+        color: #00D4FF;
+        letter-spacing: 0.05em;
+        margin-bottom: 8px;
+    }
+
+    .cta-event-sub {
+        font-family: var(--font-body);
+        font-size: 20px;
+        font-weight: 400;
+        color: var(--color-text-muted);
+        letter-spacing: 0.04em;
+        margin-bottom: 40px;
+    }
+
+    .cta-follow {
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--color-text-muted);
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="cta-text">Full leaderboard &amp;<br>more stats</div>
+    <div class="cyan-rule"></div>
+    <div class="cta-url">windsurfworldtourstats.com</div>
+    <div class="cta-follow">Follow for more stats →</div>
+</div>
+{% endblock %}

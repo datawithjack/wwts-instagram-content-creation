@@ -8,6 +8,7 @@ from pipeline.api import (
     fetch_site_stats,
     fetch_event,
     fetch_athlete_event_stats,
+    fetch_event_top_scores,
 )
 
 
@@ -141,10 +142,10 @@ class TestFetchSiteStats:
             status_code=200,
             json=lambda: {
                 "stats": [
-                    {"metric": "total_events", "value": "118"},
-                    {"metric": "total_athletes", "value": "359"},
+                    {"metric": "total events", "value": "118"},
+                    {"metric": "total athletes", "value": "359"},
                     {"metric": "total_results", "value": "2052"},
-                    {"metric": "total_scores", "value": "43515"},
+                    {"metric": "total scores", "value": "43515"},
                 ],
                 "generated_at": "2026-03-07T10:00:00Z",
             },
@@ -162,9 +163,9 @@ class TestFetchSiteStats:
             status_code=200,
             json=lambda: {
                 "stats": [
-                    {"metric": "total_events", "value": "58"},
-                    {"metric": "total_athletes", "value": "359"},
-                    {"metric": "total_scores", "value": "43515"},
+                    {"metric": "total events", "value": "58"},
+                    {"metric": "total athletes", "value": "359"},
+                    {"metric": "total scores", "value": "43515"},
                 ],
                 "generated_at": "2026-03-07T10:00:00Z",
             },
@@ -292,3 +293,94 @@ class TestFetchAthleteEventStats:
         stats_call = mock_get.call_args_list[0]
         assert "/events/42/athletes/10/stats" in stats_call[0][0]
         assert stats_call[1]["params"]["sex"] == "Men"
+
+
+def _mock_event_stats_response():
+    return MagicMock(
+        status_code=200,
+        json=lambda: {
+            "event_name": "2026 Gran Canaria Wind & Waves Festival",
+            "top_wave_scores": [
+                {"athlete_id": 1, "athlete_name": "Marc Pare Rico", "score": 8.83, "round_name": "Final", "heat_number": 1},
+                {"athlete_id": 2, "athlete_name": "Takara Ishii", "score": 8.50, "round_name": "Semi Final", "heat_number": 3},
+            ],
+            "top_jump_scores": [
+                {"athlete_id": 1, "athlete_name": "Marc Pare Rico", "score": 9.10, "round_name": "Final", "heat_number": 1, "move_type": "F"},
+                {"athlete_id": 3, "athlete_name": "Antoine Martin", "score": 8.90, "round_name": "Semi Final", "heat_number": 2, "move_type": "P"},
+            ],
+        },
+    )
+
+
+def _mock_event_athletes_response():
+    return MagicMock(
+        status_code=200,
+        json=lambda: {
+            "athletes": [
+                {"athlete_id": 1, "country": "Spain"},
+                {"athlete_id": 2, "country": "Japan"},
+                {"athlete_id": 3, "country": "Guadeloupe"},
+            ]
+        },
+    )
+
+
+class TestFetchEventTopScores:
+    @patch("pipeline.api.requests.get")
+    def test_returns_event_header_fields(self, mock_get):
+        mock_get.side_effect = [
+            _mock_event_stats_response(),
+            _mock_event_athletes_response(),
+            _mock_event_response(),
+        ]
+
+        result = fetch_event_top_scores(event_id=42, score_type="Wave", sex="Men")
+
+        assert result["is_per_event"] is True
+        assert result["event_name"] == "Gran Canaria Wind & Waves Festival"
+        assert result["event_country"] == "AU"
+        assert result["event_tier"] == 4
+        assert result["event_date_start"] == date(2026, 1, 31)
+        assert result["event_date_end"] == date(2026, 2, 8)
+
+    @patch("pipeline.api.requests.get")
+    def test_entries_include_heat(self, mock_get):
+        mock_get.side_effect = [
+            _mock_event_stats_response(),
+            _mock_event_athletes_response(),
+            _mock_event_response(),
+        ]
+
+        result = fetch_event_top_scores(event_id=42, score_type="Wave", sex="Men")
+
+        assert "heat" in result["entries"][0]
+        assert result["entries"][0]["heat"] == 1
+
+    @patch("pipeline.api.requests.get")
+    def test_wave_entries_formatted(self, mock_get):
+        mock_get.side_effect = [
+            _mock_event_stats_response(),
+            _mock_event_athletes_response(),
+            _mock_event_response(),
+        ]
+
+        result = fetch_event_top_scores(event_id=42, score_type="Wave", sex="Men")
+
+        assert len(result["entries"]) == 2
+        assert result["entries"][0]["athlete"] == "Marc Pare Rico"
+        assert result["entries"][0]["score"] == 8.83
+        assert result["entries"][0]["round"] == "Final"
+        assert result["show_trick_type"] is False
+
+    @patch("pipeline.api.requests.get")
+    def test_jump_entries_include_trick_type(self, mock_get):
+        mock_get.side_effect = [
+            _mock_event_stats_response(),
+            _mock_event_athletes_response(),
+            _mock_event_response(),
+        ]
+
+        result = fetch_event_top_scores(event_id=42, score_type="Jump", sex="Men")
+
+        assert result["show_trick_type"] is True
+        assert result["entries"][0]["trick_type"] == "F"

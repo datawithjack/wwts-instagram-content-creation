@@ -18,13 +18,27 @@ def build_top10_query(
     Returns:
         (sql, params) tuple ready for db.run_query()
     """
-    params = [score_type]
+    params = []
 
-    where_clauses = ["s.type = %s", "s.counting = 1"]
+    where_clauses = ["s.counting = 1"]
+
+    if score_type == "Jump":
+        # "Jump" means everything that isn't a Wave score — includes
+        # the generic "Jump" type and individual trick types (F, B, P, etc.)
+        where_clauses.append("s.type <> %s")
+        params.append("Wave")
+    else:
+        where_clauses.append("s.type = %s")
+        params.append(score_type)
 
     if sex:
-        where_clauses.append("s.sex = %s")
-        params.append(sex)
+        # Some events store trick scores with empty sex — include those too
+        if score_type == "Jump":
+            where_clauses.append("(s.sex = %s OR s.sex = '')")
+            params.append(sex)
+        else:
+            where_clauses.append("s.sex = %s")
+            params.append(sex)
 
     if year:
         where_clauses.append("s.pwa_year = %s")
@@ -36,13 +50,18 @@ def build_top10_query(
 
     where = " AND ".join(where_clauses)
 
+    # Include trick type in select for jump queries
+    type_col = "s.type AS trick_type," if score_type == "Jump" else ""
+
     sql = f"""
         SELECT
             a.primary_name AS athlete,
             a.nationality AS country,
             s.score,
+            {type_col}
             e.event_name AS event,
-            hp.round_name AS round
+            hp.round_name AS round,
+            hp.heat_id AS heat_id
         FROM PWA_IWT_HEAT_SCORES s
         JOIN ATHLETE_SOURCE_IDS asi
             ON asi.source = s.source AND asi.source_id = s.athlete_id

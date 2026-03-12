@@ -89,6 +89,68 @@ class TestRenderTop10:
         assert "Inter" in self.html
 
 
+class TestRenderTop10CrossEvent:
+    """Cross-event mode: shows EVENT column, no event header."""
+
+    def setup_method(self):
+        self.data = get_dummy_data("top_10")
+        self.html = render_template("top_10", self.data)
+
+    def test_is_per_event_false(self):
+        assert self.data.get("is_per_event") is False
+
+    def test_shows_event_column(self):
+        assert "col-event" in self.html
+
+    def test_hides_heat_column(self):
+        # HEAT header should not appear in the rendered HTML body
+        assert ">HEAT<" not in self.html
+
+    def test_no_event_header(self):
+        # No event header include rendered in cross-event mode
+        assert "event-meta" not in self.html.split("</style>")[-1]
+
+    def test_title_includes_year(self):
+        assert "2025" in self.html
+
+
+class TestRenderTop10PerEvent:
+    """Per-event mode: shows event header, HEAT column, hides EVENT column."""
+
+    def setup_method(self):
+        self.data = {
+            **get_dummy_data("top_10"),
+            "is_per_event": True,
+            "event_name": "Gran Canaria Wind & Waves Festival",
+            "event_country": "ES",
+            "event_date_start": date(2026, 3, 1),
+            "event_date_end": date(2026, 3, 8),
+            "event_tier": 5,
+        }
+        # Add heat field to entries
+        for i, entry in enumerate(self.data["entries"]):
+            entry["heat"] = i + 1
+        self.html = render_template("top_10", self.data)
+
+    def test_shows_event_header(self):
+        assert "event-title" in self.html
+        assert "GRAN CANARIA" in self.html
+
+    def test_shows_event_meta(self):
+        assert "event-meta" in self.html
+
+    def test_shows_heat_column(self):
+        assert "col-heat" in self.html
+
+    def test_hides_event_column(self):
+        # In per-event mode, should not have the EVENT column
+        assert ">EVENT<" not in self.html
+
+    def test_title_no_year(self):
+        # Title should be "MEN'S TOP 10 WAVES" without year
+        assert "MEN&#39;S TOP 10 WAVES" in self.html or "MEN'S TOP 10 WAVES" in self.html
+
+
 class TestGetDummyData:
     def test_head_to_head_has_required_fields(self):
         data = get_dummy_data("head_to_head")
@@ -110,6 +172,8 @@ class TestGetDummyData:
         assert "title_gender" in data
         assert "title_metric" in data
         assert "title_year" in data
+        assert "is_per_event" in data
+        assert data["is_per_event"] is False
         assert "entries" in data
         assert len(data["entries"]) == 10
 

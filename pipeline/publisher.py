@@ -223,6 +223,9 @@ def publish_carousel(file_paths: list[str], caption: str) -> dict:
         for path in file_paths:
             media_urls.append(upload_to_r2(path))
 
+        # Brief delay to let R2 propagate before Meta fetches
+        time.sleep(3)
+
         # Create child containers
         children_ids = []
         for url in media_urls:

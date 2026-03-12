@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        padding: 48px 64px 40px;
+    }
+
+    /* ── Tied highlight styles ── */
+    .eyebrow {
+        font-family: var(--font-body);
+        font-size: 28px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #00D4FF;
+        margin-bottom: 8px;
+    }
+
+    .slide-title {
+        font-family: var(--font-display);
+        font-size: 100px;
+        letter-spacing: 0.04em;
+        line-height: 1;
+        color: var(--color-text-primary);
+        margin-bottom: 12px;
+    }
+
+    .position-pill {
+        display: inline-block;
+        font-family: var(--font-display);
+        background: {{ tie_accent }};
+        color: #0E1927;
+        border-radius: 6px;
+        padding: 6px 20px;
+        font-size: 44px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        margin-bottom: 32px;
+    }
+
+    .card-wrapper {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .card {
+        background: var(--color-bg-card);
+        border: 1px solid var(--color-border-card);
+        border-top: 3px solid {{ tie_accent }};
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 56px 80px;
+        min-width: 500px;
+    }
+
+    .card-score {
+        font-family: var(--font-display);
+        font-size: 180px;
+        letter-spacing: 0.02em;
+        line-height: 0.85;
+        color: {{ tie_accent }};
+        margin-bottom: 16px;
+        text-shadow: 0 0 50px {{ tie_accent }}33, 0 4px 0 rgba(0,0,0,0.3);
+    }
+
+    .card-name {
+        font-family: var(--font-display);
+        font-size: 52px;
+        letter-spacing: 0.04em;
+        line-height: 1;
+        margin-bottom: 12px;
+    }
+
+    .card-flag img {
+        width: 56px;
+        height: 40px;
+        object-fit: cover;
+        border-radius: 3px;
+        margin-bottom: 12px;
+    }
+
+    .card-detail {
+        font-family: var(--font-body);
+        font-size: 22px;
+        color: var(--color-text-muted);
+        letter-spacing: 0.05em;
+        margin-bottom: 12px;
+    }
+
+    .card-trick {
+        display: inline-block;
+        font-family: var(--font-body);
+        font-size: 18px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        background: #F0C040;
+        color: #0E1927;
+        border-radius: 4px;
+        padding: 6px 14px;
+    }
+
+    .tie-note {
+        font-family: var(--font-body);
+        font-size: 24px;
+        color: var(--color-text-muted);
+        letter-spacing: 0.06em;
+        margin-top: 24px;
+        text-align: center;
+    }
+
+    .tie-note strong {
+        color: {{ tie_accent }};
+        font-weight: 700;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    {% if is_per_event and event_name %}
+    <div class="eyebrow">{{ event_name }}</div>
+    {% endif %}
+    <div class="slide-title">{{ title }}</div>
+    <div class="position-pill">#1</div>
+
+    <div class="card-wrapper">
+        <div class="card">
+            <div class="card-score">{{ "%.2f" | format(row.score) }}</div>
+            <div class="card-name">{{ row.athlete | upper }}</div>
+            <div class="card-flag"><img src="https://flagcdn.com/w80/{{ row.country | lower }}.png" alt="{{ row.country }}"></div>
+            <div class="card-detail">{{ row.round }}</div>
+            {% if show_trick_type and row.trick_type %}
+            <div class="card-trick">{{ row.trick_type | trick_type_label }}</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="tie-note"><strong>{{ tie_count }} athletes</strong> tied with this score</div>
+</div>
+{% endblock %}

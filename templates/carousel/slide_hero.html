@@ -25,22 +25,39 @@
         background: linear-gradient(to top, {{ podium_colour.bg }}, transparent);
     }
 
+    /* ── Hero-specific styles ── */
+    .hero-title {
+        font-family: var(--font-display);
+        font-size: 80px;
+        letter-spacing: 0.04em;
+        line-height: 1;
+        color: var(--color-text-primary);
+        margin-bottom: 32px;
+        position: relative;
+    }
+
     .rank-badge {
         font-family: var(--font-display);
-        font-size: 24px;
+        font-size: 28px;
         letter-spacing: 0.15em;
-        color: {{ podium_colour.accent }};
+        color: #F0C040;
         margin-bottom: 12px;
-        padding: 6px 20px;
-        border: 2px solid {{ podium_colour.accent }};
+        padding: 8px 24px;
+        border: 2px solid #F0C040;
         border-radius: 4px;
         position: relative;
     }
 
     .athlete-flag {
-        font-size: 64px;
         margin-bottom: 16px;
         position: relative;
+    }
+
+    .athlete-flag img {
+        width: 80px;
+        height: 58px;
+        object-fit: cover;
+        border-radius: 4px;
     }
 
     .athlete-name {
@@ -57,13 +74,13 @@
         font-size: 140px;
         letter-spacing: 0.02em;
         line-height: 1;
-        color: {{ podium_colour.accent }};
+        color: #F0C040;
         position: relative;
     }
 
     .score-label {
         font-family: var(--font-body);
-        font-size: 14px;
+        font-size: 20px;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.15em;
@@ -74,7 +91,7 @@
 
     .event-info {
         font-family: var(--font-body);
-        font-size: 15px;
+        font-size: 20px;
         color: var(--color-text-muted);
         letter-spacing: 0.05em;
         position: absolute;
@@ -82,20 +99,21 @@
     }
 
     .event-info .round {
-        color: {% if discipline == 'jumps' %}var(--color-athlete-right){% else %}var(--color-athlete-left){% endif %};
+        color: {% if discipline == 'jumps' %}#F0C040{% else %}#00D4FF{% endif %};
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container">
+    <div class="hero-title">{{ title }}</div>
     <div class="rank-badge">#1</div>
-    <div class="athlete-flag">{{ row.country | country_flag }}</div>
+    <div class="athlete-flag"><img src="https://flagcdn.com/w120/{{ row.country | lower }}.png" alt="{{ row.country }}"></div>
     <div class="athlete-name">{{ row.athlete | upper }}</div>
     <div class="score">{{ "%.2f" | format(row.score) }}</div>
     <div class="score-label">{{ title_metric | upper }} Score</div>
     <div class="event-info">
-        {{ row.event }} · <span class="round">{{ row.round }}</span>
+        {% if not is_per_event %}{{ row.event }} · {% endif %}<span class="round">{{ row.round }}</span>
     </div>
 </div>
 {% endblock %}

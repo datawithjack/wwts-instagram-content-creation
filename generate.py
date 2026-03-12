@@ -14,7 +14,7 @@ load_dotenv()
 from pipeline.api import fetch_head_to_head, fetch_site_stats, fetch_athlete_event_stats, fetch_event_top_scores
 from pipeline.captions import build_caption
 from pipeline.db import run_query
-from pipeline.helpers import nationality_to_iso, clean_event_name
+from pipeline.helpers import nationality_to_iso, clean_event_name, heat_label_from_id, short_round_name
 from pipeline.queries import build_top10_query
 from pipeline.templates import render_template, get_dummy_data
 from pipeline.renderer import render_to_png, render_to_video, render_carousel
@@ -38,44 +38,85 @@ def fetch_live_data(template_name: str, args) -> dict:
             print("Top 10 requires: --score-type (Wave or Jump)")
             sys.exit(1)
 
-        # Use API for per-event top 10 (no DB needed)
+        # Use API for per-event top 10; fall back to DB if API 404s
         if args.event:
-            return fetch_event_top_scores(
-                event_id=args.event,
-                score_type=args.score_type,
-                sex=args.sex,
-            )
+            try:
+                return fetch_event_top_scores(
+                    event_id=args.event,
+                    score_type=args.score_type,
+                    sex=args.sex,
+                )
+            except Exception:
+                print("API per-event endpoint unavailable, falling back to DB...")
 
-        # Use DB for cross-event queries (by year or all-time)
+        # Use DB for queries (per-event, by year, or all-time)
         sql, params = build_top10_query(
             score_type=args.score_type,
             sex=args.sex,
             year=args.year,
+            event_id=args.event,
         )
         rows = run_query(sql, params)
         gender_map = {"Men": "Men's", "Women": "Women's"}
         is_jump = args.score_type == "Jump"
+        is_per_event = bool(args.event)
+
         entries = []
         for i, r in enumerate(rows):
+            # Build round string with heat number if available
+            round_str = short_round_name(r.get("round", ""))
+            heat = heat_label_from_id(r.get("heat_id", ""))
+            if heat:
+                round_str = f"{round_str} {heat}"
             entry = {
                 "rank": i + 1,
                 "athlete": r["athlete"],
                 "country": nationality_to_iso(r.get("country", "")),
                 "score": float(r["score"]),
                 "event": clean_event_name(r["event"]),
-                "round": r.get("round", ""),
+                "round": round_str,
             }
             if is_jump:
                 entry["trick_type"] = r.get("trick_type", "")
             entries.append(entry)
-        return {
+
+        data = {
             "title_gender": gender_map.get(args.sex, ""),
             "title_metric": f"{args.score_type}s",
             "title_year": args.year or "All Time",
             "show_trick_type": is_jump,
-            "is_per_event": False,
+            "is_per_event": is_per_event,
             "entries": entries,
         }
+
+        # Enrich with event metadata for per-event queries
+        if is_per_event:
+            event_row = run_query(
+                "SELECT event_name, start_date, end_date, stars, country_code "
+                "FROM PWA_IWT_EVENTS WHERE event_id = %s AND source = 'PWA' LIMIT 1",
+                (args.event,),
+            )
+            if event_row:
+                ev = event_row[0]
+                data["event_name"] = clean_event_name(ev["event_name"])
+                data["event_country"] = ev.get("country_code", "")
+                data["event_stars"] = ev.get("stars", 0)
+                start = ev.get("start_date")
+                end = ev.get("end_date")
+                if start:
+                    from datetime import date as dt_date
+                    if isinstance(start, str):
+                        start = dt_date.fromisoformat(start)
+                    data["event_date_start"] = start.strftime("%b %d")
+                if end:
+                    if isinstance(end, str):
+                        end = dt_date.fromisoformat(end)
+                    data["event_date_end"] = end.strftime("%b %d")
+                # Set year from event if not provided
+                if not args.year and start:
+                    data["title_year"] = start.year
+
+        return data
 
     if template_name in ("site_stats", "site_stats_reel"):
         return fetch_site_stats()

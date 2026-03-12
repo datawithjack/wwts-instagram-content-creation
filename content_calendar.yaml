@@ -1,0 +1,106 @@
+# Content Calendar — WWT Instagram
+# Categories:
+#   evergreen  — historical stats, post anytime
+#   seasonal   — current/recent season data, refreshes each year
+#   recurring  — auto-posted on a schedule (e.g. site stats weekly)
+#
+# Themed days (future):
+#   wave_wednesday, foil_friday, forward_friday, slalom_saturday
+
+posts:
+  # ── Evergreen: All-Time Top 10s ──────────────────────────────
+  - id: alltime-mens-waves
+    template: top_10
+    params:
+      score_type: Wave
+      sex: Men
+    caption: "The 10 highest-scoring men's waves in PWA/IWT history. Legends only."
+    category: evergreen
+
+  - id: alltime-womens-waves
+    template: top_10
+    params:
+      score_type: Wave
+      sex: Women
+    caption: "The 10 highest-scoring women's waves ever recorded on tour."
+    category: evergreen
+
+  - id: alltime-mens-jumps
+    template: top_10
+    params:
+      score_type: Jump
+      sex: Men
+    caption: "The 10 biggest jumps in men's tour history."
+    category: evergreen
+
+  - id: alltime-womens-jumps
+    template: top_10
+    params:
+      score_type: Jump
+      sex: Women
+    caption: "The 10 biggest jumps in women's tour history."
+    category: evergreen
+
+  # ── Seasonal: 2025 Top 10s ───────────────────────────────────
+  - id: 2025-mens-waves
+    template: top_10
+    params:
+      score_type: Wave
+      sex: Men
+      year: 2025
+    caption: "The 10 best men's waves of the 2025 season so far."
+    category: seasonal
+
+  - id: 2025-womens-waves
+    template: top_10
+    params:
+      score_type: Wave
+      sex: Women
+      year: 2025
+    caption: "The 10 best women's waves of the 2025 season so far."
+    category: seasonal
+
+  - id: 2025-mens-jumps
+    template: top_10
+    params:
+      score_type: Jump
+      sex: Men
+      year: 2025
+    caption: "The 10 biggest men's jumps of the 2025 season."
+    category: seasonal
+
+  - id: 2025-womens-jumps
+    template: top_10
+    params:
+      score_type: Jump
+      sex: Women
+      year: 2025
+    caption: "The 10 biggest women's jumps of the 2025 season."
+    category: seasonal
+
+  # ── Recurring ────────────────────────────────────────────────
+  - id: site-stats-weekly
+    template: site_stats
+    category: recurring
+
+  # ── Event-specific (fill in as events happen) ────────────────
+  # - id: pozo-2025-mens-waves
+  #   template: top_10
+  #   params:
+  #     score_type: Wave
+  #     sex: Men
+  #     year: 2025
+  #     event: 42
+  #   caption: "The best waves from Pozo 2025"
+  #   category: seasonal
+
+  # ── Head to Head (fill in athlete/event IDs) ─────────────────
+  # - id: h2h-classic-rivalry
+  #   template: head_to_head
+  #   params:
+  #     event: 38
+  #     athlete1: 12
+  #     athlete2: 7
+  #     division: Men
+  #   caption: "A rivalry for the ages"
+  #   category: evergreen

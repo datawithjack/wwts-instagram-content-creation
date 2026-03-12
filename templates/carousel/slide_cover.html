@@ -2,12 +2,6 @@
 
 {% block head %}
 <style>
-    {% if discipline == 'jumps' %}
-    --accent: var(--color-athlete-right);
-    {% else %}
-    --accent: var(--color-athlete-left);
-    {% endif %}
-
     .container {
         width: 100%;
         height: 100%;
@@ -16,25 +10,46 @@
         align-items: center;
         justify-content: center;
         text-align: center;
-        padding: 80px 60px;
+        padding: 60px 64px;
     }
 
-    .badge {
+    /* ── Cover-specific styles ── */
+    .eyebrow {
         font-family: var(--font-body);
-        font-size: 14px;
-        font-weight: 600;
+        font-size: 28px;
+        font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.2em;
-        color: {% if discipline == 'jumps' %}var(--color-athlete-right){% else %}var(--color-athlete-left){% endif %};
-        margin-bottom: 32px;
-        padding: 8px 24px;
-        border: 1px solid {% if discipline == 'jumps' %}rgba(45,212,191,0.3){% else %}rgba(56,189,248,0.3){% endif %};
-        border-radius: 4px;
+        letter-spacing: 0.1em;
+        color: #00D4FF;
+        margin-bottom: 12px;
+    }
+
+    .event-name {
+        font-family: var(--font-display);
+        font-size: 120px;
+        letter-spacing: 0.04em;
+        line-height: 1.05;
+        color: var(--color-text-primary);
+        margin-bottom: 12px;
+    }
+
+    .event-meta {
+        font-family: var(--font-body);
+        font-size: 30px;
+        font-weight: 500;
+        color: var(--color-text-muted);
+        letter-spacing: 0.06em;
+        margin-bottom: 64px;
+    }
+
+    .event-meta .stars {
+        color: #F0C040;
+        letter-spacing: 0.02em;
     }
 
     .cover-title {
         font-family: var(--font-display);
-        font-size: 96px;
+        font-size: 260px;
         font-weight: 700;
         letter-spacing: 0.04em;
         line-height: 0.95;
@@ -42,33 +57,21 @@
     }
 
     .cover-title .gender {
-        color: {% if discipline == 'jumps' %}var(--color-athlete-right){% else %}var(--color-athlete-left){% endif %};
-    }
-
-    .cover-year {
-        font-family: var(--font-display);
-        font-size: 160px;
-        font-weight: 700;
-        letter-spacing: 0.02em;
-        line-height: 1;
-        color: {% if discipline == 'jumps' %}var(--color-athlete-right){% else %}var(--color-athlete-left){% endif %};
-        opacity: 0.15;
-        position: absolute;
-        bottom: 60px;
-        right: 60px;
+        color: {% if discipline == 'jumps' %}#F0C040{% else %}#00D4FF{% endif %};
+        display: block;
     }
 
     .divider {
-        width: 60px;
-        height: 3px;
-        background: linear-gradient(90deg, {% if discipline == 'jumps' %}var(--color-athlete-right){% else %}var(--color-athlete-left){% endif %}, transparent);
+        width: 120px;
+        height: 4px;
+        background: linear-gradient(90deg, #00D4FF, transparent);
         margin: 24px auto;
         border-radius: 2px;
     }
 
     .cover-subtitle {
         font-family: var(--font-body);
-        font-size: 16px;
+        font-size: 28px;
         font-weight: 400;
         color: var(--color-text-muted);
         letter-spacing: 0.08em;
@@ -78,33 +81,37 @@
     .swipe-hint {
         position: absolute;
         bottom: 40px;
-        left: 0;
-        right: 0;
-        text-align: center;
+        left: 64px;
+        text-align: left;
         font-family: var(--font-body);
-        font-size: 13px;
+        font-size: 18px;
         color: rgba(255,255,255,0.25);
         letter-spacing: 0.12em;
         text-transform: uppercase;
     }
 
-    .swipe-hint::after {
-        content: ' →';
+    .swipe-hint .arrow {
+        color: #00D4FF;
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container">
-    <div class="badge">{{ discipline | upper }}</div>
-    <div class="cover-title">
-        <span class="gender">{{ title_gender | upper }}</span><br>
-        TOP 10<br>
-        {{ title_metric | upper }}
+    {% if is_per_event and event_name %}
+    <div class="eyebrow">PWA World Tour · {{ year }}</div>
+    <div class="event-name">{{ event_name | upper }}</div>
+    <div class="event-meta">
+        {% if event_date_start and event_date_end %}{{ event_date_start }} – {{ event_date_end }}{% endif %}
+        {% if event_stars %} · <span class="stars">{{ '★' * event_stars }}</span>{% endif %}
     </div>
-    <div class="divider"></div>
+    {% endif %}
+    <div class="cover-title">
+        <span class="gender">{{ title_gender | upper }}</span> TOP 10 {{ title_metric | upper }}
+    </div>
+    {% if not is_per_event %}
     <div class="cover-subtitle">{{ year }} Season</div>
-    <div class="cover-year">{{ year }}</div>
-    <div class="swipe-hint">Swipe to reveal</div>
+    {% endif %}
+    <div class="swipe-hint">Swipe to reveal <span class="arrow">→</span></div>
 </div>
 {% endblock %}

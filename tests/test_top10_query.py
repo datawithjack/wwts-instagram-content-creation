@@ -16,7 +16,9 @@ class TestBuildTop10Query:
 
     def test_filters_by_jump_type(self):
         sql, params = build_top10_query(score_type="Jump")
-        assert "Jump" in params
+        # Jump queries use "type <> Wave" to include all trick types
+        assert "Wave" in params
+        assert "<>" in sql or "!=" in sql
 
     def test_filters_by_sex(self):
         sql, params = build_top10_query(score_type="Wave", sex="Men")

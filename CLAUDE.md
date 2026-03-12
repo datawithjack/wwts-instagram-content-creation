@@ -87,3 +87,68 @@ See `.env`. Key vars:
 - Fonts: Bebas Neue (display), Inter (body) — loaded from Google Fonts
 - Colors: see `wwt_instagram_pipeline_plan.md` brand tokens section
 - Output: 1080x1350 portrait (feed), 1080x1080 square (stat of day), 2x DPR
+
+## Skills
+- `/design-audit` — Audit templates for design consistency (colors, fonts, spacing, footers)
+
+## 12-Post Grid Plan
+
+First 12 posts for @windsurfworldtourstats Instagram. Grid ordering matters — posts 1-3 are the most recent (top row).
+
+| # | Post | Template | Data Source | Status |
+|---|------|----------|-------------|--------|
+| 1 | Rolling number reel + sound | `site_stats_reel` | API `/stats` | **Gap: sound** |
+| 2 | About carousel | **New template** | Hardcoded text | **Gap: template** |
+| 3 | Follow along / CTA | **New template** | Hardcoded text | **Gap: template** |
+| 4 | Top 10 women waves — Margaret River | `top_10_carousel` | DB query (event filter) | **Ready** |
+| 5 | Men H2H — Margaret River | `head_to_head` / `head_to_head_jump` | API | **Ready** |
+| 6 | Rider profile — Margaret River | `rider_profile` | API | **Ready** |
+| 7 | Pro Am waves 2025 — rider profile | `rider_profile` | API | **Ready if data exists** |
+| 8 | Pro Am waves 2025 — top wave scores | `top_10_carousel` | DB query (event filter) | **Ready if data exists** |
+| 9 | Pro Am 2025 — H2H | `head_to_head` | API | **Ready if data exists** |
+| 10 | Top 10 wave scores of 2025 | `top_10_carousel` | DB query (year filter) | **Ready** |
+| 11 | Most 10s in Pozo — count leaderboard | **New template** | **New query** | **Gap: query + template** |
+| 12 | All-time best wave scores | `top_10_carousel` | DB query (no filters) | **Ready** |
+
+### Phases
+
+**Phase A: Generate ready posts (4, 5, 6, 10, 12)**
+- Use existing templates + live data. Need Margaret River event ID, athlete IDs.
+- `--dry-run --preview` first, then live data, then `--publish now`
+
+**Phase B: Verify Pro Am data (7, 8, 9)**
+- Query API/DB for Pro Am 2025 event(s) to confirm data exists.
+- If data exists, generate using existing templates.
+
+**Phase C: Sound support for reel (post 1)**
+- Add ffmpeg audio overlay to `render_to_video` or as post-processing.
+- Need royalty-free audio track. File: `pipeline/renderer.py`
+
+**Phase D: Brand templates (posts 2, 3)**
+- Post 2 — About carousel: Multi-slide introducing the page/brand. Reusable HTML template.
+- Post 3 — CTA post: Single-image "follow for more stats" template.
+- New templates in `templates/`, dummy data in `pipeline/templates.py`, captions in `pipeline/captions.py`.
+
+**Phase E: Count leaderboard (post 11)**
+- New `build_count_query()` in `pipeline/queries.py` — count of scores meeting a threshold, grouped by athlete, filtered by event/year/score_type.
+- New or adapted template (reuse `top_10` layout with count instead of score).
+- TDD: `tests/test_count_query.py`
+- Caveat text: "Data since 2016"
+
+### Suggested Execution Order
+1. Phase A — quick wins, 5 posts ready
+2. Phase B — verify Pro Am data, may unlock 3 more
+3. Phase E — new count query (most interesting new capability)
+4. Phase D — brand templates (design-heavy, less code)
+5. Phase C — sound support (nice-to-have, can add sound manually)
+
+### Key Files to Modify
+- `pipeline/queries.py` — new `build_count_query()`
+- `pipeline/templates.py` — dummy data for new templates
+- `pipeline/captions.py` — captions for new templates
+- `pipeline/renderer.py` — sound support (Phase C)
+- `templates/about_carousel.html` — new (Phase D)
+- `templates/cta.html` — new (Phase D)
+- `templates/count_leaderboard.html` — new or adapt top_10 (Phase E)
+- `content_calendar.yaml` — add all 12 posts
+- `tests/test_count_query.py` — new tests for count query

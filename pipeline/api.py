@@ -5,6 +5,8 @@ from datetime import date
 import requests
 from dotenv import load_dotenv
 
+from pipeline.helpers import clean_event_name, country_code_to_iso2, nationality_to_iso
+
 load_dotenv()
 
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.windsurfworldtourstats.com/api/v1")
@@ -119,34 +121,79 @@ def fetch_athlete_event_stats(event_id: int, athlete_id: int, division: str) -> 
     return data
 
 
-def fetch_event_top_scores(event_id: int, score_type: str, sex: str = None) -> dict:
-    """Fetch top 10 scores for a specific event from API."""
-    url = f"{API_BASE_URL}/events/{event_id}/top-scores"
-    params = {"score_type": score_type, "limit": 10}
-    if sex:
-        params["sex"] = sex
-    resp = requests.get(url, params=params, timeout=30)
-    resp.raise_for_status()
-    raw = resp.json()
+def fetch_event_top_scores(event_id: int, score_type: str, sex: str = None, limit: int = 10) -> dict:
+    """Fetch top scores for a specific event from the /events/{id}/stats API.
 
+    Uses top_wave_scores or top_jump_scores from the event stats endpoint,
+    enriched with country codes from the athletes endpoint.
+    """
+    # Fetch event stats
+    stats_params = {}
+    if sex:
+        stats_params["sex"] = sex
+    stats_resp = requests.get(
+        f"{API_BASE_URL}/events/{event_id}/stats",
+        params=stats_params,
+        timeout=30,
+    )
+    stats_resp.raise_for_status()
+    stats = stats_resp.json()
+
+    # Pick the right score list
+    score_key = "top_jump_scores" if score_type == "Jump" else "top_wave_scores"
+    all_scores = stats.get(score_key, [])
+
+    # Build athlete_id -> country map from athletes endpoint
+    # Note: country_code field returns event country (bug), so use "country" (full name)
+    athletes_resp = requests.get(
+        f"{API_BASE_URL}/events/{event_id}/athletes",
+        params=stats_params,
+        timeout=30,
+    )
+    country_map = {}
+    if athletes_resp.ok:
+        for a in athletes_resp.json().get("athletes", []):
+            country_map[a["athlete_id"]] = a.get("country", "")
+
+    event = fetch_event(event_id)
+    event_name = clean_event_name(stats.get("event_name", ""))
     gender_map = {"Men": "Men's", "Women": "Women's"}
+    is_jump = score_type == "Jump"
+
     entries = []
-    for i, r in enumerate(raw.get("scores", [])):
-        entries.append({
+    for i, r in enumerate(all_scores[:limit]):
+        entry = {
             "rank": i + 1,
-            "athlete": r.get("athlete", ""),
-            "country": r.get("country", ""),
+            "athlete": r.get("athlete_name", ""),
+            "country": nationality_to_iso(country_map.get(r.get("athlete_id"), "")),
             "score": float(r.get("score", 0)),
-            "event": raw.get("event_name", ""),
-            "round": r.get("round", ""),
-        })
+            "event": event_name,
+            "round": r.get("round_name", ""),
+        }
+        if is_jump:
+            entry["trick_type"] = r.get("move_type", "")
+        entries.append(entry)
+
+    # Event metadata for cover slide
+    event_data = {
+        "event_country": event.get("country_code", ""),
+        "event_stars": event.get("stars", 0),
+    }
+    start = event.get("start_date")
+    end = event.get("end_date")
+    if start:
+        event_data["event_date_start"] = date.fromisoformat(str(start)).strftime("%b %d")
+    if end:
+        event_data["event_date_end"] = date.fromisoformat(str(end)).strftime("%b %d")
 
     return {
         "title_gender": gender_map.get(sex, ""),
         "title_metric": f"{score_type}s",
-        "title_year": raw.get("year", ""),
+        "title_year": event.get("year", ""),
+        "show_trick_type": is_jump,
         "is_per_event": True,
-        "event_name": raw.get("event_name", ""),
+        "event_name": event_name,
+        **event_data,
         "entries": entries,
     }
 
