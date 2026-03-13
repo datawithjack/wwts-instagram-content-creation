@@ -27,6 +27,10 @@ templates:
     width: 1080
     height: 1080
     dpr: 2
+  h2h_carousel:
+    width: 1080
+    height: 1350
+    dpr: 2
   rider_profile:
     width: 1080
     height: 1350
@@ -34,6 +38,11 @@ templates:
 
 hashtags:
   head_to_head:
+    - "#windsurf"
+    - "#PWA"
+    - "#wavewindsurfing"
+    - "#windsurfstats"
+  h2h_carousel:
     - "#windsurf"
     - "#PWA"
     - "#wavewindsurfing"

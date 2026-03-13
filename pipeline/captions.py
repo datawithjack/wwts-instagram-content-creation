@@ -18,6 +18,7 @@ def build_caption(
         builders = {
             "head_to_head": _caption_head_to_head,
             "head_to_head_jump": _caption_head_to_head,
+            "h2h_carousel": _caption_head_to_head,
             "top_10": _caption_top_10,
             "top_10_carousel": _caption_top_10,
             "about_carousel": _caption_about,

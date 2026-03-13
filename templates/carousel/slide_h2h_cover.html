@@ -1,0 +1,199 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 48px 48px 40px;
+        gap: 0;
+    }
+
+    /* ── Top bar: event info pinned to top ── */
+    .top-bar {
+        position: absolute;
+        top: 48px;
+        left: 48px;
+        right: 48px;
+        text-align: center;
+    }
+
+    .event-name {
+        font-family: var(--font-display);
+        font-size: 64px;
+        letter-spacing: 0.04em;
+        line-height: 1.0;
+        color: var(--color-text-primary);
+        margin-bottom: 6px;
+    }
+
+    .event-meta {
+        font-family: var(--font-body);
+        font-size: 22px;
+        font-weight: 500;
+        color: var(--color-text-muted);
+        letter-spacing: 0.06em;
+    }
+
+    .event-meta .stars {
+        color: #F0C040;
+    }
+
+    /* ── H2H title sits above matchup ── */
+    .h2h-title {
+        font-family: var(--font-display);
+        font-size: 80px;
+        letter-spacing: 0.06em;
+        line-height: 1;
+        color: var(--color-text-primary);
+        margin-bottom: 32px;
+    }
+
+    /* ── Athlete matchup — centered focal point ── */
+    .matchup {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        gap: 16px;
+    }
+
+    .athlete-block {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        flex: 1;
+    }
+
+    .photo-frame {
+        width: 260px;
+        height: 260px;
+        border-radius: 12px;
+        overflow: hidden;
+        flex-shrink: 0;
+        background: rgba(10, 14, 26, 0.6);
+    }
+
+    .photo-frame-left { border: 4px solid var(--color-athlete-left); }
+    .photo-frame-right { border: 4px solid var(--color-athlete-right); }
+
+    .photo-frame img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .photo-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 80px;
+        color: var(--color-text-muted);
+    }
+
+    .athlete-flag {
+        font-size: 40px;
+    }
+
+    .athlete-name {
+        font-family: var(--font-display);
+        font-size: 164px;
+        letter-spacing: 0.03em;
+        line-height: 0.86;
+        text-align: center;
+    }
+
+    .athlete-name-left { color: var(--color-athlete-left); }
+    .athlete-name-right { color: var(--color-athlete-right); }
+
+    .vs-label {
+        font-family: var(--font-display);
+        font-size: 56px;
+        color: var(--color-text-muted);
+        letter-spacing: 0.08em;
+        flex-shrink: 0;
+    }
+
+    .swipe-hint {
+        position: absolute;
+        bottom: 40px;
+        right: 56px;
+        text-align: right;
+        font-family: var(--font-body);
+        font-size: 18px;
+        color: rgba(255,255,255,0.25);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+
+    .swipe-hint .arrow {
+        color: var(--color-discipline);
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <!-- Top bar: compact event info -->
+    <div class="top-bar">
+        <div class="event-name">{{ event_name | upper }}</div>
+        <div class="event-meta">
+            {{ event_country }}
+            {% if event_date_start and event_date_end %}
+            &middot; {{ format_date_range(event_date_start, event_date_end) }}
+            {% endif %}
+            {% if event_tier %}
+            &middot; <span class="stars">{{ '★' * event_tier }}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- HEAD TO HEAD title — large and white, visible on grid -->
+    <div class="h2h-title">HEAD TO HEAD</div>
+
+    <!-- Athlete matchup — dominates the slide -->
+    <div class="matchup">
+        <div class="athlete-block">
+            <div class="photo-frame photo-frame-left">
+                {% if athlete_1_photo_url %}
+                <img src="{{ athlete_1_photo_url }}" alt="{{ athlete_1_name }}">
+                {% else %}
+                <div class="photo-placeholder">{{ athlete_1_name[0] }}</div>
+                {% endif %}
+            </div>
+            {% if athlete_1_country %}
+            <div class="athlete-flag">{{ athlete_1_country | country_flag }}</div>
+            {% endif %}
+            <div class="athlete-name athlete-name-left">
+                {{ athlete_1_name.split()[0] | upper }}<br>{{ athlete_1_name.split()[-1] | upper }}
+            </div>
+        </div>
+
+        <div class="vs-label">VS</div>
+
+        <div class="athlete-block">
+            <div class="photo-frame photo-frame-right">
+                {% if athlete_2_photo_url %}
+                <img src="{{ athlete_2_photo_url }}" alt="{{ athlete_2_name }}">
+                {% else %}
+                <div class="photo-placeholder">{{ athlete_2_name[0] }}</div>
+                {% endif %}
+            </div>
+            {% if athlete_2_country %}
+            <div class="athlete-flag">{{ athlete_2_country | country_flag }}</div>
+            {% endif %}
+            <div class="athlete-name athlete-name-right">
+                {{ athlete_2_name.split()[0] | upper }}<br>{{ athlete_2_name.split()[-1] | upper }}
+            </div>
+        </div>
+    </div>
+
+    <div class="swipe-hint">Swipe to compare <span class="arrow">&rarr;</span></div>
+</div>
+{% endblock %}

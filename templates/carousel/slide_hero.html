@@ -24,18 +24,18 @@
     /* ── Gold badge for #1 ── */
     .rank-badge {
         font-family: var(--font-display);
-        font-size: 28px;
+        font-size: 56px;
         letter-spacing: 0.15em;
         color: #0E1927;
         background: #F0C040;
-        padding: 8px 24px;
+        padding: 14px 40px;
         border-radius: 4px;
         position: relative;
     }
 
     .big-score {
         font-family: var(--font-display);
-        font-size: 216px;
+        font-size: 300px;
         letter-spacing: 0.02em;
         line-height: 1;
         color: #F0C040;
@@ -47,7 +47,7 @@
     .athlete-list {
         position: relative;
         width: 100%;
-        max-width: 700px;
+        max-width: 900px;
     }
 
     .athlete-row {
@@ -58,8 +58,8 @@
     }
 
     .athlete-row .flag img {
-        width: 40px;
-        height: 29px;
+        width: 52px;
+        height: 38px;
         object-fit: cover;
         border-radius: 2px;
         display: block;
@@ -67,34 +67,32 @@
 
     .athlete-row .name {
         font-family: var(--font-display);
-        font-size: {% if tie_count >= 3 %}40px{% elif tie_count == 2 %}52px{% else %}72px{% endif %};
+        font-size: {% if tie_count >= 3 %}60px{% elif tie_count == 2 %}80px{% else %}112px{% endif %};
         letter-spacing: 0.04em;
         line-height: 1;
         flex: 1;
         text-align: left;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
     }
 
     .athlete-row .trick {
         display: inline-block;
         font-family: var(--font-body);
-        font-size: 15px;
+        font-size: 20px;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.04em;
         background: rgba(255,255,255,0.15);
         color: #FFFFFF;
         border-radius: 4px;
-        padding: 4px 10px;
-        white-space: nowrap;
+        padding: 6px 14px;
         flex-shrink: 0;
+        text-align: center;
+        max-width: 140px;
     }
 
     .athlete-row .detail {
         font-family: var(--font-body);
-        font-size: 18px;
+        font-size: 24px;
         color: var(--color-text-muted);
         letter-spacing: 0.05em;
         white-space: nowrap;
@@ -108,14 +106,14 @@
     /* ── Single athlete (no tie) — more spacious, centred ── */
     {% if tie_count == 0 %}
     .athlete-row .name {
-        font-size: 72px;
+        font-size: 112px;
         margin-bottom: 8px;
         text-align: center;
     }
 
     .athlete-row .flag img {
-        width: 80px;
-        height: 58px;
+        width: 100px;
+        height: 72px;
         border-radius: 4px;
     }
 

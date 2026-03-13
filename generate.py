@@ -17,12 +17,12 @@ from pipeline.db import run_query
 from pipeline.helpers import nationality_to_iso, clean_event_name, heat_label_from_id, short_round_name
 from pipeline.queries import build_top10_query
 from pipeline.templates import render_template, get_dummy_data
-from pipeline.renderer import render_to_png, render_to_video, render_carousel
+from pipeline.renderer import render_to_png, render_to_video, render_carousel, render_h2h_carousel
 
 
 def fetch_live_data(template_name: str, args) -> dict:
     """Fetch live data from API or DB based on template type."""
-    if template_name in ("head_to_head", "head_to_head_jump"):
+    if template_name in ("head_to_head", "head_to_head_jump", "h2h_carousel"):
         if not all([args.event, args.athlete1, args.athlete2, args.division]):
             print("H2H requires: --event, --athlete1, --athlete2, --division")
             sys.exit(1)
@@ -144,7 +144,7 @@ def main():
     parser.add_argument(
         "--template",
         required=True,
-        choices=["head_to_head", "head_to_head_jump", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile"],
+        choices=["head_to_head", "head_to_head_jump", "h2h_carousel", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile"],
     )
     parser.add_argument("--athlete1", type=int, help="Athlete 1 unified ID")
     parser.add_argument("--athlete2", type=int, help="Athlete 2 unified ID")
@@ -192,12 +192,15 @@ def main():
     else:
         data = fetch_live_data(template_name, args)
 
-    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel")
+    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "h2h_carousel")
 
     # Carousel preview: open all slides in browser tabs
     if is_carousel and args.preview:
         if template_name in ("coming_soon_carousel", "about_carousel"):
             slides = data["slides"]
+        elif template_name == "h2h_carousel":
+            from pipeline.h2h_carousel import build_slides as build_h2h_slides
+            slides = build_h2h_slides(data)
         else:
             from pipeline.carousel import build_slides
             slides = build_slides(data)
@@ -241,6 +244,12 @@ def main():
                 output_path = os.path.join(carousel_dir, f"{prefix}_{timestamp}_{i}.png")
                 render_to_png(html, output_path, width=width, height=height, dpr=dpr)
                 result_paths.append(output_path)
+        elif template_name == "h2h_carousel":
+            result_paths = render_h2h_carousel(
+                data, carousel_dir,
+                base_name=f"h2h_carousel_{timestamp}",
+                width=width, height=height, dpr=dpr,
+            )
         else:
             result_paths = render_carousel(
                 data, carousel_dir,

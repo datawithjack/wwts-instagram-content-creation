@@ -88,7 +88,7 @@
 {% block carousel_content %}
 <div class="container">
     {% if is_per_event and event_name %}
-    <div class="eyebrow">PWA World Tour · {{ year }}</div>
+    <div class="eyebrow">{{ year }}</div>
     <div class="event-name">{{ event_name | upper }}</div>
     <div class="event-meta">
         {% if event_date_start and event_date_end %}{{ event_date_start }} – {{ event_date_end }}{% endif %}

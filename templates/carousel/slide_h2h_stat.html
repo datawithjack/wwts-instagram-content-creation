@@ -1,0 +1,193 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 60px 48px;
+        gap: 0;
+    }
+
+    /* ── Mini athlete header bar ── */
+    .athlete-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 48px;
+        margin-bottom: 48px;
+        width: 100%;
+    }
+
+    .athlete-bar-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .mini-photo {
+        width: 64px;
+        height: 64px;
+        border-radius: 6px;
+        overflow: hidden;
+        flex-shrink: 0;
+        background: rgba(10, 14, 26, 0.6);
+    }
+
+    .mini-photo-left { border: 2px solid var(--color-athlete-left); }
+    .mini-photo-right { border: 2px solid var(--color-athlete-right); }
+
+    .mini-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .mini-photo-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 24px;
+        color: var(--color-text-muted);
+    }
+
+    .mini-name {
+        font-family: var(--font-display);
+        font-size: 36px;
+        letter-spacing: 0.04em;
+    }
+
+    .mini-name-left { color: var(--color-athlete-left); }
+    .mini-name-right { color: var(--color-athlete-right); }
+
+    /* ── Section title ── */
+    .section-title {
+        font-family: var(--font-body);
+        font-size: 28px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--color-discipline);
+        margin-bottom: 48px;
+    }
+
+    /* ── Metric card ── */
+    .metric-card {
+        width: 100%;
+        background: rgba(30, 41, 59, 0.4);
+        border: 1px solid rgba(51, 65, 85, 0.5);
+        border-radius: 12px;
+        padding: 32px 40px;
+        margin-bottom: 32px;
+    }
+
+    .metric-label {
+        font-family: var(--font-body);
+        font-size: 18px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--color-text-muted);
+        margin-bottom: 20px;
+    }
+
+    .metric-values {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+    }
+
+    .metric-delta {
+        font-family: var(--font-body);
+        font-size: 22px;
+        font-weight: 500;
+        width: 90px;
+        flex-shrink: 0;
+    }
+
+    .delta-left { text-align: left; color: var(--color-athlete-left); }
+    .delta-right { text-align: right; color: var(--color-athlete-right); }
+    .delta-spacer { width: 90px; flex-shrink: 0; }
+
+    .metric-val {
+        font-family: var(--font-display);
+        font-size: 110px;
+        letter-spacing: 0.03em;
+        line-height: 1;
+        width: 320px;
+        flex-shrink: 0;
+    }
+
+    .val-left { color: var(--color-athlete-left); text-align: center; }
+    .val-right { color: var(--color-athlete-right); text-align: center; }
+    .val-muted { color: var(--color-text-muted); }
+
+    .metric-divider {
+        width: 60px;
+        height: 3px;
+        background: rgba(51, 65, 85, 0.6);
+        flex-shrink: 0;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <!-- Mini athlete header bar -->
+    <div class="athlete-bar">
+        <div class="athlete-bar-item">
+            <div class="mini-photo mini-photo-left">
+                {% if athlete_1_photo_url %}
+                <img src="{{ athlete_1_photo_url }}" alt="{{ athlete_1_name }}">
+                {% else %}
+                <div class="mini-photo-placeholder">{{ athlete_1_name[0] }}</div>
+                {% endif %}
+            </div>
+            <div class="mini-name mini-name-left">{{ athlete_1_name.split()[0] | upper }}</div>
+        </div>
+        <div class="athlete-bar-item">
+            <div class="mini-name mini-name-right">{{ athlete_2_name.split()[0] | upper }}</div>
+            <div class="mini-photo mini-photo-right">
+                {% if athlete_2_photo_url %}
+                <img src="{{ athlete_2_photo_url }}" alt="{{ athlete_2_name }}">
+                {% else %}
+                <div class="mini-photo-placeholder">{{ athlete_2_name[0] }}</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Section title -->
+    <div class="section-title">{{ section }}</div>
+
+    <!-- Metric cards -->
+    {% for metric in metrics %}
+    <div class="metric-card">
+        <div class="metric-label">{{ metric.label }}</div>
+        <div class="metric-values">
+            {% if metric.winner == 1 and metric.delta %}
+            <div class="metric-delta delta-left">({{ metric.delta }})</div>
+            {% else %}
+            <div class="delta-spacer"></div>
+            {% endif %}
+
+            <div class="metric-val val-left{% if metric.winner == 2 %} val-muted{% endif %}">{{ metric.val1 }}</div>
+            <div class="metric-divider"></div>
+            <div class="metric-val val-right{% if metric.winner == 1 %} val-muted{% endif %}">{{ metric.val2 }}</div>
+
+            {% if metric.winner == 2 and metric.delta %}
+            <div class="metric-delta delta-right">({{ metric.delta }})</div>
+            {% else %}
+            <div class="delta-spacer"></div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

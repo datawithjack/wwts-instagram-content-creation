@@ -214,6 +214,10 @@ def get_dummy_data(template_name: str) -> dict:
     if template_name == "coming_soon_carousel":
         from pipeline.coming_soon import build_coming_soon_slides
         return {"slides": build_coming_soon_slides()}
+    if template_name == "h2h_carousel":
+        return get_dummy_data("head_to_head")
+    if template_name == "h2h_carousel_jump":
+        return get_dummy_data("head_to_head_jump")
     if template_name in ("site_stats", "site_stats_reel"):
         return {
             "athletes_count": 359,
