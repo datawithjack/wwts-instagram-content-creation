@@ -6,7 +6,7 @@ import uuid
 import boto3
 import requests
 
-GRAPH_API_BASE = "https://graph.facebook.com/v21.0"
+GRAPH_API_BASE = "https://graph.facebook.com/v22.0"
 
 
 def _get_r2_client():
@@ -223,8 +223,8 @@ def publish_carousel(file_paths: list[str], caption: str) -> dict:
         for path in file_paths:
             media_urls.append(upload_to_r2(path))
 
-        # Brief delay to let R2 propagate before Meta fetches
-        time.sleep(3)
+        # Delay to let R2 propagate before Meta fetches
+        time.sleep(10)
 
         # Create child containers
         children_ids = []
