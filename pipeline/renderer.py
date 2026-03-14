@@ -7,6 +7,7 @@ from playwright.sync_api import sync_playwright
 
 from pipeline.carousel import build_slides
 from pipeline.h2h_carousel import build_slides as build_h2h_slides
+from pipeline.rp_carousel import build_slides as build_rp_slides
 from pipeline.templates import render_template
 
 
@@ -84,6 +85,29 @@ def render_h2h_carousel(
     Returns list of PNG file paths.
     """
     slides = build_h2h_slides(data)
+    os.makedirs(output_dir, exist_ok=True)
+    paths = []
+    for i, slide in enumerate(slides, 1):
+        html = render_template(f"carousel/slide_{slide['type']}", slide)
+        output_path = os.path.join(output_dir, f"{base_name}_{i}.png")
+        render_to_png(html, output_path, width=width, height=height, dpr=dpr)
+        paths.append(output_path)
+    return paths
+
+
+def render_rp_carousel(
+    data: dict,
+    output_dir: str,
+    base_name: str = "rp_carousel",
+    width: int = 1080,
+    height: int = 1350,
+    dpr: int = 2,
+) -> list[str]:
+    """Render rider profile carousel data into 5 slide PNGs.
+
+    Returns list of PNG file paths.
+    """
+    slides = build_rp_slides(data)
     os.makedirs(output_dir, exist_ok=True)
     paths = []
     for i, slide in enumerate(slides, 1):

@@ -1,0 +1,112 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 64px 48px 64px;
+        gap: 0;
+    }
+
+    /* ── Event info — prominent ── */
+    .top-bar {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 48px;
+    }
+
+    .event-name {
+        font-family: var(--font-display);
+        font-size: 88px;
+        letter-spacing: 0.04em;
+        line-height: 1.0;
+        color: var(--color-text-primary);
+        margin-bottom: 12px;
+    }
+
+    .event-meta {
+        font-family: var(--font-body);
+        font-size: 28px;
+        font-weight: 500;
+        color: var(--color-text-muted);
+        letter-spacing: 0.06em;
+    }
+
+    .event-meta .stars {
+        color: #F0C040;
+    }
+
+    /* ── Title ── */
+    .rp-title {
+        font-family: var(--font-display);
+        font-size: 240px;
+        letter-spacing: -0.02em;
+        line-height: 1;
+        color: var(--color-discipline);
+        white-space: nowrap;
+        margin-bottom: 24px;
+    }
+
+    /* ── Athlete name block ── */
+    .athlete-block {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+    }
+
+    .athlete-name-line {
+        font-family: var(--font-display);
+        font-size: 300px;
+        letter-spacing: 0.03em;
+        line-height: 0.9;
+        color: var(--color-text-primary);
+    }
+
+    /* ── Swipe hint ── */
+    .swipe-hint {
+        position: absolute;
+        bottom: 40px;
+        right: 64px;
+        text-align: right;
+        font-family: var(--font-body);
+        font-size: 18px;
+        color: rgba(255,255,255,0.25);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+
+    .swipe-hint .arrow {
+        color: var(--color-discipline);
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <!-- Event info — bigger and more prominent -->
+    <div class="top-bar">
+        <div class="event-name">{{ event_name | upper }}</div>
+        <div class="event-meta">
+            {{ event_country }}
+            {% if event_date_start and event_date_end %}
+            &middot; {{ format_date_range(event_date_start, event_date_end) }}
+            {% endif %}
+            {% if event_tier %}
+            &middot; <span class="stars">{{ '★' * event_tier }}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- RIDER PROFILE title -->
+    <div class="rp-title">RIDER PROFILE</div>
+
+    <!-- Athlete name stacked -->
+    <div class="athlete-block">
+        <div class="athlete-name-line">{{ athlete_firstname }}</div>
+        <div class="athlete-name-line">{{ athlete_surname }}</div>
+    </div>
+</div>
+{% endblock %}

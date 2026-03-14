@@ -1,0 +1,119 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: stretch;
+        justify-content: flex-start;
+        text-align: center;
+        padding: 64px 64px 80px;
+        gap: 0;
+    }
+
+    .eyebrow-event {
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.10em;
+        color: var(--color-discipline);
+        margin-bottom: 12px;
+    }
+
+    .slide-title {
+        font-size: 100px;
+        margin-bottom: 48px;
+    }
+
+    /* ── Wave table ── */
+    .wave-table {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: var(--color-bg-card);
+        border: 1px solid var(--color-border-card);
+        border-radius: 8px;
+    }
+
+    .wave-row {
+        display: flex;
+        align-items: center;
+        padding: 0 32px;
+        height: 180px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .wave-row:last-child {
+        border-bottom: none;
+    }
+
+    .wave-row:nth-child(odd) {
+        background: rgba(30, 41, 59, 0.3);
+    }
+
+    .wave-row:nth-child(even) {
+        background: rgba(30, 41, 59, 0.1);
+    }
+
+    /* Medal colors for top 3 */
+    .wave-row.medal-gold .wave-rank {
+        color: var(--color-rank-1st);
+    }
+
+    .wave-row.medal-silver .wave-rank {
+        color: var(--color-rank-2nd);
+    }
+
+    .wave-row.medal-bronze .wave-rank {
+        color: var(--color-rank-3rd);
+    }
+
+    .wave-rank {
+        width: 80px;
+        flex-shrink: 0;
+        font-family: var(--font-display);
+        font-size: 56px;
+        letter-spacing: 0.03em;
+        color: var(--color-text-muted);
+        text-align: center;
+    }
+
+    .wave-score {
+        flex: 1;
+        font-family: var(--font-display);
+        font-size: 72px;
+        letter-spacing: 0.03em;
+        color: var(--color-text-primary);
+    }
+
+    .wave-round {
+        font-family: var(--font-body);
+        font-size: 28px;
+        color: var(--color-text-muted);
+        text-align: right;
+        letter-spacing: 0.04em;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <!-- Event eyebrow -->
+    <div class="eyebrow-event">{{ event_name | upper }}</div>
+
+    <!-- Title -->
+    <div class="slide-title">TOP 5 WAVES</div>
+
+    <!-- Wave table -->
+    <div class="wave-table">
+        {% for wave in top_waves %}
+        <div class="wave-row{% if wave.rank == 1 %} medal-gold{% elif wave.rank == 2 %} medal-silver{% elif wave.rank == 3 %} medal-bronze{% endif %}">
+            <div class="wave-rank">{{ wave.rank }}</div>
+            <div class="wave-score">{{ wave.score }}</div>
+            <div class="wave-round">{{ wave.round }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

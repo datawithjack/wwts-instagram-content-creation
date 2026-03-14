@@ -83,32 +83,50 @@ def fetch_athlete_event_stats(event_id: int, athlete_id: int, division: str) -> 
 
     event = fetch_event(event_id)
 
-    athlete = raw["athlete"]
-    summary = raw["summary"]
+    # Support both old ("athlete"/"summary") and new ("profile"/"summary_stats") API shapes
+    athlete = raw.get("athlete") or raw.get("profile", {})
+    summary = raw.get("summary") or raw.get("summary_stats", {})
 
     # Compute avg wave from all wave scores
     wave_scores = raw.get("wave_scores", [])
     avg_wave = round(sum(w["score"] for w in wave_scores) / len(wave_scores), 2) if wave_scores else 0.0
 
-    # Top 5 waves (already sorted desc from API)
+    # Top 5 waves sorted desc
+    sorted_waves = sorted(wave_scores, key=lambda w: w["score"], reverse=True)[:5]
     top_waves = [
-        {"rank": i + 1, "score": w["score"], "round": w["round"]}
-        for i, w in enumerate(wave_scores[:5])
+        {"rank": i + 1, "score": w["score"], "round": w.get("round") or w.get("round_name", "")}
+        for i, w in enumerate(sorted_waves)
     ]
 
+    # Extract best heat — handle both "best_heat" and "best_heat_score" keys
+    best_heat_obj = summary.get("best_heat") or summary.get("best_heat_score", {})
+    best_heat = best_heat_obj.get("score", 0)
+    best_heat_round = best_heat_obj.get("round") or best_heat_obj.get("round_name", "")
+
+    # Extract best wave — either a bare number or nested object
+    best_wave_raw = summary.get("best_wave") or summary.get("best_wave_score", {})
+    best_wave = best_wave_raw["score"] if isinstance(best_wave_raw, dict) else best_wave_raw
+
+    # Extract best jump — either a bare number or nested object
+    best_jump_raw = summary.get("best_jump") or summary.get("best_jump_score")
+    if isinstance(best_jump_raw, dict):
+        best_jump = best_jump_raw.get("score")
+    else:
+        best_jump = best_jump_raw
+
     data = {
-        "athlete_name": athlete["name"],
-        "athlete_country": athlete["country_code"],
+        "athlete_name": athlete.get("name", ""),
+        "athlete_country": nationality_to_iso(athlete.get("country", "")) or athlete.get("country_code", ""),
         "athlete_photo_url": athlete.get("profile_image", ""),
         "athlete_sail_number": athlete.get("sail_number", ""),
-        "event_name": raw["event_name"],
+        "event_name": clean_event_name(raw["event_name"]),
         "event_country": event.get("country_code", ""),
         "event_tier": event.get("stars", 0),
-        "placement": athlete["overall_position"],
-        "best_heat": summary["best_heat"]["score"],
-        "best_heat_round": summary["best_heat"]["round"],
-        "best_wave": summary["best_wave"],
-        "best_jump": summary.get("best_jump"),
+        "placement": athlete.get("overall_position") or summary.get("overall_position", 0),
+        "best_heat": best_heat,
+        "best_heat_round": best_heat_round,
+        "best_wave": best_wave,
+        "best_jump": best_jump,
         "avg_wave": avg_wave,
         "top_waves": top_waves,
     }

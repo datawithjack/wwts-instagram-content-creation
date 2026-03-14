@@ -17,7 +17,7 @@ from pipeline.db import run_query
 from pipeline.helpers import nationality_to_iso, clean_event_name, heat_label_from_id, short_round_name
 from pipeline.queries import build_top10_query
 from pipeline.templates import render_template, get_dummy_data
-from pipeline.renderer import render_to_png, render_to_video, render_carousel, render_h2h_carousel
+from pipeline.renderer import render_to_png, render_to_video, render_carousel, render_h2h_carousel, render_rp_carousel
 
 
 def fetch_live_data(template_name: str, args) -> dict:
@@ -192,7 +192,7 @@ def main():
     else:
         data = fetch_live_data(template_name, args)
 
-    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "h2h_carousel")
+    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "h2h_carousel", "rider_profile")
 
     # Carousel preview: open all slides in browser tabs
     if is_carousel and args.preview:
@@ -201,11 +201,15 @@ def main():
         elif template_name == "h2h_carousel":
             from pipeline.h2h_carousel import build_slides as build_h2h_slides
             slides = build_h2h_slides(data)
+        elif template_name == "rider_profile":
+            from pipeline.rp_carousel import build_slides as build_rp_slides
+            slides = build_rp_slides(data)
         else:
             from pipeline.carousel import build_slides
             slides = build_slides(data)
         for slide in slides:
             html = render_template(f"carousel/slide_{slide['type']}", slide)
+            html = html.replace("<body>", '<body style="zoom: 0.5;">')
             with tempfile.NamedTemporaryFile(
                 mode="w", suffix=".html", delete=False, encoding="utf-8"
             ) as f:
@@ -219,6 +223,7 @@ def main():
         html = render_template(template_name, data)
 
     if args.preview:
+        html = html.replace("<body>", '<body style="zoom: 0.5;">')
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".html", delete=False, encoding="utf-8"
         ) as f:
@@ -248,6 +253,12 @@ def main():
             result_paths = render_h2h_carousel(
                 data, carousel_dir,
                 base_name=f"h2h_carousel_{timestamp}",
+                width=width, height=height, dpr=dpr,
+            )
+        elif template_name == "rider_profile":
+            result_paths = render_rp_carousel(
+                data, carousel_dir,
+                base_name=f"rider_profile_{timestamp}",
                 width=width, height=height, dpr=dpr,
             )
         else:

@@ -73,8 +73,10 @@ python -m pytest tests/ -v
 ## Publishing
 - **Flow**: Render PNG → Upload to Cloudflare R2 → Create Instagram media container → Poll until ready → Publish → Delete from R2
 - **CLI**: `--publish now` flag on any generate command
-- **Meta Graph API**: v21.0, requires permanent Page Access Token
+- **Meta Graph API**: v22.0, requires permanent Page Access Token
 - **New Pages Experience**: `/me/accounts` returns empty; query page directly by ID (`1055784894276445?fields=access_token,instagram_business_account`)
+- **IMPORTANT — No duplicate publishes**: If `--publish now` fails with a 400 error after rate limiting, the post may have already published successfully. Always check Instagram before retrying. Do NOT re-run `--publish now` without confirming the post didn't go live — duplicate posts require manual deletion.
+- **Known issue**: The publish step can fail with a 400 after the container was actually created and published. The error comes from a second publish attempt after a rate-limit retry. This needs fixing in `pipeline/publisher.py` — the publish flow should check container status before retrying publish.
 
 ## Environment Variables
 See `.env`. Key vars:
