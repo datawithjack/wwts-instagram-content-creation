@@ -51,11 +51,12 @@ python generate.py --template site_stats --dry-run --publish now --caption "Cust
 ```
 
 ## Templates
-- `head_to_head.html` — Two-athlete comparison (wave events)
-- `head_to_head_jump.html` — Two-athlete comparison (wave + jump events)
+- `head_to_head.html` — Two-athlete comparison, single image (wave events) — **legacy, use h2h_carousel**
+- `head_to_head_jump.html` — Two-athlete comparison, single image (wave + jump) — **legacy, use h2h_carousel**
+- `h2h_carousel` — H2H carousel: cover → overview → heat scores → wave scores → [jump scores] → CTA (5-6 slides)
 - `top_10.html` — Top 10 scores leaderboard
 - `site_stats.html` — Site-wide stat counters (with count-up animation for video)
-- `rider_profile.html` — Single athlete performance at an event
+- `rider_profile.html` — Single athlete performance at an event (carousel: cover → hero → stats → waves → CTA)
 
 ## Template Layout Rules
 - HTML template layouts are manually tuned by the user. Do NOT modify template HTML/CSS layout unless explicitly asked.

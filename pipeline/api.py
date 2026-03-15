@@ -98,6 +98,19 @@ def fetch_athlete_event_stats(event_id: int, athlete_id: int, division: str) -> 
         for i, w in enumerate(sorted_waves)
     ]
 
+    # Top 5 jumps sorted desc (if available)
+    jump_scores = raw.get("jump_scores", [])
+    sorted_jumps = sorted(jump_scores, key=lambda j: j["score"], reverse=True)[:5]
+    top_jumps = [
+        {
+            "rank": i + 1,
+            "score": j["score"],
+            "round": j.get("round") or j.get("round_name", ""),
+            "move": j.get("move", ""),
+        }
+        for i, j in enumerate(sorted_jumps)
+    ]
+
     # Extract best heat — handle both "best_heat" and "best_heat_score" keys
     best_heat_obj = summary.get("best_heat") or summary.get("best_heat_score", {})
     best_heat = best_heat_obj.get("score", 0)
@@ -129,6 +142,7 @@ def fetch_athlete_event_stats(event_id: int, athlete_id: int, division: str) -> 
         "best_jump": best_jump,
         "avg_wave": avg_wave,
         "top_waves": top_waves,
+        "top_jumps": top_jumps if top_jumps else None,
     }
 
     for date_key, template_key in [("start_date", "event_date_start"), ("end_date", "event_date_end")]:

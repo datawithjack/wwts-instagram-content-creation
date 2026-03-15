@@ -13,9 +13,16 @@ def _wave_data():
 
 
 def _jump_data():
-    """Return rider profile data for wave+jump event (has best_jump)."""
+    """Return rider profile data for wave+jump event (has best_jump + top_jumps)."""
     data = get_dummy_data("rider_profile")
     data["best_jump"] = 7.50
+    data["top_jumps"] = [
+        {"rank": 1, "score": 10.00, "round": "Round 7", "move": "Push Loop Forward"},
+        {"rank": 2, "score": 9.00, "round": "Round 7", "move": "Push Loop Forward"},
+        {"rank": 3, "score": 7.50, "round": "Round 7", "move": "Double Forward Loop"},
+        {"rank": 4, "score": 4.38, "round": "Round 7", "move": "Back Loop"},
+        {"rank": 5, "score": 3.38, "round": "Round 7", "move": "Double Forward Loop"},
+    ]
     return data
 
 
@@ -23,15 +30,16 @@ def _wave_only_data():
     """Return rider profile data with no jump score."""
     data = get_dummy_data("rider_profile")
     data.pop("best_jump", None)
+    data.pop("top_jumps", None)
     return data
 
 
 # ── Slide Count ──────────────────────────────────────────────────────────────
 
 class TestSlideCount:
-    def test_wave_only_returns_5_slides(self):
+    def test_wave_only_returns_4_slides(self):
         slides = build_slides(_wave_only_data())
-        assert len(slides) == 5
+        assert len(slides) == 4
 
     def test_wave_jump_returns_5_slides(self):
         slides = build_slides(_jump_data())
@@ -41,10 +49,15 @@ class TestSlideCount:
 # ── Slide Types ──────────────────────────────────────────────────────────────
 
 class TestSlideTypes:
-    def test_slide_types(self):
-        slides = build_slides(_wave_data())
+    def test_wave_only_slide_types(self):
+        slides = build_slides(_wave_only_data())
         types = [s["type"] for s in slides]
-        assert types == ["rp_cover", "rp_hero", "rp_stats", "rp_waves", "cta"]
+        assert types == ["rp_cover", "rp_hero", "rp_waves", "cta"]
+
+    def test_wave_jump_slide_types(self):
+        slides = build_slides(_jump_data())
+        types = [s["type"] for s in slides]
+        assert types == ["rp_cover", "rp_hero", "rp_waves", "rp_jumps", "cta"]
 
 
 # ── Accent Colors ────────────────────────────────────────────────────────────
@@ -92,8 +105,14 @@ class TestCoverSlide:
         assert "event_date_end" in cover
         assert "event_tier" in cover
 
+    def test_cover_has_placement(self):
+        slides = build_slides(_wave_data())
+        cover = slides[0]
+        assert cover["placement"] == 1
+        assert cover["placement_ordinal"] == "1st"
 
-# ── Hero Slide ───────────────────────────────────────────────────────────────
+
+# ── Hero Slide (merged with stats) ──────────────────────────────────────────
 
 class TestHeroSlide:
     def test_hero_has_photo(self):
@@ -117,57 +136,54 @@ class TestHeroSlide:
         hero = slides[1]
         assert hero["athlete_country"] == "ES"
 
+    def test_hero_has_stats(self):
+        slides = build_slides(_wave_data())
+        hero = slides[1]
+        assert "stats" in hero
+        assert len(hero["stats"]) >= 3
 
-# ── Stats Slide ──────────────────────────────────────────────────────────────
-
-class TestStatsSlide:
-    def test_wave_only_has_3_stats(self):
+    def test_wave_only_hero_has_3_stats(self):
         slides = build_slides(_wave_only_data())
-        stats = slides[2]
-        assert len(stats["stats"]) == 3
+        hero = slides[1]
+        assert len(hero["stats"]) == 3
 
-    def test_wave_jump_has_4_stats(self):
+    def test_wave_jump_hero_has_4_stats(self):
         slides = build_slides(_jump_data())
-        stats = slides[2]
-        assert len(stats["stats"]) == 4
+        hero = slides[1]
+        assert len(hero["stats"]) == 4
 
     def test_stats_have_label_and_value(self):
         slides = build_slides(_wave_data())
-        stats = slides[2]
-        for stat in stats["stats"]:
+        hero = slides[1]
+        for stat in hero["stats"]:
             assert "label" in stat
             assert "value" in stat
 
     def test_stat_values_formatted_2dp(self):
         slides = build_slides(_wave_data())
-        stats = slides[2]
-        for stat in stats["stats"]:
+        hero = slides[1]
+        for stat in hero["stats"]:
             assert "." in stat["value"]
             _, decimal = stat["value"].split(".")
             assert len(decimal) == 2
 
     def test_wave_only_stat_labels(self):
         slides = build_slides(_wave_only_data())
-        stats = slides[2]
-        labels = [s["label"] for s in stats["stats"]]
+        hero = slides[1]
+        labels = [s["label"] for s in hero["stats"]]
         assert labels == ["Best Heat", "Best Wave", "Avg Wave"]
 
     def test_wave_jump_stat_labels(self):
         slides = build_slides(_jump_data())
-        stats = slides[2]
-        labels = [s["label"] for s in stats["stats"]]
+        hero = slides[1]
+        labels = [s["label"] for s in hero["stats"]]
         assert labels == ["Best Heat", "Best Wave", "Best Jump", "Avg Wave"]
 
     def test_best_heat_has_round_detail(self):
         slides = build_slides(_wave_data())
-        stats = slides[2]
-        best_heat = stats["stats"][0]
+        hero = slides[1]
+        best_heat = hero["stats"][0]
         assert best_heat["detail"] == "Final"
-
-    def test_stats_has_surname(self):
-        slides = build_slides(_wave_data())
-        stats = slides[2]
-        assert stats["athlete_surname"] == "RICO"
 
 
 # ── Waves Slide ──────────────────────────────────────────────────────────────
@@ -175,12 +191,12 @@ class TestStatsSlide:
 class TestWavesSlide:
     def test_waves_has_5_entries(self):
         slides = build_slides(_wave_data())
-        waves = slides[3]
+        waves = slides[2]
         assert len(waves["top_waves"]) == 5
 
     def test_wave_entries_have_rank_score_round(self):
         slides = build_slides(_wave_data())
-        waves = slides[3]
+        waves = slides[2]
         for wave in waves["top_waves"]:
             assert "rank" in wave
             assert "score" in wave
@@ -188,10 +204,46 @@ class TestWavesSlide:
 
     def test_wave_scores_formatted_2dp(self):
         slides = build_slides(_wave_data())
-        waves = slides[3]
+        waves = slides[2]
         for wave in waves["top_waves"]:
             assert "." in wave["score"]
             _, decimal = wave["score"].split(".")
+            assert len(decimal) == 2
+
+
+# ── Jumps Slide ──────────────────────────────────────────────────────────────
+
+class TestJumpsSlide:
+    def test_jumps_slide_exists_when_jump_data(self):
+        slides = build_slides(_jump_data())
+        types = [s["type"] for s in slides]
+        assert "rp_jumps" in types
+
+    def test_jumps_slide_absent_for_wave_only(self):
+        slides = build_slides(_wave_only_data())
+        types = [s["type"] for s in slides]
+        assert "rp_jumps" not in types
+
+    def test_jumps_has_5_entries(self):
+        slides = build_slides(_jump_data())
+        jumps = [s for s in slides if s["type"] == "rp_jumps"][0]
+        assert len(jumps["top_jumps"]) == 5
+
+    def test_jump_entries_have_rank_score_round_move(self):
+        slides = build_slides(_jump_data())
+        jumps = [s for s in slides if s["type"] == "rp_jumps"][0]
+        for j in jumps["top_jumps"]:
+            assert "rank" in j
+            assert "score" in j
+            assert "round" in j
+            assert "move" in j
+
+    def test_jump_scores_formatted_2dp(self):
+        slides = build_slides(_jump_data())
+        jumps = [s for s in slides if s["type"] == "rp_jumps"][0]
+        for j in jumps["top_jumps"]:
+            assert "." in j["score"]
+            _, decimal = j["score"].split(".")
             assert len(decimal) == 2
 
 
@@ -212,8 +264,14 @@ class TestCTASlide:
 # ── Slide Numbers ────────────────────────────────────────────────────────────
 
 class TestSlideNumbers:
-    def test_all_slides_have_slide_number(self):
-        slides = build_slides(_wave_data())
+    def test_wave_only_slide_numbers(self):
+        slides = build_slides(_wave_only_data())
+        for i, slide in enumerate(slides, 1):
+            assert slide["slide_number"] == i
+            assert slide["total_slides"] == 4
+
+    def test_wave_jump_slide_numbers(self):
+        slides = build_slides(_jump_data())
         for i, slide in enumerate(slides, 1):
             assert slide["slide_number"] == i
             assert slide["total_slides"] == 5
@@ -228,7 +286,10 @@ class TestRPCarouselTemplateRendering:
     def test_cover_renders_valid_html(self):
         html = render_template("carousel/slide_rp_cover", self.slides[0])
         assert "<html" in html
-        assert "RIDER PROFILE" in html
+
+    def test_cover_shows_placement(self):
+        html = render_template("carousel/slide_rp_cover", self.slides[0])
+        assert "1st" in html.lower() or "1ST" in html
 
     def test_cover_shows_event_name(self):
         html = render_template("carousel/slide_rp_cover", self.slides[0])
@@ -251,27 +312,21 @@ class TestRPCarouselTemplateRendering:
         html = render_template("carousel/slide_rp_hero", self.slides[1])
         assert "E-73" in html
 
-    def test_stats_renders_valid_html(self):
-        html = render_template("carousel/slide_rp_stats", self.slides[2])
-        assert "<html" in html
-
-    def test_stats_shows_stat_labels(self):
-        html = render_template("carousel/slide_rp_stats", self.slides[2])
+    def test_hero_shows_stats(self):
+        html = render_template("carousel/slide_rp_hero", self.slides[1])
         assert "Best Heat" in html
         assert "Best Wave" in html
-
-    def test_stats_shows_values(self):
-        html = render_template("carousel/slide_rp_stats", self.slides[2])
         assert "16.33" in html
         assert "8.83" in html
 
     def test_waves_renders_valid_html(self):
-        html = render_template("carousel/slide_rp_waves", self.slides[3])
+        html = render_template("carousel/slide_rp_waves", self.slides[2])
         assert "<html" in html
         assert "TOP 5 WAVES" in html
+        assert "RIDER PROFILE" not in html
 
     def test_waves_shows_scores(self):
-        html = render_template("carousel/slide_rp_waves", self.slides[3])
+        html = render_template("carousel/slide_rp_waves", self.slides[2])
         assert "8.83" in html
         assert "7.60" in html
 
@@ -293,3 +348,25 @@ class TestRPCarouselTemplateRendering:
 
     def test_cta_hides_footer(self):
         assert self.slides[-1].get("hide_footer") is True
+
+
+class TestRPJumpTemplateRendering:
+    def setup_method(self):
+        self.slides = build_slides(_jump_data())
+
+    def test_jumps_renders_valid_html(self):
+        jumps = [s for s in self.slides if s["type"] == "rp_jumps"][0]
+        html = render_template("carousel/slide_rp_jumps", jumps)
+        assert "<html" in html
+        assert "TOP 5 JUMPS" in html
+
+    def test_jumps_shows_scores(self):
+        jumps = [s for s in self.slides if s["type"] == "rp_jumps"][0]
+        html = render_template("carousel/slide_rp_jumps", jumps)
+        assert "10.00" in html
+        assert "9.00" in html
+
+    def test_jumps_shows_move_names(self):
+        jumps = [s for s in self.slides if s["type"] == "rp_jumps"][0]
+        html = render_template("carousel/slide_rp_jumps", jumps)
+        assert "Push Loop Forward" in html

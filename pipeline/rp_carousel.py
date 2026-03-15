@@ -1,6 +1,6 @@
-"""Rider profile carousel slide builder — splits rider data into 5 slide dicts.
+"""Rider profile carousel slide builder — splits rider data into 4-5 slide dicts.
 
-Slides: cover → hero → stats → waves → cta
+Slides: cover → hero (with stats) → waves → [jumps] → cta
 """
 
 from pipeline.helpers import ordinal
@@ -39,25 +39,9 @@ def _build_common(data: dict) -> dict:
     }
 
 
-def build_slides(data: dict) -> list[dict]:
-    """Split rider profile data into 5 carousel slide dicts."""
-    common = _build_common(data)
+def _build_stats(data: dict) -> list[dict]:
+    """Build the stats list for the hero slide."""
     is_jump = _has_jump(data)
-
-    slides = []
-
-    # Slide 1: Cover
-    slides.append({"type": "rp_cover", "hide_footer": True, **common})
-
-    # Slide 2: Hero
-    slides.append({
-        "type": "rp_hero",
-        "placement": data.get("placement", 0),
-        "placement_ordinal": ordinal(data.get("placement", 0)),
-        **common,
-    })
-
-    # Slide 3: Stats
     stats = [
         {
             "label": "Best Heat",
@@ -81,13 +65,35 @@ def build_slides(data: dict) -> list[dict]:
         "value": _fmt_score(data.get("avg_wave", 0)),
         "detail": "",
     })
+    return stats
+
+
+def build_slides(data: dict) -> list[dict]:
+    """Split rider profile data into 4-5 carousel slide dicts."""
+    common = _build_common(data)
+    is_jump = _has_jump(data)
+
+    slides = []
+
+    # Slide 1: Cover — placement as hero element
     slides.append({
-        "type": "rp_stats",
-        "stats": stats,
+        "type": "rp_cover",
+        "hide_footer": False,
+        "placement": data.get("placement", 0),
+        "placement_ordinal": ordinal(data.get("placement", 0)),
         **common,
     })
 
-    # Slide 4: Top Waves
+    # Slide 2: Hero + Stats (merged)
+    slides.append({
+        "type": "rp_hero",
+        "placement": data.get("placement", 0),
+        "placement_ordinal": ordinal(data.get("placement", 0)),
+        "stats": _build_stats(data),
+        **common,
+    })
+
+    # Slide 3: Top Waves
     top_waves = []
     for wave in data.get("top_waves", []):
         top_waves.append({
@@ -101,7 +107,23 @@ def build_slides(data: dict) -> list[dict]:
         **common,
     })
 
-    # Slide 5: CTA
+    # Slide 4 (optional): Top Jumps — only for wave+jump events
+    if is_jump and data.get("top_jumps"):
+        top_jumps = []
+        for jump in data.get("top_jumps", []):
+            top_jumps.append({
+                "rank": jump["rank"],
+                "score": _fmt_score(jump["score"]),
+                "round": jump["round"],
+                "move": jump.get("move", ""),
+            })
+        slides.append({
+            "type": "rp_jumps",
+            "top_jumps": top_jumps,
+            **common,
+        })
+
+    # Final slide: CTA
     slides.append({"type": "cta", "hide_footer": True, **common})
 
     # Add slide numbers

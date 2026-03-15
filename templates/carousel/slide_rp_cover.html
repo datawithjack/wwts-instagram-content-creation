@@ -38,14 +38,14 @@
         color: #F0C040;
     }
 
-    /* ── Title ── */
-    .rp-title {
+    /* ── Placement — hero element ── */
+    .placement-hero {
         font-family: var(--font-display);
-        font-size: 240px;
+        font-size: 300px;
         letter-spacing: -0.02em;
         line-height: 1;
         color: var(--color-discipline);
-        white-space: nowrap;
+        text-transform: uppercase;
         margin-bottom: 24px;
     }
 
@@ -55,6 +55,7 @@
         flex-direction: column;
         align-items: center;
         gap: 0;
+        width: 100%;
     }
 
     .athlete-name-line {
@@ -64,29 +65,12 @@
         line-height: 0.9;
         color: var(--color-text-primary);
     }
-
-    /* ── Swipe hint ── */
-    .swipe-hint {
-        position: absolute;
-        bottom: 40px;
-        right: 64px;
-        text-align: right;
-        font-family: var(--font-body);
-        font-size: 18px;
-        color: rgba(255,255,255,0.25);
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-    }
-
-    .swipe-hint .arrow {
-        color: var(--color-discipline);
-    }
 </style>
 {% endblock %}
 
 {% block carousel_content %}
 <div class="container">
-    <!-- Event info — bigger and more prominent -->
+    <!-- Event info -->
     <div class="top-bar">
         <div class="event-name">{{ event_name | upper }}</div>
         <div class="event-meta">
@@ -100,13 +84,38 @@
         </div>
     </div>
 
-    <!-- RIDER PROFILE title -->
-    <div class="rp-title">RIDER PROFILE</div>
+    <!-- Placement as hero -->
+    <div class="placement-hero">{{ placement_ordinal }}</div>
 
     <!-- Athlete name stacked -->
-    <div class="athlete-block">
+    <div class="athlete-block" data-autofit-group>
         <div class="athlete-name-line">{{ athlete_firstname }}</div>
         <div class="athlete-name-line">{{ athlete_surname }}</div>
     </div>
 </div>
+<script>
+document.fonts.ready.then(() => {
+    // Auto-fit name groups — uniform size across both lines
+    document.querySelectorAll('[data-autofit-group]').forEach(group => {
+        const maxWidth = group.offsetWidth;
+        const lines = group.querySelectorAll('.athlete-name-line');
+        const startSize = parseInt(getComputedStyle(lines[0]).fontSize);
+        let size = startSize;
+
+        for (const line of lines) {
+            let s = startSize;
+            line.style.fontSize = s + 'px';
+            while (line.scrollWidth > maxWidth && s > 40) {
+                s -= 4;
+                line.style.fontSize = s + 'px';
+            }
+            size = Math.min(size, s);
+        }
+
+        for (const line of lines) {
+            line.style.fontSize = size + 'px';
+        }
+    });
+});
+</script>
 {% endblock %}

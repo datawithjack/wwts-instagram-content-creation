@@ -103,7 +103,7 @@ def render_rp_carousel(
     height: int = 1350,
     dpr: int = 2,
 ) -> list[str]:
-    """Render rider profile carousel data into 5 slide PNGs.
+    """Render rider profile carousel data into 4-5 slide PNGs.
 
     Returns list of PNG file paths.
     """

@@ -64,7 +64,7 @@
     }
 
     .col-rank {
-        width: 80px;
+        width: 72px;
         flex-shrink: 0;
         font-family: var(--font-body);
         font-size: 44px;
@@ -73,15 +73,30 @@
     }
 
     .col-score {
-        flex: 1;
+        width: 160px;
+        flex-shrink: 0;
         font-family: var(--font-display);
         font-size: 88px;
         letter-spacing: 0.03em;
         color: var(--color-text-primary);
     }
 
+    .col-move {
+        flex: 1;
+        text-align: center;
+        font-family: var(--font-body);
+        font-size: 28px;
+        font-weight: 600;
+        line-height: 1.2;
+        color: var(--color-discipline);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
     .col-round {
-        width: 220px;
+        width: 160px;
         flex-shrink: 0;
         text-align: right;
         font-family: var(--font-body);
@@ -91,6 +106,7 @@
     }
 
     .table-header .col-score,
+    .table-header .col-move,
     .table-header .col-round {
         font-size: 24px;
         color: var(--color-text-label);
@@ -103,21 +119,23 @@
     <!-- Header — bright, matches top 10 pattern -->
     <div class="eyebrow">{{ event_name | upper }}</div>
     <div class="slide-title">{{ athlete_name | upper }}</div>
-    <div class="position-pill">TOP 5 WAVES</div>
+    <div class="position-pill">TOP 5 JUMPS</div>
 
     <!-- Table -->
     <div class="table">
         <div class="table-header">
             <span class="col-rank">#</span>
             <span class="col-score">SCORE</span>
+            <span class="col-move">MOVE</span>
             <span class="col-round">ROUND</span>
         </div>
         <div class="table-body">
-        {% for wave in top_waves %}
+        {% for jump in top_jumps %}
             <div class="table-row">
-                <div class="col-rank">{{ wave.rank }}</div>
-                <div class="col-score">{{ wave.score }}</div>
-                <div class="col-round">{{ wave.round }}</div>
+                <div class="col-rank">{{ jump.rank }}</div>
+                <div class="col-score">{{ jump.score }}</div>
+                <div class="col-move">{{ jump.move }}</div>
+                <div class="col-round">{{ jump.round }}</div>
             </div>
         {% endfor %}
         </div>

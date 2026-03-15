@@ -120,18 +120,41 @@ def wait_for_container(container_id: str, max_attempts: int = 30, delay: float =
     )
 
 
-def publish_container(container_id: str) -> str:
-    """Publish a ready container. Returns media ID."""
+def publish_container(
+    container_id: str, max_retries: int = 3, retry_delay: float = 60.0
+) -> str:
+    """Publish a ready container. Returns media ID.
+
+    Retries on 403 rate-limit errors (subcode 2207051) with a delay between attempts.
+    """
     account_id = os.environ["META_INSTAGRAM_ACCOUNT_ID"]
     token = os.environ["META_ACCESS_TOKEN"]
 
-    resp = requests.post(
-        f"{GRAPH_API_BASE}/{account_id}/media_publish",
-        params={
-            "creation_id": container_id,
-            "access_token": token,
-        },
-    )
+    for attempt in range(max_retries + 1):
+        resp = requests.post(
+            f"{GRAPH_API_BASE}/{account_id}/media_publish",
+            params={
+                "creation_id": container_id,
+                "access_token": token,
+            },
+        )
+        if resp.status_code == 200:
+            return resp.json()["id"]
+
+        error_data = resp.json().get("error", {})
+        is_rate_limit = error_data.get("code") == 4 or resp.status_code == 403
+        if is_rate_limit and attempt < max_retries:
+            wait = retry_delay * (attempt + 1)
+            print(
+                f"Rate limited (attempt {attempt + 1}/{max_retries + 1}), "
+                f"retrying in {wait:.0f}s..."
+            )
+            time.sleep(wait)
+            continue
+
+        # Not a rate limit or out of retries — raise
+        resp.raise_for_status()
+
     resp.raise_for_status()
     return resp.json()["id"]
 

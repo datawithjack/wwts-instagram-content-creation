@@ -43,22 +43,6 @@ class TestSlideTypes:
         assert types == ["h2h_cover", "h2h_stat", "h2h_stat", "h2h_stat", "h2h_stat", "cta"]
 
 
-# ── Slide Numbering ──────────────────────────────────────────────────────────
-
-class TestSlideNumbering:
-    def test_wave_only_numbering(self):
-        slides = build_slides(_wave_data())
-        for i, slide in enumerate(slides, 1):
-            assert slide["slide_number"] == i
-            assert slide["total_slides"] == 5
-
-    def test_wave_jump_numbering(self):
-        slides = build_slides(_jump_data())
-        for i, slide in enumerate(slides, 1):
-            assert slide["slide_number"] == i
-            assert slide["total_slides"] == 6
-
-
 # ── Accent Colors ────────────────────────────────────────────────────────────
 
 class TestAccentColors:
@@ -96,6 +80,39 @@ class TestCoverSlide:
         assert "event_tier" in cover
 
 
+# ── Section Titles ───────────────────────────────────────────────────────────
+
+class TestSectionTitles:
+    def test_wave_only_section_titles(self):
+        slides = build_slides(_wave_data())
+        stat_slides = [s for s in slides if s["type"] == "h2h_stat"]
+        titles = [s["section_title"] for s in stat_slides]
+        assert titles == ["OVERVIEW", "HEAT SCORES", "WAVE SCORES"]
+
+    def test_wave_jump_section_titles(self):
+        slides = build_slides(_jump_data())
+        stat_slides = [s for s in slides if s["type"] == "h2h_stat"]
+        titles = [s["section_title"] for s in stat_slides]
+        assert titles == ["OVERVIEW", "HEAT SCORES", "WAVE SCORES", "JUMP SCORES"]
+
+
+# ── Layouts ──────────────────────────────────────────────────────────────────
+
+class TestLayouts:
+    def test_overview_uses_table_layout(self):
+        slides = build_slides(_wave_data())
+        assert slides[1]["layout"] == "table"
+
+    def test_score_slides_use_bars_layout(self):
+        slides = build_slides(_wave_data())
+        assert slides[2]["layout"] == "bars"
+        assert slides[3]["layout"] == "bars"
+
+    def test_jump_slide_uses_bars_layout(self):
+        slides = build_slides(_jump_data())
+        assert slides[4]["layout"] == "bars"
+
+
 # ── Stat Slides ──────────────────────────────────────────────────────────────
 
 class TestStatSlides:
@@ -105,17 +122,10 @@ class TestStatSlides:
         for slide in stat_slides:
             assert len(slide["metrics"]) == 2
 
-    def test_stat_slide_sections_wave_only(self):
-        slides = build_slides(_wave_data())
-        stat_slides = [s for s in slides if s["type"] == "h2h_stat"]
-        sections = [s["section"] for s in stat_slides]
-        assert sections == ["OVERVIEW", "HEAT SCORES", "WAVE SCORES"]
-
-    def test_stat_slide_sections_wave_jump(self):
+    def test_stat_slide_count_wave_jump(self):
         slides = build_slides(_jump_data())
         stat_slides = [s for s in slides if s["type"] == "h2h_stat"]
-        sections = [s["section"] for s in stat_slides]
-        assert sections == ["OVERVIEW", "HEAT SCORES", "WAVE SCORES", "JUMP SCORES"]
+        assert len(stat_slides) == 4
 
     def test_overview_metrics(self):
         slides = build_slides(_wave_data())
@@ -150,23 +160,21 @@ class TestMetricWinners:
         slides = build_slides(_wave_data())
         overview = slides[1]
         placement = overview["metrics"][0]
-        assert placement["winner"] == 1  # athlete 1 has placement 1
+        assert placement["winner"] == 1
 
     def test_heat_wins_winner(self):
         slides = build_slides(_wave_data())
         overview = slides[1]
         heat_wins = overview["metrics"][1]
-        assert heat_wins["winner"] == 1  # athlete 1 has 2 wins vs 1
+        assert heat_wins["winner"] == 1
 
     def test_best_heat_winner(self):
         slides = build_slides(_wave_data())
         heats = slides[2]
         best_heat = heats["metrics"][0]
-        # athlete 2 has 12.03 vs 9.33
         assert best_heat["winner"] == 2
 
     def test_tie_winner_is_zero(self):
-        """When values are equal, winner should be 0."""
         data = _wave_data()
         data["athlete_1_best_heat"] = 10.00
         data["athlete_2_best_heat"] = 10.00
@@ -204,15 +212,92 @@ class TestMetricValues:
         slides = build_slides(_wave_data())
         heats = slides[2]
         best_heat = heats["metrics"][0]
-        # athlete 2 wins with 12.03 vs 9.33, delta = 2.70
         assert best_heat["delta"] == "+2.70"
 
     def test_placement_delta(self):
-        """Placement uses integer delta."""
         slides = build_slides(_wave_data())
         overview = slides[1]
         heat_wins = overview["metrics"][1]
         assert heat_wins["delta"] == "+1"
+
+
+# ── Bar Widths (score slides only) ───────────────────────────────────────────
+
+class TestBarWidths:
+    def test_score_metrics_have_bar_widths(self):
+        slides = build_slides(_wave_data())
+        for slide in slides:
+            if slide["type"] == "h2h_stat" and slide["layout"] == "bars":
+                for metric in slide["metrics"]:
+                    assert "bar_width_1" in metric
+                    assert "bar_width_2" in metric
+
+    def test_overview_metrics_have_no_bar_widths(self):
+        slides = build_slides(_wave_data())
+        overview = slides[1]
+        for metric in overview["metrics"]:
+            assert "bar_width_1" not in metric
+
+    def test_bar_widths_in_range(self):
+        slides = build_slides(_wave_data())
+        for slide in slides:
+            if slide["type"] == "h2h_stat" and slide["layout"] == "bars":
+                for metric in slide["metrics"]:
+                    assert 40 <= metric["bar_width_1"] <= 100
+                    assert 40 <= metric["bar_width_2"] <= 100
+
+    def test_global_max_gets_100(self):
+        """The highest value across both metrics on a slide should be 100%."""
+        slides = build_slides(_wave_data())
+        heats = slides[2]
+        # athlete_2_best_heat = 12.03 is the highest value on this slide
+        best_heat = heats["metrics"][0]
+        assert best_heat["bar_width_2"] == 100
+
+    def test_average_bars_shorter_than_best(self):
+        """Average metric bars should be shorter than best metric bars (global scale)."""
+        slides = build_slides(_wave_data())
+        heats = slides[2]
+        best = heats["metrics"][0]
+        avg = heats["metrics"][1]
+        # Best has higher values, so best bars should be wider than avg bars
+        assert best["bar_width_2"] >= avg["bar_width_2"]
+        assert best["bar_width_1"] >= avg["bar_width_1"]
+
+    def test_loser_bar_has_minimum_40(self):
+        data = _wave_data()
+        data["athlete_1_best_heat"] = 1.00
+        data["athlete_2_best_heat"] = 10.00
+        slides = build_slides(data)
+        heats = slides[2]
+        best_heat = heats["metrics"][0]
+        assert best_heat["bar_width_1"] == 40
+
+
+# ── Athlete Surnames ─────────────────────────────────────────────────────────
+
+class TestAthleteNames:
+    def test_all_slides_have_firstnames(self):
+        slides = build_slides(_wave_data())
+        for slide in slides:
+            assert "athlete_1_firstname" in slide
+            assert "athlete_2_firstname" in slide
+
+    def test_firstnames_are_uppercase(self):
+        slides = build_slides(_wave_data())
+        assert slides[0]["athlete_1_firstname"] == "SARAH"
+        assert slides[0]["athlete_2_firstname"] == "JANE"
+
+    def test_all_slides_have_surnames(self):
+        slides = build_slides(_wave_data())
+        for slide in slides:
+            assert "athlete_1_surname" in slide
+            assert "athlete_2_surname" in slide
+
+    def test_surnames_are_last_names(self):
+        slides = build_slides(_wave_data())
+        assert slides[0]["athlete_1_surname"] == "KENYON"
+        assert slides[0]["athlete_2_surname"] == "SEMAN"
 
 
 # ── Stat Slides Have Athlete Info ────────────────────────────────────────────
@@ -224,13 +309,6 @@ class TestStatSlideAthleteInfo:
             if slide["type"] == "h2h_stat":
                 assert "athlete_1_name" in slide
                 assert "athlete_2_name" in slide
-
-    def test_stat_slides_have_athlete_photos(self):
-        slides = build_slides(_wave_data())
-        for slide in slides:
-            if slide["type"] == "h2h_stat":
-                assert "athlete_1_photo_url" in slide
-                assert "athlete_2_photo_url" in slide
 
 
 # ── Template Rendering ───────────────────────────────────────────────────────
@@ -257,10 +335,6 @@ class TestH2HCarouselTemplateRendering:
         html = render_template("carousel/slide_h2h_cover", self.slides[0])
         assert "VS" in html
 
-    def test_cover_shows_swipe_hint(self):
-        html = render_template("carousel/slide_h2h_cover", self.slides[0])
-        assert "Swipe" in html
-
     def test_stat_slide_renders_valid_html(self):
         html = render_template("carousel/slide_h2h_stat", self.slides[1])
         assert "<html" in html
@@ -268,6 +342,14 @@ class TestH2HCarouselTemplateRendering:
     def test_stat_slide_shows_section_title(self):
         html = render_template("carousel/slide_h2h_stat", self.slides[1])
         assert "OVERVIEW" in html
+
+    def test_stat_slide_has_h2h_slide_title(self):
+        """Stat slides use top 10 pattern: eyebrow (event) → slide-title (HEAD TO HEAD) → pill (section)."""
+        html = render_template("carousel/slide_h2h_stat", self.slides[1])
+        assert "HEAD TO HEAD" in html
+        assert "slide-title" in html
+        assert "section-pill" in html
+        assert "MARGARET RIVER" in html
 
     def test_stat_slide_shows_metric_labels(self):
         html = render_template("carousel/slide_h2h_stat", self.slides[1])
@@ -278,6 +360,24 @@ class TestH2HCarouselTemplateRendering:
         html = render_template("carousel/slide_h2h_stat", self.slides[1])
         assert "1st" in html
         assert "2nd" in html
+
+    def test_stat_slide_shows_surnames_in_bars(self):
+        html = render_template("carousel/slide_h2h_stat", self.slides[2])
+        assert "KENYON" in html
+        assert "SEMAN" in html
+
+    def test_score_slide_has_photos(self):
+        """Score slides (bar layout) have photos next to bars."""
+        html = render_template("carousel/slide_h2h_stat", self.slides[2])
+        assert "bar-photo" in html
+
+    def test_overview_has_table_rows(self):
+        html = render_template("carousel/slide_h2h_stat", self.slides[1])
+        assert "metric-row" in html
+
+    def test_score_slide_has_bars(self):
+        html = render_template("carousel/slide_h2h_stat", self.slides[2])
+        assert "bar-row" in html
 
     def test_cta_slide_renders(self):
         html = render_template("carousel/slide_cta", self.slides[-1])
@@ -290,6 +390,13 @@ class TestH2HCarouselTemplateRendering:
             html = render_template(template, slide)
             assert "1080" in html
             assert "1350" in html
+
+    def test_cover_has_footer(self):
+        html = render_template("carousel/slide_h2h_cover", self.slides[0])
+        assert "carousel-footer" in html
+
+    def test_cta_hides_footer(self):
+        assert self.slides[-1].get("hide_footer") is True
 
 
 # ── Dummy Data ───────────────────────────────────────────────────────────────

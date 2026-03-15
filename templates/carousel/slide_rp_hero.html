@@ -3,30 +3,32 @@
 {% block carousel_head %}
 <style>
     .container {
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        padding: 64px 64px 80px;
-        gap: 32px;
+        align-items: stretch;
+        justify-content: flex-start;
+        padding: 48px 56px 56px;
+        gap: 0;
     }
 
-    .eyebrow-event {
-        font-family: var(--font-body);
-        font-size: 24px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.10em;
-        color: var(--color-discipline);
+    /* ── Profile card ── */
+    .profile-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex: 1;
+        justify-content: center;
+        gap: 0;
     }
 
     .photo-frame {
-        width: 240px;
-        height: 240px;
-        border-radius: 16px;
+        width: 400px;
+        height: 400px;
+        border-radius: 20px;
         overflow: hidden;
         flex-shrink: 0;
         background: rgba(10, 14, 26, 0.6);
-        border: 4px solid var(--color-discipline);
+        border: 3px solid var(--color-discipline);
+        box-shadow: 0 0 32px rgba(56, 189, 248, 0.12);
+        margin-bottom: 28px;
     }
 
     .photo-frame img {
@@ -43,62 +45,121 @@
         align-items: center;
         justify-content: center;
         font-family: var(--font-display);
-        font-size: 80px;
+        font-size: 120px;
         color: var(--color-text-muted);
     }
 
     .athlete-name {
         font-family: var(--font-display);
-        font-size: 60px;
+        font-size: 120px;
         letter-spacing: 0.04em;
         line-height: 1;
         color: var(--color-text-primary);
+        text-align: center;
+        margin-bottom: 12px;
     }
 
     .athlete-details {
         font-family: var(--font-body);
-        font-size: 22px;
+        font-size: 32px;
         color: var(--color-text-muted);
         letter-spacing: 0.06em;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 16px;
+        gap: 20px;
+        margin-bottom: 32px;
     }
 
     .athlete-details img {
-        width: 32px;
-        height: 24px;
+        width: 44px;
+        height: 32px;
         border-radius: 2px;
         vertical-align: middle;
+    }
+
+    /* ── Stats row — horizontal strip at bottom ── */
+    .stats-strip {
+        width: 100%;
+        display: flex;
+        gap: 16px;
+    }
+
+    .stat-card {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 24px 8px;
+        background: rgba(30, 41, 59, 0.4);
+        border: 1px solid rgba(51, 65, 85, 0.5);
+        border-radius: 12px;
+    }
+
+    .stat-value {
+        font-family: var(--font-display);
+        font-size: 72px;
+        letter-spacing: 0.03em;
+        color: var(--color-text-primary);
+        line-height: 1;
+    }
+
+    .stat-label {
+        font-family: var(--font-body);
+        font-size: 18px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--color-text-muted);
+        margin-top: 6px;
+    }
+
+    .stat-detail {
+        font-family: var(--font-body);
+        font-size: 16px;
+        color: var(--color-discipline);
+        margin-top: 2px;
     }
 </style>
 {% endblock %}
 
 {% block carousel_content %}
 <div class="container">
-    <!-- Event eyebrow -->
-    <div class="eyebrow-event">{{ event_name | upper }}</div>
-
-    <!-- Photo -->
-    <div class="photo-frame">
-        {% if athlete_photo_url %}
-        <img src="{{ athlete_photo_url }}" alt="{{ athlete_name }}">
-        {% else %}
-        <div class="photo-placeholder">{{ athlete_name[0] }}</div>
-        {% endif %}
-    </div>
-
-    <!-- Name -->
-    <div class="athlete-name">{{ athlete_name | upper }}</div>
-
-    <!-- Details: sail number + flag -->
-    <div class="athlete-details">
-        {% if athlete_sail_number %}{{ athlete_sail_number }}{% endif %}
-        {% if athlete_country %}<img src="https://flagcdn.com/w40/{{ athlete_country | lower }}.png" alt="{{ athlete_country }}">{% endif %}
-    </div>
-
-    <!-- Placement -->
+    <!-- Header — bright, matches top 10 pattern -->
+    <div class="eyebrow">{{ event_name | upper }}</div>
+    <div class="slide-title">{{ athlete_name | upper }}</div>
     <div class="position-pill">{{ placement_ordinal }}</div>
+
+    <!-- Profile card — centered, fills space -->
+    <div class="profile-card">
+        <div class="photo-frame">
+            {% if athlete_photo_url %}
+            <img src="{{ athlete_photo_url }}" alt="{{ athlete_name }}">
+            {% else %}
+            <div class="photo-placeholder">{{ athlete_name[0] }}</div>
+            {% endif %}
+        </div>
+
+        <div class="athlete-name">{{ athlete_name | upper }}</div>
+
+        <div class="athlete-details">
+            {% if athlete_sail_number %}{{ athlete_sail_number }}{% endif %}
+            {% if athlete_country %}<img src="https://flagcdn.com/w40/{{ athlete_country | lower }}.png" alt="{{ athlete_country }}">{% endif %}
+        </div>
+
+        <!-- Stats strip at bottom -->
+        <div class="stats-strip">
+            {% for stat in stats %}
+            <div class="stat-card">
+                <div class="stat-value">{{ stat.value }}</div>
+                <div class="stat-label">{{ stat.label }}</div>
+                {% if stat.detail %}
+                <div class="stat-detail">{{ stat.detail }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
 </div>
 {% endblock %}

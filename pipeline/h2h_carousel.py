@@ -9,6 +9,8 @@ from pipeline.helpers import ordinal
 ACCENT_WAVES = "#38bdf8"
 ACCENT_JUMPS = "#2dd4bf"
 
+MIN_BAR_WIDTH = 40
+
 
 def _is_wave_jump(data: dict) -> bool:
     """Detect wave+jump event by presence of jump keys."""
@@ -17,6 +19,30 @@ def _is_wave_jump(data: dict) -> bool:
 
 def _fmt_score(val: float) -> str:
     return f"{val:.2f}"
+
+
+def _add_global_bar_widths(metrics: list[dict]) -> list[dict]:
+    """Add bar_width_1/bar_width_2 scaled to the global max across all metrics.
+
+    All four values (2 metrics × 2 athletes) scale to one maximum so the
+    "best" metric's winner = 100% and the "average" metric's bars are
+    proportionally shorter.
+    """
+    all_raw = []
+    for m in metrics:
+        all_raw.extend([m["raw1"], m["raw2"]])
+
+    global_max = max(all_raw) if all_raw else 0
+
+    for m in metrics:
+        if global_max == 0:
+            m["bar_width_1"] = 100
+            m["bar_width_2"] = 100
+        else:
+            m["bar_width_1"] = max(MIN_BAR_WIDTH, round(m["raw1"] / global_max * 100))
+            m["bar_width_2"] = max(MIN_BAR_WIDTH, round(m["raw2"] / global_max * 100))
+
+    return metrics
 
 
 def _build_metric(
@@ -59,24 +85,39 @@ def _build_metric(
         "label": label,
         "val1": val1,
         "val2": val2,
+        "raw1": raw1,
+        "raw2": raw2,
         "winner": winner,
         "delta": delta,
+        "show_delta": True,
         "format": fmt,
+        "lower_is_better": lower_is_better,
     }
 
 
 def _build_common(data: dict) -> dict:
     """Extract shared context fields passed to every slide."""
     is_jump = _is_wave_jump(data)
+    a1_name = data.get("athlete_1_name", "")
+    a2_name = data.get("athlete_2_name", "")
+    # Split on first space: first word = first name, rest = surname
+    a1_parts = a1_name.split(None, 1) if a1_name else ["", ""]
+    a2_parts = a2_name.split(None, 1) if a2_name else ["", ""]
+    # Strip star ratings from event name (shown separately via event_tier)
+    event_name = data.get("event_name", "").rstrip(" *")
     return {
         "accent_color": ACCENT_JUMPS if is_jump else ACCENT_WAVES,
-        "event_name": data.get("event_name", ""),
+        "event_name": event_name,
         "event_country": data.get("event_country", ""),
         "event_date_start": data.get("event_date_start", ""),
         "event_date_end": data.get("event_date_end", ""),
         "event_tier": data.get("event_tier", 0),
-        "athlete_1_name": data.get("athlete_1_name", ""),
-        "athlete_2_name": data.get("athlete_2_name", ""),
+        "athlete_1_name": a1_name,
+        "athlete_2_name": a2_name,
+        "athlete_1_firstname": a1_parts[0].upper(),
+        "athlete_2_firstname": a2_parts[0].upper(),
+        "athlete_1_surname": a1_parts[1].upper() if len(a1_parts) > 1 else "",
+        "athlete_2_surname": a2_parts[1].upper() if len(a2_parts) > 1 else "",
         "athlete_1_photo_url": data.get("athlete_1_photo_url", ""),
         "athlete_2_photo_url": data.get("athlete_2_photo_url", ""),
         "athlete_1_country": data.get("athlete_1_country", ""),
@@ -95,31 +136,32 @@ def build_slides(data: dict) -> list[dict]:
     # Cover slide
     slides = [{"type": "h2h_cover", **common}]
 
-    # Overview: placement + heat wins
+    # Overview: placement + heat wins — table layout (no bars)
     overview_metrics = [
-        _build_metric(
+        {**_build_metric(
             "FINAL PLACEMENT",
             data["athlete_1_placement"],
             data["athlete_2_placement"],
             fmt="ordinal",
             lower_is_better=True,
-        ),
-        _build_metric(
+        ), "show_delta": False},
+        {**_build_metric(
             "HEAT WINS",
             data["athlete_1_heat_wins"],
             data["athlete_2_heat_wins"],
             fmt="integer",
-        ),
+        ), "show_delta": False},
     ]
     slides.append({
         "type": "h2h_stat",
-        "section": "OVERVIEW",
+        "section_title": "OVERVIEW",
+        "layout": "table",
         "metrics": overview_metrics,
         **common,
     })
 
-    # Heat scores: best + average
-    heat_metrics = [
+    # Heat scores: best + average — bar layout
+    heat_metrics = _add_global_bar_widths([
         _build_metric(
             "BEST HEAT SCORE",
             data["athlete_1_best_heat"],
@@ -130,62 +172,59 @@ def build_slides(data: dict) -> list[dict]:
             data["athlete_1_avg_heat"],
             data["athlete_2_avg_heat"],
         ),
-    ]
+    ])
     slides.append({
         "type": "h2h_stat",
-        "section": "HEAT SCORES",
+        "section_title": "HEAT SCORES",
+        "layout": "bars",
         "metrics": heat_metrics,
         **common,
     })
 
-    # Wave scores: best + avg counting
-    wave_metrics = [
+    # Wave scores: best + avg counting — bar layout
+    wave_metrics = _add_global_bar_widths([
         _build_metric(
             "BEST WAVE",
             data["athlete_1_best_wave"],
             data["athlete_2_best_wave"],
         ),
         _build_metric(
-            "AVG. COUNTING WAVE",
+            "AVERAGE COUNTING WAVE",
             data["athlete_1_avg_wave"],
             data["athlete_2_avg_wave"],
         ),
-    ]
+    ])
     slides.append({
         "type": "h2h_stat",
-        "section": "WAVE SCORES",
+        "section_title": "WAVE SCORES",
+        "layout": "bars",
         "metrics": wave_metrics,
         **common,
     })
 
-    # Jump scores (only for wave+jump events)
+    # Jump scores (only for wave+jump events) — bar layout
     if is_jump:
-        jump_metrics = [
+        jump_metrics = _add_global_bar_widths([
             _build_metric(
                 "BEST JUMP",
                 data["athlete_1_best_jump"],
                 data["athlete_2_best_jump"],
             ),
             _build_metric(
-                "AVG. COUNTING JUMP",
+                "AVERAGE COUNTING JUMP",
                 data["athlete_1_avg_jump"],
                 data["athlete_2_avg_jump"],
             ),
-        ]
+        ])
         slides.append({
             "type": "h2h_stat",
-            "section": "JUMP SCORES",
+            "section_title": "JUMP SCORES",
+            "layout": "bars",
             "metrics": jump_metrics,
             **common,
         })
 
-    # CTA slide
-    slides.append({"type": "cta", **common})
-
-    # Add numbering
-    total = len(slides)
-    for i, slide in enumerate(slides, 1):
-        slide["slide_number"] = i
-        slide["total_slides"] = total
+    # CTA slide (hide footer — CTA has its own branding)
+    slides.append({"type": "cta", "hide_footer": True, **common})
 
     return slides

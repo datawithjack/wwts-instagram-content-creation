@@ -3,191 +3,373 @@
 {% block carousel_head %}
 <style>
     .container {
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        padding: 60px 48px;
+        align-items: stretch;
+        justify-content: flex-start;
+        text-align: left;
+        padding: 48px 56px 56px;
         gap: 0;
     }
 
-    /* ── Mini athlete header bar ── */
-    .athlete-bar {
-        display: flex;
+    /* ── Dimmed header — data is the star ── */
+    .eyebrow {
+        color: rgba(255, 255, 255, 0.30);
+        font-size: 24px;
+        margin-bottom: 2px;
+    }
+
+    .slide-title {
+        font-size: 64px;
+        margin-bottom: 6px;
+        color: rgba(255, 255, 255, 0.30);
+    }
+
+    .section-pill {
+        display: inline-block;
+        font-family: var(--font-display);
+        font-size: 36px;
+        letter-spacing: 0.04em;
+        border-radius: 6px;
+        padding: 4px 16px;
+        margin-bottom: 16px;
+        background: rgba(255, 255, 255, 0.12);
+        color: rgba(255, 255, 255, 0.45);
+    }
+
+    /* ── Overview grid — athletes + metrics in aligned 3-col grid ── */
+    .overview-grid {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 0;
         align-items: center;
-        justify-content: center;
-        gap: 48px;
-        margin-bottom: 48px;
+        justify-items: center;
+        flex: 1;
+        align-content: center;
+    }
+
+    .athlete-col {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        padding: 28px 24px;
+        border-radius: 16px;
+        border: 2px solid;
         width: 100%;
     }
 
-    .athlete-bar-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
+    .athlete-col-left { border-color: var(--color-athlete-left); }
+    .athlete-col-right { border-color: var(--color-athlete-right); }
 
-    .mini-photo {
-        width: 64px;
-        height: 64px;
-        border-radius: 6px;
+    .athlete-photo-lg {
+        width: 220px;
+        height: 220px;
+        border-radius: 14px;
         overflow: hidden;
-        flex-shrink: 0;
         background: rgba(10, 14, 26, 0.6);
     }
 
-    .mini-photo-left { border: 2px solid var(--color-athlete-left); }
-    .mini-photo-right { border: 2px solid var(--color-athlete-right); }
-
-    .mini-photo img {
+    .athlete-photo-lg img {
         width: 100%;
         height: 100%;
         object-fit: cover;
         display: block;
     }
 
-    .mini-photo-placeholder {
+    .athlete-photo-lg .bar-photo-placeholder {
         width: 100%;
         height: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
         font-family: var(--font-display);
-        font-size: 24px;
+        font-size: 64px;
         color: var(--color-text-muted);
     }
 
-    .mini-name {
+    .athlete-firstname {
         font-family: var(--font-display);
-        font-size: 36px;
-        letter-spacing: 0.04em;
+        font-size: 96px;
+        letter-spacing: 0.03em;
+        line-height: 1;
     }
 
-    .mini-name-left { color: var(--color-athlete-left); }
-    .mini-name-right { color: var(--color-athlete-right); }
-
-    /* ── Section title ── */
-    .section-title {
-        font-family: var(--font-body);
-        font-size: 28px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: var(--color-discipline);
-        margin-bottom: 48px;
+    .grid-spacer {
+        grid-column: 1 / -1;
+        height: 24px;
     }
 
-    /* ── Metric card ── */
-    .metric-card {
+    .grid-divider {
+        grid-column: 1 / -1;
         width: 100%;
-        background: rgba(30, 41, 59, 0.4);
-        border: 1px solid rgba(51, 65, 85, 0.5);
-        border-radius: 12px;
-        padding: 32px 40px;
-        margin-bottom: 32px;
+        height: 1px;
+        background: rgba(51, 65, 85, 0.3);
+    }
+
+    .metric-val {
+        font-family: var(--font-display);
+        letter-spacing: 0.03em;
+        line-height: 1;
+        text-align: center;
+        padding: 32px 0;
+    }
+
+    .metric-val-large { font-size: 180px; }
+
+    .val-left { color: var(--color-athlete-left); }
+    .val-right { color: var(--color-athlete-right); }
+    .val-muted { color: rgba(255, 255, 255, 0.25) !important; }
+
+    .metric-center {
+        text-align: center;
+        padding: 0 16px;
     }
 
     .metric-label {
         font-family: var(--font-body);
-        font-size: 18px;
+        font-size: 24px;
         font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.10em;
         color: var(--color-text-muted);
-        margin-bottom: 20px;
-    }
-
-    .metric-values {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0;
     }
 
     .metric-delta {
         font-family: var(--font-body);
-        font-size: 22px;
-        font-weight: 500;
+        font-size: 24px;
+        font-weight: 600;
+        margin-top: 4px;
+    }
+    .delta-left { color: #1a9fcc; }
+    .delta-right { color: #22a898; }
+
+    /* ── Content area — fills remaining space ── */
+    .content {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        justify-content: center;
+    }
+
+    /* ── BAR LAYOUT — score slides ── */
+    .bar-metrics {
+        display: flex;
+        flex-direction: column;
+        gap: 104px;
+    }
+
+    .bar-group {
+        width: 100%;
+    }
+
+    .bar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 14px;
+        padding: 0 4px;
+    }
+
+    .bar-label {
+        font-family: var(--font-body);
+        font-size: 36px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #FFFFFF;
+    }
+
+    .bar-delta {
+        font-family: var(--font-body);
+        font-size: 34px;
+        font-weight: 600;
+    }
+
+    .bar-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 10px;
+    }
+
+    .bar-track {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .bar-photo {
         width: 90px;
+        height: 90px;
+        border-radius: 8px;
+        overflow: hidden;
         flex-shrink: 0;
+        background: rgba(10, 14, 26, 0.6);
     }
 
-    .delta-left { text-align: left; color: var(--color-athlete-left); }
-    .delta-right { text-align: right; color: var(--color-athlete-right); }
-    .delta-spacer { width: 90px; flex-shrink: 0; }
+    .bar-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
 
-    .metric-val {
+    .bar-photo-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         font-family: var(--font-display);
-        font-size: 110px;
-        letter-spacing: 0.03em;
-        line-height: 1;
-        width: 320px;
-        flex-shrink: 0;
+        font-size: 28px;
+        color: var(--color-text-muted);
     }
 
-    .val-left { color: var(--color-athlete-left); text-align: center; }
-    .val-right { color: var(--color-athlete-right); text-align: center; }
-    .val-muted { color: var(--color-text-muted); }
+    .bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 156px;
+        border-radius: 10px;
+        padding: 0 32px;
+        background: var(--color-bg-card);
+        border: 1px solid var(--color-border-card);
+    }
 
-    .metric-divider {
-        width: 60px;
-        height: 3px;
-        background: rgba(51, 65, 85, 0.6);
-        flex-shrink: 0;
+    /* Winner fill — dimmed cyan/teal for readability */
+    .bar-fill-1 {
+        background: #1a9fcc;
+        border-color: #1a9fcc;
+    }
+
+    .bar-fill-2 {
+        background: #22a898;
+        border-color: #22a898;
+    }
+
+    .bar-name {
+        font-family: var(--font-display);
+        font-size: 64px;
+        letter-spacing: 0.06em;
+        color: #FFFFFF;
+    }
+
+    .bar-value {
+        font-family: var(--font-display);
+        font-size: 96px;
+        letter-spacing: 0.03em;
+        color: #FFFFFF;
     }
 </style>
 {% endblock %}
 
 {% block carousel_content %}
 <div class="container">
-    <!-- Mini athlete header bar -->
-    <div class="athlete-bar">
-        <div class="athlete-bar-item">
-            <div class="mini-photo mini-photo-left">
-                {% if athlete_1_photo_url %}
-                <img src="{{ athlete_1_photo_url }}" alt="{{ athlete_1_name }}">
-                {% else %}
-                <div class="mini-photo-placeholder">{{ athlete_1_name[0] }}</div>
+    <!-- Header — matches top 10 pattern: eyebrow → slide-title → pill -->
+    <div class="eyebrow">{{ event_name | upper }}</div>
+    <div class="slide-title">HEAD TO HEAD</div>
+    <div class="section-pill">{{ section_title }}</div>
+
+    <div class="content">
+        {% if layout == "table" %}
+        {# ── OVERVIEW GRID — athletes + metrics aligned ── #}
+        <div class="overview-grid">
+            <!-- Row: athlete cards -->
+            <div class="athlete-col athlete-col-left">
+                <div class="athlete-photo-lg">
+                    {% if athlete_1_photo_url %}
+                    <img src="{{ athlete_1_photo_url }}" alt="{{ athlete_1_name }}">
+                    {% else %}
+                    <div class="bar-photo-placeholder">{{ athlete_1_name[0] }}</div>
+                    {% endif %}
+                </div>
+                <div class="athlete-firstname" style="color: var(--color-athlete-left);">{{ athlete_1_firstname }}</div>
+            </div>
+            <div></div>
+            <div class="athlete-col athlete-col-right">
+                <div class="athlete-photo-lg">
+                    {% if athlete_2_photo_url %}
+                    <img src="{{ athlete_2_photo_url }}" alt="{{ athlete_2_name }}">
+                    {% else %}
+                    <div class="bar-photo-placeholder">{{ athlete_2_name[0] }}</div>
+                    {% endif %}
+                </div>
+                <div class="athlete-firstname" style="color: var(--color-athlete-right);">{{ athlete_2_firstname }}</div>
+            </div>
+
+            <div class="grid-spacer"></div>
+
+            <!-- Metric rows -->
+            {% for metric in metrics %}
+            {% if not loop.first %}<div class="grid-divider"></div>{% endif %}
+            <div class="metric-val val-left{% if metric.winner == 2 %} val-muted{% endif %} metric-val-large">
+                {{ metric.val1 }}
+            </div>
+            <div class="metric-center">
+                <div class="metric-label">{{ metric.label }}</div>
+                {% if metric.show_delta and metric.delta %}
+                <div class="metric-delta {% if metric.winner == 1 %}delta-left{% else %}delta-right{% endif %}">
+                    {% if metric.winner == 1 %}{{ athlete_1_firstname }}{% else %}{{ athlete_2_firstname }}{% endif %}
+                    {{ metric.delta }}
+                </div>
                 {% endif %}
             </div>
-            <div class="mini-name mini-name-left">{{ athlete_1_name.split()[0] | upper }}</div>
+            <div class="metric-val val-right{% if metric.winner == 1 %} val-muted{% endif %} metric-val-large">
+                {{ metric.val2 }}
+            </div>
+            {% endfor %}
         </div>
-        <div class="athlete-bar-item">
-            <div class="mini-name mini-name-right">{{ athlete_2_name.split()[0] | upper }}</div>
-            <div class="mini-photo mini-photo-right">
-                {% if athlete_2_photo_url %}
-                <img src="{{ athlete_2_photo_url }}" alt="{{ athlete_2_name }}">
-                {% else %}
-                <div class="mini-photo-placeholder">{{ athlete_2_name[0] }}</div>
+
+        {% else %}
+        {# ── BAR LAYOUT — full-width bars, color = winner ── #}
+        <div class="bar-metrics">
+        {% for metric in metrics %}
+        <div class="bar-group">
+            <div class="bar-header">
+                <div class="bar-label">{{ metric.label }}</div>
+                {% if metric.show_delta and metric.delta %}
+                <div class="bar-delta {% if metric.winner == 1 %}delta-left{% else %}delta-right{% endif %}">
+                    {% if metric.winner == 1 %}{{ athlete_1_firstname }}{% else %}{{ athlete_2_firstname }}{% endif %}
+                    {{ metric.delta }}
+                </div>
                 {% endif %}
             </div>
+
+            <!-- Athlete 1 bar -->
+            <div class="bar-row">
+                <div class="bar-photo">
+                    {% if athlete_1_photo_url %}
+                    <img src="{{ athlete_1_photo_url }}" alt="{{ athlete_1_name }}">
+                    {% else %}
+                    <div class="bar-photo-placeholder">{{ athlete_1_name[0] }}</div>
+                    {% endif %}
+                </div>
+                <div class="bar-track">
+                    <div class="bar{% if metric.winner == 1 or metric.winner == 0 %} bar-fill-1{% endif %}" style="width: {{ metric.bar_width_1 }}%;">
+                        <span class="bar-name">{{ athlete_1_surname }}</span>
+                        <span class="bar-value">{{ metric.val1 }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Athlete 2 bar -->
+            <div class="bar-row">
+                <div class="bar-photo">
+                    {% if athlete_2_photo_url %}
+                    <img src="{{ athlete_2_photo_url }}" alt="{{ athlete_2_name }}">
+                    {% else %}
+                    <div class="bar-photo-placeholder">{{ athlete_2_name[0] }}</div>
+                    {% endif %}
+                </div>
+                <div class="bar-track">
+                    <div class="bar{% if metric.winner == 2 or metric.winner == 0 %} bar-fill-2{% endif %}" style="width: {{ metric.bar_width_2 }}%;">
+                        <span class="bar-name">{{ athlete_2_surname }}</span>
+                        <span class="bar-value">{{ metric.val2 }}</span>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-
-    <!-- Section title -->
-    <div class="section-title">{{ section }}</div>
-
-    <!-- Metric cards -->
-    {% for metric in metrics %}
-    <div class="metric-card">
-        <div class="metric-label">{{ metric.label }}</div>
-        <div class="metric-values">
-            {% if metric.winner == 1 and metric.delta %}
-            <div class="metric-delta delta-left">({{ metric.delta }})</div>
-            {% else %}
-            <div class="delta-spacer"></div>
-            {% endif %}
-
-            <div class="metric-val val-left{% if metric.winner == 2 %} val-muted{% endif %}">{{ metric.val1 }}</div>
-            <div class="metric-divider"></div>
-            <div class="metric-val val-right{% if metric.winner == 1 %} val-muted{% endif %}">{{ metric.val2 }}</div>
-
-            {% if metric.winner == 2 and metric.delta %}
-            <div class="metric-delta delta-right">({{ metric.delta }})</div>
-            {% else %}
-            <div class="delta-spacer"></div>
-            {% endif %}
+        {% endfor %}
         </div>
+        {% endif %}
     </div>
-    {% endfor %}
 </div>
 {% endblock %}
