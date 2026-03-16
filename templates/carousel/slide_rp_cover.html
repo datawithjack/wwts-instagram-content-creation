@@ -6,7 +6,7 @@
         align-items: center;
         justify-content: center;
         text-align: center;
-        padding: 64px 48px 64px;
+        padding: 80px 48px 64px;
         gap: 0;
     }
 
@@ -17,9 +17,17 @@
         margin-bottom: 48px;
     }
 
+    .event-year {
+        font-family: var(--font-display);
+        font-size: 64px;
+        letter-spacing: 0.06em;
+        color: var(--color-text-primary);
+        margin-bottom: 8px;
+    }
+
     .event-name {
         font-family: var(--font-display);
-        font-size: 88px;
+        font-size: 104px;
         letter-spacing: 0.04em;
         line-height: 1.0;
         color: var(--color-text-primary);
@@ -44,7 +52,7 @@
         font-size: 300px;
         letter-spacing: -0.02em;
         line-height: 1;
-        color: var(--color-discipline);
+        color: {{ placement_color | default('var(--color-discipline)') }};
         text-transform: uppercase;
         margin-bottom: 24px;
     }
@@ -64,6 +72,7 @@
         letter-spacing: 0.03em;
         line-height: 0.9;
         color: var(--color-text-primary);
+        white-space: nowrap;
     }
 </style>
 {% endblock %}
@@ -72,6 +81,7 @@
 <div class="container">
     <!-- Event info -->
     <div class="top-bar">
+        {% if event_date_start %}<div class="event-year">{{ event_date_start.year }}</div>{% endif %}
         <div class="event-name">{{ event_name | upper }}</div>
         <div class="event-meta">
             {{ event_country }}

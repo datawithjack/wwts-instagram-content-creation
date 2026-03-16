@@ -8,6 +8,13 @@ from pipeline.helpers import ordinal
 ACCENT_WAVES = "#38bdf8"
 ACCENT_JUMPS = "#2dd4bf"
 
+PLACEMENT_COLORS = {
+    1: "#F0C040",  # gold
+    2: "#B0C4DE",  # silver — light steel blue
+    3: "#CD7F32",  # bronze
+}
+PLACEMENT_DEFAULT = "#2dd4bf"  # teal
+
 
 def _has_jump(data: dict) -> bool:
     """Detect wave+jump event by presence of best_jump."""
@@ -40,31 +47,51 @@ def _build_common(data: dict) -> dict:
 
 
 def _build_stats(data: dict) -> list[dict]:
-    """Build the stats list for the hero slide."""
-    is_jump = _has_jump(data)
+    """Build the stats list for the overview slide."""
+    placement = data.get("placement", 0)
+
+    # Get round for best wave (rank 1 in top_waves)
+    top_waves = data.get("top_waves", [])
+    best_wave_round = top_waves[0].get("round", "") if top_waves else ""
+
+    # Get round for best jump (rank 1 in top_jumps)
+    top_jumps = data.get("top_jumps") or []
+    best_jump_round = top_jumps[0].get("round", "") if top_jumps else ""
+
     stats = [
+        {
+            "label": "Placing",
+            "value": ordinal(placement),
+            "detail": "",
+            "is_placing": True,
+        },
         {
             "label": "Best Heat",
             "value": _fmt_score(data.get("best_heat", 0)),
             "detail": data.get("best_heat_round", ""),
+            "is_placing": False,
         },
         {
             "label": "Best Wave",
             "value": _fmt_score(data.get("best_wave", 0)),
-            "detail": "",
+            "detail": best_wave_round,
+            "is_placing": False,
         },
     ]
-    if is_jump:
+    if _has_jump(data):
         stats.append({
             "label": "Best Jump",
             "value": _fmt_score(data.get("best_jump", 0)),
-            "detail": "",
+            "detail": best_jump_round,
+            "is_placing": False,
         })
-    stats.append({
-        "label": "Avg Wave",
-        "value": _fmt_score(data.get("avg_wave", 0)),
-        "detail": "",
-    })
+    else:
+        stats.append({
+            "label": "Average Wave",
+            "value": _fmt_score(data.get("avg_wave", 0)),
+            "detail": "",
+            "is_placing": False,
+        })
     return stats
 
 
@@ -76,11 +103,13 @@ def build_slides(data: dict) -> list[dict]:
     slides = []
 
     # Slide 1: Cover — placement as hero element
+    placement = data.get("placement", 0)
     slides.append({
         "type": "rp_cover",
         "hide_footer": False,
-        "placement": data.get("placement", 0),
-        "placement_ordinal": ordinal(data.get("placement", 0)),
+        "placement": placement,
+        "placement_ordinal": ordinal(placement),
+        "placement_color": PLACEMENT_COLORS.get(placement, PLACEMENT_DEFAULT),
         **common,
     })
 

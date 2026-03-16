@@ -9,157 +9,131 @@
         gap: 0;
     }
 
-    /* ── Profile card ── */
-    .profile-card {
+    .header-row {
         display: flex;
-        flex-direction: column;
-        align-items: center;
-        flex: 1;
-        justify-content: center;
-        gap: 0;
+        align-items: flex-end;
+        justify-content: space-between;
     }
 
-    .photo-frame {
-        width: 400px;
-        height: 400px;
-        border-radius: 20px;
+    .header-text {
+        flex: 1;
+    }
+
+    .header-photo {
+        width: 100px;
+        height: 100px;
+        border-radius: 12px;
         overflow: hidden;
         flex-shrink: 0;
-        background: rgba(10, 14, 26, 0.6);
-        border: 3px solid var(--color-discipline);
-        box-shadow: 0 0 32px rgba(56, 189, 248, 0.12);
-        margin-bottom: 28px;
+        margin-left: 24px;
+        margin-bottom: 16px;
+        border: 2px solid var(--color-discipline);
     }
 
-    .photo-frame img {
+    .header-photo img {
         width: 100%;
         height: 100%;
         object-fit: cover;
         display: block;
     }
 
-    .photo-placeholder {
+    .header-photo .photo-placeholder {
         width: 100%;
         height: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
         font-family: var(--font-display);
-        font-size: 120px;
+        font-size: 40px;
         color: var(--color-text-muted);
+        background: rgba(10, 14, 26, 0.6);
     }
 
-    .athlete-name {
-        font-family: var(--font-display);
-        font-size: 120px;
-        letter-spacing: 0.04em;
-        line-height: 1;
-        color: var(--color-text-primary);
-        text-align: center;
-        margin-bottom: 12px;
-    }
-
-    .athlete-details {
-        font-family: var(--font-body);
-        font-size: 32px;
-        color: var(--color-text-muted);
-        letter-spacing: 0.06em;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 20px;
+    .position-pill {
+        display: block;
         margin-bottom: 32px;
     }
 
-    .athlete-details img {
-        width: 44px;
-        height: 32px;
-        border-radius: 2px;
-        vertical-align: middle;
-    }
-
-    /* ── Stats row — horizontal strip at bottom ── */
-    .stats-strip {
+    /* ── Stats grid — 2x2 ── */
+    .stats-grid {
         width: 100%;
-        display: flex;
-        gap: 16px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        flex: 1;
     }
 
     .stat-card {
-        flex: 1;
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
-        padding: 24px 8px;
-        background: rgba(30, 41, 59, 0.4);
-        border: 1px solid rgba(51, 65, 85, 0.5);
-        border-radius: 12px;
+        justify-content: flex-end;
+        padding: 32px 16px;
+        background: none;
+        border: none;
     }
 
     .stat-value {
         font-family: var(--font-display);
-        font-size: 72px;
-        letter-spacing: 0.03em;
+        font-size: 200px;
+        letter-spacing: 0.02em;
         color: var(--color-text-primary);
         line-height: 1;
     }
 
     .stat-label {
         font-family: var(--font-body);
-        font-size: 18px;
+        font-size: 30px;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.08em;
         color: var(--color-text-muted);
-        margin-top: 6px;
+        margin-top: 12px;
     }
 
     .stat-detail {
         font-family: var(--font-body);
-        font-size: 16px;
+        font-size: 28px;
+        color: var(--color-text-muted);
+        margin-top: 12px;
+        min-height: 34px;
+    }
+
+    /* Placing card — accent highlight */
+    .stat-card.placing .stat-value {
         color: var(--color-discipline);
-        margin-top: 2px;
+        font-size: 220px;
     }
 </style>
 {% endblock %}
 
 {% block carousel_content %}
 <div class="container">
-    <!-- Header — bright, matches top 10 pattern -->
-    <div class="eyebrow">{{ event_name | upper }}</div>
-    <div class="slide-title">{{ athlete_name | upper }}</div>
-    <div class="position-pill">{{ placement_ordinal }}</div>
-
-    <!-- Profile card — centered, fills space -->
-    <div class="profile-card">
-        <div class="photo-frame">
+    <!-- Header with rider photo -->
+    <div class="header-row">
+        <div class="header-text">
+            <div class="eyebrow">{{ event_name | upper }}</div>
+            <div class="slide-title">{{ athlete_name | upper }}</div>
+        </div>
+        <div class="header-photo">
             {% if athlete_photo_url %}
             <img src="{{ athlete_photo_url }}" alt="{{ athlete_name }}">
             {% else %}
             <div class="photo-placeholder">{{ athlete_name[0] }}</div>
             {% endif %}
         </div>
+    </div>
+    <div class="position-pill">OVERVIEW</div>
 
-        <div class="athlete-name">{{ athlete_name | upper }}</div>
-
-        <div class="athlete-details">
-            {% if athlete_sail_number %}{{ athlete_sail_number }}{% endif %}
-            {% if athlete_country %}<img src="https://flagcdn.com/w40/{{ athlete_country | lower }}.png" alt="{{ athlete_country }}">{% endif %}
+    <!-- Stats grid -->
+    <div class="stats-grid">
+        {% for stat in stats %}
+        <div class="stat-card{{ ' placing' if stat.is_placing else '' }}">
+            <div class="stat-value">{{ stat.value }}</div>
+            <div class="stat-label">{{ stat.label }}</div>
+            <div class="stat-detail">{{ stat.detail }}</div>
         </div>
-
-        <!-- Stats strip at bottom -->
-        <div class="stats-strip">
-            {% for stat in stats %}
-            <div class="stat-card">
-                <div class="stat-value">{{ stat.value }}</div>
-                <div class="stat-label">{{ stat.label }}</div>
-                {% if stat.detail %}
-                <div class="stat-detail">{{ stat.detail }}</div>
-                {% endif %}
-            </div>
-            {% endfor %}
-        </div>
+        {% endfor %}
     </div>
 </div>
 {% endblock %}
