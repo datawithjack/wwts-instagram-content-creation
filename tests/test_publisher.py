@@ -162,6 +162,81 @@ class TestPublishContainer:
         assert "12345" in call_kwargs[0][0]
         assert call_kwargs[1]["params"]["creation_id"] == "container-789"
 
+    @patch("pipeline.publisher.time.sleep")
+    @patch("pipeline.publisher.check_container_status")
+    @patch("pipeline.publisher.requests.post")
+    def test_checks_status_before_retry_and_returns_if_published(
+        self, mock_post, mock_check, mock_sleep, meta_env
+    ):
+        """If first publish attempt gets rate-limited but container is already
+        PUBLISHED, should not retry — just return the media ID from the container."""
+        rate_limit_resp = MagicMock(
+            status_code=403,
+            json=lambda: {"error": {"code": 4, "message": "rate limited"}},
+        )
+        rate_limit_resp.raise_for_status.side_effect = Exception("403")
+        mock_post.return_value = rate_limit_resp
+
+        # Container already published
+        mock_check.return_value = "PUBLISHED"
+
+        # Should not raise — should detect already published
+        media_id = publish_container("container-789")
+
+        # Should have checked status before retrying
+        mock_check.assert_called_once_with("container-789")
+        # Should NOT have retried the publish call
+        assert mock_post.call_count == 1
+        assert media_id == "container-789"
+
+    @patch("pipeline.publisher.time.sleep")
+    @patch("pipeline.publisher.check_container_status")
+    @patch("pipeline.publisher.requests.post")
+    def test_retries_when_rate_limited_and_not_published(
+        self, mock_post, mock_check, mock_sleep, meta_env
+    ):
+        """If rate-limited and container is NOT published, should retry."""
+        rate_limit_resp = MagicMock(
+            status_code=403,
+            json=lambda: {"error": {"code": 4, "message": "rate limited"}},
+        )
+        rate_limit_resp.raise_for_status.side_effect = Exception("403")
+
+        success_resp = MagicMock(
+            status_code=200,
+            json=lambda: {"id": "media-456"},
+        )
+
+        mock_post.side_effect = [rate_limit_resp, success_resp]
+        mock_check.return_value = "FINISHED"  # Not yet published
+
+        media_id = publish_container("container-789")
+
+        assert media_id == "media-456"
+        assert mock_post.call_count == 2
+        mock_check.assert_called_once_with("container-789")
+        mock_sleep.assert_called_once()
+
+    @patch("pipeline.publisher.time.sleep")
+    @patch("pipeline.publisher.check_container_status")
+    @patch("pipeline.publisher.requests.post")
+    def test_raises_on_non_rate_limit_error(
+        self, mock_post, mock_check, mock_sleep, meta_env
+    ):
+        """Non-rate-limit errors should raise immediately without status check."""
+        error_resp = MagicMock(
+            status_code=500,
+            json=lambda: {"error": {"code": 100, "message": "server error"}},
+        )
+        error_resp.raise_for_status.side_effect = Exception("500")
+        mock_post.return_value = error_resp
+
+        with pytest.raises(Exception, match="500"):
+            publish_container("container-789")
+
+        mock_check.assert_not_called()
+        assert mock_post.call_count == 1
+
 
 class TestPublishOrchestration:
     @patch("pipeline.publisher.delete_from_r2")
