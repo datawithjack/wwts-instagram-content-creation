@@ -8,7 +8,11 @@
       "Bash(git add:*)",
       "Bash(rm:*)",
       "Bash(find /c/Users/jackf/OneDrive/Documents/Projects/wwts-instagram-content-creation -name \"*.md\" -o -name \"*brand*\" -o -name \"*token*\" -o -name \"*color*\" | grep -E \"\\\\.\\(md|yaml|json|css\\)$\")",
-      "Bash(cd \"C:/Users/jackf/OneDrive/Documents/Projects/wwts-instagram-content-creation\" && rm -rf templates/carousel/archive/ top10-carousel-resizing-plan.md)"
+      "Bash(cd \"C:/Users/jackf/OneDrive/Documents/Projects/wwts-instagram-content-creation\" && rm -rf templates/carousel/archive/ top10-carousel-resizing-plan.md)",
+      "Bash(find:*)",
+      "Bash(cd:*)",
+      "Bash(grep:*)",
+      "Bash(curl:*)"
     ]
   }
 }
