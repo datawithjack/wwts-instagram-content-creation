@@ -42,6 +42,10 @@ python generate.py --template top_10 --score-type Wave --sex Men --year 2025
 # Live — Site stats from API
 python generate.py --template site_stats
 
+# Analysis carousel — Canary Kings (dry-run or live from DB)
+python generate.py --template canary_kings --dry-run --preview
+python generate.py --template canary_kings --preview
+
 # Preview in browser (no PNG render)
 python generate.py --template head_to_head --dry-run --preview
 
@@ -57,10 +61,16 @@ python generate.py --template site_stats --dry-run --publish now --caption "Cust
 - `top_10.html` — Top 10 scores leaderboard
 - `site_stats.html` — Site-wide stat counters (with count-up animation for video)
 - `rider_profile.html` — Single athlete performance at an event (carousel: cover → hero → stats → waves → CTA)
+- `canary_kings` — Analysis carousel: Kings & Queens of the Canaries (cover → men bars → women bars → CTA, 4 slides)
 
 ## Template Layout Rules
 - HTML template layouts are manually tuned by the user. Do NOT modify template HTML/CSS layout unless explicitly asked.
 - When adding new templates, generate a working skeleton and let the user refine the visual layout.
+
+## Design Review: Colors
+- The cyan accent (`#00D4FF`) used across templates is too bright/garish. Needs a review pass across all slides to use more muted, toned-down accent colors.
+- Analysis carousel uses `#5ab4cc` (muted cyan accent), `#2a8ab0` (Gran Canaria bars), `#1e9485` (Tenerife bars).
+- Run `/design-audit` to check color consistency across all templates.
 
 ## Testing
 ```bash
