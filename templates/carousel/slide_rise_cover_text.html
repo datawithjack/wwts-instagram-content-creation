@@ -1,0 +1,59 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 60px 48px 64px;
+        gap: 0;
+    }
+
+    .eyebrow {
+        margin-bottom: 20px;
+    }
+
+    .cover-prefix {
+        font-family: var(--font-display);
+        font-size: 180px;
+        letter-spacing: 0.02em;
+        line-height: 0.92;
+        color: var(--color-text-primary);
+    }
+
+    .cover-name {
+        font-family: var(--font-display);
+        font-size: 240px;
+        letter-spacing: 0.02em;
+        line-height: 0.88;
+        color: var(--color-discipline);
+        margin: 10px 0;
+    }
+
+    .cover-location {
+        font-family: var(--font-display);
+        font-size: 180px;
+        letter-spacing: 0.02em;
+        line-height: 0.92;
+        color: var(--color-text-primary);
+    }
+
+    .divider {
+        margin: 28px auto 0;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="eyebrow">{{ eyebrow }}</div>
+
+    <div class="cover-prefix" data-autofit>THE RISE OF</div>
+    <div class="cover-name" data-autofit>{{ cover_name }}</div>
+    <div class="cover-location" data-autofit>{{ cover_location }}</div>
+
+    <div class="divider"></div>
+</div>
+{% include "carousel/_autofit.html" %}
+{% endblock %}

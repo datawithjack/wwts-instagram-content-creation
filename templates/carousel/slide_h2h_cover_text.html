@@ -1,0 +1,126 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 60px 48px 64px;
+        gap: 0;
+    }
+
+    /* ── Top bar: event info ── */
+    .top-bar {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 12px;
+    }
+
+    .event-year {
+        font-family: var(--font-display);
+        font-size: 64px;
+        letter-spacing: 0.06em;
+        color: var(--color-text-primary);
+        margin-bottom: 8px;
+    }
+
+    .event-name {
+        font-family: var(--font-display);
+        font-size: 64px;
+        letter-spacing: 0.04em;
+        line-height: 1.0;
+        color: var(--color-text-primary);
+        margin-bottom: 6px;
+    }
+
+    .event-meta {
+        font-family: var(--font-body);
+        font-size: 26px;
+        font-weight: 500;
+        color: var(--color-text-muted);
+        letter-spacing: 0.06em;
+    }
+
+    .event-meta .stars {
+        color: var(--color-gold);
+    }
+
+    /* ── H2H title — dominates upper center ── */
+    .h2h-title {
+        font-family: var(--font-display);
+        font-size: 160px;
+        letter-spacing: -0.02em;
+        line-height: 0.9;
+        color: var(--color-text-primary);
+        white-space: nowrap;
+        margin-bottom: 8px;
+    }
+
+    /* ── Matchup block ── */
+    .matchup {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .athlete-name-group {
+        width: 100%;
+        text-align: center;
+    }
+
+    .athlete-name {
+        font-family: var(--font-display);
+        font-size: 140px;
+        letter-spacing: 0.02em;
+        line-height: 0.95;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .athlete-name-left { color: var(--color-athlete-left); }
+    .athlete-name-right { color: var(--color-athlete-right); }
+
+    .vs-label {
+        font-family: var(--font-display);
+        font-size: 48px;
+        color: rgba(255,255,255,0.7);
+        letter-spacing: 0.08em;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="top-bar">
+        {% if event_date_start %}<div class="event-year">{{ event_date_start.year }}</div>{% endif %}
+        <div class="event-name">{{ event_name | upper }}</div>
+        <div class="event-meta">
+            {{ event_country }}
+            {% if event_date_start and event_date_end %}
+            &middot; {{ format_date_range(event_date_start, event_date_end) }}
+            {% endif %}
+            {% if event_tier %}
+            &middot; <span class="stars">{{ '★' * event_tier }}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="h2h-title" data-autofit>HEAD TO HEAD</div>
+
+    <div class="matchup">
+        <div class="athlete-name-group" data-autofit-group>
+            <div class="athlete-name athlete-name-left">{{ athlete_1_firstname }}</div>
+            <div class="athlete-name athlete-name-left">{{ athlete_1_surname }}</div>
+        </div>
+        <div class="vs-label">VS</div>
+        <div class="athlete-name-group" data-autofit-group>
+            <div class="athlete-name athlete-name-right">{{ athlete_2_firstname }}</div>
+            <div class="athlete-name athlete-name-right">{{ athlete_2_surname }}</div>
+        </div>
+    </div>
+</div>
+{% include "carousel/_autofit.html" %}
+{% endblock %}

@@ -2,15 +2,112 @@
 
 {% block carousel_head %}
 <style>
+    /* Kill the default body background for this slide */
+    body {
+        background: none !important;
+    }
+    body::before, body::after {
+        display: none !important;
+    }
+
     .container {
+        padding: 0;
+        gap: 0;
+        position: relative;
+    }
+
+    /* ── Split background photos ── */
+    .bg-split {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        overflow: hidden;
+    }
+
+    .bg-split img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center top;
+    }
+
+    .bg-split .photo-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 200px;
+        color: rgba(255,255,255,0.08);
+    }
+
+    .bg-left {
+        left: 0;
+        width: 50%;
+    }
+    .bg-left::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(10, 30, 60, 0.25);
+    }
+
+    .bg-right {
+        right: 0;
+        width: 50%;
+    }
+    .bg-right::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(10, 30, 60, 0.25);
+    }
+
+    /* Dark overlay for text readability */
+    .bg-overlay {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(
+            to bottom,
+            rgba(10, 14, 26, 0.4) 0%,
+            rgba(10, 14, 26, 0.55) 40%,
+            rgba(10, 14, 26, 0.65) 100%
+        );
+        z-index: 1;
+    }
+
+    /* Center divider line */
+    .center-divider {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 50%;
+        width: 3px;
+        background: linear-gradient(
+            to bottom,
+            transparent 5%,
+            rgba(255,255,255,0.15) 30%,
+            rgba(255,255,255,0.15) 70%,
+            transparent 95%
+        );
+        z-index: 2;
+    }
+
+    /* ── Content layer ── */
+    .content {
+        position: relative;
+        z-index: 3;
+        display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
         text-align: center;
+        width: 100%;
+        height: 100%;
         padding: 60px 48px 64px;
-        gap: 0;
     }
 
-    /* ── Top bar: event info ── */
     .top-bar {
         width: 100%;
         text-align: center;
@@ -19,7 +116,7 @@
 
     .event-year {
         font-family: var(--font-display);
-        font-size: 64px;
+        font-size: 72px;
         letter-spacing: 0.06em;
         color: var(--color-text-primary);
         margin-bottom: 8px;
@@ -27,7 +124,7 @@
 
     .event-name {
         font-family: var(--font-display);
-        font-size: 64px;
+        font-size: 72px;
         letter-spacing: 0.04em;
         line-height: 1.0;
         color: var(--color-text-primary);
@@ -46,10 +143,9 @@
         color: var(--color-gold);
     }
 
-    /* ── H2H title — dominates upper center ── */
     .h2h-title {
         font-family: var(--font-display);
-        font-size: 160px;
+        font-size: 240px;
         letter-spacing: -0.02em;
         line-height: 0.9;
         color: var(--color-text-primary);
@@ -57,7 +153,6 @@
         margin-bottom: 8px;
     }
 
-    /* ── Matchup block ── */
     .matchup {
         display: flex;
         flex-direction: column;
@@ -73,7 +168,7 @@
 
     .athlete-name {
         font-family: var(--font-display);
-        font-size: 140px;
+        font-size: 180px;
         letter-spacing: 0.02em;
         line-height: 0.95;
         text-align: center;
@@ -94,31 +189,52 @@
 
 {% block carousel_content %}
 <div class="container">
-    <div class="top-bar">
-        {% if event_date_start %}<div class="event-year">{{ event_date_start.year }}</div>{% endif %}
-        <div class="event-name">{{ event_name | upper }}</div>
-        <div class="event-meta">
-            {{ event_country }}
-            {% if event_date_start and event_date_end %}
-            &middot; {{ format_date_range(event_date_start, event_date_end) }}
-            {% endif %}
-            {% if event_tier %}
-            &middot; <span class="stars">{{ '★' * event_tier }}</span>
-            {% endif %}
-        </div>
+    <!-- Background photos -->
+    <div class="bg-split bg-left">
+        {% if athlete_1_photo_url %}
+        <img src="{{ athlete_1_photo_url }}" alt="{{ athlete_1_name }}">
+        {% else %}
+        <div class="photo-placeholder">{{ athlete_1_firstname[0] if athlete_1_firstname else 'A' }}</div>
+        {% endif %}
     </div>
+    <div class="bg-split bg-right">
+        {% if athlete_2_photo_url %}
+        <img src="{{ athlete_2_photo_url }}" alt="{{ athlete_2_name }}">
+        {% else %}
+        <div class="photo-placeholder">{{ athlete_2_firstname[0] if athlete_2_firstname else 'B' }}</div>
+        {% endif %}
+    </div>
+    <div class="bg-overlay"></div>
+    <div class="center-divider"></div>
 
-    <div class="h2h-title" data-autofit>HEAD TO HEAD</div>
-
-    <div class="matchup">
-        <div class="athlete-name-group" data-autofit-group>
-            <div class="athlete-name athlete-name-left">{{ athlete_1_firstname }}</div>
-            <div class="athlete-name athlete-name-left">{{ athlete_1_surname }}</div>
+    <!-- Text overlay -->
+    <div class="content">
+        <div class="top-bar">
+            {% if event_date_start %}<div class="event-year">{{ event_date_start.year }}</div>{% endif %}
+            <div class="event-name">{{ event_name | upper }}</div>
+            <div class="event-meta">
+                {{ event_country }}
+                {% if event_date_start and event_date_end %}
+                &middot; {{ format_date_range(event_date_start, event_date_end) }}
+                {% endif %}
+                {% if event_tier %}
+                &middot; <span class="stars">{{ '★' * event_tier }}</span>
+                {% endif %}
+            </div>
         </div>
-        <div class="vs-label">VS</div>
-        <div class="athlete-name-group" data-autofit-group>
-            <div class="athlete-name athlete-name-right">{{ athlete_2_firstname }}</div>
-            <div class="athlete-name athlete-name-right">{{ athlete_2_surname }}</div>
+
+        <div class="h2h-title" data-autofit>HEAD TO HEAD</div>
+
+        <div class="matchup">
+            <div class="athlete-name-group" data-autofit-group>
+                <div class="athlete-name athlete-name-left">{{ athlete_1_firstname }}</div>
+                <div class="athlete-name athlete-name-left">{{ athlete_1_surname }}</div>
+            </div>
+            <div class="vs-label">VS</div>
+            <div class="athlete-name-group" data-autofit-group>
+                <div class="athlete-name athlete-name-right">{{ athlete_2_firstname }}</div>
+                <div class="athlete-name athlete-name-right">{{ athlete_2_surname }}</div>
+            </div>
         </div>
     </div>
 </div>

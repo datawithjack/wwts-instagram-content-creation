@@ -65,6 +65,7 @@ def build_athlete_rise_slides(data: dict) -> list[dict]:
             "cover_name": athlete_name.upper(),
             "cover_location": f"AT THE {location.upper()} WORLD CUP",
             "eyebrow": f"{location} \u00b7 {year_range}",
+            "athlete_photo_url": data.get("athlete_photo_url", ""),
             **common,
         },
         {
