@@ -1,0 +1,120 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 48px 44px;
+        gap: 0;
+    }
+
+    .eyebrow {
+        font-family: var(--font-body);
+        font-size: 30px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: var(--color-discipline);
+        margin-bottom: 20px;
+    }
+
+    .cover-prefix {
+        font-family: var(--font-display);
+        font-size: 180px;
+        letter-spacing: 0.02em;
+        line-height: 0.92;
+        color: var(--color-text-primary);
+        margin-bottom: 20px;
+    }
+
+    /* ── Photo between prefix and name ── */
+    .photo-frame {
+        width: 280px;
+        height: 280px;
+        border-radius: 50%;
+        overflow: hidden;
+        margin: 16px auto 20px;
+        border: 4px solid var(--color-discipline);
+        box-shadow: 0 0 40px rgba(122, 125, 184, 0.25);
+    }
+
+    .photo-frame img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center top;
+    }
+
+    .photo-frame .photo-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(30, 41, 59, 0.6);
+        font-family: var(--font-display);
+        font-size: 120px;
+        color: rgba(255,255,255,0.3);
+    }
+
+    .cover-name {
+        font-family: var(--font-display);
+        font-size: 200px;
+        letter-spacing: 0.02em;
+        line-height: 0.88;
+        color: var(--color-discipline);
+        margin: 0 0 10px;
+    }
+
+    .cover-location {
+        font-family: var(--font-display);
+        font-size: 140px;
+        letter-spacing: 0.02em;
+        line-height: 0.92;
+        color: var(--color-text-primary);
+    }
+
+    .divider {
+        width: 120px;
+        height: 4px;
+        background: linear-gradient(90deg, var(--color-discipline), transparent);
+        margin: 28px auto 0;
+        border-radius: 2px;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="eyebrow">{{ eyebrow }}</div>
+
+    <div class="cover-prefix" data-autofit>THE RISE OF</div>
+
+    <div class="photo-frame">
+        {% if athlete_photo_url %}
+        <img src="{{ athlete_photo_url }}" alt="{{ cover_name }}">
+        {% else %}
+        <div class="photo-placeholder">{{ cover_name[0] if cover_name else 'A' }}</div>
+        {% endif %}
+    </div>
+
+    <div class="cover-name" data-autofit>{{ cover_name }}</div>
+    <div class="cover-location" data-autofit>{{ cover_location }}</div>
+
+    <div class="divider"></div>
+</div>
+<script>
+document.fonts.ready.then(() => {
+    document.querySelectorAll('[data-autofit]').forEach(el => {
+        const maxWidth = el.parentElement.offsetWidth;
+        let size = parseInt(getComputedStyle(el).fontSize);
+        while (el.scrollWidth > maxWidth && size > 40) {
+            size -= 4;
+            el.style.fontSize = size + 'px';
+        }
+    });
+});
+</script>
+{% endblock %}

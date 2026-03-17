@@ -1,0 +1,37 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 120px 72px;
+        gap: 40px;
+    }
+
+    .accent-line {
+        width: 80px;
+        height: 4px;
+        background: var(--color-discipline);
+        border-radius: 2px;
+    }
+
+    .body-text {
+        font-family: var(--font-body);
+        font-size: 48px;
+        font-weight: 500;
+        line-height: 1.5;
+        color: var(--color-text-muted);
+        max-width: 920px;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="accent-line"></div>
+    <div class="body-text">{{ body_text }}</div>
+    <div class="accent-line"></div>
+</div>
+{% endblock %}

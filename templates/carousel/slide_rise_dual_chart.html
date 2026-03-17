@@ -1,0 +1,349 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: stretch;
+        justify-content: flex-start;
+        padding: 44px 56px 56px;
+        gap: 0;
+    }
+
+    /* ── Header section ── */
+    .slide-header {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        margin-bottom: 4px;
+    }
+
+    .header-text {
+        flex: 1;
+    }
+
+    .header-eyebrow {
+        font-family: var(--font-body);
+        font-size: 22px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: rgba(255, 255, 255, 0.30);
+        margin-bottom: 2px;
+    }
+
+    .header-athlete {
+        font-family: var(--font-display);
+        font-size: 64px;
+        letter-spacing: 0.04em;
+        line-height: 1;
+        color: var(--color-text-primary);
+    }
+
+    .header-pill {
+        display: inline-block;
+        font-family: var(--font-display);
+        font-size: 30px;
+        letter-spacing: 0.04em;
+        text-align: left;
+        border-radius: 6px;
+        padding: 6px 14px;
+        margin-top: 4px;
+        margin-bottom: 20px;
+        background: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.40);
+    }
+
+    .header-photo {
+        width: 100px;
+        height: 100px;
+        border-radius: 12px;
+        overflow: hidden;
+        flex-shrink: 0;
+        margin-left: 24px;
+        margin-bottom: 4px;
+        border: 2px solid var(--color-discipline);
+    }
+
+    .header-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .header-photo .photo-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 40px;
+        color: var(--color-text-muted);
+        background: rgba(10, 14, 26, 0.6);
+    }
+
+    /* ── Chart panels ── */
+    .charts-wrapper {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+        min-height: 0;
+    }
+
+    .chart-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    .chart-panel + .chart-panel {
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        padding-top: 20px;
+    }
+
+    .chart-title {
+        font-family: var(--font-display);
+        font-size: 48px;
+        letter-spacing: 0.04em;
+        color: var(--color-text-primary);
+        margin-bottom: 4px;
+    }
+
+    .chart-area {
+        flex: 1;
+        position: relative;
+        min-height: 0;
+    }
+
+    /* ── Column chart ── */
+    .column-chart {
+        display: flex;
+        align-items: stretch;
+        justify-content: center;
+        gap: 0;
+        height: 100%;
+        padding-top: 8px;
+    }
+
+    .column-bar-wrapper {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+    }
+
+    .column-value {
+        font-family: var(--font-display);
+        font-size: 32px;
+        color: var(--color-text-primary);
+        margin-bottom: 6px;
+    }
+
+    .column-value.no-data {
+        color: rgba(255, 255, 255, 0.15);
+        font-size: 22px;
+    }
+
+    .column-bar {
+        width: 70%;
+        border-radius: 6px 6px 0 0;
+        min-height: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .column-bar.empty {
+        background: rgba(255, 255, 255, 0.06) !important;
+        min-height: 8px;
+    }
+
+    .bar-label {
+        font-family: var(--font-body);
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--color-text-muted);
+        letter-spacing: 0.02em;
+        text-align: center;
+        white-space: nowrap;
+        margin-bottom: 2px;
+    }
+
+    .column-year {
+        font-family: var(--font-body);
+        font-size: 22px;
+        font-weight: 600;
+        color: var(--color-text-muted);
+        text-align: center;
+        margin-top: 8px;
+        flex-shrink: 0;
+    }
+
+    /* ── Line chart ── */
+    .line-chart-wrapper {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .line-chart-plot {
+        flex: 1;
+        position: relative;
+        min-height: 0;
+    }
+
+    .line-chart-svg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    /* HTML overlay dots + labels for line chart — not stretched */
+    .line-dot {
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 2;
+    }
+
+    .line-data-label {
+        position: absolute;
+        font-family: var(--font-display);
+        font-size: 30px;
+        letter-spacing: 0.03em;
+        color: var(--color-text-primary);
+        transform: translate(-50%, -100%);
+        padding-bottom: 12px;
+        white-space: nowrap;
+        z-index: 3;
+    }
+
+    .line-year-labels {
+        display: flex;
+        justify-content: center;
+        gap: 0;
+        margin-top: 4px;
+        flex-shrink: 0;
+    }
+
+    .line-year-labels span {
+        flex: 1;
+        font-family: var(--font-body);
+        font-size: 22px;
+        font-weight: 600;
+        color: var(--color-text-muted);
+        text-align: center;
+    }
+
+    /* Grid lines */
+    .grid-line {
+        stroke: rgba(255, 255, 255, 0.06);
+        stroke-width: 1;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    {% if header_eyebrow %}
+    <div class="slide-header">
+        <div class="header-text">
+            <div class="header-eyebrow">{{ header_eyebrow }}</div>
+            <div class="header-athlete">{{ header_athlete }}</div>
+        </div>
+        <div class="header-photo">
+            {% if athlete_photo_url %}
+            <img src="{{ athlete_photo_url }}" alt="{{ header_athlete }}">
+            {% else %}
+            <div class="photo-placeholder">{{ athlete_initial }}</div>
+            {% endif %}
+        </div>
+    </div>
+    {% if header_pill %}<div class="header-pill">{{ header_pill }}</div>{% endif %}
+    {% endif %}
+
+    <div class="charts-wrapper">
+    {% for chart_key in ['top_chart', 'bottom_chart'] %}
+    {% set chart = top_chart if chart_key == 'top_chart' else bottom_chart %}
+    <div class="chart-panel">
+        <div class="chart-title">{{ chart.chart_title }}</div>
+        <div class="chart-area">
+            {% if chart.chart_type == 'line' %}
+            {# ── Line Chart — SVG for geometry, HTML for labels ── #}
+            <div class="line-chart-wrapper">
+                <div class="line-chart-plot">
+                    {# SVG: only line, dots, and grid — no text #}
+                    <svg class="line-chart-svg" viewBox="0 0 {{ chart.points|length }} 1" preserveAspectRatio="none">
+                        {# Line path #}
+                        {% set ns = namespace(path='') %}
+                        {% for point in chart.points %}
+                        {% set x = loop.index0 + 0.5 %}
+                        {% set y = 0.9 - (point.height_pct / 100 * 0.8) %}
+                        {% if loop.first %}
+                        {% set ns.path = 'M ' ~ x ~ ' ' ~ y %}
+                        {% else %}
+                        {% set ns.path = ns.path ~ ' L ' ~ x ~ ' ' ~ y %}
+                        {% endif %}
+                        {% endfor %}
+                        <path d="{{ ns.path }}" fill="none"
+                              stroke="{{ chart.color | default(accent_color) }}"
+                              stroke-width="3"
+                              stroke-linecap="round" stroke-linejoin="round"
+                              vector-effect="non-scaling-stroke" />
+
+                    </svg>
+
+                    {# HTML dots + data labels — positioned with percentages, no SVG stretch #}
+                    {% for point in chart.points %}
+                    {% set left_pct = ((loop.index0 + 0.5) / chart.points|length * 100) %}
+                    {% set top_pct = ((0.9 - (point.height_pct / 100 * 0.8)) * 100) %}
+                    {% set dot_col = point.dot_color if point.dot_color else chart.color | default(accent_color) %}
+                    <div class="line-dot"
+                         style="left: {{ "%.1f"|format(left_pct) }}%; top: {{ "%.1f"|format(top_pct) }}%; background: {{ dot_col }};"></div>
+                    {% if point.value is not none %}
+                    <span class="line-data-label"
+                          style="left: {{ "%.1f"|format(left_pct) }}%; top: {{ "%.1f"|format(top_pct) }}%;{% if point.dot_color %} color: {{ point.dot_color }};{% endif %}">{{ point.value | ordinal }}</span>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                <div class="line-year-labels">
+                    {% for point in chart.points %}
+                    <span>{{ point.year }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            {# ── Column Chart (scores) ── #}
+            <div class="column-chart">
+                {% for point in chart.points %}
+                <div class="column-bar-wrapper">
+                    {% if point.value is not none %}
+                    <span class="column-value">{{ "%.2f"|format(point.value) }}</span>
+                    {% else %}
+                    <span class="column-value no-data">&mdash;</span>
+                    {% endif %}
+                    {% if chart.show_labels and point.label %}
+                    <span class="bar-label">{{ point.label }}</span>
+                    {% endif %}
+                    <div class="column-bar{% if point.value is none %} empty{% endif %}"
+                         style="height: {{ [point.height_pct * 0.75, 1]|max }}%; background: {{ chart.color | default(accent_color) }};">
+                    </div>
+                    <span class="column-year">{{ point.year }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    </div>
+</div>
+{% endblock %}
