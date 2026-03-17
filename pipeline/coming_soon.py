@@ -1,6 +1,6 @@
 """Coming Soon carousel slide builder — 5 hardcoded slides for Instagram."""
 
-ACCENT_COLOR = "#00D4FF"
+ACCENT_COLOR = "#5AB4CC"
 
 FEATURES = [
     {

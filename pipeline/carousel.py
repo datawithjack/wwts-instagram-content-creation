@@ -10,8 +10,8 @@ MEDAL_COLOURS = {
     "bronze": "#CD7F32",
 }
 
-ACCENT_WAVES = "#00D4FF"
-ACCENT_JUMPS = "#2dd4bf"
+ACCENT_WAVES = "#5AB4CC"
+ACCENT_JUMPS = "#4DA89E"
 
 
 def _detect_top_ties(entries: list[dict]) -> list[dict]:

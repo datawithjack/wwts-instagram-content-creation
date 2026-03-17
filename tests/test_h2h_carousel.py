@@ -348,7 +348,7 @@ class TestH2HCarouselTemplateRendering:
         html = render_template("carousel/slide_h2h_stat", self.slides[1])
         assert "HEAD TO HEAD" in html
         assert "slide-title" in html
-        assert "section-pill" in html
+        assert "pill-muted" in html
         assert "MARGARET RIVER" in html
 
     def test_stat_slide_shows_metric_labels(self):

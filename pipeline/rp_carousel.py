@@ -5,15 +5,15 @@ Slides: cover → hero (with stats) → waves → [jumps] → cta
 
 from pipeline.helpers import ordinal
 
-ACCENT_WAVES = "#38bdf8"
-ACCENT_JUMPS = "#2dd4bf"
+ACCENT_WAVES = "#5AB4CC"
+ACCENT_JUMPS = "#4DA89E"
 
 PLACEMENT_COLORS = {
     1: "#F0C040",  # gold
     2: "#B0C4DE",  # silver — light steel blue
     3: "#CD7F32",  # bronze
 }
-PLACEMENT_DEFAULT = "#2dd4bf"  # teal
+PLACEMENT_DEFAULT = "#4DA89E"  # muted jade
 
 
 def _has_jump(data: dict) -> bool:

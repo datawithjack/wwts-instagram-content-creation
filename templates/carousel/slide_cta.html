@@ -1,55 +1,11 @@
 {% extends "carousel/base_carousel.html" %}
 
-{% block carousel_head %}
-<style>
-    .container {
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        padding: 120px 64px;
-        gap: 44px;
-    }
-
-    .accent-line {
-        width: 80px;
-        height: 4px;
-        background: var(--color-discipline);
-        border-radius: 2px;
-    }
-
-    .cta-headline {
-        font-family: var(--font-body);
-        font-size: 28px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.15em;
-        color: var(--color-discipline);
-    }
-
-    .cta-url {
-        font-family: var(--font-display);
-        font-size: 84px;
-        letter-spacing: 0.03em;
-        line-height: 1.1;
-        color: var(--color-text-primary);
-    }
-
-    .cta-follow {
-        font-family: var(--font-body);
-        font-size: 26px;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        color: var(--color-text-muted);
-    }
-</style>
-{% endblock %}
-
 {% block carousel_content %}
-<div class="container">
-    <div class="cta-headline">Explore the full stats</div>
-    <div class="accent-line"></div>
+<div class="container cta-container">
+    <div class="cta-accent-line"></div>
+    <div class="cta-headline">EXPLORE THE FULL STATS</div>
     <div class="cta-url">windsurfworldtourstats.com</div>
-    <div class="accent-line"></div>
+    <div class="cta-accent-line"></div>
     <div class="cta-follow">Follow @windsurfworldtourstats</div>
 </div>
 {% endblock %}

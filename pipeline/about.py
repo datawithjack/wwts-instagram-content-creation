@@ -1,6 +1,6 @@
 """About carousel slide builder — 4 hardcoded slides for Instagram."""
 
-ACCENT_COLOR = "#00D4FF"
+ACCENT_COLOR = "#5AB4CC"
 
 ABOUT_LINES = [
     'Every <span class="highlight">PWA</span> wave event result and score since 2016.',

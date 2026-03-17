@@ -5,11 +5,11 @@
     .container {
         align-items: stretch;
         justify-content: flex-start;
-        padding: 44px 56px 56px;
+        padding: 48px 56px 56px;
         gap: 0;
     }
 
-    /* ── Header section ── */
+    /* ── Header section (overrides shared header-row) ── */
     .slide-header {
         display: flex;
         align-items: flex-end;
@@ -17,17 +17,7 @@
         margin-bottom: 4px;
     }
 
-    .header-text {
-        flex: 1;
-    }
-
     .header-eyebrow {
-        font-family: var(--font-body);
-        font-size: 22px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.12em;
-        color: rgba(255, 255, 255, 0.30);
         margin-bottom: 2px;
     }
 
@@ -36,51 +26,16 @@
         font-size: 64px;
         letter-spacing: 0.04em;
         line-height: 1;
-        color: var(--color-text-primary);
+        color: rgba(255, 255, 255, 0.30);
     }
 
     .header-pill {
-        display: inline-block;
-        font-family: var(--font-display);
-        font-size: 30px;
-        letter-spacing: 0.04em;
         text-align: left;
-        border-radius: 6px;
-        padding: 6px 14px;
         margin-top: 4px;
-        margin-bottom: 20px;
-        background: rgba(255, 255, 255, 0.08);
-        color: rgba(255, 255, 255, 0.40);
     }
 
-    .header-photo {
-        width: 100px;
-        height: 100px;
-        border-radius: 12px;
-        overflow: hidden;
-        flex-shrink: 0;
-        margin-left: 24px;
+    .slide-header .header-photo {
         margin-bottom: 4px;
-        border: 2px solid var(--color-discipline);
-    }
-
-    .header-photo img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-    }
-
-    .header-photo .photo-placeholder {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: var(--font-display);
-        font-size: 40px;
-        color: var(--color-text-muted);
-        background: rgba(10, 14, 26, 0.6);
     }
 
     /* ── Chart panels ── */
@@ -256,7 +211,7 @@
     {% if header_eyebrow %}
     <div class="slide-header">
         <div class="header-text">
-            <div class="header-eyebrow">{{ header_eyebrow }}</div>
+            <div class="eyebrow-dimmed header-eyebrow">{{ header_eyebrow }}</div>
             <div class="header-athlete">{{ header_athlete }}</div>
         </div>
         <div class="header-photo">
@@ -267,7 +222,7 @@
             {% endif %}
         </div>
     </div>
-    {% if header_pill %}<div class="header-pill">{{ header_pill }}</div>{% endif %}
+    {% if header_pill %}<div class="pill-muted header-pill">{{ header_pill }}</div>{% endif %}
     {% endif %}
 
     <div class="charts-wrapper">

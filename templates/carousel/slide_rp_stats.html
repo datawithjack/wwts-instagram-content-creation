@@ -6,17 +6,11 @@
         align-items: stretch;
         justify-content: flex-start;
         text-align: center;
-        padding: 64px 64px 80px;
+        padding: 48px 56px 56px;
         gap: 0;
     }
 
     .eyebrow-event {
-        font-family: var(--font-body);
-        font-size: 24px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.10em;
-        color: var(--color-discipline);
         margin-bottom: 12px;
     }
 
@@ -74,7 +68,7 @@
 {% block carousel_content %}
 <div class="container">
     <!-- Event eyebrow -->
-    <div class="eyebrow-event">{{ event_name | upper }}</div>
+    <div class="eyebrow eyebrow-event">{{ event_name | upper }}</div>
 
     <!-- Athlete surname as title -->
     <div class="slide-title">{{ athlete_surname }}</div>

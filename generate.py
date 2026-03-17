@@ -166,7 +166,7 @@ def fetch_live_data(template_name: str, args) -> dict:
             "athlete_name": athlete_name,
             "athlete_photo_url": athlete_photo_url or "",
             "location": args.location,
-            "accent_color": "#7a7db8",
+            "accent_color": "#9478B5",
             "yearly_data": yearly_data,
         }
 

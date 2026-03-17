@@ -18,12 +18,7 @@
         color: var(--color-text-primary);
     }
 
-    .divider {
-        width: 80px;
-        height: 4px;
-        background: var(--color-discipline);
-        border-radius: 2px;
-    }
+    /* uses .cta-accent-line from base_carousel */
 
     .text-lines {
         display: flex;
@@ -51,7 +46,7 @@
 {% block carousel_content %}
 <div class="container">
     <div class="text-title">{{ title | upper }}</div>
-    <div class="divider"></div>
+    <div class="cta-accent-line"></div>
     <div class="text-lines">
         {% for line in lines %}
         <div class="text-line">{{ line | safe }}</div>

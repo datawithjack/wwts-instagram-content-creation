@@ -10,28 +10,8 @@
         gap: 0;
     }
 
-    .eyebrow {
-        color: rgba(255, 255, 255, 0.30);
-        font-size: 24px;
-        margin-bottom: 4px;
-    }
-
-    .slide-title {
-        font-size: 80px;
+    .slide-title-dimmed {
         margin-bottom: 8px;
-        line-height: 1;
-    }
-
-    .subtitle-pill {
-        display: inline-block;
-        font-family: var(--font-display);
-        font-size: 32px;
-        letter-spacing: 0.04em;
-        border-radius: 6px;
-        padding: 4px 14px;
-        margin-bottom: 24px;
-        background: rgba(255, 255, 255, 0.08);
-        color: rgba(255, 255, 255, 0.40);
     }
 
     /* ── Legend ── */
@@ -191,9 +171,9 @@
 
 {% block carousel_content %}
 <div class="container">
-    <div class="eyebrow">CANARY ISLANDS ANALYSIS</div>
-    <div class="slide-title">{{ slide_title }}</div>
-    <div class="subtitle-pill">EVENT WINS SINCE 2016</div>
+    <div class="eyebrow-dimmed">CANARY ISLANDS ANALYSIS</div>
+    <div class="slide-title-dimmed">{{ slide_title }}</div>
+    <div class="pill-muted">EVENT WINS SINCE 2016</div>
 
     <div class="legend">
         <div class="legend-item">

@@ -9,7 +9,7 @@ from decimal import Decimal
 
 from pipeline.helpers import nationality_to_iso
 
-ACCENT_COLOR = "#5ab4cc"
+ACCENT_COLOR = "#9478B5"  # muted violet — editorial accent for analysis posts
 PHOTOS_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "photos")
 COLOR_GC = "#2a8ab0"  # muted cyan — Gran Canaria
 COLOR_TF = "#1e9485"  # muted teal — Tenerife

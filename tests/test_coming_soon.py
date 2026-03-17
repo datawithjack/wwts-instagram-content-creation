@@ -39,7 +39,7 @@ class TestBuildComingSoonSlides:
 
     def test_accent_color_is_cyan(self):
         for slide in self.slides:
-            assert slide["accent_color"] == "#00D4FF"
+            assert slide["accent_color"] == "#5AB4CC"
 
     def test_cover_has_title(self):
         cover = self.slides[0]
@@ -94,7 +94,7 @@ class TestComingSoonTemplateRendering:
 
     def test_cover_uses_cyan_accent(self):
         html = render_template("carousel/slide_coming_soon_cover", self.slides[0])
-        assert "#00D4FF" in html
+        assert "#5AB4CC" in html
 
     def test_feature_slide_renders(self):
         slide = self.slides[1]

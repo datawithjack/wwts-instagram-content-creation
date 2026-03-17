@@ -44,8 +44,8 @@ class TestRenderHeadToHead:
         assert "Inter" in self.html
 
     def test_contains_brand_colors(self):
-        assert "#38bdf8" in self.html  # cyan-400
-        assert "#2dd4bf" in self.html  # teal-400
+        assert "#5AB4CC" in self.html  # muted cyan
+        assert "#4DA89E" in self.html  # muted jade
 
 
 class TestRenderTop10:

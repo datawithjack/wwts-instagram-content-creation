@@ -1,54 +1,11 @@
 {% extends "carousel/base_carousel.html" %}
 
-{% block carousel_head %}
-<style>
-    .container {
-        align-items: center;
-        justify-content: space-evenly;
-        text-align: center;
-        padding: 120px 64px;
-    }
-
-    .cta-eyebrow {
-        font-family: var(--font-body);
-        font-size: 36px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: var(--color-discipline);
-    }
-
-    .cta-title {
-        font-family: var(--font-display);
-        font-size: 150px;
-        letter-spacing: 0.04em;
-        line-height: 1;
-        color: var(--color-text-primary);
-    }
-
-    .cta-url {
-        font-family: var(--font-display);
-        font-size: 68px;
-        letter-spacing: 0.03em;
-        color: var(--color-discipline);
-    }
-
-    .cta-follow {
-        font-family: var(--font-body);
-        font-size: 32px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.12em;
-        color: var(--color-text-muted);
-    }
-</style>
-{% endblock %}
-
 {% block carousel_content %}
-<div class="container">
-    <div class="cta-eyebrow">And More...</div>
-    <div class="cta-title">FOLLOW TO<br>STAY UPDATED</div>
+<div class="container cta-container">
+    <div class="cta-accent-line"></div>
+    <div class="cta-headline">FOLLOW TO STAY UPDATED</div>
     <div class="cta-url">windsurfworldtourstats.com</div>
+    <div class="cta-accent-line"></div>
     <div class="cta-follow">{{ handle }} · Follow for more</div>
 </div>
 {% endblock %}

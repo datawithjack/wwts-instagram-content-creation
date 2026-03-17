@@ -6,8 +6,8 @@ Wave+jump: cover → overview → heats → waves → jumps → cta (6 slides)
 
 from pipeline.helpers import ordinal, clean_event_name
 
-ACCENT_WAVES = "#38bdf8"
-ACCENT_JUMPS = "#2dd4bf"
+ACCENT_WAVES = "#5AB4CC"
+ACCENT_JUMPS = "#4DA89E"
 
 MIN_BAR_WIDTH = 40
 

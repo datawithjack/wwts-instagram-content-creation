@@ -28,12 +28,8 @@
         margin-bottom: 16px;
     }
 
-    .divider {
-        width: 80px;
-        height: 4px;
-        background: var(--color-discipline);
+    .cta-accent-line {
         margin: 8px auto;
-        border-radius: 2px;
     }
 
     .feature-subtitle {
@@ -52,7 +48,7 @@
 <div class="container">
     <div class="feature-number">{{ slide_number - 1 }}</div>
     <div class="feature-title">{{ title | upper }}</div>
-    <div class="divider"></div>
+    <div class="cta-accent-line"></div>
     <div class="feature-subtitle">{{ subtitle }}</div>
 </div>
 {% endblock %}

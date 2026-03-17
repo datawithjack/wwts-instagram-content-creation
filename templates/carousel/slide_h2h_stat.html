@@ -11,29 +11,6 @@
     }
 
     /* ── Dimmed header — data is the star ── */
-    .eyebrow {
-        color: rgba(255, 255, 255, 0.30);
-        font-size: 24px;
-        margin-bottom: 2px;
-    }
-
-    .slide-title {
-        font-size: 64px;
-        margin-bottom: 6px;
-        color: rgba(255, 255, 255, 0.30);
-    }
-
-    .section-pill {
-        display: inline-block;
-        font-family: var(--font-display);
-        font-size: 36px;
-        letter-spacing: 0.04em;
-        border-radius: 6px;
-        padding: 4px 16px;
-        margin-bottom: 16px;
-        background: rgba(255, 255, 255, 0.12);
-        color: rgba(255, 255, 255, 0.45);
-    }
 
     /* ── Overview grid — athletes + metrics in aligned 3-col grid ── */
     .overview-grid {
@@ -139,8 +116,8 @@
         font-weight: 600;
         margin-top: 4px;
     }
-    .delta-left { color: #1a9fcc; }
-    .delta-right { color: #22a898; }
+    .delta-left { color: var(--color-athlete-left); }
+    .delta-right { color: var(--color-athlete-right); }
 
     /* ── Content area — fills remaining space ── */
     .content {
@@ -236,13 +213,13 @@
 
     /* Winner fill — dimmed cyan/teal for readability */
     .bar-fill-1 {
-        background: #1a9fcc;
-        border-color: #1a9fcc;
+        background: var(--color-athlete-left);
+        border-color: var(--color-athlete-left);
     }
 
     .bar-fill-2 {
-        background: #22a898;
-        border-color: #22a898;
+        background: var(--color-athlete-right);
+        border-color: var(--color-athlete-right);
     }
 
     .bar-name {
@@ -264,9 +241,9 @@
 {% block carousel_content %}
 <div class="container">
     <!-- Header — matches top 10 pattern: eyebrow → slide-title → pill -->
-    <div class="eyebrow">{{ event_name | upper }}</div>
-    <div class="slide-title">HEAD TO HEAD</div>
-    <div class="section-pill">{{ section_title }}</div>
+    <div class="eyebrow-dimmed">{{ event_name | upper }}</div>
+    <div class="slide-title-dimmed">HEAD TO HEAD</div>
+    <div class="pill-muted">{{ section_title }}</div>
 
     <div class="content">
         {% if layout == "table" %}

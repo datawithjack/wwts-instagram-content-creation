@@ -5,10 +5,10 @@ Cover → Explanation → Dual chart (placement + heat) → Dual chart (jump + w
 
 from pipeline.helpers import trick_type_label
 
-ACCENT_COLOR = "#7a7db8"  # muted indigo — used as primary accent across slides
-COLOR_OVERVIEW = "#7a7db8"  # muted indigo — softened from site chart #6366f1
-COLOR_WAVE = "#4a9ebb"      # muted cyan
-COLOR_JUMP = "#5a9e96"      # muted teal
+ACCENT_COLOR = "#9478B5"  # muted violet — editorial accent for analysis posts
+COLOR_OVERVIEW = "#9478B5"  # muted violet — editorial accent
+COLOR_WAVE = "#5AB4CC"      # muted cyan — consistent wave color across feed
+COLOR_JUMP = "#4DA89E"      # muted jade — consistent jump color across feed
 
 
 def build_athlete_rise_slides(data: dict) -> list[dict]:

@@ -98,7 +98,7 @@ class TestBuildSlidesTied:
 
     def test_hero_accent_color_jumps(self):
         hero = self.slides[1]
-        assert hero["accent_color"] == "#2dd4bf"
+        assert hero["accent_color"] == "#4DA89E"
 
     def test_table_starts_after_ties(self):
         table = self.slides[2]
@@ -216,7 +216,7 @@ class TestBuildSlides:
 
     def test_hero_accent_color_waves(self):
         hero = self.slides[1]
-        assert hero["accent_color"] == "#00D4FF"
+        assert hero["accent_color"] == "#5AB4CC"
 
     def test_table_slide_has_ranks_2_to_6(self):
         table = self.slides[2]
@@ -257,7 +257,7 @@ class TestBuildSlides:
         data = {**self.data, "title_metric": "Jumps"}
         slides = build_slides(data)
         for slide in slides:
-            assert slide["accent_color"] == "#2dd4bf"
+            assert slide["accent_color"] == "#4DA89E"
 
 
 # ── Template Rendering ───────────────────────────────────────────────────────
@@ -277,7 +277,7 @@ class TestCarouselTemplateRendering:
 
     def test_cover_uses_cyan_accent(self):
         html = render_template("carousel/slide_cover", self.slides[0])
-        assert "#00D4FF" in html
+        assert "#5AB4CC" in html
 
     def test_cover_extends_base(self):
         html = render_template("carousel/slide_cover", self.slides[0])
@@ -405,7 +405,7 @@ class TestCarouselTemplateRendering:
 
     def test_cta_has_headline(self):
         html = render_template("carousel/slide_cta", self.slides[4])
-        assert "Top 10" in html
+        assert "EXPLORE THE FULL STATS" in html
 
     def test_all_slides_1080x1350(self):
         for slide in self.slides:
@@ -518,7 +518,7 @@ class TestGetDummyDataWavesCarousel:
         assert len(slides) == 5
         hero = slides[1]
         assert len(hero["rows"]) == 1
-        assert hero["accent_color"] == "#00D4FF"
+        assert hero["accent_color"] == "#5AB4CC"
 
 
 class TestGetDummyDataJumpsNoTie:
@@ -543,5 +543,5 @@ class TestGetDummyDataJumpsNoTie:
         slides = build_slides(data)
         hero = slides[1]
         assert len(hero["rows"]) == 1
-        assert hero["accent_color"] == "#2dd4bf"
+        assert hero["accent_color"] == "#4DA89E"
         assert hero["tie_count"] == 0

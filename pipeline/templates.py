@@ -249,7 +249,7 @@ def get_dummy_data(template_name: str) -> dict:
             "athlete_name": "Marino Gil Gherardi",
             "athlete_photo_url": "https://www.liveheats.com/images/1ff8b666-5d0e-48ae-b72e-0a311feefef0.webp",
             "location": "Gran Canaria",
-            "accent_color": "#7a7db8",
+            "accent_color": "#9478B5",
             "yearly_data": [
                 {"year": 2017, "placement": 33, "best_heat": 16.50, "best_wave": 5.50, "best_jump": 7.38, "best_jump_type": "B"},
                 {"year": 2018, "placement": 17, "best_heat": 25.38, "best_wave": 7.38, "best_jump": 7.25, "best_jump_type": "F"},
