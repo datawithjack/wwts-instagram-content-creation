@@ -1,0 +1,175 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 0;
+        gap: 0;
+        position: relative;
+    }
+
+    /* ── Full-bleed athlete photo ── */
+    .photo-bg {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 0;
+    }
+
+    .photo-bg img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center 20%;
+    }
+
+    /* ── Gradient overlay — heavy bottom wash ── */
+    .photo-bg::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(
+            to bottom,
+            rgba(8, 20, 40, 0.55) 0%,
+            rgba(8, 20, 40, 0.4) 30%,
+            rgba(10, 14, 26, 0.45) 50%,
+            rgba(10, 14, 26, 0.75) 65%,
+            rgba(10, 14, 26, 0.97) 100%
+        );
+        z-index: 1;
+    }
+
+    /* ── Content layer — bottom-heavy ── */
+    .content-layer {
+        position: relative;
+        z-index: 2;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 0 48px 96px;
+    }
+
+    /* ── Bottom row: event info left, placement pill right ── */
+    .bottom-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        margin-top: 20px;
+    }
+
+    /* ── Event info — bottom left ── */
+    .event-info {
+        text-align: left;
+    }
+
+    .event-name {
+        font-family: var(--font-display);
+        font-size: 72px;
+        letter-spacing: 0.04em;
+        line-height: 1.0;
+        color: rgba(255,255,255,0.8);
+        text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+        margin-bottom: 8px;
+    }
+
+    .event-meta {
+        font-family: var(--font-body);
+        font-size: 30px;
+        font-weight: 500;
+        color: rgba(255,255,255,0.55);
+        letter-spacing: 0.06em;
+        text-shadow: 0 1px 8px rgba(0,0,0,0.5);
+    }
+
+    .event-meta .stars {
+        color: var(--color-gold);
+    }
+
+    /* ── Placement pill — bottom right ── */
+    .placement-pill {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 160px;
+        height: 160px;
+        border-radius: 20px;
+        background: {{ placement_color | default('var(--color-discipline)') }};
+        flex-shrink: 0;
+    }
+
+    .placement-pill .placement-text {
+        font-family: var(--font-display);
+        font-size: 90px;
+        letter-spacing: -0.02em;
+        line-height: 1;
+        color: var(--color-bg);
+        text-transform: uppercase;
+    }
+
+    /* ── Athlete name — above bottom row ── */
+    .athlete-block {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0;
+        width: 100%;
+    }
+
+    .athlete-name-line {
+        font-family: var(--font-display);
+        font-size: 220px;
+        letter-spacing: 0.03em;
+        line-height: 0.9;
+        color: var(--color-text-primary);
+        white-space: nowrap;
+        text-shadow: 0 3px 20px rgba(0,0,0,0.6);
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <!-- Full-bleed photo -->
+    <div class="photo-bg">
+        <img src="{{ athlete_photo_url }}" alt="{{ athlete_name }}">
+    </div>
+
+    <!-- Content over photo — bottom-heavy -->
+    <div class="content-layer">
+        <!-- Athlete name stacked -->
+        <div class="athlete-block" data-autofit-group>
+            <div class="athlete-name-line">{{ athlete_firstname }}</div>
+            <div class="athlete-name-line">{{ athlete_surname }}</div>
+        </div>
+
+        <!-- Bottom row: event info left, placement pill right -->
+        <div class="bottom-row">
+            <div class="event-info">
+                <div class="event-name">{{ event_name | upper }}</div>
+                <div class="event-meta">
+                    {{ event_country }}
+                    {% if event_date_start and event_date_end %}
+                    &middot; {{ format_date_range(event_date_start, event_date_end) }}
+                    {% endif %}
+                    {% if event_tier %}
+                    &middot; <span class="stars">{{ '★' * event_tier }}</span>
+                    {% endif %}
+                    {% if event_date_start %}
+                    &middot; {{ event_date_start.year }}
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="placement-pill">
+                <span class="placement-text">{{ placement_ordinal }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% include "carousel/_autofit.html" %}
+{% endblock %}

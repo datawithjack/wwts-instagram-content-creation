@@ -55,16 +55,5 @@
 
     <div class="divider"></div>
 </div>
-<script>
-document.fonts.ready.then(() => {
-    document.querySelectorAll('[data-autofit]').forEach(el => {
-        const maxWidth = el.parentElement.offsetWidth;
-        let size = parseInt(getComputedStyle(el).fontSize);
-        while (el.scrollWidth > maxWidth && size > 40) {
-            size -= 4;
-            el.style.fontSize = size + 'px';
-        }
-    });
-});
-</script>
+{% include "carousel/_autofit.html" %}
 {% endblock %}

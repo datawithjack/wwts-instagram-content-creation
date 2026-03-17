@@ -46,7 +46,7 @@
         right: 0;
         width: 80px;
         height: 100%;
-        background: linear-gradient(to right, transparent, #0a0e1a);
+        background: linear-gradient(to right, transparent, var(--color-bg));
     }
 
     /* ── Text side (right 60%) ── */
@@ -60,12 +60,6 @@
     }
 
     .eyebrow {
-        font-family: var(--font-body);
-        font-size: 26px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.15em;
-        color: var(--color-discipline);
         margin-bottom: 24px;
     }
 
@@ -95,11 +89,7 @@
     }
 
     .divider {
-        width: 120px;
-        height: 4px;
-        background: linear-gradient(90deg, var(--color-discipline), transparent);
-        margin: 28px 0 0;
-        border-radius: 2px;
+        margin: 24px 0 0;
     }
 </style>
 {% endblock %}

@@ -106,6 +106,18 @@
         from { opacity: 0; transform: translateY(30px); }
         to { opacity: 1; transform: translateY(0); }
     }
+
+    .watermark {
+        position: absolute;
+        bottom: 24px;
+        right: 32px;
+        font-family: var(--font-body);
+        font-size: 16px;
+        font-weight: 500;
+        color: rgba(255,255,255,0.20);
+        letter-spacing: 0.04em;
+        z-index: 10;
+    }
 </style>
 {% endblock %}
 
@@ -125,6 +137,8 @@
             <div class="stat-label" id="label-events">Events</div>
         </div>
     </div>
+
+    <div class="watermark">windsurfworldtourstats.com</div>
 
     <div class="bottom-section">
         <div class="site-title" id="site-title">Windsurf World Tour Stats</div>

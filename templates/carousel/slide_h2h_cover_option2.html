@@ -105,7 +105,7 @@
         text-align: center;
         width: 100%;
         height: 100%;
-        padding: 40px 44px 64px;
+        padding: 60px 48px 64px;
     }
 
     .top-bar {
@@ -140,7 +140,7 @@
     }
 
     .event-meta .stars {
-        color: #F0C040;
+        color: var(--color-gold);
     }
 
     .h2h-title {
@@ -238,37 +238,5 @@
         </div>
     </div>
 </div>
-<script>
-document.fonts.ready.then(() => {
-    document.querySelectorAll('[data-autofit]').forEach(el => {
-        const maxWidth = el.parentElement.offsetWidth;
-        let size = parseInt(getComputedStyle(el).fontSize);
-        while (el.scrollWidth > maxWidth && size > 40) {
-            size -= 4;
-            el.style.fontSize = size + 'px';
-        }
-    });
-
-    document.querySelectorAll('[data-autofit-group]').forEach(group => {
-        const maxWidth = group.offsetWidth;
-        const lines = group.querySelectorAll('.athlete-name');
-        const startSize = parseInt(getComputedStyle(lines[0]).fontSize);
-        let size = startSize;
-
-        for (const line of lines) {
-            let s = startSize;
-            line.style.fontSize = s + 'px';
-            while (line.scrollWidth > maxWidth && s > 40) {
-                s -= 4;
-                line.style.fontSize = s + 'px';
-            }
-            size = Math.min(size, s);
-        }
-
-        for (const line of lines) {
-            line.style.fontSize = size + 'px';
-        }
-    });
-});
-</script>
+{% include "carousel/_autofit.html" %}
 {% endblock %}

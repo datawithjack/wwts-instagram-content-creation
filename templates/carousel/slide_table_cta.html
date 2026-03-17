@@ -108,7 +108,11 @@
 
 {% block carousel_content %}
 <div class="container">
+    {% if rows[0].rank == rows[-1].rank %}
+    {{ slide_header(title, event_name, is_per_event, rows[0].rank | ordinal) }}
+    {% else %}
     {{ slide_header(title, event_name, is_per_event, rows[0].rank | ordinal ~ ' – ' ~ rows[-1].rank | ordinal) }}
+    {% endif %}
 
     {{ table_component(rows, show_trick_type, is_per_event, '192px') }}
 

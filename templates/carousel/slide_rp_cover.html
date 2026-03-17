@@ -103,29 +103,5 @@
         <div class="athlete-name-line">{{ athlete_surname }}</div>
     </div>
 </div>
-<script>
-document.fonts.ready.then(() => {
-    // Auto-fit name groups — uniform size across both lines
-    document.querySelectorAll('[data-autofit-group]').forEach(group => {
-        const maxWidth = group.offsetWidth;
-        const lines = group.querySelectorAll('.athlete-name-line');
-        const startSize = parseInt(getComputedStyle(lines[0]).fontSize);
-        let size = startSize;
-
-        for (const line of lines) {
-            let s = startSize;
-            line.style.fontSize = s + 'px';
-            while (line.scrollWidth > maxWidth && s > 40) {
-                s -= 4;
-                line.style.fontSize = s + 'px';
-            }
-            size = Math.min(size, s);
-        }
-
-        for (const line of lines) {
-            line.style.fontSize = size + 'px';
-        }
-    });
-});
-</script>
+{% include "carousel/_autofit.html" %}
 {% endblock %}
