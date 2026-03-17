@@ -288,7 +288,6 @@ class TestCarouselTemplateRendering:
         data = get_dummy_data("top_10_carousel")
         slides = build_slides(data)
         html = render_template("carousel/slide_cover", slides[0])
-        assert "Swipe to reveal" in html
         assert "\u2605" in html
 
     def test_cover_per_event_shows_dates(self):

@@ -10,9 +10,17 @@
     }
 
     /* ── Cover-specific styles ── */
+    .event-year {
+        font-family: var(--font-display);
+        font-size: 64px;
+        letter-spacing: 0.06em;
+        color: var(--color-text-primary);
+        margin-bottom: 8px;
+    }
+
     .event-name {
         font-family: var(--font-display);
-        font-size: 120px;
+        font-size: 104px;
         letter-spacing: 0.04em;
         line-height: 1.05;
         color: var(--color-text-primary);
@@ -66,33 +74,20 @@
         letter-spacing: 0.08em;
         text-transform: uppercase;
     }
-
-    .swipe-hint {
-        position: absolute;
-        bottom: 40px;
-        right: 64px;
-        text-align: right;
-        font-family: var(--font-body);
-        font-size: 18px;
-        color: rgba(255,255,255,0.25);
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-    }
-
-    .swipe-hint .arrow {
-        color: var(--color-discipline);
-    }
 </style>
 {% endblock %}
 
 {% block carousel_content %}
 <div class="container">
     {% if is_per_event and event_name %}
-    <div class="eyebrow">{{ year }}</div>
+    <div class="event-year">{{ year }}</div>
     <div class="event-name">{{ event_name | upper }}</div>
     <div class="event-meta">
-        {% if event_date_start and event_date_end %}{{ event_date_start }} – {{ event_date_end }}{% endif %}
-        {% if event_stars %} · <span class="stars">{{ '★' * event_stars }}</span>{% endif %}
+        {% if event_country %}{{ event_country }}{% endif %}
+        {% if event_date_start and event_date_end %}
+        {% if event_country %}&middot;{% endif %} {{ event_date_start }} – {{ event_date_end }}
+        {% endif %}
+        {% if event_stars %} &middot; <span class="stars">{{ '★' * event_stars }}</span>{% endif %}
     </div>
     {% endif %}
     <div class="cover-title">
@@ -103,6 +98,5 @@
     {% if not is_per_event %}
     <div class="cover-subtitle">{{ year }} Season</div>
     {% endif %}
-    <div class="swipe-hint">Swipe to reveal <span class="arrow">→</span></div>
 </div>
 {% endblock %}
