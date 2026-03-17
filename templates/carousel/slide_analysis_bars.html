@@ -1,0 +1,244 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: stretch;
+        justify-content: flex-start;
+        text-align: left;
+        padding: 48px 56px 56px;
+        gap: 0;
+    }
+
+    .eyebrow {
+        color: rgba(255, 255, 255, 0.30);
+        font-size: 24px;
+        margin-bottom: 4px;
+    }
+
+    .slide-title {
+        font-size: 80px;
+        margin-bottom: 8px;
+        line-height: 1;
+    }
+
+    .subtitle-pill {
+        display: inline-block;
+        font-family: var(--font-display);
+        font-size: 32px;
+        letter-spacing: 0.04em;
+        border-radius: 6px;
+        padding: 4px 14px;
+        margin-bottom: 24px;
+        background: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.40);
+    }
+
+    /* ── Legend ── */
+    .legend {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 0;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--font-body);
+        font-size: 22px;
+        font-weight: 600;
+        color: var(--color-text-muted);
+        letter-spacing: 0.04em;
+    }
+
+    .legend-swatch {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+    }
+
+    /* ── Bars list ── */
+    .bars-list {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        justify-content: center;
+        gap: 24px;
+    }
+
+    .bar-entry {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .bar-photo-wrapper {
+        position: relative;
+        width: 88px;
+        height: 88px;
+        flex-shrink: 0;
+    }
+
+    .bar-photo {
+        width: 88px;
+        height: 88px;
+        border-radius: 8px;
+        overflow: hidden;
+        background: rgba(10, 14, 26, 0.6);
+    }
+
+    .bar-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .bar-photo-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 28px;
+        color: var(--color-text-muted);
+    }
+
+    .bar-photo-flag {
+        position: absolute;
+        bottom: -5px;
+        right: -5px;
+        width: 40px;
+        height: 28px;
+        border-radius: 4px;
+        border: 2px solid #0a0e1a;
+        object-fit: cover;
+        z-index: 2;
+    }
+
+    .bar-content {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .bar-athlete-name {
+        font-family: var(--font-display);
+        font-size: 46px;
+        letter-spacing: 0.04em;
+        color: #FFFFFF;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Stacked bar */
+    .bar-track {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        height: 52px;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .bar-segment {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 0;
+    }
+
+    .bar-segment-gc {
+        background: {{ color_gc | default('#2a8ab0') }};
+    }
+
+    .bar-segment-tf {
+        background: {{ color_tf | default('#1e9485') }};
+    }
+
+    .segment-count {
+        font-family: var(--font-display);
+        font-size: 32px;
+        letter-spacing: 0.03em;
+        color: #FFFFFF;
+        padding: 0 12px;
+    }
+
+    /* Total count at end of bar */
+    .bar-total {
+        font-family: var(--font-display);
+        font-size: 56px;
+        letter-spacing: 0.03em;
+        color: #FFFFFF;
+        flex-shrink: 0;
+        margin-left: 14px;
+        line-height: 1;
+    }
+
+    .bar-row-wrapper {
+        display: flex;
+        align-items: center;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="eyebrow">CANARY ISLANDS ANALYSIS</div>
+    <div class="slide-title">{{ slide_title }}</div>
+    <div class="subtitle-pill">EVENT WINS SINCE 2016</div>
+
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-swatch" style="background: {{ color_gc }};"></div>
+            GRAN CANARIA
+        </div>
+        <div class="legend-item">
+            <div class="legend-swatch" style="background: {{ color_tf }};"></div>
+            TENERIFE
+        </div>
+    </div>
+
+    <div class="bars-list">
+        {% for bar in bars %}
+        <div class="bar-entry">
+            <div class="bar-photo-wrapper">
+                <div class="bar-photo">
+                    {% if bar.photo_url %}
+                    <img src="{{ bar.photo_url }}" alt="{{ bar.athlete }}">
+                    {% else %}
+                    <div class="bar-photo-placeholder">{{ bar.athlete[0] }}</div>
+                    {% endif %}
+                </div>
+                {% if bar.country %}<img class="bar-photo-flag" src="https://flagcdn.com/w40/{{ bar.country }}.png" alt="{{ bar.country }}">{% endif %}
+            </div>
+            <div class="bar-content">
+                <span class="bar-athlete-name">{{ bar.athlete | upper }}</span>
+                <div class="bar-row-wrapper">
+                    <div class="bar-track" style="width: {{ bar.bar_width }}%;">
+                        {% if bar.gc_wins > 0 %}
+                        <div class="bar-segment bar-segment-gc" style="width: {{ bar.gc_pct }}%;">
+                            {% if bar.has_both %}<span class="segment-count">{{ bar.gc_wins }}</span>{% endif %}
+                        </div>
+                        {% endif %}
+                        {% if bar.tf_wins > 0 %}
+                        <div class="bar-segment bar-segment-tf" style="width: {{ bar.tf_pct }}%;">
+                            {% if bar.has_both %}<span class="segment-count">{{ bar.tf_wins }}</span>{% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <span class="bar-total">{{ bar.wins }}</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

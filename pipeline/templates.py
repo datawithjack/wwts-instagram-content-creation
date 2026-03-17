@@ -224,6 +224,42 @@ def get_dummy_data(template_name: str) -> dict:
             "scores_count": 43515,
             "events_count": 58,
         }
+    if template_name == "canary_kings":
+        return {
+            "men": [
+                {"athlete": "Philip Köster", "nationality": "Germany", "athlete_id": 49, "wins": 5, "gc_wins": 4, "tf_wins": 1, "photo_url": "https://www.liveheats.com/images/b2e3b752-d739-4f4c-9b04-bb14b29d4aef.webp"},
+                {"athlete": "Víctor Fernández", "nationality": "Spain", "athlete_id": 56, "wins": 3, "gc_wins": 1, "tf_wins": 2, "photo_url": "https://www.liveheats.com/images/6537867d-aaae-443a-9116-ece23adf9c74.webp"},
+                {"athlete": "Marc Paré Rico", "nationality": "Spain", "athlete_id": 97, "wins": 2, "gc_wins": 0, "tf_wins": 2, "photo_url": "https://www.liveheats.com/images/91f017d3-3e01-4e79-ae67-425a233897a1.webp"},
+                {"athlete": "Ricardo Campello", "nationality": "Venezuela (Bolivarian Republic of)", "athlete_id": 91, "wins": 1, "gc_wins": 1, "tf_wins": 0, "photo_url": "https://www.liveheats.com/images/050503b5-9b6f-47d0-809e-373e0b56ae3b.webp"},
+                {"athlete": "Jaeger Stone", "nationality": "Australian", "athlete_id": 187, "wins": 1, "gc_wins": 0, "tf_wins": 1, "photo_url": None},
+                {"athlete": "Marcilio Browne", "nationality": "Brazil", "athlete_id": 68, "wins": 1, "gc_wins": 1, "tf_wins": 0, "photo_url": "https://www.liveheats.com/images/877ad891-76ec-49fc-8eb6-d9f899293e9f.webp"},
+                {"athlete": "Marino Gil Gherardi", "nationality": "Spain", "athlete_id": 48, "wins": 1, "gc_wins": 1, "tf_wins": 0, "photo_url": "https://www.liveheats.com/images/1ff8b666-5d0e-48ae-b72e-0a311feefef0.webp"},
+            ],
+            "women": [
+                {"athlete": "Daida Ruano Moreno", "nationality": "Spanish", "athlete_id": 147, "wins": 7, "gc_wins": 7, "tf_wins": 0, "photo_url": None},
+                {"athlete": "Iballa Ruano Moreno", "nationality": "Spanish", "athlete_id": 178, "wins": 4, "gc_wins": 0, "tf_wins": 4, "photo_url": None},
+                {"athlete": "Sarah-Quita Offringa", "nationality": "Aruba", "athlete_id": 5, "wins": 2, "gc_wins": 1, "tf_wins": 1, "photo_url": "https://www.liveheats.com/images/7c3df566-6afe-4912-83bf-2b21b73ae490.webp"},
+                {"athlete": "Lina Erpenstein", "nationality": "Germany", "athlete_id": 16, "wins": 1, "gc_wins": 0, "tf_wins": 1, "photo_url": "https://www.liveheats.com/images/4d2e15d9-b0ab-461e-9b3f-e2f65e4dc541.webp"},
+            ],
+        }
+    if template_name == "athlete_rise":
+        return {
+            "title": "THE RISE OF MARINO GIL GHERARDI AT THE GRAN CANARIA WORLD CUP",
+            "subtitle": "Check out the meteoric rise of Marino's world cup performances at his home spot in Gran Canaria",
+            "athlete_name": "Marino Gil Gherardi",
+            "athlete_photo_url": "https://www.liveheats.com/images/1ff8b666-5d0e-48ae-b72e-0a311feefef0.webp",
+            "location": "Gran Canaria",
+            "accent_color": "#7a7db8",
+            "yearly_data": [
+                {"year": 2017, "placement": 33, "best_heat": 16.50, "best_wave": 5.50, "best_jump": 7.38, "best_jump_type": "B"},
+                {"year": 2018, "placement": 17, "best_heat": 25.38, "best_wave": 7.38, "best_jump": 7.25, "best_jump_type": "F"},
+                {"year": 2019, "placement": 17, "best_heat": 26.65, "best_wave": 7.95, "best_jump": 7.00, "best_jump_type": "B"},
+                {"year": 2022, "placement": 6, "best_heat": 20.43, "best_wave": 7.38, "best_jump": 7.50, "best_jump_type": "F"},
+                {"year": 2023, "placement": 2, "best_heat": 31.25, "best_wave": 8.12, "best_jump": 10.00, "best_jump_type": "PF"},
+                {"year": 2024, "placement": 1, "best_heat": 28.43, "best_wave": 6.62, "best_jump": 9.57, "best_jump_type": "PF"},
+                {"year": 2025, "placement": 3, "best_heat": 27.47, "best_wave": 5.62, "best_jump": 10.00, "best_jump_type": "PF"},
+            ],
+        }
     if template_name == "rider_profile":
         return {
             "athlete_name": "Marc Pare Rico",

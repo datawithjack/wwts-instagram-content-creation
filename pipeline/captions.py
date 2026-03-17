@@ -26,6 +26,8 @@ def build_caption(
             "site_stats": _caption_site_stats,
             "site_stats_reel": _caption_site_stats,
             "rider_profile": _caption_rider_profile,
+            "canary_kings": _caption_canary_kings,
+            "athlete_rise": _caption_athlete_rise,
         }
         builder = builders.get(template_name, _caption_default)
         body = builder(data, site_url)
@@ -87,6 +89,32 @@ def _caption_coming_soon(data: dict, site_url: str) -> str:
         "New features coming soon to windsurfworldtourstats.com!\n"
         "More disciplines, athlete profiles, career head to heads, and all-time score lists.\n"
         f"Follow for updates \u2192 {site_url}"
+    )
+
+
+def _caption_canary_kings(data: dict, site_url: str) -> str:
+    men = data.get("men", [])
+    women = data.get("women", [])
+    king = men[0]["athlete"] if men else "?"
+    queen = women[0]["athlete"] if women else "?"
+    return (
+        f"Who are the Kings and Queens of the Canary Islands?\n"
+        f"Since 2016, {king} and {queen} have dominated Gran Canaria and Tenerife.\n"
+        f"Full stats at {site_url}"
+    )
+
+
+def _caption_athlete_rise(data: dict, site_url: str) -> str:
+    name = data.get("athlete_name", "")
+    location = data.get("location", "")
+    yearly = data.get("yearly_data", [])
+    first_year = yearly[0]["year"] if yearly else ""
+    last_year = yearly[-1]["year"] if yearly else ""
+    first_name = name.split()[0] if name else ""
+    return (
+        f"The rise of {name} in {location}\n"
+        f"From {first_year} to {last_year}, watch {first_name}'s journey to the top.\n"
+        f"Full stats at {site_url}"
     )
 
 

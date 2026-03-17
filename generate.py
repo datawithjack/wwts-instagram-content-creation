@@ -15,9 +15,9 @@ from pipeline.api import fetch_head_to_head, fetch_site_stats, fetch_athlete_eve
 from pipeline.captions import build_caption
 from pipeline.db import run_query
 from pipeline.helpers import nationality_to_iso, clean_event_name, heat_label_from_id, short_round_name
-from pipeline.queries import build_top10_query
+from pipeline.queries import build_top10_query, build_canary_kings_query, build_athlete_rise_query
 from pipeline.templates import render_template, get_dummy_data
-from pipeline.renderer import render_to_png, render_to_video, render_carousel, render_h2h_carousel, render_rp_carousel
+from pipeline.renderer import render_to_png, render_to_video, render_carousel, render_h2h_carousel, render_rp_carousel, render_analysis_carousel, render_athlete_rise_carousel
 
 
 def fetch_live_data(template_name: str, args) -> dict:
@@ -129,6 +129,47 @@ def fetch_live_data(template_name: str, args) -> dict:
             division=args.division,
         )
 
+    if template_name == "canary_kings":
+        men_sql, men_params = build_canary_kings_query("Men")
+        women_sql, women_params = build_canary_kings_query("Women")
+        men_data = run_query(men_sql, men_params)
+        women_data = run_query(women_sql, women_params)
+        return {"men": men_data, "women": women_data}
+
+    if template_name == "athlete_rise":
+        if not all([args.athlete1, args.location, args.sex]):
+            print("Athlete rise requires: --athlete1, --location, --sex")
+            sys.exit(1)
+        event_pattern = f"%%{args.location}%%"
+        sql, params = build_athlete_rise_query(args.athlete1, event_pattern, args.sex)
+        rows = run_query(sql, params)
+        yearly_data = []
+        for r in rows:
+            yearly_data.append({
+                "year": int(r["year"]),
+                "placement": int(r["placement"]) if r.get("placement") else None,
+                "best_heat": float(r["best_heat"]) if r.get("best_heat") else None,
+                "best_wave": float(r["best_wave"]) if r.get("best_wave") else None,
+                "best_jump": float(r["best_jump"]) if r.get("best_jump") else None,
+                "best_jump_type": r.get("best_jump_type", "").strip() if r.get("best_jump_type") else None,
+            })
+        # Build title from athlete name (lookup from DB)
+        name_rows = run_query(
+            "SELECT primary_name, liveheats_image_url FROM ATHLETES WHERE id = %s LIMIT 1",
+            (args.athlete1,),
+        )
+        athlete_name = name_rows[0]["primary_name"] if name_rows else f"Athlete {args.athlete1}"
+        athlete_photo_url = name_rows[0].get("liveheats_image_url", "") if name_rows else ""
+        return {
+            "title": f"THE RISE OF {athlete_name.upper()} IN {args.location.upper()}",
+            "subtitle": f"Check out the meteoric rise of {athlete_name.split()[0]}'s world cup performances at {args.location}",
+            "athlete_name": athlete_name,
+            "athlete_photo_url": athlete_photo_url or "",
+            "location": args.location,
+            "accent_color": "#7a7db8",
+            "yearly_data": yearly_data,
+        }
+
     print(f"Live data not implemented for template: {template_name}")
     sys.exit(1)
 
@@ -144,13 +185,14 @@ def main():
     parser.add_argument(
         "--template",
         required=True,
-        choices=["head_to_head", "head_to_head_jump", "h2h_carousel", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile"],
+        choices=["head_to_head", "head_to_head_jump", "h2h_carousel", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile", "canary_kings", "athlete_rise"],
     )
     parser.add_argument("--athlete1", type=int, help="Athlete 1 unified ID")
     parser.add_argument("--athlete2", type=int, help="Athlete 2 unified ID")
     parser.add_argument("--event", type=int, help="Event ID")
     parser.add_argument("--division", choices=["Men", "Women"], help="Division for H2H")
-    parser.add_argument("--sex", choices=["Men", "Women"], help="Sex filter for top 10")
+    parser.add_argument("--sex", choices=["Men", "Women"], help="Sex filter for top 10 / athlete rise")
+    parser.add_argument("--location", help="Location pattern for athlete rise (e.g. 'Gran Canaria')")
     parser.add_argument("--score-type", choices=["Wave", "Jump"], help="Score type for top 10")
     parser.add_argument("--year", type=int, help="Year filter for top 10")
     parser.add_argument(
@@ -192,7 +234,7 @@ def main():
     else:
         data = fetch_live_data(template_name, args)
 
-    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "h2h_carousel", "rider_profile")
+    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "h2h_carousel", "rider_profile", "canary_kings", "athlete_rise")
 
     # Carousel preview: open all slides in browser tabs
     if is_carousel and args.preview:
@@ -204,6 +246,12 @@ def main():
         elif template_name == "rider_profile":
             from pipeline.rp_carousel import build_slides as build_rp_slides
             slides = build_rp_slides(data)
+        elif template_name == "canary_kings":
+            from pipeline.analysis_carousel import build_canary_kings_slides
+            slides = build_canary_kings_slides(data["men"], data["women"])
+        elif template_name == "athlete_rise":
+            from pipeline.athlete_rise_carousel import build_athlete_rise_slides
+            slides = build_athlete_rise_slides(data)
         else:
             from pipeline.carousel import build_slides
             slides = build_slides(data)
@@ -259,6 +307,18 @@ def main():
             result_paths = render_rp_carousel(
                 data, carousel_dir,
                 base_name=f"rider_profile_{timestamp}",
+                width=width, height=height, dpr=dpr,
+            )
+        elif template_name == "canary_kings":
+            result_paths = render_analysis_carousel(
+                data["men"], data["women"], carousel_dir,
+                base_name=f"canary_kings_{timestamp}",
+                width=width, height=height, dpr=dpr,
+            )
+        elif template_name == "athlete_rise":
+            result_paths = render_athlete_rise_carousel(
+                data, carousel_dir,
+                base_name=f"athlete_rise_{timestamp}",
                 width=width, height=height, dpr=dpr,
             )
         else:

@@ -35,6 +35,14 @@ templates:
     width: 1080
     height: 1350
     dpr: 2
+  canary_kings:
+    width: 1080
+    height: 1350
+    dpr: 2
+  athlete_rise:
+    width: 1080
+    height: 1350
+    dpr: 2
 
 hashtags:
   head_to_head:
@@ -62,6 +70,18 @@ hashtags:
     - "#PWA"
     - "#riderprofile"
     - "#windsurfstats"
+  canary_kings:
+    - "#windsurf"
+    - "#PWA"
+    - "#CanaryIslands"
+    - "#GranCanaria"
+    - "#Tenerife"
+    - "#windsurfstats"
+  athlete_rise:
+    - "#windsurf"
+    - "#PWA"
+    - "#windsurfstats"
+    - "#GranCanaria"
   default:
     - "#windsurf"
     - "#PWA"

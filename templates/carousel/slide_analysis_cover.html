@@ -1,0 +1,86 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 60px 48px 64px;
+        gap: 0;
+    }
+
+    /* ── Top eyebrow ── */
+    .eyebrow {
+        font-family: var(--font-body);
+        font-size: 40px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: #FFFFFF;
+        margin-bottom: 12px;
+    }
+
+    /* ── Hero title block ── */
+    .cover-title {
+        font-family: var(--font-display);
+        font-size: 380px;
+        letter-spacing: -0.04em;
+        line-height: 0.88;
+        transform: scaleX(0.85);
+        transform-origin: center;
+        color: #FFFFFF;
+        margin-bottom: 16px;
+    }
+
+    .cover-title .champions {
+        color: #7a7db8;
+    }
+
+    /* ── Divider ── */
+    .divider {
+        width: 120px;
+        height: 4px;
+        background: linear-gradient(90deg, #7a7db8, transparent);
+        margin: 24px auto;
+        border-radius: 2px;
+    }
+
+    /* ── Subtitle ── */
+    .cover-subtitle {
+        font-family: var(--font-body);
+        font-size: 28px;
+        font-weight: 500;
+        color: var(--color-text-muted);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        max-width: 880px;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="eyebrow">Canary Islands &middot; Since 2016</div>
+
+    <div class="cover-title" data-autofit>
+        <span class="champions">CHAMPIONS</span><br>
+        OF THE<br>
+        CANARIES
+    </div>
+
+    <div class="divider"></div>
+</div>
+<script>
+document.fonts.ready.then(() => {
+    document.querySelectorAll('[data-autofit]').forEach(el => {
+        const maxWidth = el.parentElement.offsetWidth;
+        let size = parseInt(getComputedStyle(el).fontSize);
+        while (el.scrollWidth > maxWidth && size > 40) {
+            size -= 4;
+            el.style.fontSize = size + 'px';
+        }
+    });
+});
+</script>
+{% endblock %}
