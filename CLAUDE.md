@@ -19,13 +19,15 @@ Automated Instagram image generation pipeline for windsurfworldtourstats.com. Pu
 | Module | Purpose |
 |---|---|
 | `pipeline/api.py` | API client (fetch_head_to_head, fetch_site_stats, fetch_event, fetch_athlete_event_stats) |
-| `pipeline/queries.py` | SQL query builders (build_top10_query) |
+| `pipeline/queries.py` | SQL query builders (build_top10_query, build_canary_kings_query, build_athlete_rise_query) |
 | `pipeline/db.py` | MySQL connection + query runner |
 | `pipeline/templates.py` | Jinja2 env, filters, render_template, get_dummy_data |
 | `pipeline/helpers.py` | Formatting helpers (ordinal, format_delta, country_flag, etc.) |
 | `pipeline/renderer.py` | Playwright render_to_png, render_to_video |
 | `pipeline/publisher.py` | Upload to R2, create/publish Instagram container via Meta Graph API |
 | `pipeline/captions.py` | Caption + hashtag generation per template |
+| `pipeline/analysis_carousel.py` | Canary Kings analysis carousel slide builder |
+| `pipeline/athlete_rise_carousel.py` | Athlete rise progression carousel slide builder |
 
 ## CLI Usage
 ```bash
@@ -46,6 +48,10 @@ python generate.py --template site_stats
 python generate.py --template canary_kings --dry-run --preview
 python generate.py --template canary_kings --preview
 
+# Athlete rise carousel (dry-run or live from DB)
+python generate.py --template athlete_rise --dry-run --preview
+python generate.py --template athlete_rise --athlete1 48 --location "Gran Canaria" --sex Men --preview
+
 # Preview in browser (no PNG render)
 python generate.py --template head_to_head --dry-run --preview
 
@@ -62,6 +68,7 @@ python generate.py --template site_stats --dry-run --publish now --caption "Cust
 - `site_stats.html` — Site-wide stat counters (with count-up animation for video)
 - `rider_profile.html` — Single athlete performance at an event (carousel: cover → hero → stats → waves → CTA)
 - `canary_kings` — Analysis carousel: Kings & Queens of the Canaries (cover → men bars → women bars → CTA, 4 slides)
+- `athlete_rise` — Athlete rise carousel: year-over-year progression at a location (cover → dual chart → explanation, 3+ slides)
 
 ## Template Layout Rules
 - HTML template layouts are manually tuned by the user. Do NOT modify template HTML/CSS layout unless explicitly asked.
@@ -100,6 +107,10 @@ See `.env`. Key vars:
 - Fonts: Bebas Neue (display), Inter (body) — loaded from Google Fonts
 - Colors: see `wwt_instagram_pipeline_plan.md` brand tokens section
 - Output: 1080x1350 portrait (feed), 1080x1080 square (stat of day), 2x DPR
+
+## Next Steps
+1. **Rider profile cover redesign** — Add athlete photo to rider profile cover slide (similar to H2H split-photo cover approach)
+2. **Full design review** — Run `/design-audit` across all templates to ensure consistent colors, fonts, spacing, and footers
 
 ## Skills
 - `/design-audit` — Audit templates for design consistency (colors, fonts, spacing, footers)
