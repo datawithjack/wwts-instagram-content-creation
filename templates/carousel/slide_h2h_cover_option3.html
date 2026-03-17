@@ -6,7 +6,7 @@
         align-items: center;
         justify-content: center;
         text-align: center;
-        padding: 40px 44px 64px;
+        padding: 40px 44px 48px;
         gap: 0;
     }
 
@@ -14,20 +14,20 @@
     .top-bar {
         width: 100%;
         text-align: center;
-        margin-bottom: 12px;
+        margin-bottom: 8px;
     }
 
     .event-year {
         font-family: var(--font-display);
-        font-size: 64px;
+        font-size: 56px;
         letter-spacing: 0.06em;
         color: var(--color-text-primary);
-        margin-bottom: 8px;
+        margin-bottom: 4px;
     }
 
     .event-name {
         font-family: var(--font-display);
-        font-size: 64px;
+        font-size: 56px;
         letter-spacing: 0.04em;
         line-height: 1.0;
         color: var(--color-text-primary);
@@ -36,7 +36,7 @@
 
     .event-meta {
         font-family: var(--font-body);
-        font-size: 26px;
+        font-size: 24px;
         font-weight: 500;
         color: var(--color-text-muted);
         letter-spacing: 0.06em;
@@ -46,24 +46,61 @@
         color: #F0C040;
     }
 
-    /* ── H2H title — dominates upper center ── */
+    /* ── H2H title ── */
     .h2h-title {
         font-family: var(--font-display);
-        font-size: 160px;
+        font-size: 140px;
         letter-spacing: -0.02em;
         line-height: 0.9;
         color: var(--color-text-primary);
         white-space: nowrap;
-        margin-bottom: 8px;
+        margin-bottom: 20px;
     }
 
-    /* ── Matchup block ── */
-    .matchup {
+    /* ── Athlete blocks with photo above name ── */
+    .athlete-block {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 8px;
         width: 100%;
+        gap: 12px;
+    }
+
+    .photo-circle {
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
+    .photo-circle-left {
+        border: 4px solid var(--color-athlete-left);
+        box-shadow: 0 0 30px rgba(56, 189, 248, 0.2);
+    }
+
+    .photo-circle-right {
+        border: 4px solid var(--color-athlete-right);
+        box-shadow: 0 0 30px rgba(45, 212, 191, 0.2);
+    }
+
+    .photo-circle img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center top;
+    }
+
+    .photo-circle .photo-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(30, 41, 59, 0.6);
+        font-family: var(--font-display);
+        font-size: 72px;
+        color: rgba(255,255,255,0.25);
     }
 
     .athlete-name-group {
@@ -73,7 +110,7 @@
 
     .athlete-name {
         font-family: var(--font-display);
-        font-size: 140px;
+        font-size: 120px;
         letter-spacing: 0.02em;
         line-height: 0.95;
         text-align: center;
@@ -85,9 +122,10 @@
 
     .vs-label {
         font-family: var(--font-display);
-        font-size: 48px;
-        color: rgba(255,255,255,0.7);
+        font-size: 40px;
+        color: rgba(255,255,255,0.5);
         letter-spacing: 0.08em;
+        margin: 4px 0;
     }
 </style>
 {% endblock %}
@@ -110,12 +148,32 @@
 
     <div class="h2h-title" data-autofit>HEAD TO HEAD</div>
 
-    <div class="matchup">
+    <!-- Athlete 1: photo + name -->
+    <div class="athlete-block">
+        <div class="photo-circle photo-circle-left">
+            {% if athlete_1_photo_url %}
+            <img src="{{ athlete_1_photo_url }}" alt="{{ athlete_1_name }}">
+            {% else %}
+            <div class="photo-placeholder">{{ athlete_1_firstname[0] if athlete_1_firstname else 'A' }}</div>
+            {% endif %}
+        </div>
         <div class="athlete-name-group" data-autofit-group>
             <div class="athlete-name athlete-name-left">{{ athlete_1_firstname }}</div>
             <div class="athlete-name athlete-name-left">{{ athlete_1_surname }}</div>
         </div>
-        <div class="vs-label">VS</div>
+    </div>
+
+    <div class="vs-label">VS</div>
+
+    <!-- Athlete 2: photo + name -->
+    <div class="athlete-block">
+        <div class="photo-circle photo-circle-right">
+            {% if athlete_2_photo_url %}
+            <img src="{{ athlete_2_photo_url }}" alt="{{ athlete_2_name }}">
+            {% else %}
+            <div class="photo-placeholder">{{ athlete_2_firstname[0] if athlete_2_firstname else 'B' }}</div>
+            {% endif %}
+        </div>
         <div class="athlete-name-group" data-autofit-group>
             <div class="athlete-name athlete-name-right">{{ athlete_2_firstname }}</div>
             <div class="athlete-name athlete-name-right">{{ athlete_2_surname }}</div>
@@ -124,7 +182,6 @@
 </div>
 <script>
 document.fonts.ready.then(() => {
-    // Auto-fit single elements (H2H title)
     document.querySelectorAll('[data-autofit]').forEach(el => {
         const maxWidth = el.parentElement.offsetWidth;
         let size = parseInt(getComputedStyle(el).fontSize);
@@ -134,7 +191,6 @@ document.fonts.ready.then(() => {
         }
     });
 
-    // Auto-fit name groups — uniform size across both lines
     document.querySelectorAll('[data-autofit-group]').forEach(group => {
         const maxWidth = group.offsetWidth;
         const lines = group.querySelectorAll('.athlete-name');

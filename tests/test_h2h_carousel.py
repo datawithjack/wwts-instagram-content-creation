@@ -63,7 +63,7 @@ class TestCoverSlide:
     def test_cover_has_event_name(self):
         slides = build_slides(_wave_data())
         cover = slides[0]
-        assert cover["event_name"] == "2026 Margaret River Wave Classic"
+        assert cover["event_name"] == "Margaret River Wave Classic"
 
     def test_cover_has_athlete_names(self):
         slides = build_slides(_wave_data())

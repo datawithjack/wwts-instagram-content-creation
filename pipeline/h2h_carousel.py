@@ -4,7 +4,7 @@ Wave-only: cover → overview → heats → waves → cta (5 slides)
 Wave+jump: cover → overview → heats → waves → jumps → cta (6 slides)
 """
 
-from pipeline.helpers import ordinal
+from pipeline.helpers import ordinal, clean_event_name
 
 ACCENT_WAVES = "#38bdf8"
 ACCENT_JUMPS = "#2dd4bf"
@@ -103,8 +103,8 @@ def _build_common(data: dict) -> dict:
     # Split on first space: first word = first name, rest = surname
     a1_parts = a1_name.split(None, 1) if a1_name else ["", ""]
     a2_parts = a2_name.split(None, 1) if a2_name else ["", ""]
-    # Strip star ratings from event name (shown separately via event_tier)
-    event_name = data.get("event_name", "").rstrip(" *")
+    # Strip year prefix and star ratings from event name (shown separately)
+    event_name = clean_event_name(data.get("event_name", ""))
     return {
         "accent_color": ACCENT_JUMPS if is_jump else ACCENT_WAVES,
         "event_name": event_name,
