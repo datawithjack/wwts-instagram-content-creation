@@ -11,15 +11,20 @@ on:
         options:
           - head_to_head
           - head_to_head_jump
+          - h2h_carousel
           - top_10
+          - top_10_carousel
           - site_stats
+          - site_stats_reel
           - rider_profile
+          - canary_kings
+          - athlete_rise
       event:
-        description: "Event ID (for H2H and top 10)"
+        description: "Event ID (for H2H, top 10, rider profile)"
         required: false
         type: number
       athlete1:
-        description: "Athlete 1 unified ID (for H2H)"
+        description: "Athlete 1 unified ID (for H2H, rider profile, athlete rise)"
         required: false
         type: number
       athlete2:
@@ -27,10 +32,11 @@ on:
         required: false
         type: number
       division:
-        description: "Division (for H2H)"
+        description: "Division (for H2H, rider profile)"
         required: false
         type: choice
         options:
+          - ""
           - Women
           - Men
       score_type:
@@ -38,10 +44,11 @@ on:
         required: false
         type: choice
         options:
+          - ""
           - Wave
           - Jump
       sex:
-        description: "Sex filter (for top 10)"
+        description: "Sex filter (for top 10, athlete rise)"
         required: false
         type: choice
         options:
@@ -52,6 +59,10 @@ on:
         description: "Year filter (for top 10)"
         required: false
         type: number
+      location:
+        description: "Location pattern (for athlete rise, e.g. 'Gran Canaria')"
+        required: false
+        type: string
       publish_mode:
         description: "Publish to Instagram (leave empty to skip)"
         required: false
@@ -63,6 +74,8 @@ on:
   # Scheduled: site stats every Monday at 7am UTC
   schedule:
     - cron: "0 7 * * 1"
+    # One-off: Marino Gil athlete rise — 2026-03-18 at 20:30 UTC (11:30pm Qatar)
+    - cron: "30 20 18 3 *"
 
 jobs:
   generate:
@@ -85,44 +98,64 @@ jobs:
       - name: Build CLI arguments
         id: args
         run: |
-          # Default to site_stats for scheduled runs
-          TEMPLATE="${{ github.event.inputs.template || 'site_stats' }}"
-          ARGS="--template $TEMPLATE"
+          # Determine template: scheduled runs use cron-specific defaults
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            # Identify which cron triggered by checking current UTC time
+            HOUR=$(date -u +%H)
+            MIN=$(date -u +%M)
+            DAY=$(date -u +%d)
+            MONTH=$(date -u +%m)
 
-          if [ "$TEMPLATE" = "head_to_head" ] || [ "$TEMPLATE" = "head_to_head_jump" ]; then
-            ARGS="$ARGS --event ${{ github.event.inputs.event }}"
-            ARGS="$ARGS --athlete1 ${{ github.event.inputs.athlete1 }}"
-            ARGS="$ARGS --athlete2 ${{ github.event.inputs.athlete2 }}"
-            ARGS="$ARGS --division ${{ github.event.inputs.division }}"
-          fi
+            if [ "$HOUR" = "20" ] && [ "$MONTH" = "03" ] && [ "$DAY" = "18" ]; then
+              # Marino Gil athlete rise — one-off 2026-03-18 20:30 UTC
+              TEMPLATE="athlete_rise"
+              ARGS="--template athlete_rise --athlete1 48 --location 'Gran Canaria' --sex Men"
+            else
+              # Default scheduled run: site_stats
+              TEMPLATE="site_stats"
+              ARGS="--template site_stats"
+            fi
+            ARGS="$ARGS --publish now"
+          else
+            TEMPLATE="${{ github.event.inputs.template }}"
+            ARGS="--template $TEMPLATE"
 
-          if [ "$TEMPLATE" = "rider_profile" ]; then
-            ARGS="$ARGS --event ${{ github.event.inputs.event }}"
-            ARGS="$ARGS --athlete1 ${{ github.event.inputs.athlete1 }}"
-            ARGS="$ARGS --division ${{ github.event.inputs.division }}"
-          fi
+            if [ "$TEMPLATE" = "head_to_head" ] || [ "$TEMPLATE" = "head_to_head_jump" ] || [ "$TEMPLATE" = "h2h_carousel" ]; then
+              ARGS="$ARGS --event ${{ github.event.inputs.event }}"
+              ARGS="$ARGS --athlete1 ${{ github.event.inputs.athlete1 }}"
+              ARGS="$ARGS --athlete2 ${{ github.event.inputs.athlete2 }}"
+              ARGS="$ARGS --division ${{ github.event.inputs.division }}"
+            fi
 
-          if [ "$TEMPLATE" = "top_10" ]; then
-            ARGS="$ARGS --score-type ${{ github.event.inputs.score_type }}"
-            if [ -n "${{ github.event.inputs.sex }}" ]; then
+            if [ "$TEMPLATE" = "rider_profile" ]; then
+              ARGS="$ARGS --event ${{ github.event.inputs.event }}"
+              ARGS="$ARGS --athlete1 ${{ github.event.inputs.athlete1 }}"
+              ARGS="$ARGS --division ${{ github.event.inputs.division }}"
+            fi
+
+            if [ "$TEMPLATE" = "top_10" ] || [ "$TEMPLATE" = "top_10_carousel" ]; then
+              ARGS="$ARGS --score-type ${{ github.event.inputs.score_type }}"
+              if [ -n "${{ github.event.inputs.sex }}" ]; then
+                ARGS="$ARGS --sex ${{ github.event.inputs.sex }}"
+              fi
+              if [ -n "${{ github.event.inputs.year }}" ]; then
+                ARGS="$ARGS --year ${{ github.event.inputs.year }}"
+              fi
+              if [ -n "${{ github.event.inputs.event }}" ]; then
+                ARGS="$ARGS --event ${{ github.event.inputs.event }}"
+              fi
+            fi
+
+            if [ "$TEMPLATE" = "athlete_rise" ]; then
+              ARGS="$ARGS --athlete1 ${{ github.event.inputs.athlete1 }}"
+              ARGS="$ARGS --location '${{ github.event.inputs.location }}'"
               ARGS="$ARGS --sex ${{ github.event.inputs.sex }}"
             fi
-            if [ -n "${{ github.event.inputs.year }}" ]; then
-              ARGS="$ARGS --year ${{ github.event.inputs.year }}"
-            fi
-            if [ -n "${{ github.event.inputs.event }}" ]; then
-              ARGS="$ARGS --event ${{ github.event.inputs.event }}"
-            fi
-          fi
 
-          # Add publish flag for manual dispatch
-          if [ -n "${{ github.event.inputs.publish_mode }}" ]; then
-            ARGS="$ARGS --publish ${{ github.event.inputs.publish_mode }}"
-          fi
-
-          # Auto-publish for scheduled runs (site_stats)
-          if [ "${{ github.event_name }}" = "schedule" ]; then
-            ARGS="$ARGS --publish now"
+            # Add publish flag for manual dispatch
+            if [ -n "${{ github.event.inputs.publish_mode }}" ]; then
+              ARGS="$ARGS --publish ${{ github.event.inputs.publish_mode }}"
+            fi
           fi
 
           echo "cli_args=$ARGS" >> "$GITHUB_OUTPUT"
