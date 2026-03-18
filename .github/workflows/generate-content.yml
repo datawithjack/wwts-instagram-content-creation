@@ -74,8 +74,8 @@ on:
   # Scheduled: site stats every Monday at 7am UTC
   schedule:
     - cron: "0 7 * * 1"
-    # One-off: Marino Gil athlete rise — 2026-03-18 at 20:30 UTC (11:30pm Qatar)
-    - cron: "30 20 18 3 *"
+    # One-off: Marino Gil athlete rise — 2026-03-18 at 20:40 UTC (11:40pm Qatar)
+    - cron: "40 20 18 3 *"
 
 jobs:
   generate:
