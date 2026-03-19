@@ -79,9 +79,11 @@ def main():
     # Poll mode — find due posts in backlog and publish them
     if args.publish == "poll":
         if args.dry_run:
+            now = datetime.now(timezone.utc)
             calendar = load_calendar(args.calendar)
             due = filter_posts_due(calendar.get("posts", []))
-            print(f"\n{len(due)} post(s) due:")
+            print(f"\nCurrent UTC: {now.isoformat()}")
+            print(f"{len(due)} post(s) due:")
             for p in due:
                 print(f"  - {p.get('id')} @ {p.get('scheduled_date')}")
             print("\nDry run — nothing rendered or published.")
