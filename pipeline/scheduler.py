@@ -109,25 +109,39 @@ def filter_posts_due(
 
 
 def mark_post_published(calendar_path: str, post_id: str) -> None:
-    """Mark a post as published in the YAML file, preserving comments."""
-    ry = YAML()
-    ry.preserve_quotes = True
-    with open(calendar_path, "r") as f:
-        data = ry.load(f)
+    """Mark a post as published in the YAML file, preserving comments.
 
-    found = False
-    for post in data["posts"]:
-        if post["id"] == post_id:
-            post["published"] = True
-            post["published_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
-            found = True
+    Uses line-level text insertion after the scheduled_date line to avoid
+    ruamel.yaml placing fields at the end of the mapping.
+    """
+    with open(calendar_path, "r") as f:
+        lines = f.readlines()
+
+    # Find the post by id, then find its scheduled_date line
+    found_post = False
+    insert_after = None
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped == f"id: {post_id}" or stripped == f"- id: {post_id}":
+            found_post = True
+        if found_post and stripped.startswith("scheduled_date:"):
+            insert_after = i
             break
 
-    if not found:
+    if insert_after is None:
         raise ValueError(f"Post '{post_id}' not found in {calendar_path}")
 
+    # Detect indentation from the scheduled_date line
+    indent = lines[insert_after][: len(lines[insert_after]) - len(lines[insert_after].lstrip())]
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+    new_lines = [
+        f"{indent}published: true\n",
+        f"{indent}published_at: \"{timestamp}\"\n",
+    ]
+    lines[insert_after + 1:insert_after + 1] = new_lines
+
     with open(calendar_path, "w") as f:
-        ry.dump(data, f)
+        f.writelines(lines)
 
 
 def run_poll(calendar_path: str) -> list:
