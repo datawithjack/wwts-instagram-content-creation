@@ -267,31 +267,35 @@ def publish_carousel(file_paths: list[str], caption: str) -> dict:
         # Delay to let R2 propagate before Meta fetches
         time.sleep(30)
 
-        # Create child containers
-        children_ids = []
-        for url in media_urls:
-            children_ids.append(create_carousel_child(url))
-
-        # Create carousel container and publish (retry with fresh container on ERROR)
+        # Create children + carousel and publish (full rebuild on ERROR)
         max_container_attempts = 3
         for container_attempt in range(max_container_attempts):
+            # (Re)create child containers each attempt — they expire with the parent
+            children_ids = []
+            for url in media_urls:
+                children_ids.append(create_carousel_child(url))
+
             container_id = create_carousel_container(children_ids, caption)
             wait_for_container(container_id)
             try:
                 media_id = publish_container(container_id)
                 break
             except Exception:
-                status = check_container_status(container_id)
+                try:
+                    status = check_container_status(container_id)
+                except Exception:
+                    status = "UNKNOWN"
                 if status == "PUBLISHED":
                     media_id = container_id
                     break
-                if status == "ERROR" and container_attempt < max_container_attempts - 1:
+                if container_attempt < max_container_attempts - 1:
+                    wait = 180 * (container_attempt + 1)
                     print(
-                        f"Container went to ERROR during publish "
+                        f"Publish failed, container status: {status} "
                         f"(attempt {container_attempt + 1}/{max_container_attempts}). "
-                        f"Recreating container in 120s..."
+                        f"Full rebuild in {wait}s..."
                     )
-                    time.sleep(120)
+                    time.sleep(wait)
                     continue
                 raise
     except Exception:
