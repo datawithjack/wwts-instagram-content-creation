@@ -17,16 +17,16 @@
 #   notes:          Planning notes (not used by scheduler, just for reference)
 
 posts:
-  - id: gc2025-mens-waves-top10
-    template: top_10_carousel
-    params:
-      score_type: Wave
-      sex: Men
-      year: 2025
-      event: 12
-    caption: "The 10 best men's wave scores from Gran Canaria 2025."
-    category: seasonal
-    scheduled_date: "2026-03-19T16:45:00"
+- id: gc2025-mens-waves-top10
+  template: top_10_carousel
+  params:
+    score_type: Wave
+    sex: Men
+    year: 2025
+    event: 12
+  caption: "The 10 best men's wave scores from Gran Canaria 2025."
+  category: seasonal
+  scheduled_date: "2026-03-19T16:45:00"
 
   # ── Week of March 24 ────────────────────────────────────────
   # - id:
@@ -133,3 +133,5 @@ posts:
 #
 # site_stats:
 #   (no params — pulls from API)
+  published: true
+  published_at: '2026-03-19T17:13:59'
