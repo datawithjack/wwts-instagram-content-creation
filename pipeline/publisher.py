@@ -272,10 +272,28 @@ def publish_carousel(file_paths: list[str], caption: str) -> dict:
         for url in media_urls:
             children_ids.append(create_carousel_child(url))
 
-        # Create carousel container
-        container_id = create_carousel_container(children_ids, caption)
-        wait_for_container(container_id)
-        media_id = publish_container(container_id)
+        # Create carousel container and publish (retry with fresh container on ERROR)
+        max_container_attempts = 3
+        for container_attempt in range(max_container_attempts):
+            container_id = create_carousel_container(children_ids, caption)
+            wait_for_container(container_id)
+            try:
+                media_id = publish_container(container_id)
+                break
+            except Exception:
+                status = check_container_status(container_id)
+                if status == "PUBLISHED":
+                    media_id = container_id
+                    break
+                if status == "ERROR" and container_attempt < max_container_attempts - 1:
+                    print(
+                        f"Container went to ERROR during publish "
+                        f"(attempt {container_attempt + 1}/{max_container_attempts}). "
+                        f"Recreating container in 120s..."
+                    )
+                    time.sleep(120)
+                    continue
+                raise
     except Exception:
         for url in media_urls:
             delete_from_r2(url)
