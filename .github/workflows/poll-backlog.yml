@@ -1,0 +1,64 @@
+name: Poll Backlog
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check for due posts
+        id: check
+        run: |
+          OUTPUT=$(python schedule.py --calendar content_backlog.yaml --publish poll --dry-run 2>&1)
+          echo "$OUTPUT"
+          if echo "$OUTPUT" | grep -q "0 post(s) due"; then
+            echo "has_due=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_due=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install Playwright
+        if: steps.check.outputs.has_due == 'true'
+        run: playwright install chromium
+
+      - name: Publish due posts
+        if: steps.check.outputs.has_due == 'true'
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+          MYSQL_PORT: ${{ secrets.MYSQL_PORT }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          META_INSTAGRAM_ACCOUNT_ID: ${{ secrets.META_INSTAGRAM_ACCOUNT_ID }}
+        run: python schedule.py --calendar content_backlog.yaml --publish poll
+
+      - name: Commit published state
+        if: steps.check.outputs.has_due == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add content_backlog.yaml
+          git diff --cached --quiet || git commit -m "Mark published posts in backlog"
+          git push

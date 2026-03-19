@@ -8,7 +8,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from pipeline.scheduler import load_calendar, filter_posts, run_calendar
+from pipeline.scheduler import (
+    load_calendar,
+    filter_posts,
+    filter_posts_due,
+    run_calendar,
+    run_poll,
+    sort_by_scheduled_date,
+    validate_scheduled_dates,
+)
 
 
 def main():
@@ -33,8 +41,8 @@ def main():
     )
     parser.add_argument(
         "--publish",
-        choices=["now", "schedule"],
-        help="Publish mode: 'now' or 'schedule'",
+        choices=["now", "schedule", "poll"],
+        help="Publish mode: 'now', 'schedule', or 'poll' (cron-based backlog polling)",
     )
     parser.add_argument(
         "--schedule-start",
@@ -68,6 +76,24 @@ def main():
     for p in posts:
         print(f"  - {p.get('id', p['template'])} [{p.get('category', '?')}]")
 
+    # Poll mode — find due posts in backlog and publish them
+    if args.publish == "poll":
+        if args.dry_run:
+            calendar = load_calendar(args.calendar)
+            due = filter_posts_due(calendar.get("posts", []))
+            print(f"\n{len(due)} post(s) due:")
+            for p in due:
+                print(f"  - {p.get('id')} @ {p.get('scheduled_date')}")
+            print("\nDry run — nothing rendered or published.")
+            return
+        results = run_poll(args.calendar)
+        ok = [r for r in results if "error" not in r]
+        failed = [r for r in results if "error" in r]
+        print(f"\nDone: {len(ok)} published, {len(failed)} failed")
+        for f in failed:
+            print(f"  FAILED: {f['id']} — {f['error']}")
+        return
+
     if args.dry_run:
         print("\nDry run — nothing rendered or published.")
         return
@@ -75,23 +101,42 @@ def main():
     # Handle scheduling
     schedule_time = None
     if args.publish == "schedule":
-        if not args.schedule_start:
-            print("--schedule-start is required when using --publish schedule")
-            sys.exit(1)
-        base_time = datetime.fromisoformat(args.schedule_start).replace(
-            tzinfo=timezone.utc
-        )
-        # Each post gets scheduled at base_time + (index * interval)
-        interval = timedelta(hours=args.schedule_interval)
-        print(f"\nScheduling {len(posts)} posts starting {base_time.isoformat()}")
-        print(f"  Interval: every {args.schedule_interval}h")
+        if args.schedule_start:
+            # Legacy mode: CLI --schedule-start with interval spacing
+            base_time = datetime.fromisoformat(args.schedule_start).replace(
+                tzinfo=timezone.utc
+            )
+            interval = timedelta(hours=args.schedule_interval)
+            print(f"\nScheduling {len(posts)} posts starting {base_time.isoformat()}")
+            print(f"  Interval: every {args.schedule_interval}h")
 
-        results = []
-        for i, post in enumerate(posts):
-            post_time = base_time + (interval * i)
-            print(f"\n  [{i+1}/{len(posts)}] {post.get('id')} @ {post_time.isoformat()}")
-            batch = run_calendar([post], publish_mode="schedule", schedule_time=post_time, output_dir=args.output)
-            results.extend(batch)
+            results = []
+            for i, post in enumerate(posts):
+                post_time = base_time + (interval * i)
+                print(f"\n  [{i+1}/{len(posts)}] {post.get('id')} @ {post_time.isoformat()}")
+                batch = run_calendar([post], publish_mode="schedule", schedule_time=post_time, output_dir=args.output)
+                results.extend(batch)
+        else:
+            # Per-post scheduled_date mode
+            has_dates = [p for p in posts if p.get("scheduled_date")]
+            no_dates = [p for p in posts if not p.get("scheduled_date")]
+            if not has_dates:
+                print("No posts have scheduled_date and --schedule-start not provided.")
+                print("Add scheduled_date to posts or use --schedule-start.")
+                sys.exit(1)
+            if no_dates:
+                print(f"\nSkipping {len(no_dates)} post(s) without scheduled_date:")
+                for p in no_dates:
+                    print(f"  - {p.get('id', p['template'])}")
+
+            validate_scheduled_dates(has_dates)
+            posts = sort_by_scheduled_date(has_dates)
+
+            print(f"\nScheduling {len(posts)} post(s) using per-post dates:")
+            for p in posts:
+                print(f"  - {p.get('id')} @ {p['scheduled_date']}")
+
+            results = run_calendar(posts, publish_mode="schedule", output_dir=args.output)
     else:
         print(f"\nPublish mode: {args.publish or 'render only'}")
         results = run_calendar(posts, publish_mode=args.publish, output_dir=args.output)
