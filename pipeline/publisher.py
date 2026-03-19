@@ -221,6 +221,33 @@ def schedule_post(
     return {"container_id": container_id, "image_url": media_url}
 
 
+def check_recent_media(caption: str, limit: int = 5) -> bool:
+    """Check if a post with this caption was recently published on Instagram.
+
+    Queries the account's recent media to detect posts that published
+    successfully despite the API returning an error.
+    """
+    account_id = os.environ["META_INSTAGRAM_ACCOUNT_ID"]
+    token = os.environ["META_ACCESS_TOKEN"]
+    try:
+        resp = requests.get(
+            f"{GRAPH_API_BASE}/{account_id}/media",
+            params={
+                "fields": "id,caption,timestamp",
+                "limit": limit,
+                "access_token": token,
+            },
+        )
+        resp.raise_for_status()
+        for post in resp.json().get("data", []):
+            if post.get("caption") == caption:
+                print(f"Post already live on Instagram (media_id={post['id']})")
+                return True
+    except Exception as e:
+        print(f"Recent media check failed: {e}")
+    return False
+
+
 def create_carousel_child(image_url: str) -> str:
     """Create a carousel child container on Instagram. Returns container ID."""
     account_id = os.environ["META_INSTAGRAM_ACCOUNT_ID"]
@@ -286,6 +313,13 @@ def publish_carousel(file_paths: list[str], caption: str) -> dict:
                 except Exception:
                     status = "UNKNOWN"
                 if status == "PUBLISHED":
+                    media_id = container_id
+                    break
+                # Last resort: wait briefly for Meta to propagate, then check
+                # if the post actually went live on Instagram
+                time.sleep(10)
+                if check_recent_media(caption):
+                    print("Post confirmed live despite API errors — treating as success.")
                     media_id = container_id
                     break
                 if container_attempt < max_container_attempts - 1:

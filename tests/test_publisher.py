@@ -8,6 +8,7 @@ from pipeline.publisher import (
     create_container,
     create_carousel_child,
     create_carousel_container,
+    check_recent_media,
     publish_carousel,
     check_container_status,
     wait_for_container,
@@ -223,18 +224,19 @@ class TestPublishContainer:
     def test_raises_on_non_rate_limit_error(
         self, mock_post, mock_check, mock_sleep, meta_env
     ):
-        """Non-rate-limit errors should raise immediately without status check."""
+        """Non-rate-limit errors should still check status but raise if not published."""
         error_resp = MagicMock(
             status_code=500,
             json=lambda: {"error": {"code": 100, "message": "server error"}},
         )
         error_resp.raise_for_status.side_effect = Exception("500")
         mock_post.return_value = error_resp
+        mock_check.return_value = "ERROR"
 
         with pytest.raises(Exception, match="500"):
             publish_container("container-789")
 
-        mock_check.assert_not_called()
+        mock_check.assert_called_once_with("container-789")
         assert mock_post.call_count == 1
 
 
@@ -316,6 +318,54 @@ class TestCreateCarouselContainer:
         assert call_kwargs[1]["params"]["caption"] == "My caption"
 
 
+class TestCheckRecentMedia:
+    @patch("pipeline.publisher.requests.get")
+    def test_returns_true_when_caption_matches(self, mock_get, meta_env):
+        mock_get.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {"data": [
+                {"id": "m1", "caption": "Top 10 men's waves — 2025.", "timestamp": "2026-03-19T16:50:00+0000"},
+                {"id": "m2", "caption": "Old post", "timestamp": "2026-03-19T10:00:00+0000"},
+            ]},
+        )
+        mock_get.return_value.raise_for_status = MagicMock()
+
+        result = check_recent_media("Top 10 men's waves — 2025.")
+        assert result is True
+
+    @patch("pipeline.publisher.requests.get")
+    def test_returns_false_when_no_match(self, mock_get, meta_env):
+        mock_get.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {"data": [
+                {"id": "m1", "caption": "Something else", "timestamp": "2026-03-19T16:50:00+0000"},
+            ]},
+        )
+        mock_get.return_value.raise_for_status = MagicMock()
+
+        result = check_recent_media("Top 10 men's waves")
+        assert result is False
+
+    @patch("pipeline.publisher.requests.get")
+    def test_returns_false_on_api_error(self, mock_get, meta_env):
+        mock_get.return_value = MagicMock()
+        mock_get.return_value.raise_for_status.side_effect = Exception("API error")
+
+        result = check_recent_media("anything")
+        assert result is False
+
+    @patch("pipeline.publisher.requests.get")
+    def test_returns_false_when_empty(self, mock_get, meta_env):
+        mock_get.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {"data": []},
+        )
+        mock_get.return_value.raise_for_status = MagicMock()
+
+        result = check_recent_media("anything")
+        assert result is False
+
+
 class TestPublishCarousel:
     @patch("pipeline.publisher.delete_from_r2")
     @patch("pipeline.publisher.publish_container")
@@ -359,4 +409,34 @@ class TestPublishCarousel:
         with pytest.raises(Exception, match="API error"):
             publish_carousel(["out/1.png", "out/2.png"], "caption")
 
+        assert mock_delete.call_count == 2
+
+    @patch("pipeline.publisher.time.sleep")
+    @patch("pipeline.publisher.delete_from_r2")
+    @patch("pipeline.publisher.check_recent_media")
+    @patch("pipeline.publisher.check_container_status")
+    @patch("pipeline.publisher.publish_container")
+    @patch("pipeline.publisher.wait_for_container")
+    @patch("pipeline.publisher.create_carousel_container")
+    @patch("pipeline.publisher.create_carousel_child")
+    @patch("pipeline.publisher.upload_to_r2")
+    def test_detects_already_published_via_recent_media(
+        self, mock_upload, mock_child, mock_carousel, mock_wait,
+        mock_publish, mock_status, mock_recent, mock_delete, mock_sleep
+    ):
+        """When publish_container fails and container status is ERROR,
+        check_recent_media should detect the post was actually published."""
+        mock_upload.side_effect = ["https://r2/img1.png", "https://r2/img2.png"]
+        mock_child.side_effect = ["child-1", "child-2"]
+        mock_carousel.return_value = "carousel-999"
+        mock_publish.side_effect = Exception("400 Bad Request")
+        mock_status.return_value = "ERROR"
+        mock_recent.return_value = True  # Post found on Instagram
+
+        result = publish_carousel(["out/1.png", "out/2.png"], "My caption")
+
+        mock_recent.assert_called_once_with("My caption")
+        # Should return success, not raise
+        assert result["media_id"] == "carousel-999"
+        # Should clean up R2
         assert mock_delete.call_count == 2
