@@ -1,0 +1,135 @@
+# Content Backlog — WWT Instagram
+#
+# Planning document for upcoming posts. Each post has a scheduled_date for
+# hands-off publishing via Meta's scheduled_publish_time API.
+#
+# Usage:
+#   python schedule.py --calendar content_backlog.yaml --publish schedule
+#   (reads scheduled_date from each post — no --schedule-start needed)
+#
+# Fields:
+#   id:             Unique post identifier
+#   template:       Template name (top_10, head_to_head, h2h_carousel, rider_profile, site_stats, canary_kings, athlete_rise)
+#   params:         Template-specific parameters (score_type, sex, year, event, athlete1, athlete2, division, etc.)
+#   caption:        Instagram caption text (optional — auto-generated if omitted)
+#   category:       evergreen | seasonal | recurring
+#   scheduled_date: Publish date/time in ISO 8601 UTC (e.g. 2026-03-25T12:00:00) — REQUIRED for scheduling
+#   notes:          Planning notes (not used by scheduler, just for reference)
+
+posts:
+  - id: gc2025-mens-waves-top10
+    template: top_10_carousel
+    params:
+      score_type: Wave
+      sex: Men
+      year: 2025
+      event: 12
+    caption: "The 10 best men's wave scores from Gran Canaria 2025."
+    category: seasonal
+    scheduled_date: "2026-03-19T16:45:00"
+
+  # ── Week of March 24 ────────────────────────────────────────
+  # - id:
+  #   template:
+  #   params:
+  #   caption:
+  #   category:
+  #   scheduled_date: 2026-03-24T12:00:00
+  #   notes:
+
+  # - id:
+  #   template:
+  #   params:
+  #   caption:
+  #   category:
+  #   scheduled_date: 2026-03-26T12:00:00
+  #   notes:
+
+  # - id:
+  #   template:
+  #   params:
+  #   caption:
+  #   category:
+  #   scheduled_date: 2026-03-28T12:00:00
+  #   notes:
+
+  # ── Week of March 31 ────────────────────────────────────────
+  # - id:
+  #   template:
+  #   params:
+  #   caption:
+  #   category:
+  #   scheduled_date: 2026-03-31T12:00:00
+  #   notes:
+
+  # - id:
+  #   template:
+  #   params:
+  #   caption:
+  #   category:
+  #   scheduled_date: 2026-04-02T12:00:00
+  #   notes:
+
+  # - id:
+  #   template:
+  #   params:
+  #   caption:
+  #   category:
+  #   scheduled_date: 2026-04-04T12:00:00
+  #   notes:
+
+  # ── Week of April 7 ─────────────────────────────────────────
+  # - id:
+  #   template:
+  #   params:
+  #   caption:
+  #   category:
+  #   scheduled_date: 2026-04-07T12:00:00
+  #   notes:
+
+  # - id:
+  #   template:
+  #   params:
+  #   caption:
+  #   category:
+  #   scheduled_date: 2026-04-09T12:00:00
+  #   notes:
+
+  # - id:
+  #   template:
+  #   params:
+  #   caption:
+  #   category:
+  #   scheduled_date: 2026-04-11T12:00:00
+  #   notes:
+
+
+# ── Quick reference: available templates & params ──────────────
+#
+# top_10:
+#   score_type: Wave | Jump
+#   sex: Men | Women
+#   year: 2025 (optional — omit for all-time)
+#   event: 12 (optional — omit for all events)
+#
+# h2h_carousel:
+#   event: 12
+#   athlete1: 49
+#   athlete2: 68
+#   division: Men | Women
+#
+# rider_profile:
+#   event: 12
+#   athlete1: 49
+#   division: Men | Women
+#
+# canary_kings:
+#   (no params — pulls from DB)
+#
+# athlete_rise:
+#   athlete1: 48
+#   location: "Gran Canaria"
+#   sex: Men | Women
+#
+# site_stats:
+#   (no params — pulls from API)

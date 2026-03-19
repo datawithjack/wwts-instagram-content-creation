@@ -3,6 +3,7 @@ jinja2
 Pillow
 python-dotenv
 pyyaml
+ruamel.yaml
 requests
 playwright
 pytest

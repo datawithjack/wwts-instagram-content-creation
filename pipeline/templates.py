@@ -16,6 +16,7 @@ from pipeline.helpers import (
 )
 
 TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "..", "templates")
+PHOTOS_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "photos")
 
 
 def get_jinja_env() -> Environment:
@@ -29,6 +30,40 @@ def get_jinja_env() -> Environment:
     env.filters["country_flag"] = country_flag
     env.filters["trick_type_label"] = trick_type_label
     return env
+
+
+def resolve_photo_override(athlete_id, current_url: str) -> str:
+    """Check for a local photo override in assets/photos/ by athlete ID.
+
+    Returns the file:// URL if a local file exists, otherwise returns current_url unchanged.
+    Checks extensions in order: webp, jpg, png.
+    """
+    if not athlete_id:
+        return current_url
+    for ext in ("webp", "jpg", "png"):
+        local = os.path.join(PHOTOS_DIR, f"{athlete_id}.{ext}")
+        if os.path.exists(local):
+            return "file:///" + os.path.abspath(local).replace(os.sep, "/")
+    return current_url
+
+
+def _apply_photo_overrides(data: dict) -> None:
+    """Apply local photo overrides to template data dict (mutates in place).
+
+    Checks these athlete ID → photo URL mappings:
+    - athlete_1_id → athlete_1_photo_url (H2H)
+    - athlete_2_id → athlete_2_photo_url (H2H)
+    - athlete_id → athlete_photo_url (rider profile, athlete rise)
+    """
+    mappings = [
+        ("athlete_1_id", "athlete_1_photo_url"),
+        ("athlete_2_id", "athlete_2_photo_url"),
+        ("athlete_id", "athlete_photo_url"),
+    ]
+    for id_key, photo_key in mappings:
+        aid = data.get(id_key)
+        if aid:
+            data[photo_key] = resolve_photo_override(aid, data.get(photo_key, ""))
 
 
 def render_template(template_name: str, data: dict) -> str:
@@ -49,6 +84,9 @@ def render_template(template_name: str, data: dict) -> str:
     if os.path.exists(bg_path):
         bg_url = "file:///" + os.path.abspath(bg_path).replace(os.sep, "/")
         data = {**data, "bg_image_path": bg_url}
+
+    # Apply local photo overrides (by athlete ID)
+    _apply_photo_overrides(data)
 
     # Resolve athlete photo paths to file:// URLs
     for key in ("athlete_1_photo_url", "athlete_2_photo_url", "athlete_photo_url"):

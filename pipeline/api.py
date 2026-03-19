@@ -56,6 +56,9 @@ def fetch_head_to_head(
         if raw_date:
             data[template_key] = date.fromisoformat(str(raw_date))
 
+    data["athlete_1_id"] = athlete1_id
+    data["athlete_2_id"] = athlete2_id
+
     for side, key in [("athlete1", "athlete_1"), ("athlete2", "athlete_2")]:
         a = raw[side]
         data[f"{key}_name"] = a["name"]
@@ -128,6 +131,7 @@ def fetch_athlete_event_stats(event_id: int, athlete_id: int, division: str) -> 
         best_jump = best_jump_raw
 
     data = {
+        "athlete_id": athlete_id,
         "athlete_name": athlete.get("name", ""),
         "athlete_country": nationality_to_iso(athlete.get("country", "")) or athlete.get("country_code", ""),
         "athlete_photo_url": athlete.get("profile_image", ""),
