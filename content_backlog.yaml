@@ -17,17 +17,46 @@
 #   notes:          Planning notes (not used by scheduler, just for reference)
 
 posts:
-- id: gc2025-mens-waves-top10
-  template: top_10_carousel
-  params:
-    score_type: Wave
-    sex: Men
-    year: 2025
-    event: 12
-  category: seasonal
-  scheduled_date: "2026-03-19T17:50:00"
-  published: true
-  published_at: "2026-03-19T18:04:06"
+  # ── Tonight's test batch (March 19) ──────────────────────────
+  - id: gc2025-mens-waves-top10
+    template: top_10_carousel
+    params:
+      score_type: Wave
+      sex: Men
+      year: 2025
+      event: 12
+    category: seasonal
+    scheduled_date: "2026-03-19T18:25:00"
+
+  - id: gc2025-mens-jumps-top10
+    template: top_10_carousel
+    params:
+      score_type: Jump
+      sex: Men
+      year: 2025
+      event: 12
+    category: seasonal
+    scheduled_date: "2026-03-19T18:50:00"
+
+  - id: gc2025-womens-waves-top10
+    template: top_10_carousel
+    params:
+      score_type: Wave
+      sex: Women
+      year: 2025
+      event: 12
+    category: seasonal
+    scheduled_date: "2026-03-19T19:20:00"
+
+  - id: gc2025-womens-jumps-top10
+    template: top_10_carousel
+    params:
+      score_type: Jump
+      sex: Women
+      year: 2025
+      event: 12
+    category: seasonal
+    scheduled_date: "2026-03-19T19:50:00"
 
   # ── Week of March 24 ────────────────────────────────────────
   # - id:
