@@ -143,24 +143,30 @@ def publish_container(
         if resp.status_code == 200:
             return resp.json()["id"]
 
+        # Log the error details for debugging
+        error_data = resp.json().get("error", {})
+        print(
+            f"Publish attempt {attempt + 1}/{max_retries + 1} failed: "
+            f"HTTP {resp.status_code}, code={error_data.get('code')}, "
+            f"subcode={error_data.get('error_subcode')}, "
+            f"message={error_data.get('message', 'unknown')}"
+        )
+
         # On any error, check if the container was already published
         # (a prior attempt may have succeeded despite returning an error)
         try:
             status = check_container_status(container_id)
+            print(f"Container status: {status}")
             if status == "PUBLISHED":
-                print("Container already published — skipping retry.")
+                print("Container already published — returning success.")
                 return container_id
-        except Exception:
-            pass  # If status check fails, fall through to normal error handling
+        except Exception as e:
+            print(f"Status check failed: {e}")
 
-        error_data = resp.json().get("error", {})
         is_rate_limit = error_data.get("code") == 4 or resp.status_code == 403
         if is_rate_limit and attempt < max_retries:
             wait = retry_delay * (attempt + 1)
-            print(
-                f"Rate limited (attempt {attempt + 1}/{max_retries + 1}), "
-                f"retrying in {wait:.0f}s..."
-            )
+            print(f"Retrying in {wait:.0f}s...")
             time.sleep(wait)
             continue
 
