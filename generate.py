@@ -163,6 +163,7 @@ def fetch_live_data(template_name: str, args) -> dict:
         return {
             "title": f"THE RISE OF {athlete_name.upper()} IN {args.location.upper()}",
             "subtitle": f"Check out the meteoric rise of {athlete_name.split()[0]}'s world cup performances at {args.location}",
+            "athlete_id": args.athlete1,
             "athlete_name": athlete_name,
             "athlete_photo_url": athlete_photo_url or "",
             "location": args.location,

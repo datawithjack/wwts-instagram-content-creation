@@ -102,10 +102,11 @@ def build_slides(data: dict) -> list[dict]:
 
     slides = []
 
-    # Slide 1: Cover — placement as hero element
+    # Slide 1: Cover — use photo variant when athlete photo is available
     placement = data.get("placement", 0)
+    has_photo = bool(common.get("athlete_photo_url"))
     slides.append({
-        "type": "rp_cover",
+        "type": "rp_cover_photo" if has_photo else "rp_cover",
         "hide_footer": False,
         "placement": placement,
         "placement_ordinal": ordinal(placement),

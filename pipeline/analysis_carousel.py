@@ -4,13 +4,12 @@ Kings & Queens of the Canaries:
 cover → men bars → women bars → cta (4 slides)
 """
 
-import os
 from decimal import Decimal
 
 from pipeline.helpers import nationality_to_iso
+from pipeline.templates import resolve_photo_override
 
 ACCENT_COLOR = "#9478B5"  # muted violet — editorial accent for analysis posts
-PHOTOS_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "photos")
 COLOR_GC = "#2a8ab0"  # muted cyan — Gran Canaria
 COLOR_TF = "#1e9485"  # muted teal — Tenerife
 MIN_BAR_PCT = 20
@@ -79,13 +78,7 @@ def _build_bars(data: list[dict]) -> list[dict]:
         country_iso = nationality_to_iso(row.get("nationality", ""))
         athlete_id = row.get("athlete_id")
         # Use DB photo URL, fall back to local file by athlete ID
-        photo_url = row.get("photo_url") or ""
-        if not photo_url and athlete_id:
-            for ext in ("webp", "jpg", "png"):
-                local = os.path.join(PHOTOS_DIR, f"{athlete_id}.{ext}")
-                if os.path.exists(local):
-                    photo_url = "file:///" + os.path.abspath(local).replace(os.sep, "/")
-                    break
+        photo_url = resolve_photo_override(athlete_id, row.get("photo_url") or "")
 
         wins = int(row["wins"])
         gc_wins = int(row.get("gc_wins", 0))
