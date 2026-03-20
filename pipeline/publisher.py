@@ -248,21 +248,35 @@ def check_recent_media(caption: str, limit: int = 5) -> bool:
     return False
 
 
-def create_carousel_child(image_url: str) -> str:
-    """Create a carousel child container on Instagram. Returns container ID."""
+def create_carousel_child(
+    image_url: str, max_retries: int = 2, retry_delay: float = 10.0
+) -> str:
+    """Create a carousel child container on Instagram. Returns container ID.
+
+    Retries on transient 5xx errors from Meta's API.
+    """
     account_id = os.environ["META_INSTAGRAM_ACCOUNT_ID"]
     token = os.environ["META_ACCESS_TOKEN"]
 
-    resp = requests.post(
-        f"{GRAPH_API_BASE}/{account_id}/media",
-        params={
-            "image_url": image_url,
-            "is_carousel_item": "true",
-            "access_token": token,
-        },
-    )
-    resp.raise_for_status()
-    return resp.json()["id"]
+    for attempt in range(max_retries + 1):
+        resp = requests.post(
+            f"{GRAPH_API_BASE}/{account_id}/media",
+            params={
+                "image_url": image_url,
+                "is_carousel_item": "true",
+                "access_token": token,
+            },
+        )
+        if resp.status_code >= 500 and attempt < max_retries:
+            wait = retry_delay * (attempt + 1)
+            print(
+                f"Carousel child creation got {resp.status_code}, "
+                f"retrying in {wait:.0f}s (attempt {attempt + 1}/{max_retries + 1})..."
+            )
+            time.sleep(wait)
+            continue
+        resp.raise_for_status()
+        return resp.json()["id"]
 
 
 def create_carousel_container(children_ids: list[str], caption: str) -> str:

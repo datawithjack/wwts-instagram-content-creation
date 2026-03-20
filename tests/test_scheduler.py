@@ -474,15 +474,25 @@ class TestFilterPostsDue:
         now = datetime.now(timezone.utc)
         past = now - timedelta(minutes=20)
         post = self._make_post("due-past", past.isoformat())
-        result = filter_posts_due([post], now=now, window_minutes=35)
+        result = filter_posts_due([post], now=now)
         assert len(result) == 1
 
-    def test_excludes_post_outside_lookback(self):
+    def test_includes_post_past_lookback_window(self):
+        """Any past unpublished post is due, regardless of how old."""
         now = datetime.now(timezone.utc)
         old = now - timedelta(minutes=60)
-        post = self._make_post("too-old", old.isoformat())
-        result = filter_posts_due([post], now=now, window_minutes=35)
-        assert len(result) == 0
+        post = self._make_post("overdue", old.isoformat())
+        result = filter_posts_due([post], now=now)
+        assert len(result) == 1
+        assert result[0]["id"] == "overdue"
+
+    def test_includes_post_hours_overdue(self):
+        """Posts missed by hours (e.g. cron ran late) should still be due."""
+        now = datetime.now(timezone.utc)
+        old = now - timedelta(hours=12)
+        post = self._make_post("very-overdue", old.isoformat())
+        result = filter_posts_due([post], now=now)
+        assert len(result) == 1
 
     def test_includes_post_slightly_in_future(self):
         now = datetime.now(timezone.utc)
@@ -516,13 +526,15 @@ class TestFilterPostsDue:
         now = datetime.now(timezone.utc)
         posts = [
             self._make_post("due", now.isoformat()),
+            self._make_post("overdue", (now - timedelta(hours=6)).isoformat()),
             self._make_post("published", now.isoformat(), published=True),
             self._make_post("future", (now + timedelta(hours=5)).isoformat()),
             self._make_post("no-date"),
         ]
         result = filter_posts_due(posts, now=now)
-        assert len(result) == 1
-        assert result[0]["id"] == "due"
+        assert len(result) == 2
+        ids = {p["id"] for p in result}
+        assert ids == {"due", "overdue"}
 
 
 class TestMarkPostPublished:

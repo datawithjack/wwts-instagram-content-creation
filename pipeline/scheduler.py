@@ -86,13 +86,15 @@ def validate_scheduled_dates(posts: list) -> None:
 def filter_posts_due(
     posts: list,
     now: datetime = None,
-    window_minutes: int = 35,
 ) -> list:
-    """Return posts whose scheduled_date is within [now - window, now + 5min]
-    and not already marked published."""
+    """Return unpublished posts whose scheduled_date is at or before now + 5min.
+
+    Any past unpublished post is considered due, regardless of how long ago
+    it was scheduled. This ensures posts are picked up even if the cron job
+    runs late.
+    """
     if now is None:
         now = datetime.now(timezone.utc)
-    window_start = now - timedelta(minutes=window_minutes)
     window_end = now + timedelta(minutes=5)
 
     due = []
@@ -103,7 +105,7 @@ def filter_posts_due(
         if not sd:
             continue
         dt = parse_scheduled_date(sd)
-        if window_start <= dt <= window_end:
+        if dt <= window_end:
             due.append(post)
     return due
 

@@ -299,6 +299,53 @@ class TestCreateCarouselChild:
         assert call_kwargs[1]["params"]["is_carousel_item"] == "true"
         assert call_kwargs[1]["params"]["image_url"] == "https://example.com/img.png"
 
+    @patch("pipeline.publisher.time.sleep")
+    @patch("pipeline.publisher.requests.post")
+    def test_retries_on_500_then_succeeds(self, mock_post, mock_sleep, meta_env):
+        """Transient 500 errors should be retried."""
+        error_resp = MagicMock(status_code=500)
+        error_resp.raise_for_status.side_effect = Exception("500 Server Error")
+
+        success_resp = MagicMock(
+            status_code=200,
+            json=lambda: {"id": "child-111"},
+        )
+        success_resp.raise_for_status = MagicMock()
+
+        mock_post.side_effect = [error_resp, success_resp]
+
+        cid = create_carousel_child("https://example.com/img.png")
+
+        assert cid == "child-111"
+        assert mock_post.call_count == 2
+        mock_sleep.assert_called_once()
+
+    @patch("pipeline.publisher.time.sleep")
+    @patch("pipeline.publisher.requests.post")
+    def test_raises_after_max_retries(self, mock_post, mock_sleep, meta_env):
+        """Should raise after exhausting retries."""
+        error_resp = MagicMock(status_code=500)
+        error_resp.raise_for_status.side_effect = Exception("500 Server Error")
+        mock_post.return_value = error_resp
+
+        with pytest.raises(Exception, match="500 Server Error"):
+            create_carousel_child("https://example.com/img.png")
+
+        # 1 initial + 2 retries = 3 attempts
+        assert mock_post.call_count == 3
+
+    @patch("pipeline.publisher.requests.post")
+    def test_no_retry_on_400(self, mock_post, meta_env):
+        """Non-5xx errors should not be retried."""
+        error_resp = MagicMock(status_code=400)
+        error_resp.raise_for_status.side_effect = Exception("400 Bad Request")
+        mock_post.return_value = error_resp
+
+        with pytest.raises(Exception, match="400 Bad Request"):
+            create_carousel_child("https://example.com/img.png")
+
+        assert mock_post.call_count == 1
+
 
 class TestCreateCarouselContainer:
     @patch("pipeline.publisher.requests.post")
