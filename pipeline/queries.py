@@ -77,6 +77,7 @@ def build_athlete_rise_query(
                sub.placement,
                sub.best_wave,
                sub.best_jump,
+               sub.best_jump_type,
                sub.best_heat
         FROM (
             SELECT r.year,
