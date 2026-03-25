@@ -66,30 +66,37 @@ posts:
     published: true
     published_at: "2026-03-20T08:11:44"
 
-  # ── Week of March 24 ────────────────────────────────────────
-  # - id:
-  #   template:
-  #   params:
-  #   caption:
-  #   category:
-  #   scheduled_date: 2026-03-24T12:00:00
-  #   notes:
+  # ── Maui Pro-Am 2026 Lookback Series ───────────────────────────
+  - id: maui-2025-h2h-browne-pare
+    template: h2h_carousel
+    params:
+      event: 8
+      athlete1: 68
+      athlete2: 97
+      division: Men
+    caption: "Last year in Maui, Marcilio Browne and Marc Paré Rico went head to head at the Pro-Am. With the 2026 edition just days away, here's how their battle played out.\n\nWho takes the crown this week? Swipe to relive the rivalry.\n\nFull stats at windsurfworldtourstats.com"
+    category: seasonal
+    scheduled_date: "2026-03-25T12:00:00"
 
-  # - id:
-  #   template:
-  #   params:
-  #   caption:
-  #   category:
-  #   scheduled_date: 2026-03-26T12:00:00
-  #   notes:
+  - id: maui-2025-mens-waves-top10
+    template: top_10_carousel
+    params:
+      score_type: Wave
+      sex: Men
+      event: 8
+    caption: "The best wave scores from last year's Maui Pro-Am. As the 2026 competition kicks off this week, can anyone top these scores?\n\nSwipe to see the full top 10.\n\nFull leaderboard at windsurfworldtourstats.com"
+    category: seasonal
+    scheduled_date: "2026-03-27T06:00:00"
 
-  # - id:
-  #   template:
-  #   params:
-  #   caption:
-  #   category:
-  #   scheduled_date: 2026-03-28T12:00:00
-  #   notes:
+  - id: maui-2025-rider-marine-hunter
+    template: rider_profile
+    params:
+      event: 8
+      athlete1: 95
+      division: Women
+    caption: "Marine Hunter dominated the women's division at the 2025 Maui Pro-Am — here's how she did it.\n\nWith the 2026 edition wrapping up this week, can she defend her title? Swipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com"
+    category: seasonal
+    scheduled_date: "2026-03-30T06:00:00"
 
   # ── Week of March 31 ────────────────────────────────────────
   # - id:
