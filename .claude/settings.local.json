@@ -12,7 +12,16 @@
       "Bash(find:*)",
       "Bash(cd:*)",
       "Bash(grep:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(gh api:*)",
+      "Bash(git checkout:*)",
+      "Bash(git stash:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "WebFetch(domain:snappa.com)",
+      "WebFetch(domain:lamplightcreatives.com)",
+      "WebFetch(domain:www.evergreenfeed.com)",
+      "Bash(pip install:*)"
     ]
   }
 }
