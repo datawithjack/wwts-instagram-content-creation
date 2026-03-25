@@ -177,7 +177,7 @@ def resolve_post_data(post: dict) -> dict:
     template = post["template"]
     params = post.get("params", {})
 
-    if template in ("head_to_head", "head_to_head_jump"):
+    if template in ("head_to_head", "head_to_head_jump", "h2h_carousel"):
         return fetch_head_to_head(
             event_id=params["event"],
             athlete1_id=params["athlete1"],
