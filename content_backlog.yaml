@@ -77,6 +77,8 @@ posts:
     caption: "Last year in Maui, Marcilio Browne and Marc Paré Rico went head to head at the Pro-Am. With the 2026 edition just days away, here's how their battle played out.\n\nWho takes the crown this week? Swipe to relive the rivalry.\n\nFull stats at windsurfworldtourstats.com"
     category: seasonal
     scheduled_date: "2026-03-25T12:00:00"
+    published: true
+    published_at: "2026-03-25T15:44:11"
 
   - id: maui-2025-mens-waves-top10
     template: top_10_carousel
