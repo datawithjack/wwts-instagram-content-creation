@@ -89,6 +89,8 @@ posts:
     caption: "The best wave scores from last year's Maui Pro-Am. As the 2026 competition kicks off this week, can anyone top these scores?\n\nSwipe to see the full top 10.\n\nFull leaderboard at windsurfworldtourstats.com"
     category: seasonal
     scheduled_date: "2026-03-27T06:00:00"
+    published: true
+    published_at: "2026-03-27T05:58:15"
 
   - id: maui-2025-rider-marine-hunter
     template: rider_profile
