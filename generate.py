@@ -196,6 +196,7 @@ def main():
     parser.add_argument("--location", help="Location pattern for athlete rise (e.g. 'Gran Canaria')")
     parser.add_argument("--score-type", choices=["Wave", "Jump"], help="Score type for top 10")
     parser.add_argument("--year", type=int, help="Year filter for top 10")
+    parser.add_argument("--day", type=int, help="Day number for daily top 10 label (e.g. 1, 2, 3)")
     parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -234,6 +235,10 @@ def main():
         data = get_dummy_data(template_name)
     else:
         data = fetch_live_data(template_name, args)
+
+    # Thread --day into data for daily top 10
+    if getattr(args, "day", None):
+        data["day"] = args.day
 
     is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "h2h_carousel", "rider_profile", "canary_kings", "athlete_rise")
 

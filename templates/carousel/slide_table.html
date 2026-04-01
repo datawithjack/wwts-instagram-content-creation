@@ -86,17 +86,25 @@
         font-size: 24px;
         color: var(--color-text-label);
     }
+
+    .score-round {
+        font-size: 20px;
+        font-weight: 500;
+        color: var(--color-text-muted);
+        margin-top: 2px;
+        letter-spacing: 0.04em;
+    }
 </style>
 {% endblock %}
 
 {% block carousel_content %}
 <div class="container">
     {% if rows[0].rank == rows[-1].rank %}
-    {{ slide_header(title, event_name, is_per_event, rows[0].rank | ordinal) }}
+    {{ slide_header(title, event_name, is_per_event, rows[0].rank | ordinal, day) }}
     {% else %}
-    {{ slide_header(title, event_name, is_per_event, rows[0].rank | ordinal ~ ' – ' ~ rows[-1].rank | ordinal) }}
+    {{ slide_header(title, event_name, is_per_event, rows[0].rank | ordinal ~ ' – ' ~ rows[-1].rank | ordinal, day) }}
     {% endif %}
 
-    {{ table_component(rows, show_trick_type, is_per_event, '192px') }}
+    {{ table_component(rows, show_trick_type, is_per_event, '192px', show_round) }}
 </div>
 {% endblock %}

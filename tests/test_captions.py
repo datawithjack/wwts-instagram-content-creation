@@ -196,6 +196,24 @@ class TestTop10Caption:
         assert "windsurfworldtourstats.com" in caption
 
 
+class TestTop10DailyCaption:
+    def test_includes_day_number(self, top10_data, config):
+        top10_data["day"] = 3
+        top10_data["event_name"] = "Gran Canaria World Cup"
+        caption = build_caption("top_10_carousel", top10_data, config)
+        assert "Day 3" in caption
+
+    def test_includes_event_name(self, top10_data, config):
+        top10_data["day"] = 1
+        top10_data["event_name"] = "Margaret River Wave Classic"
+        caption = build_caption("top_10_carousel", top10_data, config)
+        assert "Margaret River Wave Classic" in caption
+
+    def test_no_day_uses_standard_caption(self, top10_data, config):
+        caption = build_caption("top_10_carousel", top10_data, config)
+        assert "Day" not in caption
+
+
 # ── Site Stats caption ──────────────────────────────────────────
 
 

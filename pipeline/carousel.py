@@ -42,6 +42,8 @@ def _build_common(data: dict) -> dict:
         "event_date_end": data.get("event_date_end", ""),
         "event_stars": data.get("event_stars", 0),
         "show_trick_type": data.get("show_trick_type", False),
+        "day": data.get("day"),
+        "show_round": bool(data.get("day")),
     }
 
 

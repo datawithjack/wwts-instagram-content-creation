@@ -1,6 +1,6 @@
 {# ── Shared Jinja2 macros for carousel slides ── #}
 
-{% macro table_component(rows, show_trick_type, is_per_event, row_height='192px') %}
+{% macro table_component(rows, show_trick_type, is_per_event, row_height='192px', show_round=false) %}
 <div class="table">
     <div class="table-header">
         <span class="col-rank">#</span>
@@ -20,7 +20,12 @@
             <div class="col-rank"{% if row.rank == 2 %} style="color: var(--color-rank-2nd)"{% elif row.rank == 3 %} style="color: var(--color-rank-3rd)"{% endif %}>{{ row.rank }}</div>
             <div class="col-flag"><img src="https://flagcdn.com/w40/{{ row.country | lower }}.png" alt="{{ row.country }}"></div>
             <div class="col-athlete">{{ row.athlete }}</div>
-            <div class="col-score">{{ "%.2f" | format(row.score) }}</div>
+            <div class="col-score">
+                {{ "%.2f" | format(row.score) }}
+                {% if show_round and row.round %}
+                <div class="score-round">{{ row.round }}</div>
+                {% endif %}
+            </div>
             {% if is_per_event and show_trick_type %}
             <div class="col-type">{{ row.trick_type | trick_type_label }}</div>
             {% elif not is_per_event %}
@@ -40,9 +45,9 @@
 </div>
 {% endmacro %}
 
-{% macro slide_header(title, event_name, is_per_event, pill_text) %}
+{% macro slide_header(title, event_name, is_per_event, pill_text, day=none) %}
 {% if is_per_event and event_name %}
-<div class="eyebrow-dimmed">{{ event_name }}</div>
+<div class="eyebrow-dimmed">{{ event_name }}{% if day %} &middot; DAY {{ day }}{% endif %}</div>
 {% endif %}
 <div class="slide-title-dimmed">{{ title }}</div>
 {% if pill_text %}

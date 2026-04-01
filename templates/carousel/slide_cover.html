@@ -88,8 +88,11 @@
         <span class="line">{{ title_gender | upper }}</span>
         <span class="line">TOP 10</span>
         <span class="line metric">{{ title_metric | upper }}</span>
+        {% if day %}
+        <span class="line day">DAY {{ day }}</span>
+        {% endif %}
     </div>
-    {% if not is_per_event %}
+    {% if not is_per_event and not day %}
     <div class="cover-subtitle">{{ year }} Season</div>
     {% endif %}
 </div>

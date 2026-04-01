@@ -52,6 +52,17 @@ def _caption_top_10(data: dict, site_url: str) -> str:
     gender = data.get("title_gender", "")
     metric = data.get("title_metric", "")
     year = data.get("title_year", "")
+    day = data.get("day")
+
+    if day:
+        event_name = data.get("event_name", "")
+        return (
+            f"\U0001f3c6 Day {day} \u2014 the 10 best {gender.lower()} {metric.lower()} at {event_name}.\n\n"
+            f"Swipe to see who made the list.\n\n"
+            f"Who impressed you today? \U0001f447\n\n"
+            f"Full leaderboard \u2192 {site_url}"
+        )
+
     return (
         f"\U0001f3c6 The 10 best {gender.lower()} {metric.lower()} \u2014 {year}.\n\n"
         f"Swipe to see who made the list \u2014 and who\u2019s missing.\n\n"

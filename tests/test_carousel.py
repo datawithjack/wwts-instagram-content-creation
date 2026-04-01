@@ -545,3 +545,59 @@ class TestGetDummyDataJumpsNoTie:
         assert len(hero["rows"]) == 1
         assert hero["accent_color"] == "#4DA89E"
         assert hero["tie_count"] == 0
+
+
+# ── Daily Top 10 (--day flag) ──────────────────────────────────────────────
+
+class TestBuildSlidesDailyTop10:
+    def setup_method(self):
+        data = get_dummy_data("top_10_carousel_waves")
+        data["day"] = 2
+        self.slides = build_slides(data)
+
+    def test_cover_has_day(self):
+        assert self.slides[0]["day"] == 2
+
+    def test_all_slides_have_day(self):
+        for slide in self.slides:
+            assert slide["day"] == 2
+
+    def test_all_slides_have_show_round(self):
+        for slide in self.slides:
+            assert slide["show_round"] is True
+
+    def test_no_day_means_no_show_round(self):
+        data = get_dummy_data("top_10_carousel_waves")
+        slides = build_slides(data)
+        for slide in slides:
+            assert slide.get("day") is None
+            assert slide["show_round"] is False
+
+
+class TestDailyTop10TemplateRendering:
+    def setup_method(self):
+        data = get_dummy_data("top_10_carousel_waves")
+        data["day"] = 2
+        self.slides = build_slides(data)
+
+    def test_cover_renders_day_label(self):
+        html = render_template("carousel/slide_cover", self.slides[0])
+        assert "DAY 2" in html
+
+    def test_cover_no_day_omits_label(self):
+        data = get_dummy_data("top_10_carousel_waves")
+        slides = build_slides(data)
+        html = render_template("carousel/slide_cover", slides[0])
+        assert "DAY" not in html
+
+    def test_table_renders_round_labels(self):
+        table = self.slides[2]
+        html = render_template("carousel/slide_table", table)
+        assert "score-round" in html
+
+    def test_table_no_day_omits_round_labels(self):
+        data = get_dummy_data("top_10_carousel_waves")
+        slides = build_slides(data)
+        html = render_template("carousel/slide_table", slides[2])
+        # CSS class exists in stylesheet but no actual round divs should be rendered
+        assert '<div class="score-round">' not in html
