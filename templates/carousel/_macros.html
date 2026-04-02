@@ -45,9 +45,9 @@
 </div>
 {% endmacro %}
 
-{% macro slide_header(title, event_name, is_per_event, pill_text, day=none) %}
+{% macro slide_header(title, event_name, is_per_event, pill_text, day=none, finals_day=false) %}
 {% if is_per_event and event_name %}
-<div class="eyebrow-dimmed">{{ event_name }}{% if day %} &middot; DAY {{ day }}{% endif %}</div>
+<div class="eyebrow-dimmed">{{ event_name }}{% if day %} &middot; {% if finals_day %}FINALS DAY{% else %}DAY {{ day }}{% endif %}{% endif %}</div>
 {% endif %}
 <div class="slide-title-dimmed">{{ title }}</div>
 {% if pill_text %}

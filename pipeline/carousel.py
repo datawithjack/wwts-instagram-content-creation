@@ -43,6 +43,7 @@ def _build_common(data: dict) -> dict:
         "event_stars": data.get("event_stars", 0),
         "show_trick_type": data.get("show_trick_type", False),
         "day": data.get("day"),
+        "finals_day": data.get("finals_day", False),
         "show_round": bool(data.get("day")),
     }
 

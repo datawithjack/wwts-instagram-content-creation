@@ -69,3 +69,17 @@ class TestBuildTop10Query:
     def test_includes_round_name(self):
         sql, _ = build_top10_query(score_type="Wave")
         assert "round_name" in sql.lower() or "round" in sql.lower()
+
+    def test_filters_by_rounds(self):
+        sql, params = build_top10_query(score_type="Wave", rounds=["Final", "R5 B-Final"])
+        assert "Final" in params
+        assert "R5 B-Final" in params
+        assert "round_name IN" in sql or "hp.round_name IN" in sql
+
+    def test_rounds_with_single_value(self):
+        sql, params = build_top10_query(score_type="Wave", rounds=["Final"])
+        assert "Final" in params
+
+    def test_no_rounds_filter_by_default(self):
+        sql, params = build_top10_query(score_type="Wave")
+        assert "round_name IN" not in sql

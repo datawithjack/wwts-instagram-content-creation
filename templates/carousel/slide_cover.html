@@ -58,6 +58,11 @@
         color: var(--color-discipline);
     }
 
+    .cover-title .day {
+        white-space: nowrap;
+        font-size: 0.55em;
+    }
+
     /* divider inherited from base_carousel */
 
     .cover-subtitle {
@@ -89,7 +94,7 @@
         <span class="line">TOP 10</span>
         <span class="line metric">{{ title_metric | upper }}</span>
         {% if day %}
-        <span class="line day">DAY {{ day }}</span>
+        <span class="line day">{% if finals_day %}FINALS DAY{% else %}DAY {{ day }}{% endif %}</span>
         {% endif %}
     </div>
     {% if not is_per_event and not day %}

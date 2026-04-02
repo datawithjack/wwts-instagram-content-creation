@@ -101,7 +101,7 @@ def short_round_name(round_name: str) -> str:
     if m:
         return f"R{m.group(1)}"
     abbrevs = {
-        "final": "F",
+        "final": "Final",
         "semifinal": "SF",
         "semi": "SF",
         "quarterfinal": "QF",

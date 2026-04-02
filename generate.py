@@ -50,11 +50,13 @@ def fetch_live_data(template_name: str, args) -> dict:
                 print("API per-event endpoint unavailable, falling back to DB...")
 
         # Use DB for queries (per-event, by year, or all-time)
+        rounds_list = [r.strip() for r in args.rounds.split(",")] if getattr(args, "rounds", None) else None
         sql, params = build_top10_query(
             score_type=args.score_type,
             sex=args.sex,
             year=args.year,
             event_id=args.event,
+            rounds=rounds_list,
         )
         rows = run_query(sql, params)
         gender_map = {"Men": "Men's", "Women": "Women's"}
@@ -91,7 +93,7 @@ def fetch_live_data(template_name: str, args) -> dict:
         if is_per_event:
             event_row = run_query(
                 "SELECT event_name, start_date, end_date, stars, country_code "
-                "FROM PWA_IWT_EVENTS WHERE event_id = %s AND source = 'PWA' LIMIT 1",
+                "FROM PWA_IWT_EVENTS WHERE event_id = %s LIMIT 1",
                 (args.event,),
             )
             if event_row:
@@ -197,6 +199,8 @@ def main():
     parser.add_argument("--score-type", choices=["Wave", "Jump"], help="Score type for top 10")
     parser.add_argument("--year", type=int, help="Year filter for top 10")
     parser.add_argument("--day", type=int, help="Day number for daily top 10 label (e.g. 1, 2, 3)")
+    parser.add_argument("--finals-day", action="store_true", help="Label as Finals Day instead of Day N")
+    parser.add_argument("--rounds", help="Comma-separated round names to filter (e.g. 'Final,R5 B-Final')")
     parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -239,6 +243,8 @@ def main():
     # Thread --day into data for daily top 10
     if getattr(args, "day", None):
         data["day"] = args.day
+    if getattr(args, "finals_day", False):
+        data["finals_day"] = True
 
     is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "h2h_carousel", "rider_profile", "canary_kings", "athlete_rise")
 

@@ -601,3 +601,51 @@ class TestDailyTop10TemplateRendering:
         html = render_template("carousel/slide_table", slides[2])
         # CSS class exists in stylesheet but no actual round divs should be rendered
         assert '<div class="score-round">' not in html
+
+
+# ── Finals Day (--finals-day flag) ─────────────────────────────────────────
+
+
+class TestBuildSlidesFinalsDayTop10:
+    def setup_method(self):
+        data = get_dummy_data("top_10_carousel_waves")
+        data["day"] = 2
+        data["finals_day"] = True
+        self.slides = build_slides(data)
+
+    def test_finals_day_passed_to_all_slides(self):
+        for slide in self.slides:
+            assert slide["finals_day"] is True
+
+    def test_without_finals_day_defaults_false(self):
+        data = get_dummy_data("top_10_carousel_waves")
+        data["day"] = 2
+        slides = build_slides(data)
+        for slide in slides:
+            assert slide["finals_day"] is False
+
+
+class TestFinalsDayTemplateRendering:
+    def setup_method(self):
+        data = get_dummy_data("top_10_carousel_waves")
+        data["day"] = 2
+        data["finals_day"] = True
+        self.slides = build_slides(data)
+
+    def test_cover_renders_finals_day(self):
+        html = render_template("carousel/slide_cover", self.slides[0])
+        assert "FINALS DAY" in html
+        assert "DAY 2" not in html
+
+    def test_table_eyebrow_renders_finals_day(self):
+        html = render_template("carousel/slide_table", self.slides[2])
+        assert "FINALS DAY" in html
+        assert "DAY 2" not in html
+
+    def test_without_finals_day_renders_day_number(self):
+        data = get_dummy_data("top_10_carousel_waves")
+        data["day"] = 2
+        slides = build_slides(data)
+        html = render_template("carousel/slide_cover", slides[0])
+        assert "DAY 2" in html
+        assert "FINALS DAY" not in html

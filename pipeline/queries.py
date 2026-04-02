@@ -153,6 +153,7 @@ def build_top10_query(
     sex: str = None,
     year: int = None,
     event_id: int = None,
+    rounds: list[str] = None,
 ) -> tuple[str, tuple]:
     """Build a top 10 scores query with optional filters.
 
@@ -161,6 +162,7 @@ def build_top10_query(
         sex: "Men" or "Women" (optional)
         year: Filter to a specific year (optional)
         event_id: Filter to a specific event (optional)
+        rounds: Filter to specific round names (optional, e.g. ["Final", "R5 B-Final"])
 
     Returns:
         (sql, params) tuple ready for db.run_query()
@@ -194,6 +196,11 @@ def build_top10_query(
     if event_id:
         where_clauses.append("s.pwa_event_id = %s")
         params.append(event_id)
+
+    if rounds:
+        placeholders = ", ".join(["%s"] * len(rounds))
+        where_clauses.append(f"hp.round_name IN ({placeholders})")
+        params.extend(rounds)
 
     where = " AND ".join(where_clauses)
 

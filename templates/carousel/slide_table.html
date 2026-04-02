@@ -100,9 +100,9 @@
 {% block carousel_content %}
 <div class="container">
     {% if rows[0].rank == rows[-1].rank %}
-    {{ slide_header(title, event_name, is_per_event, rows[0].rank | ordinal, day) }}
+    {{ slide_header(title, event_name, is_per_event, rows[0].rank | ordinal, day, finals_day) }}
     {% else %}
-    {{ slide_header(title, event_name, is_per_event, rows[0].rank | ordinal ~ ' – ' ~ rows[-1].rank | ordinal, day) }}
+    {{ slide_header(title, event_name, is_per_event, rows[0].rank | ordinal ~ ' – ' ~ rows[-1].rank | ordinal, day, finals_day) }}
     {% endif %}
 
     {{ table_component(rows, show_trick_type, is_per_event, '192px', show_round) }}
