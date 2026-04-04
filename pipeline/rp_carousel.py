@@ -40,6 +40,7 @@ def _build_common(data: dict) -> dict:
         "athlete_name": name,
         "athlete_firstname": parts[0].upper() if parts else "",
         "athlete_surname": parts[-1].upper() if parts else "",
+        "athlete_id": data.get("athlete_id"),
         "athlete_photo_url": data.get("athlete_photo_url", ""),
         "athlete_country": data.get("athlete_country", ""),
         "athlete_sail_number": data.get("athlete_sail_number", ""),

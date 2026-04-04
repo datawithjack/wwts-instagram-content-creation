@@ -104,30 +104,36 @@ posts:
     published: true
     published_at: "2026-03-30T06:16:09"
 
-  # ── Week of March 31 ────────────────────────────────────────
-  # - id:
-  #   template:
-  #   params:
-  #   caption:
-  #   category:
-  #   scheduled_date: 2026-03-31T12:00:00
-  #   notes:
+  # ── Maui Pro 2026 Men's Recap ────────────────────────────────
+  - id: maui-2026-rp-cochran-3rd
+    template: rider_profile
+    params:
+      event: 120
+      athlete1: 64
+      division: Men
+    category: seasonal
+    scheduled_date: "2026-04-05T06:00:00"
+    notes: 3rd place — Antoine Martin
 
-  # - id:
-  #   template:
-  #   params:
-  #   caption:
-  #   category:
-  #   scheduled_date: 2026-04-02T12:00:00
-  #   notes:
+  - id: maui-2026-rp-behrens-2nd
+    template: rider_profile
+    params:
+      event: 120
+      athlete1: 68
+      division: Men
+    category: seasonal
+    scheduled_date: "2026-04-05T06:30:00"
+    notes: 2nd place — Marcilio Browne
 
-  # - id:
-  #   template:
-  #   params:
-  #   caption:
-  #   category:
-  #   scheduled_date: 2026-04-04T12:00:00
-  #   notes:
+  - id: maui-2026-rp-roediger-1st
+    template: rider_profile
+    params:
+      event: 120
+      athlete1: 45
+      division: Men
+    category: seasonal
+    scheduled_date: "2026-04-05T07:00:00"
+    notes: 1st place — Bernd Roediger
 
   # ── Week of April 7 ─────────────────────────────────────────
   # - id:

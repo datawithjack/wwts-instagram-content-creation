@@ -86,13 +86,12 @@ def _caption_site_stats(data: dict, site_url: str) -> str:
 def _caption_rider_profile(data: dict, site_url: str) -> str:
     name = data.get("athlete_name", "")
     event = data.get("event_name", "")
+    year = data.get("event_date_start")
+    year_str = f" {year.year}" if hasattr(year, "year") else ""
     placement = ordinal(data.get("placement", 0))
-    best_wave = data.get("best_wave")
-    wave_line = f" with a {best_wave} best wave" if best_wave else ""
     return (
-        f"\U0001f525 {name} \u2014 {placement} at {event}{wave_line}.\n\n"
-        f"Swipe for the full breakdown of the event.\n\n"
-        f"What do you think of their season so far? \U0001f447\n\n"
+        f"\U0001f525 {name} \u2014 {placement} at the {event}{year_str}.\n\n"
+        f"Swipe for the full stat breakdown \u2014 best waves, heat scores, and more.\n\n"
         f"Full stats \u2192 {site_url}"
     )
 
