@@ -125,6 +125,8 @@ posts:
       division: Men
     category: seasonal
     scheduled_date: "2026-04-05T06:30:00"
+    published: true
+    published_at: "2026-04-05T07:04:14"
     notes: 2nd place — Marcilio Browne
 
   - id: maui-2026-rp-roediger-1st
@@ -135,6 +137,8 @@ posts:
       division: Men
     category: seasonal
     scheduled_date: "2026-04-05T07:00:00"
+    published: true
+    published_at: "2026-04-05T07:04:14"
     notes: 1st place — Bernd Roediger
 
   # ── Week of April 7 ─────────────────────────────────────────
