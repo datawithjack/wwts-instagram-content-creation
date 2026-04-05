@@ -113,6 +113,8 @@ posts:
       division: Men
     category: seasonal
     scheduled_date: "2026-04-05T06:00:00"
+    published: true
+    published_at: "2026-04-05T05:59:19"
     notes: 3rd place — Antoine Martin
 
   - id: maui-2026-rp-behrens-2nd
