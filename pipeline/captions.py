@@ -54,6 +54,16 @@ def _caption_top_10(data: dict, site_url: str) -> str:
     year = data.get("title_year", "")
     day = data.get("day")
 
+    if data.get("perfect_10s_mode"):
+        return (
+            "There\u2019s been a lot of talk about perfect 10s over the last few events. "
+            "Here\u2019s every one scored since 2016.\n\n"
+            "Would love to dig out the clips and compare them \U0001f440\n\n"
+            "Anyone interested in me building out a full list of the top jumps and waves ever, "
+            "by season and rider? Comment below \U0001f447\n\n"
+            f"Full stats \u2192 {site_url}"
+        )
+
     if day:
         event_name = data.get("event_name", "")
         day_label = "Finals Day" if data.get("finals_day") else f"Day {day}"

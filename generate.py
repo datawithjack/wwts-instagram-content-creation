@@ -34,6 +34,43 @@ def fetch_live_data(template_name: str, args) -> dict:
         )
 
     if template_name in ("top_10", "top_10_carousel"):
+        # Perfect-10s mode: bespoke query, mixed gender, 12 entries
+        if getattr(args, "mode", None) == "perfect-10s":
+            from pipeline.queries import build_perfect_10s_wave_query
+            sql, params = build_perfect_10s_wave_query()
+            rows = run_query(sql, params)
+            entries = []
+            for i, r in enumerate(rows):
+                elim = (r.get("elimination_name") or "").lower()
+                if elim.startswith("mens"):
+                    sex = "M"
+                elif elim.startswith("womens"):
+                    sex = "W"
+                else:
+                    sex = ""
+                entries.append({
+                    "rank": i + 1,
+                    "athlete": r["athlete"],
+                    "country": nationality_to_iso(r.get("country", "")),
+                    "score": float(r["score"]),
+                    "year": int(r["year"]),
+                    "event": clean_event_name(r["event"]),
+                    "round": short_round_name(r.get("round", "")),
+                    "heat": heat_label_from_id(r.get("heat_id", "")),
+                    "sex": sex,
+                })
+            return {
+                "title_gender": "",
+                "title_metric": "Waves",
+                "title_year": "All Time",
+                "show_trick_type": False,
+                "is_per_event": False,
+                "perfect_10s_mode": True,
+                "custom_title": "EVERY PERFECT 10 WAVE",
+                "custom_subtitle": "",
+                "entries": entries,
+            }
+
         if not args.score_type:
             print("Top 10 requires: --score-type (Wave or Jump)")
             sys.exit(1)
@@ -201,6 +238,7 @@ def main():
     parser.add_argument("--day", type=int, help="Day number for daily top 10 label (e.g. 1, 2, 3)")
     parser.add_argument("--finals-day", action="store_true", help="Label as Finals Day instead of Day N")
     parser.add_argument("--rounds", help="Comma-separated round names to filter (e.g. 'Final,R5 B-Final')")
+    parser.add_argument("--mode", help="Variant mode for a template (e.g. 'perfect-10s' for the all-time perfect-10 wave carousel)")
     parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -236,7 +274,11 @@ def main():
 
     # Get data
     if args.dry_run or template_name in ("coming_soon_carousel", "about_carousel"):
-        data = get_dummy_data(template_name)
+        # --mode perfect-10s overrides the dummy lookup for top_10_carousel
+        if template_name in ("top_10", "top_10_carousel") and getattr(args, "mode", None) == "perfect-10s":
+            data = get_dummy_data("perfect_10s")
+        else:
+            data = get_dummy_data(template_name)
     else:
         data = fetch_live_data(template_name, args)
 

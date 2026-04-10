@@ -50,6 +50,16 @@
         margin-bottom: 24px;
     }
 
+    .cover-title.cover-title-perfect-10s {
+        font-size: 260px;
+        line-height: 0.92;
+    }
+
+    .cover-title.cover-title-perfect-10s .metric {
+        font-size: 320px;
+        letter-spacing: 0.005em;
+    }
+
     .cover-title .line {
         display: block;
     }
@@ -73,6 +83,16 @@
         letter-spacing: 0.08em;
         text-transform: uppercase;
     }
+
+    .cover-footnote {
+        font-family: var(--font-body);
+        font-size: 22px;
+        font-weight: 400;
+        font-style: italic;
+        color: var(--color-text-muted);
+        letter-spacing: 0.04em;
+        margin-top: 32px;
+    }
 </style>
 {% endblock %}
 
@@ -89,6 +109,14 @@
         {% if event_stars %} &middot; <span class="stars">{{ '★' * event_stars }}</span>{% endif %}
     </div>
     {% endif %}
+    {% if perfect_10s_mode %}
+    <div class="event-year">ALL-TIME</div>
+    <div class="cover-title cover-title-perfect-10s">
+        <span class="line">EVERY</span>
+        <span class="line metric">PERFECT 10</span>
+        <span class="line">WAVE</span>
+    </div>
+    {% else %}
     <div class="cover-title">
         <span class="line">{{ title_gender | upper }}</span>
         <span class="line">TOP 10</span>
@@ -99,6 +127,7 @@
     </div>
     {% if not is_per_event and not day %}
     <div class="cover-subtitle">{{ year }} Season</div>
+    {% endif %}
     {% endif %}
 </div>
 {% endblock %}

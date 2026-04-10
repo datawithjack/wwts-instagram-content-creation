@@ -26,7 +26,7 @@ def _detect_top_ties(entries: list[dict]) -> list[dict]:
 def _build_common(data: dict) -> dict:
     """Extract shared context fields from data."""
     discipline = data["title_metric"].lower().rstrip("s") + "s"  # "Waves" -> "waves"
-    title = f"{data['title_gender'].upper()} TOP 10 {data['title_metric'].upper()}"
+    title = data.get("custom_title") or f"{data['title_gender'].upper()} TOP 10 {data['title_metric'].upper()}"
     accent = ACCENT_JUMPS if discipline == "jumps" else ACCENT_WAVES
     return {
         "title": title,
@@ -45,7 +45,29 @@ def _build_common(data: dict) -> dict:
         "day": data.get("day"),
         "finals_day": data.get("finals_day", False),
         "show_round": bool(data.get("day")),
+        "perfect_10s_mode": data.get("perfect_10s_mode", False),
+        "show_year_sex": data.get("perfect_10s_mode", False),
+        "custom_title": data.get("custom_title", ""),
+        "custom_subtitle": data.get("custom_subtitle", ""),
     }
+
+
+def _build_perfect_10s_slides(common: dict, rows: list[dict]) -> list[dict]:
+    """Build the table slides for the 'every perfect 10' one-off post.
+
+    Splits N rows into chunks of 5 (e.g. 12 → 5 + 5 + 2). No hero slide.
+    """
+    chunk_size = 5
+    chunks = [rows[i:i + chunk_size] for i in range(0, len(rows), chunk_size)]
+    slides = []
+    for chunk in chunks:
+        slides.append({
+            "type": "table",
+            "rows": chunk,
+            "label": f"Positions {chunk[0]['rank']}\u2013{chunk[-1]['rank']}",
+            **common,
+        })
+    return slides
 
 
 def _build_content_slides(common: dict, rows: list[dict]) -> list[dict]:
@@ -108,7 +130,10 @@ def build_slides(data: dict) -> list[dict]:
     common = _build_common(data)
 
     slides = [{"type": "cover", **common}]
-    slides.extend(_build_content_slides(common, rows))
+    if common["perfect_10s_mode"]:
+        slides.extend(_build_perfect_10s_slides(common, rows))
+    else:
+        slides.extend(_build_content_slides(common, rows))
     slides.append({"type": "cta", **common})
 
     total = len(slides)

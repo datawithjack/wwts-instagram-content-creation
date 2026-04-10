@@ -94,17 +94,55 @@
         margin-top: 2px;
         letter-spacing: 0.04em;
     }
+
+    /* ── Perfect 10s mode: year column + event meta subtitle ── */
+    .col-year {
+        width: 110px;
+        flex-shrink: 0;
+        text-align: center;
+        font-family: var(--font-body);
+        font-size: 28px;
+        font-weight: 500;
+        color: var(--color-text-muted);
+    }
+
+    .table-header .col-year {
+        font-size: 24px;
+        font-weight: 500;
+        color: var(--color-text-label);
+    }
+
+    .table-perfect-10s .table-body .col-athlete {
+        font-size: 38px;
+        line-height: 1.1;
+    }
+
+    .table-perfect-10s .col-event {
+        flex: 1.6;
+        font-size: 26px;
+        line-height: 1.15;
+    }
+
+    .event-meta {
+        font-size: 22px;
+        font-weight: 500;
+        color: var(--color-text-muted);
+        margin-top: 4px;
+        letter-spacing: 0.04em;
+    }
 </style>
 {% endblock %}
 
 {% block carousel_content %}
 <div class="container">
-    {% if rows[0].rank == rows[-1].rank %}
+    {% if show_year_sex %}
+    {{ slide_header(title, event_name, is_per_event, '\u00a0', day, finals_day) }}
+    {% elif rows[0].rank == rows[-1].rank %}
     {{ slide_header(title, event_name, is_per_event, rows[0].rank | ordinal, day, finals_day) }}
     {% else %}
     {{ slide_header(title, event_name, is_per_event, rows[0].rank | ordinal ~ ' – ' ~ rows[-1].rank | ordinal, day, finals_day) }}
     {% endif %}
 
-    {{ table_component(rows, show_trick_type, is_per_event, '192px', show_round) }}
+    {{ table_component(rows, show_trick_type, is_per_event, '192px', show_round, show_year_sex) }}
 </div>
 {% endblock %}

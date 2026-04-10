@@ -1,25 +1,43 @@
 {# ── Shared Jinja2 macros for carousel slides ── #}
 
-{% macro table_component(rows, show_trick_type, is_per_event, row_height='192px', show_round=false) %}
-<div class="table">
+{% macro table_component(rows, show_trick_type, is_per_event, row_height='192px', show_round=false, show_year_sex=false) %}
+<div class="table{% if show_year_sex %} table-perfect-10s{% endif %}">
     <div class="table-header">
+        {% if not show_year_sex %}
         <span class="col-rank">#</span>
+        {% endif %}
         <span class="col-flag"></span>
         <span class="col-athlete">ATHLETE</span>
+        {% if show_year_sex %}
+        <span class="col-year">YEAR</span>
+        <span class="col-event">EVENT</span>
+        {% else %}
         <span class="col-score">SCORE</span>
         {% if is_per_event and show_trick_type %}
         <span class="col-type">TYPE</span>
         {% elif not is_per_event %}
         <span class="col-event">EVENT</span>
         {% endif %}
+        {% endif %}
     </div>
 
     <div class="table-body">
     {% for row in rows %}
-        <div class="table-row{% if row.rank == 2 %} medal-silver{% elif row.rank == 3 %} medal-bronze{% endif %}" style="height: {{ row_height }}">
+        <div class="table-row{% if not show_year_sex and row.rank == 2 %} medal-silver{% elif not show_year_sex and row.rank == 3 %} medal-bronze{% endif %}" style="height: {{ row_height }}">
+            {% if not show_year_sex %}
             <div class="col-rank"{% if row.rank == 2 %} style="color: var(--color-rank-2nd)"{% elif row.rank == 3 %} style="color: var(--color-rank-3rd)"{% endif %}>{{ row.rank }}</div>
+            {% endif %}
             <div class="col-flag"><img src="https://flagcdn.com/w40/{{ row.country | lower }}.png" alt="{{ row.country }}"></div>
             <div class="col-athlete">{{ row.athlete }}</div>
+            {% if show_year_sex %}
+            <div class="col-year">{{ row.year }}</div>
+            <div class="col-event">
+                {{ row.event }}
+                {% if row.round or row.heat %}
+                <div class="event-meta">{% if row.round %}{{ row.round }}{% endif %}{% if row.round and row.heat %} &middot; {% endif %}{% if row.heat %}{{ row.heat }}{% endif %}</div>
+                {% endif %}
+            </div>
+            {% else %}
             <div class="col-score">
                 {{ "%.2f" | format(row.score) }}
                 {% if show_round and row.round %}
@@ -30,6 +48,7 @@
             <div class="col-type">{{ row.trick_type | trick_type_label }}</div>
             {% elif not is_per_event %}
             <div class="col-event">{{ row.event }}</div>
+            {% endif %}
             {% endif %}
         </div>
     {% endfor %}
