@@ -246,6 +246,38 @@ def get_dummy_data(template_name: str) -> dict:
                 {"rank": 10, "athlete": "Alex Mussolini", "country": "es", "score": 8.20, "event": "Gran Canaria World Cup", "round": "R3", "heat": "H38b", "trick_type": "F"},
             ],
         }
+    if template_name == "perfect_10s":
+        # 12 perfect 10.00 wave scores from the live DB (2016-2019),
+        # ordered chronologically descending (latest first).
+        rows = [
+            {"athlete": "Bernd Roediger", "country": "us", "year": 2019, "event": "Mercedes-Benz Aloha Classic", "round": "R3", "heat": "H20a", "sex": "M"},
+            {"athlete": "Antoine Martin", "country": "gp", "year": 2019, "event": "Mercedes-Benz Aloha Classic", "round": "R5", "heat": "H23a", "sex": "M"},
+            {"athlete": "Víctor Fernández", "country": "es", "year": 2019, "event": "Gran Canaria PWA World Cup", "round": "R3", "heat": "H18b", "sex": "M"},
+            {"athlete": "Moritz Mauch", "country": "es", "year": 2018, "event": "Gran Canaria", "round": "R1", "heat": "H26b", "sex": "M"},
+            {"athlete": "Daida Ruano Moreno", "country": "es", "year": 2018, "event": "Gran Canaria", "round": "R2", "heat": "H10b", "sex": "W"},
+            {"athlete": "Adam Lewis", "country": "gb", "year": 2018, "event": "Tenerife", "round": "R5", "heat": "H23b", "sex": "M"},
+            {"athlete": "Víctor Fernández", "country": "es", "year": 2017, "event": "Gran Canaria", "round": "R6", "heat": "H25a", "sex": "M"},
+            {"athlete": "Moritz Mauch", "country": "es", "year": 2017, "event": "Mercedes-Benz World Cup Sylt", "round": "R1", "heat": "H8a", "sex": "M"},
+            {"athlete": "Philip Köster", "country": "de", "year": 2017, "event": "Mercedes-Benz World Cup Sylt", "round": "R6", "heat": "H33a", "sex": "M"},
+            {"athlete": "Antoine Martin", "country": "gp", "year": 2017, "event": "Gran Canaria", "round": "R2", "heat": "H9a", "sex": "M"},
+            {"athlete": "Kai Lenny", "country": "us", "year": 2016, "event": "Aloha Classic", "round": "R5", "heat": "H42a", "sex": "M"},
+            {"athlete": "Robby Swift", "country": "gb", "year": 2016, "event": "Aloha Classic", "round": "R5", "heat": "H43a", "sex": "M"},
+        ]
+        entries = [
+            {"rank": i + 1, "score": 10.00, **row}
+            for i, row in enumerate(rows)
+        ]
+        return {
+            "title_gender": "",
+            "title_metric": "Waves",
+            "title_year": "All Time",
+            "show_trick_type": False,
+            "is_per_event": False,
+            "perfect_10s_mode": True,
+            "custom_title": "EVERY PERFECT 10 WAVE",
+            "custom_subtitle": "",
+            "entries": entries,
+        }
     if template_name == "about_carousel":
         from pipeline.about import build_about_slides
         return {"slides": build_about_slides()}

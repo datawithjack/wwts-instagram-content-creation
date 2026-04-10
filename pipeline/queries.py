@@ -231,3 +231,39 @@ def build_top10_query(
     """
 
     return sql, tuple(params)
+
+
+def build_perfect_10s_wave_query() -> tuple[str, tuple]:
+    """Build query for every perfect 10.00 wave score ever scored.
+
+    Returns rows ordered by year DESC (latest first). Includes
+    elimination_name so the caller can derive sex (Mens/Womens) for
+    historical rows where PWA_IWT_HEAT_SCORES.sex is empty.
+
+    Returns:
+        (sql, params) tuple ready for db.run_query()
+    """
+    sql = """
+        SELECT a.primary_name AS athlete,
+               a.nationality AS country,
+               s.score,
+               e.year,
+               e.event_name AS event,
+               hp.round_name AS round,
+               s.heat_id,
+               hp.elimination_name
+        FROM PWA_IWT_HEAT_SCORES s
+        JOIN ATHLETE_SOURCE_IDS asi
+            ON asi.source = s.source AND asi.source_id = s.athlete_id
+        JOIN ATHLETES a
+            ON a.id = asi.athlete_id
+        JOIN PWA_IWT_EVENTS e
+            ON e.source = s.source AND e.event_id = s.pwa_event_id
+        JOIN PWA_IWT_HEAT_PROGRESSION hp
+            ON hp.heat_id = s.heat_id AND hp.source = s.source
+        WHERE s.counting = 1
+          AND s.type = 'Wave'
+          AND s.score = 10.00
+        ORDER BY e.year DESC, e.event_name, a.primary_name
+    """
+    return sql, ()

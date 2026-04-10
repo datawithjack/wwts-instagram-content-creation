@@ -13,8 +13,14 @@ MIN_BAR_WIDTH = 40
 
 
 def _is_wave_jump(data: dict) -> bool:
-    """Detect wave+jump event by presence of jump keys."""
-    return "athlete_1_best_jump" in data
+    """Detect wave+jump event by presence of non-zero jump scores.
+
+    Some events return jump keys with 0.00 values when no jumps were scored —
+    treat those as wave-only and drop the jumps slide.
+    """
+    if "athlete_1_best_jump" not in data:
+        return False
+    return (data.get("athlete_1_best_jump") or 0) > 0 or (data.get("athlete_2_best_jump") or 0) > 0
 
 
 def _fmt_score(val: float) -> str:
@@ -118,6 +124,8 @@ def _build_common(data: dict) -> dict:
         "athlete_2_firstname": a2_parts[0].upper(),
         "athlete_1_surname": a1_parts[1].upper() if len(a1_parts) > 1 else "",
         "athlete_2_surname": a2_parts[1].upper() if len(a2_parts) > 1 else "",
+        "athlete_1_id": data.get("athlete_1_id"),
+        "athlete_2_id": data.get("athlete_2_id"),
         "athlete_1_photo_url": data.get("athlete_1_photo_url", ""),
         "athlete_2_photo_url": data.get("athlete_2_photo_url", ""),
         "athlete_1_country": data.get("athlete_1_country", ""),

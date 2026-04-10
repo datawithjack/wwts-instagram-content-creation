@@ -259,12 +259,28 @@
         letter-spacing: 0.04em;
         z-index: 10;
     }
+
+    .source-note {
+        position: absolute;
+        bottom: 24px;
+        left: 32px;
+        font-family: var(--font-body);
+        font-size: 18px;
+        font-weight: 400;
+        font-style: italic;
+        color: rgba(255,255,255,0.30);
+        letter-spacing: 0.03em;
+        z-index: 10;
+    }
 </style>
 {% block carousel_head %}{% endblock %}
 {% endblock %}
 
 {% block content %}
 {% block carousel_content %}{% endblock %}
+{% if perfect_10s_mode %}
+<div class="source-note">* Based on all PWA/IWT 5★ events since 2016</div>
+{% endif %}
 {% if not hide_footer %}
 <div class="carousel-footer">windsurfworldtourstats.com</div>
 {% endif %}
