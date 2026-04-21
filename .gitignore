@@ -10,3 +10,8 @@ tmp/
 !output/png/.gitkeep
 !output/mp4/.gitkeep
 !assets/photos/.gitkeep
+
+# Secrets / tokens
+*access token*.txt
+*access_token*.txt
+
