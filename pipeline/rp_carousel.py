@@ -90,7 +90,7 @@ def _build_stats(data: dict) -> list[dict]:
         stats.append({
             "label": "Average Wave",
             "value": _fmt_score(data.get("avg_wave", 0)),
-            "detail": "",
+            "detail": "(Counting)",
             "is_placing": False,
         })
     return stats

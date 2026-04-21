@@ -202,12 +202,12 @@ def _mock_athlete_stats_response():
                 "best_jump": 7.50,
             },
             "wave_scores": [
-                {"score": 8.83, "round": "Final"},
-                {"score": 7.60, "round": "Semi"},
-                {"score": 7.20, "round": "Quarter"},
-                {"score": 6.90, "round": "Semi"},
-                {"score": 6.50, "round": "Round 3"},
-                {"score": 6.10, "round": "Round 2"},
+                {"score": 8.83, "round": "Final", "counting": True},
+                {"score": 7.60, "round": "Semi", "counting": True},
+                {"score": 7.20, "round": "Quarter", "counting": True},
+                {"score": 6.90, "round": "Semi", "counting": False},
+                {"score": 6.50, "round": "Round 3", "counting": True},
+                {"score": 6.10, "round": "Round 2", "counting": False},
             ],
             "heat_scores": [
                 {"score": 16.33, "round": "Final"},

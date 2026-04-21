@@ -90,9 +90,10 @@ def fetch_athlete_event_stats(event_id: int, athlete_id: int, division: str) -> 
     athlete = raw.get("athlete") or raw.get("profile", {})
     summary = raw.get("summary") or raw.get("summary_stats", {})
 
-    # Compute avg wave from all wave scores
+    # Compute avg from counting waves only (waves that contributed to a heat score)
     wave_scores = raw.get("wave_scores", [])
-    avg_wave = round(sum(w["score"] for w in wave_scores) / len(wave_scores), 2) if wave_scores else 0.0
+    counting_waves = [w["score"] for w in wave_scores if w.get("counting")]
+    avg_wave = round(sum(counting_waves) / len(counting_waves), 2) if counting_waves else 0.0
 
     # Top 5 waves sorted desc
     sorted_waves = sorted(wave_scores, key=lambda w: w["score"], reverse=True)[:5]

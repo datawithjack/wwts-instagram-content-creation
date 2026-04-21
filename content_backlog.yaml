@@ -141,15 +141,42 @@ posts:
     published_at: "2026-04-05T07:04:14"
     notes: 1st place — Bernd Roediger
 
-  # ── Week of April 7 ─────────────────────────────────────────
-  # - id:
-  #   template:
-  #   params:
-  #   caption:
-  #   category:
-  #   scheduled_date: 2026-04-07T12:00:00
-  #   notes:
+  # ── Cabo Verde 2022 throwback (ahead of Fiji) ────────────────
+  - id: cabo-verde-2022-mens-waves-top10
+    template: top_10_carousel
+    params:
+      score_type: Wave
+      sex: Men
+      event: 44
+    caption: "With Fiji on the horizon, we're throwing it back to another epic wave-sailing playground — Cabo Verde 2022.\n\nThe top 10 men's wave scores from the 5-star SOMWR 10x World Cup on the islands. Heavy down-the-line walls, big-name riders, unforgettable rides.\n\nSwipe to see who scored the cleanest waves.\n\nFull leaderboard at windsurfworldtourstats.com"
+    category: seasonal
+    scheduled_date: "2026-04-21T09:00:00"
+    notes: Throwback Cabo Verde 2022 ahead of Fiji event
 
+  - id: cabo-verde-2022-h2h-juban-traversa
+    template: h2h_carousel
+    params:
+      event: 44
+      athlete1: 59
+      athlete2: 60
+      division: Men
+    caption: "Throwback to Cabo Verde 2022 — as Fiji approaches, here's another iconic wave battle.\n\nFrench masters Camille Juban and Thomas Traversa went head to head for the podium spots — 3rd vs 4th in a 5-star event on the islands.\n\nSwipe to relive how the battle played out.\n\nFull stats at windsurfworldtourstats.com"
+    category: seasonal
+    scheduled_date: "2026-04-23T09:00:00"
+    notes: Juban (3rd) vs Traversa (4th) at Cabo Verde 2022
+
+  - id: cabo-verde-2022-rp-juban
+    template: rider_profile
+    params:
+      event: 44
+      athlete1: 59
+      division: Men
+    caption: "With Fiji on the way, we're looking back at Cabo Verde 2022 — where Camille Juban locked in 3rd at the SOMWR 10x World Cup.\n\nBig waves, signature style, podium result for the Guadeloupe man.\n\nSwipe for the full breakdown of his run.\n\nFull stats at windsurfworldtourstats.com"
+    category: seasonal
+    scheduled_date: "2026-04-25T09:00:00"
+    notes: Camille Juban (3rd) rider profile, Cabo Verde 2022
+
+  # ── Week of April 7 ─────────────────────────────────────────
   # - id:
   #   template:
   #   params:
