@@ -91,6 +91,12 @@ hashtags:
     - "#PWAWorldTour"
     - "#WindsurfStats"
     - "#Windsurf"
+  fantasy_league_announce:
+    - "#WindsurfFantasyLeague"
+    - "#FantasySports"
+    - "#PWAWorldTour"
+    - "#WindsurfStats"
+    - "#Windsurf"
   default:
     - "#PWAWorldTour"
     - "#WindsurfStats"

@@ -225,7 +225,7 @@ def main():
     parser.add_argument(
         "--template",
         required=True,
-        choices=["head_to_head", "head_to_head_jump", "h2h_carousel", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile", "canary_kings", "athlete_rise"],
+        choices=["head_to_head", "head_to_head_jump", "h2h_carousel", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile", "canary_kings", "athlete_rise", "fantasy_league_announce"],
     )
     parser.add_argument("--athlete1", type=int, help="Athlete 1 unified ID")
     parser.add_argument("--athlete2", type=int, help="Athlete 2 unified ID")
@@ -341,7 +341,6 @@ def main():
     if is_carousel:
         carousel_dir = os.path.join(output_dir, "png")
         if template_name in ("coming_soon_carousel", "about_carousel"):
-            from pipeline.renderer import render_to_png
             slides = data["slides"]
             result_paths = []
             os.makedirs(carousel_dir, exist_ok=True)

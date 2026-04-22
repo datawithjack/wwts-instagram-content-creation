@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 0 64px;
+    }
+
+    .eyebrow {
+        font-family: var(--font-body);
+        font-size: 28px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.28em;
+        color: var(--color-accent);
+        margin-bottom: 48px;
+    }
+
+    .headline {
+        font-family: var(--font-display);
+        font-size: 260px;
+        line-height: 0.9;
+        letter-spacing: 0.04em;
+        color: var(--color-text-primary);
+        margin-bottom: 36px;
+    }
+
+    .headline-line {
+        display: block;
+    }
+
+    .accent-rule {
+        width: 96px;
+        height: 4px;
+        background: var(--color-accent);
+        margin: 0 auto 36px;
+        border-radius: 2px;
+    }
+
+    .sub {
+        font-family: var(--font-body);
+        font-size: 34px;
+        font-weight: 400;
+        line-height: 1.35;
+        color: var(--color-text-muted);
+        max-width: 760px;
+        margin-bottom: 80px;
+    }
+
+    .sub-line {
+        display: block;
+    }
+
+    .sub-line + .sub-line {
+        margin-top: 12px;
+    }
+
+    .cta {
+        font-family: var(--font-body);
+        font-size: 30px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--color-text-primary);
+    }
+
+    .footer {
+        position: absolute;
+        bottom: 24px;
+        right: 32px;
+        font-family: var(--font-body);
+        font-size: 16px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.20);
+        letter-spacing: 0.04em;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="eyebrow">{{ eyebrow }}</div>
+    <div class="headline">
+        {% for line in headline_lines %}
+        <span class="headline-line">{{ line }}</span>
+        {% endfor %}
+    </div>
+    <div class="accent-rule"></div>
+    <div class="sub">
+        {% for line in sub_lines %}
+        <span class="sub-line">{{ line }}</span>
+        {% endfor %}
+    </div>
+    <div class="cta">{{ cta }}</div>
+</div>
+<div class="footer">{{ url }}</div>
+{% endblock %}

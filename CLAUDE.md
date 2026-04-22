@@ -29,11 +29,14 @@ Automated Instagram image generation pipeline for windsurfworldtourstats.com. Pu
 | `pipeline/analysis_carousel.py` | Canary Kings analysis carousel slide builder |
 | `pipeline/athlete_rise_carousel.py` | Athlete rise progression carousel slide builder |
 
+## Review Workflow
+**ALWAYS generate `--preview` over PNG when the user is reviewing a design.** Use `--preview` for every iteration. Only render PNG when the user explicitly asks for one, or at the very end to attach a final asset to a ticket/publish. PNG renders take ~30s, use Playwright, and clutter `output/png/`; previews open instantly in the browser.
+
 ## CLI Usage
 ```bash
 # Dry run (dummy data, no API/DB needed)
-python generate.py --template head_to_head --dry-run
-python generate.py --template top_10 --dry-run
+python generate.py --template head_to_head --dry-run --preview
+python generate.py --template top_10 --dry-run --preview
 
 # Live — H2H from API
 python generate.py --template head_to_head --event 42 --athlete1 1 --athlete2 2 --division Women

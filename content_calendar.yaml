@@ -83,6 +83,20 @@ posts:
     template: site_stats
     category: recurring
 
+  # ── Product announcements ────────────────────────────────────
+  - id: fantasy-league-announce-2026
+    template: fantasy_league_announce
+    scheduled_date: "2026-04-22T12:00:00+03:00"
+    caption: |
+      We're building Windsurf Fantasy League.
+
+      Pick your roster. Score points across every 2026 PWA event. Free for the whole season.
+
+      Beta testers wanted before launch. Comment BETA below and we'll send you the invite.
+
+      windsurfworldtourstats.com
+    category: seasonal
+
   # ── Event-specific (fill in as events happen) ────────────────
   # - id: pozo-2025-mens-waves
   #   template: top_10

@@ -204,7 +204,10 @@ def create_scheduled_container(
             "access_token": token,
         },
     )
-    resp.raise_for_status()
+    if not resp.ok:
+        raise requests.HTTPError(
+            f"{resp.status_code} {resp.reason}: {resp.text}", response=resp
+        )
     return resp.json()["id"]
 
 

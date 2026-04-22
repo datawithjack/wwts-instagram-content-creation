@@ -167,17 +167,6 @@ posts:
     scheduled_date: "2026-04-23T09:00:00"
     notes: Juban (3rd) vs Traversa (4th) at Cabo Verde 2022
 
-  - id: cabo-verde-2022-rp-juban
-    template: rider_profile
-    params:
-      event: 44
-      athlete1: 59
-      division: Men
-    caption: "With Fiji on the way, we're looking back at Cabo Verde 2022 — where Camille Juban locked in 3rd at the SOMWR 10x World Cup.\n\nBig waves, signature style, podium result for the Guadeloupe man.\n\nSwipe for the full breakdown of his run.\n\nFull stats at windsurfworldtourstats.com"
-    category: seasonal
-    scheduled_date: "2026-04-25T09:00:00"
-    notes: Camille Juban (3rd) rider profile, Cabo Verde 2022
-
   # ── Week of April 7 ─────────────────────────────────────────
   # - id:
   #   template:

@@ -294,6 +294,16 @@ def get_dummy_data(template_name: str) -> dict:
             "scores_count": 43515,
             "events_count": 58,
         }
+    if template_name == "fantasy_league_announce":
+        return {
+            "eyebrow": "BETA ACCESS",
+            "headline_lines": ["WINDSURF", "FANTASY", "LEAGUE"],
+            "sub_lines": [
+                "Build your fantasy team and score points across the 2026 tour.",
+            ],
+            "cta": "TESTERS WANTED. COMMENT BETA TO JOIN.",
+            "url": "windsurfworldtourstats.com",
+        }
     if template_name == "canary_kings":
         return {
             "men": [

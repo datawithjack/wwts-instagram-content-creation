@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+    }
+
+    .stat-screen {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+    }
+
+    .stat-screen.visible {
+        opacity: 1;
+    }
+
+    .stat-number {
+        font-family: var(--font-display);
+        font-size: 420px;
+        line-height: 1;
+        color: var(--color-text-primary);
+        letter-spacing: 0.02em;
+    }
+
+    .stat-label {
+        font-family: var(--font-body);
+        font-size: 56px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        color: var(--color-text-muted);
+        margin-top: 32px;
+    }
+
+    .summary-screen {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.6s ease;
+        gap: 32px;
+    }
+
+    .summary-screen.visible {
+        opacity: 1;
+    }
+
+    .summary-row {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .summary-number {
+        font-family: var(--font-display);
+        font-size: 280px;
+        line-height: 1;
+        color: var(--color-text-primary);
+        letter-spacing: 0.02em;
+    }
+
+    .summary-label {
+        font-family: var(--font-body);
+        font-size: 40px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        color: var(--color-text-muted);
+        margin-top: 12px;
+    }
+
+    .brand-screen {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.6s ease;
+    }
+
+    .brand-screen.visible {
+        opacity: 1;
+    }
+
+    .site-title {
+        font-family: var(--font-display);
+        font-size: 160px;
+        line-height: 1;
+        letter-spacing: 0.05em;
+        color: var(--color-athlete-left);
+        text-transform: uppercase;
+        text-align: center;
+    }
+
+    .site-url {
+        font-family: var(--font-body);
+        font-size: 40px;
+        font-weight: 400;
+        color: var(--color-text-muted);
+        letter-spacing: 0.02em;
+        margin-top: 28px;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+    }
+
+    .site-url.visible {
+        opacity: 1;
+    }
+
+    .watermark {
+        position: absolute;
+        bottom: 24px;
+        right: 32px;
+        font-family: var(--font-body);
+        font-size: 16px;
+        font-weight: 500;
+        color: rgba(255,255,255,0.20);
+        letter-spacing: 0.04em;
+        z-index: 10;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="stat-screen" id="screen-events">
+        <div class="stat-number" id="num-events">0</div>
+        <div class="stat-label">Events</div>
+    </div>
+
+    <div class="stat-screen" id="screen-athletes">
+        <div class="stat-number" id="num-athletes">0</div>
+        <div class="stat-label">Athletes</div>
+    </div>
+
+    <div class="stat-screen" id="screen-scores">
+        <div class="stat-number" id="num-scores">0</div>
+        <div class="stat-label">Scores</div>
+    </div>
+
+    <div class="summary-screen" id="screen-summary">
+        <div class="summary-row">
+            <div class="summary-number" id="sum-events">0</div>
+            <div class="summary-label">Events</div>
+        </div>
+        <div class="summary-row">
+            <div class="summary-number" id="sum-athletes">0</div>
+            <div class="summary-label">Athletes</div>
+        </div>
+        <div class="summary-row">
+            <div class="summary-number" id="sum-scores">0</div>
+            <div class="summary-label">Scores</div>
+        </div>
+    </div>
+
+    <div class="brand-screen" id="screen-brand">
+        <div class="site-title">Windsurf World Tour Stats</div>
+        <div class="site-url" id="site-url">windsurfworldtourstats.com</div>
+    </div>
+
+    <div class="watermark">windsurfworldtourstats.com</div>
+</div>
+
+<script>
+    const STATS = [
+        { screen: 'screen-events',   num: 'num-events',   target: {{ events_count }} },
+        { screen: 'screen-athletes', num: 'num-athletes', target: {{ athletes_count }} },
+        { screen: 'screen-scores',   num: 'num-scores',   target: {{ scores_count }} },
+    ];
+
+    const COUNT_DURATION = 1500;
+    const HOLD_DURATION  = 400;
+    const FADE_DURATION  = 500;
+
+    function countUp(el, target, duration) {
+        return new Promise(resolve => {
+            const start = performance.now();
+            const format = (n) => Math.round(n).toLocaleString('en-US');
+
+            function tick(now) {
+                const elapsed = now - start;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                el.textContent = format(target * eased);
+
+                if (progress < 1) {
+                    requestAnimationFrame(tick);
+                } else {
+                    el.textContent = format(target);
+                    resolve();
+                }
+            }
+            requestAnimationFrame(tick);
+        });
+    }
+
+    function wait(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function runAnimation() {
+        // Sequence through each stat: fade in -> count up -> hold -> fade out
+        for (const stat of STATS) {
+            const screen = document.getElementById(stat.screen);
+            const num = document.getElementById(stat.num);
+
+            screen.classList.add('visible');
+            await wait(FADE_DURATION);
+
+            await countUp(num, stat.target, COUNT_DURATION);
+
+            await wait(HOLD_DURATION);
+
+            screen.classList.remove('visible');
+            await wait(FADE_DURATION);
+        }
+
+        // Summary screen: all numbers stacked together
+        const summary = document.getElementById('screen-summary');
+        document.getElementById('sum-events').textContent = Math.round({{ events_count }}).toLocaleString('en-US');
+        document.getElementById('sum-athletes').textContent = Math.round({{ athletes_count }}).toLocaleString('en-US');
+        document.getElementById('sum-scores').textContent = Math.round({{ scores_count }}).toLocaleString('en-US');
+
+        summary.classList.add('visible');
+        await wait(2000);
+
+        summary.classList.remove('visible');
+        await wait(600);
+
+        // Brand reveal
+        const brand = document.getElementById('screen-brand');
+        const url = document.getElementById('site-url');
+
+        brand.classList.add('visible');
+        await wait(800);
+
+        url.classList.add('visible');
+        await wait(1500);
+
+        document.body.dataset.animationComplete = 'true';
+    }
+
+    document.fonts.ready.then(() => {
+        setTimeout(runAnimation, 300);
+    });
+</script>
+{% endblock %}

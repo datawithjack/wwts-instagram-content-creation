@@ -235,6 +235,10 @@ def resolve_post_data(post: dict) -> dict:
             division=params["division"],
         )
 
+    if template == "fantasy_league_announce":
+        from pipeline.templates import get_dummy_data
+        return get_dummy_data(template)
+
     raise ValueError(f"Unknown template: {template}")
 
 
