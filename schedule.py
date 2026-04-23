@@ -25,8 +25,8 @@ def main():
     )
     parser.add_argument(
         "--calendar",
-        default="content_calendar.yaml",
-        help="Path to content calendar YAML (default: content_calendar.yaml)",
+        default="content_backlog.yaml",
+        help="Path to content backlog YAML (default: content_backlog.yaml)",
     )
     parser.add_argument(
         "--category",

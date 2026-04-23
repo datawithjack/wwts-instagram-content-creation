@@ -177,5 +177,5 @@ First 12 posts for @windsurfworldtourstats Instagram. Grid ordering matters — 
 - `templates/about_carousel.html` — new (Phase D)
 - `templates/cta.html` — new (Phase D)
 - `templates/count_leaderboard.html` — new or adapt top_10 (Phase E)
-- `content_calendar.yaml` — add all 12 posts
+- `content_backlog.yaml` — add all 12 posts
 - `tests/test_count_query.py` — new tests for count query
