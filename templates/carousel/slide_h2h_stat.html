@@ -258,7 +258,7 @@
                     <div class="bar-photo-placeholder">{{ athlete_1_name[0] }}</div>
                     {% endif %}
                 </div>
-                <div class="athlete-firstname" style="color: var(--color-athlete-left);">{{ athlete_1_firstname }}</div>
+                <div class="athlete-firstname" style="color: var(--color-athlete-left);">{{ athlete_1_firstname.split('-')[0] }}</div>
             </div>
             <div></div>
             <div class="athlete-col athlete-col-right">
@@ -269,7 +269,7 @@
                     <div class="bar-photo-placeholder">{{ athlete_2_name[0] }}</div>
                     {% endif %}
                 </div>
-                <div class="athlete-firstname" style="color: var(--color-athlete-right);">{{ athlete_2_firstname }}</div>
+                <div class="athlete-firstname" style="color: var(--color-athlete-right);">{{ athlete_2_firstname.split('-')[0] }}</div>
             </div>
 
             <div class="grid-spacer"></div>
