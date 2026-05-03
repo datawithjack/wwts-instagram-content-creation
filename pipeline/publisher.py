@@ -2,6 +2,7 @@
 import os
 import time
 import uuid
+from urllib.parse import urlparse
 
 import boto3
 import requests
@@ -21,9 +22,13 @@ def _get_r2_client():
 
 
 def upload_to_r2(file_path: str) -> str:
-    """Upload file to Cloudflare R2 and return its public URL."""
+    """Upload file to Cloudflare R2 and return a presigned URL.
+
+    Meta blocks the public `pub-*.r2.dev` domain, so we hand Meta a presigned
+    URL through `*.r2.cloudflarestorage.com`. 7-day expiry covers immediate
+    publishes and scheduled posts within Meta's normal scheduling window.
+    """
     bucket = os.environ["R2_BUCKET_NAME"]
-    public_url = os.environ["R2_PUBLIC_URL"]
     ext = os.path.splitext(file_path)[1].lstrip(".")
     key = f"{uuid.uuid4().hex}.{ext}"
 
@@ -43,15 +48,27 @@ def upload_to_r2(file_path: str) -> str:
         Key=key,
         ExtraArgs={"ContentType": content_type},
     )
-    return f"{public_url}/{key}"
+    return client.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": bucket, "Key": key},
+        ExpiresIn=7 * 24 * 3600,
+    )
+
+
+def _key_from_r2_url(blob_url: str) -> str:
+    """Extract the object key from either a presigned r2.cloudflarestorage.com URL
+    or a public pub-*.r2.dev URL."""
+    bucket = os.environ["R2_BUCKET_NAME"]
+    path = urlparse(blob_url).path.lstrip("/")
+    if path.startswith(f"{bucket}/"):
+        return path[len(bucket) + 1 :]
+    return path
 
 
 def delete_from_r2(blob_url: str) -> None:
-    """Delete an object from R2 by its public URL."""
+    """Delete an object from R2 by its public or presigned URL."""
     bucket = os.environ["R2_BUCKET_NAME"]
-    public_url = os.environ["R2_PUBLIC_URL"]
-    key = blob_url.replace(f"{public_url}/", "")
-
+    key = _key_from_r2_url(blob_url)
     client = _get_r2_client()
     client.delete_object(Bucket=bucket, Key=key)
 
