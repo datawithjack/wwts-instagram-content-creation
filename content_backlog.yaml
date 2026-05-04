@@ -169,6 +169,65 @@ posts:
     published_at: "2026-04-24T04:48:56"
     notes: Juban (3rd) vs Traversa (4th) at Cabo Verde 2022
 
+  # ── Morocco 2018 throwback (alongside WWT 3-star Morocco) ───
+  - id: morocco-2018-h2h-iballa-sqo
+    template: h2h_carousel
+    params:
+      event: 90
+      athlete1: 178
+      athlete2: 5
+      division: Women
+    caption: "🌊 The 2018 PWA Morocco final — Iballa Ruano Moreno vs Sarah-Quita Offringa.\n\nTwo of the most decorated names in women's wave sailing went head to head for the title at the last PWA stop on Moroccan walls.\n\nWith the WWT 3-star just wrapped, here's how their final played out — wave for wave, score for score.\n\nFull stats at windsurfworldtourstats.com"
+    category: seasonal
+    scheduled_date: "2026-05-06T09:00:00"
+    notes: 12:00 Qatar time (UTC+3) — Iballa (1st) vs Sarah-Quita (2nd) at PWA Morocco 2018
+
+  - id: morocco-2018-rp-maria-andres
+    template: rider_profile
+    params:
+      event: 90
+      athlete1: 6
+      division: Women
+    caption: "🇪🇸 Maria Andres — 5th at the last PWA stop in Morocco.\n\nThrowing it back to 2018 as the WWT 3-star wraps. Spain's wave-sailing star made the cut in a stacked 16-rider field — here's her full breakdown from the event.\n\nFull stats at windsurfworldtourstats.com"
+    category: seasonal
+    scheduled_date: "2026-05-08T09:00:00"
+    notes: 12:00 Qatar time (UTC+3) — Maria Andres rider profile, Morocco 2018 5th place
+
+  # ── Fiji 2023 throwback (ahead of Cloudbreak 2026) ───────────
+  - id: fiji-2023-rp-cloarec
+    template: rider_profile
+    params:
+      event: 35
+      athlete1: 63
+      division: Men
+    caption: "🇫🇯 Cloudbreak is calling — and we're throwing it back to the last time the tour touched down in Fiji.\n\n2023. Baptiste Cloarec walks away with the win at one of the most iconic waves on the planet. Here's how the Frenchman did it, heat by heat.\n\nFull stats at windsurfworldtourstats.com"
+    category: seasonal
+    scheduled_date: "2026-05-11T09:00:00"
+    notes: 12:00 Qatar time (UTC+3) — Baptiste Cloarec rider profile, Fiji 2023 1st place
+
+  - id: fiji-2023-mens-waves-top10
+    template: top_10_carousel
+    params:
+      score_type: Wave
+      sex: Men
+      event: 35
+    caption: "🌊 Cloudbreak. One of the heaviest, most photographed waves in windsurfing.\n\nWith the tour heading back to Fiji, we're looking at the top 10 men's wave scores from the last edition in 2023. Big drops, clean walls, and some of the biggest names in the sport laying it down.\n\nSwipe to see who topped the leaderboard.\n\nFull rankings at windsurfworldtourstats.com"
+    category: seasonal
+    scheduled_date: "2026-05-13T09:00:00"
+    notes: 12:00 Qatar time (UTC+3) — Top 10 men's waves, Fiji 2023
+
+  - id: fiji-2023-h2h-sqo-foveau
+    template: h2h_carousel
+    params:
+      event: 35
+      athlete1: 5
+      athlete2: 9
+      division: Women
+    caption: "🇦🇼 vs 🇫🇷 — Sarah-Quita Offringa and Coco Foveau battled for the podium at Cloudbreak in 2023.\n\n2nd vs 3rd at one of the most demanding waves on tour. With Fiji back on the calendar, here's how their fight for second played out — wave for wave, score for score.\n\nWho takes it this time around? Swipe to relive the rivalry.\n\nFull stats at windsurfworldtourstats.com"
+    category: seasonal
+    scheduled_date: "2026-05-15T09:00:00"
+    notes: 12:00 Qatar time (UTC+3) — Sarah-Quita (2nd) vs Coco Foveau (3rd), Fiji 2023
+
   # ── Week of April 7 ─────────────────────────────────────────
   # - id:
   #   template:
