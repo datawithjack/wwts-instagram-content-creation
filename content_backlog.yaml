@@ -207,6 +207,8 @@ posts:
     caption: "🇫🇯 Cloudbreak is calling — and we're throwing it back to the last time the tour touched down in Fiji.\n\n2023. Baptiste Cloarec walks away with the win at one of the most iconic waves on the planet. Here's how the Frenchman did it, heat by heat.\n\nFull stats at windsurfworldtourstats.com"
     category: seasonal
     scheduled_date: "2026-05-11T09:00:00"
+    published: true
+    published_at: "2026-05-11T10:05:53"
     notes: 12:00 Qatar time (UTC+3) — Baptiste Cloarec rider profile, Fiji 2023 1st place
 
   - id: fiji-2023-mens-waves-top10
