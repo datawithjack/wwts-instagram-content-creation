@@ -238,6 +238,74 @@ posts:
     published_at: "2026-05-15T10:13:39"
     notes: 12:00 Qatar time (UTC+3) — Sarah-Quita (2nd) vs Coco Foveau (3rd), Fiji 2023
 
+  # ── Fiji 2023 men's top 4 lookback (week of 19 May) ──────────
+  - id: fiji-2023-rp-campello
+    template: rider_profile
+    params:
+      event: 35
+      athlete1: 91
+      division: Men
+    caption: "🇫🇯 Just over two weeks to go until the WWT Fiji event.\n\nThis week we're looking at the rest of the men's top 4 from Cloudbreak 2023 — starting with Venezuela's Ricardo Campello, who finished 2nd last time the tour landed in Fiji.\n\nSwipe to see how his run played out, heat by heat.\n\nFull stats at windsurfworldtourstats.com"
+    category: seasonal
+    scheduled_date: "2026-05-19T09:00:00"
+    notes: 12:00 Qatar time (UTC+3) — Ricardo Campello rider profile, Fiji 2023 2nd place
+
+  - id: fiji-2023-rp-swift
+    template: rider_profile
+    params:
+      event: 35
+      athlete1: 53
+      division: Men
+    caption: "🇫🇯 Just over two weeks to go until the WWT Fiji event.\n\nContinuing the men's top 4 from Cloudbreak 2023 — Britain's Robby Swift took 3rd last time the tour visited Fiji.\n\nAnd good news: Robby is on the startlist for the 2026 event 👀 Can he go one better this time?\n\nSwipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com"
+    category: seasonal
+    scheduled_date: "2026-05-21T09:00:00"
+    notes: 12:00 Qatar time (UTC+3) — Robby Swift rider profile, Fiji 2023 3rd place
+
+  - id: fiji-2023-rp-sugi
+    template: rider_profile
+    params:
+      event: 35
+      athlete1: 69
+      division: Men
+    caption: "🇫🇯 Just over two weeks to go until the WWT Fiji event.\n\nRounding out the men's top 4 from Cloudbreak 2023 — Japan's Takuma Sugi finished 4th last time the tour stopped at Fiji.\n\nTakuma is also on the startlist for the 2026 event 👀 Can he climb the podium this time?\n\nSwipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com"
+    category: seasonal
+    scheduled_date: "2026-05-23T09:00:00"
+    notes: 12:00 Qatar time (UTC+3) — Takuma Sugi rider profile, Fiji 2023 4th place
+
+  # ── Fiji 2023 women's podium lookback (week of 25 May) ───────
+  - id: fiji-2023-rp-hauser
+    template: rider_profile
+    params:
+      event: 35
+      athlete1: 554
+      division: Women
+    caption: "🇫🇯 Just over a week to go until the WWT Fiji event.\n\nThis week we're looking at the women's podium from Cloudbreak 2023 — starting at the top with Sarah Hauser, who took the win at one of the heaviest waves on tour.\n\nSarah isn't on the startlist for the 2026 event — but here's how she clinched the title last time, heat by heat.\n\nSwipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com"
+    category: seasonal
+    scheduled_date: "2026-05-25T09:00:00"
+    notes: 12:00 Qatar time (UTC+3) — Sarah Hauser rider profile, Fiji 2023 1st place
+
+  - id: fiji-2023-rp-sqo
+    template: rider_profile
+    params:
+      event: 35
+      athlete1: 5
+      division: Women
+    caption: "🇫🇯 Just over a week to go until the WWT Fiji event.\n\nContinuing the women's podium from Cloudbreak 2023 — Aruba's Sarah-Quita Offringa took 2nd last time the tour landed in Fiji.\n\nSQO isn't entered for the 2026 edition — but here's how her run unfolded, wave for wave.\n\nSwipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com"
+    category: seasonal
+    scheduled_date: "2026-05-27T09:00:00"
+    notes: 12:00 Qatar time (UTC+3) — Sarah-Quita Offringa rider profile, Fiji 2023 2nd place
+
+  - id: fiji-2023-rp-foveau
+    template: rider_profile
+    params:
+      event: 35
+      athlete1: 9
+      division: Women
+    caption: "🇫🇯 Just over a week to go until the WWT Fiji event.\n\nRounding out the women's podium from Cloudbreak 2023 — France's Coco Foveau took 3rd last time the tour stopped at Fiji.\n\nCoco isn't on the startlist for the 2026 edition — but here's how she earned her place on the podium.\n\nSwipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com"
+    category: seasonal
+    scheduled_date: "2026-05-29T09:00:00"
+    notes: 12:00 Qatar time (UTC+3) — Coco Foveau rider profile, Fiji 2023 3rd place
+
   # ── Week of April 7 ─────────────────────────────────────────
   # - id:
   #   template:
