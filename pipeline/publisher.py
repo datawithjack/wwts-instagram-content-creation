@@ -108,25 +108,65 @@ def create_reels_container(video_url: str, caption: str) -> str:
     return resp.json()["id"]
 
 
-def check_container_status(container_id: str) -> str:
-    """Check the status of a media container. Returns status_code string."""
+def check_container_status(
+    container_id: str, max_retries: int = 3, retry_delay: float = 5.0
+) -> str:
+    """Check the status of a media container. Returns status_code string.
+
+    Retries on transient errors (400, 5xx) — Meta sometimes returns 400 briefly
+    after a carousel container is created due to eventual consistency.
+    """
     token = os.environ["META_ACCESS_TOKEN"]
 
-    resp = requests.get(
-        f"{GRAPH_API_BASE}/{container_id}",
-        params={
-            "fields": "status_code",
-            "access_token": token,
-        },
-    )
-    resp.raise_for_status()
-    return resp.json()["status_code"]
+    for attempt in range(max_retries + 1):
+        resp = requests.get(
+            f"{GRAPH_API_BASE}/{container_id}",
+            params={
+                "fields": "status_code",
+                "access_token": token,
+            },
+        )
+        is_transient = resp.status_code == 400 or resp.status_code >= 500
+        if is_transient and attempt < max_retries:
+            wait = retry_delay * (attempt + 1)
+            print(
+                f"Container status check got {resp.status_code}, retrying "
+                f"in {wait:.0f}s (attempt {attempt + 1}/{max_retries + 1})..."
+            )
+            time.sleep(wait)
+            continue
+        resp.raise_for_status()
+        return resp.json()["status_code"]
 
 
-def wait_for_container(container_id: str, max_attempts: int = 30, delay: float = 5.0) -> None:
-    """Poll container status until FINISHED. Raises on ERROR or timeout."""
+def wait_for_container(
+    container_id: str, max_attempts: int = 30, delay: float = 5.0,
+    blind_wait_fallback: float = 60.0,
+) -> None:
+    """Poll container status until FINISHED. Raises on ERROR or timeout.
+
+    As of mid-2026, Meta's GET /{container_id} endpoint started returning
+    `Authorization Error` (code 100, subcode 33) for every container created
+    by our publisher — even though the container is valid and publishable.
+    When we detect this, we fall back to a blind sleep of
+    `blind_wait_fallback` seconds and let the caller proceed to publish.
+    A failed publish will still be caught by check_recent_media in
+    publish_carousel.
+    """
     for _ in range(max_attempts):
-        status = check_container_status(container_id)
+        try:
+            status = check_container_status(container_id)
+        except requests.HTTPError as e:
+            if _is_status_endpoint_broken(e):
+                print(
+                    f"Container status endpoint returned Auth Error subcode 33 "
+                    f"(Meta's GET /{{container_id}} is currently broken). "
+                    f"Falling back to blind wait of {blind_wait_fallback:.0f}s."
+                )
+                time.sleep(blind_wait_fallback)
+                return
+            raise
+
         if status == "FINISHED":
             return
         if status == "ERROR":
@@ -135,6 +175,19 @@ def wait_for_container(container_id: str, max_attempts: int = 30, delay: float =
     raise TimeoutError(
         f"Container {container_id} not ready after {max_attempts} attempts"
     )
+
+
+def _is_status_endpoint_broken(http_err: "requests.HTTPError") -> bool:
+    """Detect Meta's 'broken status endpoint' signal: HTTP 400 with
+    error code 100 and subcode 33 (Authorization Error / object not found)."""
+    resp = getattr(http_err, "response", None)
+    if resp is None or resp.status_code != 400:
+        return False
+    try:
+        err = resp.json().get("error", {})
+    except Exception:
+        return False
+    return err.get("code") == 100 and err.get("error_subcode") == 33
 
 
 def publish_container(

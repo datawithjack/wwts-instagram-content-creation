@@ -87,11 +87,12 @@ def filter_posts_due(
     posts: list,
     now: datetime = None,
 ) -> list:
-    """Return unpublished posts whose scheduled_date is at or before now + 5min.
+    """Return unpublished, non-failed posts whose scheduled_date is at or before now + 5min.
 
     Any past unpublished post is considered due, regardless of how long ago
     it was scheduled. This ensures posts are picked up even if the cron job
-    runs late.
+    runs late. Posts marked `failed: true` (gave up after max attempts) are
+    excluded.
     """
     if now is None:
         now = datetime.now(timezone.utc)
@@ -100,6 +101,8 @@ def filter_posts_due(
     due = []
     for post in posts:
         if post.get("published"):
+            continue
+        if post.get("failed"):
             continue
         sd = post.get("scheduled_date")
         if not sd:
@@ -146,8 +149,99 @@ def mark_post_published(calendar_path: str, post_id: str) -> None:
         f.writelines(lines)
 
 
+MAX_PUBLISH_ATTEMPTS = 3
+
+
+def mark_post_failure(
+    calendar_path: str, post_id: str, error_msg: str,
+    max_attempts: int = MAX_PUBLISH_ATTEMPTS,
+) -> int:
+    """Record a publish failure for a post. Returns the new attempt count.
+
+    Increments `publish_attempts`, records `last_error`, and once attempts
+    reach `max_attempts` also sets `failed: true` so `filter_posts_due` will
+    skip the post on future runs. Uses line-level editing to preserve YAML
+    comments and field ordering (same approach as mark_post_published).
+    """
+    with open(calendar_path, "r") as f:
+        lines = f.readlines()
+
+    # Find post block bounds: from "- id: <post_id>" to next "- id:" or EOF
+    post_start = None
+    post_end = len(lines)
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped == f"- id: {post_id}":
+            post_start = i
+            continue
+        if post_start is not None and stripped.startswith("- id:"):
+            post_end = i
+            break
+
+    if post_start is None:
+        raise ValueError(f"Post '{post_id}' not found in {calendar_path}")
+
+    # Within the post block: locate scheduled_date (anchor) + existing
+    # tracking fields (so we can upsert rather than duplicate them).
+    scheduled_date_idx = None
+    existing_attempts = 0
+    fields_to_remove = []
+    tracked_prefixes = ("publish_attempts:", "last_error:", "failed:")
+
+    for i in range(post_start, post_end):
+        stripped = lines[i].strip()
+        if stripped.startswith("scheduled_date:"):
+            scheduled_date_idx = i
+        if stripped.startswith("publish_attempts:"):
+            try:
+                existing_attempts = int(stripped.split(":", 1)[1].strip())
+            except ValueError:
+                existing_attempts = 0
+        if any(stripped.startswith(p) for p in tracked_prefixes):
+            fields_to_remove.append(i)
+
+    if scheduled_date_idx is None:
+        raise ValueError(
+            f"Post '{post_id}' has no scheduled_date — cannot mark failure"
+        )
+
+    new_attempts = existing_attempts + 1
+
+    indent = lines[scheduled_date_idx][
+        : len(lines[scheduled_date_idx]) - len(lines[scheduled_date_idx].lstrip())
+    ]
+    # Strip control chars and limit length so the YAML stays parseable.
+    safe_error = (
+        error_msg.replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ").replace("\r", " ")
+    )[:200]
+    new_lines = [
+        f"{indent}publish_attempts: {new_attempts}\n",
+        f'{indent}last_error: "{safe_error}"\n',
+    ]
+    if new_attempts >= max_attempts:
+        new_lines.append(f"{indent}failed: true\n")
+
+    # Remove existing tracking lines in reverse (preserve indices) and
+    # adjust scheduled_date_idx for any removed lines above it.
+    for idx in sorted(fields_to_remove, reverse=True):
+        del lines[idx]
+        if idx < scheduled_date_idx:
+            scheduled_date_idx -= 1
+
+    lines[scheduled_date_idx + 1 : scheduled_date_idx + 1] = new_lines
+
+    with open(calendar_path, "w") as f:
+        f.writelines(lines)
+
+    return new_attempts
+
+
 def run_poll(calendar_path: str) -> list:
-    """Poll the backlog for due posts, publish them, and mark as published."""
+    """Poll the backlog for due posts, publish them, and mark as published.
+
+    On failure, increments the post's attempt counter; after MAX_PUBLISH_ATTEMPTS
+    the post is marked `failed: true` so it won't be retried.
+    """
     calendar = load_calendar(calendar_path)
     posts = calendar.get("posts", [])
     due = filter_posts_due(posts)
@@ -167,7 +261,17 @@ def run_poll(calendar_path: str) -> list:
             mark_post_published(calendar_path, result["id"])
             print(f"  MARKED: {result['id']} as published")
         else:
-            print(f"  SKIP MARKING: {result['id']} — failed: {result['error']}")
+            attempts = mark_post_failure(calendar_path, result["id"], result["error"])
+            if attempts >= MAX_PUBLISH_ATTEMPTS:
+                print(
+                    f"  GAVE UP: {result['id']} after {attempts} attempts "
+                    f"— marked failed: true ({result['error']})"
+                )
+            else:
+                print(
+                    f"  RETRY LATER: {result['id']} — attempt "
+                    f"{attempts}/{MAX_PUBLISH_ATTEMPTS}: {result['error']}"
+                )
 
     return results
 

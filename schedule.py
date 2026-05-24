@@ -94,6 +94,10 @@ def main():
         print(f"\nDone: {len(ok)} published, {len(failed)} failed")
         for f in failed:
             print(f"  FAILED: {f['id']} — {f['error']}")
+        # Non-zero exit on any failure so the GH Actions workflow fails
+        # and triggers GitHub's built-in failure email notification.
+        if failed:
+            sys.exit(1)
         return
 
     if args.dry_run:

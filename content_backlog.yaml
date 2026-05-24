@@ -265,17 +265,6 @@ posts:
     published_at: "2026-05-21T10:32:11"
     notes: 12:00 Qatar time (UTC+3) — Robby Swift rider profile, Fiji 2023 3rd place
 
-  - id: fiji-2023-rp-sugi
-    template: rider_profile
-    params:
-      event: 35
-      athlete1: 69
-      division: Men
-    caption: "🇫🇯 Just over two weeks to go until the WWT Fiji event.\n\nRounding out the men's top 4 from Cloudbreak 2023 — Japan's Takuma Sugi finished 4th last time the tour stopped at Fiji.\n\nTakuma is also on the startlist for the 2026 event 👀 Can he climb the podium this time?\n\nSwipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com"
-    category: seasonal
-    scheduled_date: "2026-05-23T09:00:00"
-    notes: 12:00 Qatar time (UTC+3) — Takuma Sugi rider profile, Fiji 2023 4th place
-
   # ── Fiji 2023 women's podium lookback (week of 25 May) ───────
   - id: fiji-2023-rp-hauser
     template: rider_profile

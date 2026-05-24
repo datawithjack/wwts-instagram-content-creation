@@ -116,6 +116,60 @@ class TestCheckContainerStatus:
         status = check_container_status("container-789")
         assert status == "FINISHED"
 
+    @patch("pipeline.publisher.time.sleep")
+    @patch("pipeline.publisher.requests.get")
+    def test_retries_on_transient_400_then_succeeds(self, mock_get, mock_sleep, meta_env):
+        """Meta sometimes returns 400 briefly after a carousel container is
+        created (eventual consistency). We must retry before giving up."""
+        error_resp = MagicMock(status_code=400)
+        error_resp.raise_for_status.side_effect = Exception("400 Bad Request")
+
+        success_resp = MagicMock(
+            status_code=200,
+            json=lambda: {"status_code": "FINISHED"},
+        )
+        success_resp.raise_for_status = MagicMock()
+
+        mock_get.side_effect = [error_resp, error_resp, success_resp]
+
+        status = check_container_status("container-789")
+
+        assert status == "FINISHED"
+        assert mock_get.call_count == 3
+        assert mock_sleep.call_count == 2
+
+    @patch("pipeline.publisher.time.sleep")
+    @patch("pipeline.publisher.requests.get")
+    def test_retries_on_5xx_then_succeeds(self, mock_get, mock_sleep, meta_env):
+        error_resp = MagicMock(status_code=503)
+        error_resp.raise_for_status.side_effect = Exception("503 Service Unavailable")
+
+        success_resp = MagicMock(
+            status_code=200,
+            json=lambda: {"status_code": "IN_PROGRESS"},
+        )
+        success_resp.raise_for_status = MagicMock()
+
+        mock_get.side_effect = [error_resp, success_resp]
+
+        status = check_container_status("container-789")
+
+        assert status == "IN_PROGRESS"
+        assert mock_get.call_count == 2
+
+    @patch("pipeline.publisher.time.sleep")
+    @patch("pipeline.publisher.requests.get")
+    def test_raises_after_max_retries(self, mock_get, mock_sleep, meta_env):
+        error_resp = MagicMock(status_code=400)
+        error_resp.raise_for_status.side_effect = Exception("400 Bad Request")
+        mock_get.return_value = error_resp
+
+        with pytest.raises(Exception, match="400 Bad Request"):
+            check_container_status("container-789")
+
+        # Default: 1 initial + 3 retries
+        assert mock_get.call_count == 4
+
 
 class TestWaitForContainer:
     @patch("pipeline.publisher.time.sleep")
@@ -145,6 +199,47 @@ class TestWaitForContainer:
             wait_for_container("container-789", max_attempts=3)
 
         assert mock_check.call_count == 3
+
+    @patch("pipeline.publisher.time.sleep")
+    @patch("pipeline.publisher.check_container_status")
+    def test_falls_back_to_blind_wait_on_auth_error(self, mock_check, mock_sleep, meta_env):
+        """Meta's GET /{container_id} endpoint started returning Auth Error
+        subcode 33 for all containers in mid-2026 — this is the
+        'status endpoint broken' signal. We fall back to a blind sleep."""
+        import requests
+        resp = MagicMock(status_code=400)
+        resp.json.return_value = {
+            "error": {
+                "code": 100,
+                "type": "GraphMethodException",
+                "error_subcode": 33,
+                "message": "Authorization Error",
+            }
+        }
+        err = requests.HTTPError("400 Bad Request")
+        err.response = resp
+        mock_check.side_effect = err
+
+        # Should NOT raise — should blind-wait and return
+        wait_for_container("container-789", blind_wait_fallback=60.0)
+
+        # Should have slept the fallback amount (at least once with 60.0)
+        sleep_calls = [c.args[0] for c in mock_sleep.call_args_list]
+        assert 60.0 in sleep_calls
+
+    @patch("pipeline.publisher.time.sleep")
+    @patch("pipeline.publisher.check_container_status")
+    def test_raises_on_non_auth_http_error(self, mock_check, mock_sleep, meta_env):
+        """Other HTTP errors should still raise (don't blind-wait blindly)."""
+        import requests
+        resp = MagicMock(status_code=500)
+        resp.json.return_value = {"error": {"code": 1, "message": "server error"}}
+        err = requests.HTTPError("500 Server Error")
+        err.response = resp
+        mock_check.side_effect = err
+
+        with pytest.raises(requests.HTTPError):
+            wait_for_container("container-789")
 
 
 class TestPublishContainer:

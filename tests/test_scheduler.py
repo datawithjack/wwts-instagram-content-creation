@@ -8,6 +8,7 @@ from pipeline.scheduler import (
     load_calendar,
     filter_posts,
     filter_posts_due,
+    mark_post_failure,
     mark_post_published,
     resolve_post_data,
     run_calendar,
@@ -514,6 +515,14 @@ class TestFilterPostsDue:
         result = filter_posts_due([post], now=now)
         assert len(result) == 0
 
+    def test_excludes_failed_posts(self):
+        """Posts marked failed: true should not be retried."""
+        now = datetime.now(timezone.utc)
+        post = self._make_post("bad", now.isoformat())
+        post["failed"] = True
+        result = filter_posts_due([post], now=now)
+        assert len(result) == 0
+
     def test_excludes_no_scheduled_date(self):
         post = self._make_post("no-date")
         result = filter_posts_due([post])
@@ -585,6 +594,107 @@ class TestMarkPostPublished:
             mark_post_published(str(cal_file), "nonexistent")
 
 
+class TestMarkPostFailure:
+    """Test mark_post_failure() — increments attempt counter; marks failed after max."""
+
+    BACKLOG = textwrap.dedent("""\
+        # Backlog header comment
+        posts:
+          - id: post-1
+            template: top_10
+            scheduled_date: "2026-03-19T15:35:00"
+
+          # Week separator
+          - id: post-2
+            template: site_stats
+            scheduled_date: "2026-03-20T12:00:00"
+        """)
+
+    def test_first_failure_sets_attempt_count_to_1(self, tmp_path):
+        cal_file = tmp_path / "backlog.yaml"
+        cal_file.write_text(self.BACKLOG)
+
+        attempts = mark_post_failure(str(cal_file), "post-1", "API timeout")
+
+        assert attempts == 1
+        text = cal_file.read_text()
+        assert "publish_attempts: 1" in text
+        assert "last_error:" in text
+        assert "API timeout" in text
+        # Below 3 attempts → not yet marked failed
+        assert "failed: true" not in text
+        # Comments preserved
+        assert "# Backlog header comment" in text
+        assert "# Week separator" in text
+
+    def test_second_failure_increments_count(self, tmp_path):
+        cal_file = tmp_path / "backlog.yaml"
+        cal_file.write_text(self.BACKLOG)
+
+        mark_post_failure(str(cal_file), "post-1", "first error")
+        attempts = mark_post_failure(str(cal_file), "post-1", "second error")
+
+        assert attempts == 2
+        text = cal_file.read_text()
+        assert "publish_attempts: 2" in text
+        # last_error reflects most recent
+        assert "second error" in text
+        assert "first error" not in text
+        assert "failed: true" not in text
+
+    def test_third_failure_sets_failed_true(self, tmp_path):
+        cal_file = tmp_path / "backlog.yaml"
+        cal_file.write_text(self.BACKLOG)
+
+        mark_post_failure(str(cal_file), "post-1", "err 1")
+        mark_post_failure(str(cal_file), "post-1", "err 2")
+        attempts = mark_post_failure(str(cal_file), "post-1", "err 3")
+
+        assert attempts == 3
+        text = cal_file.read_text()
+        assert "publish_attempts: 3" in text
+        assert "failed: true" in text
+
+    def test_only_target_post_modified(self, tmp_path):
+        cal_file = tmp_path / "backlog.yaml"
+        cal_file.write_text(self.BACKLOG)
+
+        mark_post_failure(str(cal_file), "post-1", "boom")
+
+        from ruamel.yaml import YAML
+        ry = YAML()
+        data = ry.load(cal_file.read_text())
+        p1 = next(p for p in data["posts"] if p["id"] == "post-1")
+        p2 = next(p for p in data["posts"] if p["id"] == "post-2")
+        assert p1.get("publish_attempts") == 1
+        assert "publish_attempts" not in p2
+        assert "failed" not in p2
+
+    def test_error_with_special_characters(self, tmp_path):
+        """Error messages with quotes/newlines should be safely escaped."""
+        cal_file = tmp_path / "backlog.yaml"
+        cal_file.write_text(self.BACKLOG)
+
+        mark_post_failure(
+            str(cal_file), "post-1",
+            'HTTP 400: {"error": "bad"}\nstack trace line 2'
+        )
+
+        # File should still parse as valid YAML
+        from ruamel.yaml import YAML
+        ry = YAML()
+        data = ry.load(cal_file.read_text())
+        p1 = next(p for p in data["posts"] if p["id"] == "post-1")
+        assert "bad" in p1["last_error"]
+
+    def test_raises_on_unknown_post_id(self, tmp_path):
+        cal_file = tmp_path / "backlog.yaml"
+        cal_file.write_text(self.BACKLOG)
+
+        with pytest.raises(ValueError, match="not found"):
+            mark_post_failure(str(cal_file), "nonexistent", "err")
+
+
 class TestRunPoll:
     """Test run_poll() — orchestrates load → filter → publish → mark."""
 
@@ -613,20 +723,25 @@ class TestRunPoll:
         mock_mark.assert_called_once_with(str(cal_file), "post-1")
         assert len(results) == 1
 
+    @patch("pipeline.scheduler.mark_post_failure")
     @patch("pipeline.scheduler.mark_post_published")
     @patch("pipeline.scheduler.run_calendar")
     @patch("pipeline.scheduler.filter_posts_due")
-    def test_skips_marking_on_error(self, mock_filter, mock_run, mock_mark, tmp_path):
+    def test_records_failure_and_skips_publish_marking(
+        self, mock_filter, mock_run, mock_mark_pub, mock_mark_fail, tmp_path
+    ):
         cal_file = tmp_path / "backlog.yaml"
         cal_file.write_text("posts:\n  - id: post-1\n    template: top_10\n")
 
         due_post = {"id": "post-1", "template": "top_10"}
         mock_filter.return_value = [due_post]
         mock_run.return_value = [{"id": "post-1", "error": "API down"}]
+        mock_mark_fail.return_value = 1
 
         results = run_poll(str(cal_file))
 
-        mock_mark.assert_not_called()
+        mock_mark_pub.assert_not_called()
+        mock_mark_fail.assert_called_once_with(str(cal_file), "post-1", "API down")
         assert len(results) == 1
 
     @patch("pipeline.scheduler.run_calendar")

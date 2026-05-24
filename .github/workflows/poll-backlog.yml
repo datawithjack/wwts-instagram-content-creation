@@ -41,6 +41,8 @@ jobs:
 
       - name: Publish due posts
         if: steps.check.outputs.has_due == 'true'
+        id: publish
+        continue-on-error: true
         env:
           API_BASE_URL: ${{ secrets.API_BASE_URL }}
           MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
@@ -57,12 +59,18 @@ jobs:
           META_INSTAGRAM_ACCOUNT_ID: ${{ secrets.META_INSTAGRAM_ACCOUNT_ID }}
         run: python schedule.py --calendar content_backlog.yaml --publish poll
 
-      - name: Commit published state
+      - name: Commit backlog state
         if: steps.check.outputs.has_due == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add content_backlog.yaml
-          git diff --cached --quiet || git commit -m "Mark published posts in backlog"
+          git diff --cached --quiet || git commit -m "Update backlog state (published / failure attempts)"
           git pull --rebase
           git push
+
+      - name: Fail workflow if any publish failed
+        if: steps.publish.outcome == 'failure'
+        run: |
+          echo "::error::One or more posts failed to publish. See the 'Publish due posts' step for details."
+          exit 1
