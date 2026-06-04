@@ -344,6 +344,69 @@ posts:
     scheduled_date: "2026-07-24T10:00:00"
     notes: Lina Erpenstein (GER) — 1st, Tenerife 2024; custom photos sail G-3
 
+  # ── 2026 season plan — October: Aloha 2025 podium throwback (build-up to Aloha 2026) ──
+  # 6 posts Mon 19 Oct, reveal 3rd → 1st alternating M/W. Custom photos (@pwaworldtour / @fishbowldiaries).
+  - id: aloha2025-rp-m3
+    template: rider_profile
+    params:
+      event: 134
+      athlete1: 68
+      division: Men
+    caption: "🇧🇷 The Aloha Classic returns to Maui soon — time to revisit last year's men's podium.\n\nStarting at 3rd: Marcílio Browne. The Brazilian powerhouse and Ho'okipa veteran fought his way onto the 2025 podium at one of the most demanding waves in the world. Here's how he earned it.\n\nSwipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @pwaworldtour | @fishbowldiaries"
+    category: seasonal
+    scheduled_date: "2026-10-19T09:00:00"
+    notes: Marcílio Browne (BRA) — 3rd, Aloha Classic 2025 (event 134); custom photos sail BRA-105
+  - id: aloha2025-rp-w3
+    template: rider_profile
+    params:
+      event: 134
+      athlete1: 14
+      division: Women
+    caption: "🇫🇷 The Aloha Classic is almost back — let's look back at last year's women's podium.\n\nStarting at 3rd: France's Lisa Wermeister, continuing her rise with a podium finish at the iconic Ho'okipa in 2025. Here's how she earned her place.\n\nSwipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @pwaworldtour | @fishbowldiaries"
+    category: seasonal
+    scheduled_date: "2026-10-19T09:30:00"
+    notes: Lisa Wermeister (FRA) — 3rd, Aloha Classic 2025 (event 134); custom cover sail F-293, no headshot (thumb falls back to API photo)
+  - id: aloha2025-rp-m2
+    template: rider_profile
+    params:
+      event: 134
+      athlete1: 45
+      division: Men
+    caption: "🇺🇸 Aloha Classic throwback — last year's men's podium, continued.\n\nIn 2nd: Maui's own Bernd Roediger, one of the most stylish sailors on tour, pushing the world's best all the way at Ho'okipa. Here's his 2025 run in full.\n\nSwipe for the breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @pwaworldtour | @fishbowldiaries"
+    category: seasonal
+    scheduled_date: "2026-10-19T10:00:00"
+    notes: Bernd Roediger (USA) — 2nd, Aloha Classic 2025 (event 134); custom photos sail US-1113
+  - id: aloha2025-rp-w2
+    template: rider_profile
+    params:
+      event: 134
+      athlete1: 92
+      division: Women
+    caption: "🇺🇸 Aloha Classic throwback — the 2025 women's podium, continued.\n\nIn 2nd: Angela Cochran, sailing strong at Ho'okipa to secure her spot on the podium against a world-class field. Here's her 2025 run in full.\n\nSwipe for the breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @pwaworldtour | @fishbowldiaries"
+    category: seasonal
+    scheduled_date: "2026-10-19T10:30:00"
+    notes: Angela Cochran (USA) — 2nd, Aloha Classic 2025 (event 134); custom photos sail US-21
+  - id: aloha2025-rp-m1
+    template: rider_profile
+    params:
+      event: 134
+      athlete1: 52
+      division: Men
+    caption: "🇺🇸 The Aloha Classic is almost back at Ho'okipa — so we're looking back at last year's men's podium.\n\nTopping it: Morgan Noireaux. The Maui local is the master of his home break, and in 2025 he proved it once again with a commanding win. Here's how he did it, heat by heat.\n\nCan anyone stop him on home waters in 2026? Swipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @pwaworldtour | @fishbowldiaries"
+    category: seasonal
+    scheduled_date: "2026-10-19T11:00:00"
+    notes: Morgan Noireaux (USA/HAW) — 1st, Aloha Classic 2025 (event 134); custom photos sail HI-101
+  - id: aloha2025-rp-w1
+    template: rider_profile
+    params:
+      event: 134
+      athlete1: 5
+      division: Women
+    caption: "🇦🇼 Topping the 2025 women's podium at the Aloha Classic: Sarah-Quita Offringa.\n\nThe most decorated sailor in windsurfing added another Ho'okipa win to her legendary record — dominant once again on Maui's waves. Here's her 2025 run, heat by heat.\n\nCan she repeat it in 2026? Swipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @pwaworldtour | @fishbowldiaries"
+    category: seasonal
+    scheduled_date: "2026-10-19T11:30:00"
+    notes: Sarah-Quita Offringa (ARU) — 1st, Aloha Classic 2025 (event 134); custom photos sail ARU-91
+
   # ── Week of April 7 ─────────────────────────────────────────
   # - id:
   #   template:
