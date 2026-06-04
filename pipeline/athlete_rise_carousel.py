@@ -54,7 +54,9 @@ def build_athlete_rise_slides(data: dict) -> list[dict]:
     header = {
         "header_eyebrow": f"ATHLETE PROGRESSION \u00b7 {location.upper()} \u00b7 {year_range}",
         "header_athlete": athlete_name.upper(),
+        "athlete_id": data.get("athlete_id"),
         "athlete_photo_url": data.get("athlete_photo_url", ""),
+        "athlete_thumb_url": data.get("athlete_thumb_url", ""),
         "athlete_initial": athlete_name[0] if athlete_name else "",
     }
 

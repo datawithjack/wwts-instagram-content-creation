@@ -305,6 +305,177 @@ posts:
     published_at: "2026-05-29T10:39:00"
     notes: 12:00 Qatar time (UTC+3) — Coco Foveau rider profile, Fiji 2023 3rd place
 
+  # ── 2026 season plan — June (women focus week) ───────────────
+  - id: sniady-gc-2019-profile
+    template: rider_profile
+    params:
+      event: 83
+      athlete1: 11
+      division: Women
+    caption: "🇵🇱 A throwback to Justyna Śniady's best-ever result in the Canaries — runner-up at Pozo in 2019.\n\nPoland's wave-sailing standout pushed all the way to 2nd at one of the most demanding wave spots on tour. With the Canaries back on the calendar this season, can she go one better in 2026?\n\nSwipe for the full breakdown, heat by heat.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @jcwindsurf | @pwaworldtour"
+    category: seasonal
+    scheduled_date: "2026-06-26T09:00:00"
+    notes: Justyna Śniady (POL) — 2nd place, Pozo/Gran Canaria 2019; women-focus week build-up to GC; custom photos GC19 (@jcwindsurf/@pwaworldtour)
+
+  # ── 2026 season plan — July: TFS 2024 women's podium throwback (build-up to Tenerife) ──
+  # 3 posts Fri 24 Jul, 3rd → 2nd → 1st. Custom photos (@jcwindsurf / @pwaworldtour).
+  - id: tfs2024-throwback-rp-kiefer-3rd
+    template: rider_profile
+    params:
+      event: 25
+      athlete1: 12
+      division: Women
+    caption: "🇪🇸 The tour returns to Tenerife soon — so we're looking back at the last women's podium at El Médano.\n\nStarting at 3rd: Pozo-born Alexia Kiefer Quintana, another step forward for the young Canarian as she pushes toward the front of the fleet. Here's how she earned her place on the 2024 podium.\n\nSwipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @jcwindsurf | @pwaworldtour"
+    category: seasonal
+    scheduled_date: "2026-07-24T09:00:00"
+    notes: Alexia Kiefer Quintana (ESP) — 3rd, Tenerife 2024; custom photos sail E-59
+  - id: tfs2024-throwback-rp-iballa-2nd
+    template: rider_profile
+    params:
+      event: 25
+      athlete1: 178
+      division: Women
+    caption: "🇪🇸 Tenerife throwback — the 2024 women's podium, continued.\n\nCanarian legend Iballa Ruano Moreno took 2nd at El Médano on home waters. One of the most decorated names in women's wave sailing, still battling at the very front. Here's her 2024 run in full.\n\nSwipe for the breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @jcwindsurf | @pwaworldtour"
+    category: seasonal
+    scheduled_date: "2026-07-24T09:30:00"
+    notes: Iballa Ruano Moreno (ESP) — 2nd, Tenerife 2024; custom photos sail E-63
+  - id: tfs2024-throwback-rp-erpenstein-1st
+    template: rider_profile
+    params:
+      event: 25
+      athlete1: 16
+      division: Women
+    caption: "🇩🇪 Topping the last women's podium at El Médano: Lina Erpenstein.\n\nThe German took the win in tricky, gusty Tenerife conditions in 2024 — a standout performance against a stacked field. Here's how she put it together, heat by heat.\n\nCan she repeat it in 2026? Swipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @jcwindsurf | @pwaworldtour"
+    category: seasonal
+    scheduled_date: "2026-07-24T10:00:00"
+    notes: Lina Erpenstein (GER) — 1st, Tenerife 2024; custom photos sail G-3
+
+  # ── 2026 season plan — October: Aloha 2025 podium throwback (build-up to Aloha 2026) ──
+  # 6 posts Mon 19 Oct, reveal 3rd → 1st alternating M/W. Custom photos (@pwaworldtour / @fishbowldiaries).
+  - id: aloha2025-rp-m3
+    template: rider_profile
+    params:
+      event: 134
+      athlete1: 68
+      division: Men
+    caption: "🇧🇷 The Aloha Classic returns to Maui soon — time to revisit last year's men's podium.\n\nStarting at 3rd: Marcílio Browne. The Brazilian powerhouse and Ho'okipa veteran fought his way onto the 2025 podium at one of the most demanding waves in the world. Here's how he earned it.\n\nSwipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @pwaworldtour | @fishbowldiaries"
+    category: seasonal
+    scheduled_date: "2026-10-19T09:00:00"
+    notes: Marcílio Browne (BRA) — 3rd, Aloha Classic 2025 (event 134); custom photos sail BRA-105
+  - id: aloha2025-rp-w3
+    template: rider_profile
+    params:
+      event: 134
+      athlete1: 14
+      division: Women
+    caption: "🇫🇷 The Aloha Classic is almost back — let's look back at last year's women's podium.\n\nStarting at 3rd: France's Lisa Wermeister, continuing her rise with a podium finish at the iconic Ho'okipa in 2025. Here's how she earned her place.\n\nSwipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @pwaworldtour | @fishbowldiaries"
+    category: seasonal
+    scheduled_date: "2026-10-19T09:30:00"
+    notes: Lisa Wermeister (FRA) — 3rd, Aloha Classic 2025 (event 134); custom cover sail F-293, no headshot (thumb falls back to API photo)
+  - id: aloha2025-rp-m2
+    template: rider_profile
+    params:
+      event: 134
+      athlete1: 45
+      division: Men
+    caption: "Aloha Classic throwback — last year's men's podium, continued.\n\nIn 2nd: Maui's own Bernd Roediger, one of the most stylish sailors on tour, pushing the world's best all the way at Ho'okipa. Here's his 2025 run in full.\n\nSwipe for the breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @pwaworldtour | @fishbowldiaries"
+    category: seasonal
+    scheduled_date: "2026-10-19T10:00:00"
+    notes: Bernd Roediger (USA) — 2nd, Aloha Classic 2025 (event 134); custom photos sail US-1113
+  - id: aloha2025-rp-w2
+    template: rider_profile
+    params:
+      event: 134
+      athlete1: 92
+      division: Women
+    caption: "Aloha Classic throwback — the 2025 women's podium, continued.\n\nIn 2nd: Angela Cochran, sailing strong at Ho'okipa to secure her spot on the podium against a world-class field. Here's her 2025 run in full.\n\nSwipe for the breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @pwaworldtour | @fishbowldiaries"
+    category: seasonal
+    scheduled_date: "2026-10-19T10:30:00"
+    notes: Angela Cochran (USA) — 2nd, Aloha Classic 2025 (event 134); custom photos sail US-21
+  - id: aloha2025-rp-m1
+    template: rider_profile
+    params:
+      event: 134
+      athlete1: 52
+      division: Men
+    caption: "The Aloha Classic is almost back at Ho'okipa — so we're looking back at last year's men's podium.\n\nTopping it: Morgan Noireaux. The Maui local is the master of his home break, and in 2025 he proved it once again with a commanding win. Here's how he did it, heat by heat.\n\nCan anyone stop him on home waters in 2026? Swipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @pwaworldtour | @fishbowldiaries"
+    category: seasonal
+    scheduled_date: "2026-10-19T11:00:00"
+    notes: Morgan Noireaux (USA/HAW) — 1st, Aloha Classic 2025 (event 134); custom photos sail HI-101
+  - id: aloha2025-rp-w1
+    template: rider_profile
+    params:
+      event: 134
+      athlete1: 5
+      division: Women
+    caption: "🇦🇼 Topping the 2025 women's podium at the Aloha Classic: Sarah-Quita Offringa.\n\nThe most decorated sailor in windsurfing added another Ho'okipa win to her legendary record — dominant once again on Maui's waves. Here's her 2025 run, heat by heat.\n\nCan she repeat it in 2026? Swipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @pwaworldtour | @fishbowldiaries"
+    category: seasonal
+    scheduled_date: "2026-10-19T11:30:00"
+    notes: Sarah-Quita Offringa (ARU) — 1st, Aloha Classic 2025 (event 134); custom photos sail ARU-91
+
+  # ── 2026 season plan — November: Chile 2025 podium throwback (build-up to Chile finale) ──
+  # 6 posts Fri 06 Nov, reveal 3rd → 1st alternating M/W. Custom photos (@pwaworldtour).
+  - id: chile2025-rp-m3
+    template: rider_profile
+    params:
+      event: 133
+      athlete1: 63
+      division: Men
+    caption: "🇫🇷 The Chile finale is almost here — let's look back at last year's men's podium.\n\nStarting at 3rd: France's Baptiste Cloarec, sailing with real flair in the powerful Chilean waves to claim his spot on the 2025 podium. Here's how he earned it.\n\nSwipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @pwaworldtour"
+    category: seasonal
+    scheduled_date: "2026-11-06T09:00:00"
+    notes: Baptiste Cloarec (FRA) — 3rd, Chile 2025 (event 133); custom cover sail F-258, no headshot (thumb → API photo)
+  - id: chile2025-rp-w3
+    template: rider_profile
+    params:
+      event: 133
+      athlete1: 5
+      division: Women
+    caption: "🇦🇼 The season finale returns to Chile soon — time to revisit last year's women's podium.\n\nStarting at 3rd: the legendary Sarah-Quita Offringa, adding another World Cup podium to her record in the powerful Chilean waves. Here's how she did it.\n\nSwipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @pwaworldtour"
+    category: seasonal
+    scheduled_date: "2026-11-06T09:30:00"
+    notes: Sarah-Quita Offringa (ARU) — 3rd, Chile 2025 (event 133); custom photos sail ARU-91
+  - id: chile2025-rp-m2
+    template: rider_profile
+    params:
+      event: 133
+      athlete1: 97
+      division: Men
+    caption: "🇪🇸 Chile throwback — last year's men's podium, continued.\n\nIn 2nd: Spain's Marc Paré, pushing hard in the Matanzas swell to land on the podium against a stacked fleet. Here's his 2025 run in full.\n\nSwipe for the breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @pwaworldtour"
+    category: seasonal
+    scheduled_date: "2026-11-06T10:00:00"
+    notes: Marc Paré Rico (ESP) — 2nd, Chile 2025 (event 133); custom cover sail E-334, no headshot (thumb → API photo)
+  - id: chile2025-rp-w2
+    template: rider_profile
+    params:
+      event: 133
+      athlete1: 12
+      division: Women
+    caption: "🇪🇸 Chile throwback — the 2025 women's podium, continued.\n\nIn 2nd: Pozo-born Alexia Kiefer Quintana, the young Canarian continuing her rise with a strong showing in the Chilean swell. Here's her 2025 run in full.\n\nSwipe for the breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @pwaworldtour"
+    category: seasonal
+    scheduled_date: "2026-11-06T10:30:00"
+    notes: Alexia Kiefer Quintana (ESP) — 2nd, Chile 2025 (event 133); custom photos sail E-59
+  - id: chile2025-rp-m1
+    template: rider_profile
+    params:
+      event: 133
+      athlete1: 68
+      division: Men
+    caption: "🇧🇷 The tour heads back to Chile for the season finale soon — so we're revisiting last year's men's podium.\n\nTopping it: Marcílio Browne. The Brazilian was untouchable in the powerful Chilean waves, taking the win in style. Here's how he did it, heat by heat.\n\nSwipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @pwaworldtour"
+    category: seasonal
+    scheduled_date: "2026-11-06T11:00:00"
+    notes: Marcílio Browne (BRA) — 1st, Chile 2025 (event 133); custom photos sail BRA-105
+  - id: chile2025-rp-w1
+    template: rider_profile
+    params:
+      event: 133
+      athlete1: 18
+      division: Women
+    caption: "🇦🇺 Topping the 2025 women's podium in Chile: Australia's Jane Seman.\n\nA standout performance in powerful waves delivered a breakthrough World Cup win. Here's her 2025 run, heat by heat.\n\nCan she do it again in the 2026 finale? Swipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @pwaworldtour"
+    category: seasonal
+    scheduled_date: "2026-11-06T11:30:00"
+    notes: Jane Seman (AUS) — 1st, Chile 2025 (event 133); custom cover sail KA-191, no headshot (thumb → API photo)
+
   # ── Week of April 7 ─────────────────────────────────────────
   # - id:
   #   template:

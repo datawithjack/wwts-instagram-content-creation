@@ -32,38 +32,99 @@ def get_jinja_env() -> Environment:
     return env
 
 
+def _local_photo(athlete_id, suffix: str = "") -> str:
+    """Return the file:// URL for a local photo in assets/photos/ by athlete ID.
+
+    Looks for ``{athlete_id}{suffix}.{ext}`` with ext in order webp, jpg, png.
+    Returns "" when no local file exists. ``suffix`` distinguishes the action
+    photo ("") from the face/headshot ("-face").
+    """
+    if not athlete_id:
+        return ""
+    for ext in ("webp", "jpg", "png"):
+        local = os.path.join(PHOTOS_DIR, f"{athlete_id}{suffix}.{ext}")
+        if os.path.exists(local):
+            return "file:///" + os.path.abspath(local).replace(os.sep, "/")
+    return ""
+
+
+def _subfolder_photo(athlete_id, *parts) -> str:
+    """Return the file:// URL for a local photo under a PHOTOS_DIR subfolder.
+
+    Looks for ``{PHOTOS_DIR}/{parts...}/{athlete_id}.{ext}`` with ext in order
+    webp, jpg, png. Used for ``events/{event_id}/{id}`` (event-specific action
+    shots) and ``faces/{id}`` (generic headshots). Returns "" when none exists.
+    """
+    if not athlete_id:
+        return ""
+    base = os.path.join(PHOTOS_DIR, *(str(p) for p in parts))
+    for ext in ("webp", "jpg", "png"):
+        local = os.path.join(base, f"{athlete_id}.{ext}")
+        if os.path.exists(local):
+            return "file:///" + os.path.abspath(local).replace(os.sep, "/")
+    return ""
+
+
 def resolve_photo_override(athlete_id, current_url: str) -> str:
     """Check for a local photo override in assets/photos/ by athlete ID.
 
     Returns the file:// URL if a local file exists, otherwise returns current_url unchanged.
     Checks extensions in order: webp, jpg, png.
     """
-    if not athlete_id:
-        return current_url
-    for ext in ("webp", "jpg", "png"):
-        local = os.path.join(PHOTOS_DIR, f"{athlete_id}.{ext}")
-        if os.path.exists(local):
-            return "file:///" + os.path.abspath(local).replace(os.sep, "/")
-    return current_url
+    return _local_photo(athlete_id) or current_url
+
+
+def resolve_action_url(athlete_id, event_id, current_url: str) -> str:
+    """Resolve the full-bleed cover action photo for a single athlete.
+
+    Action shots are event-specific (sail number, kit, conditions, year all
+    change per event), so resolution prefers an event-keyed photo. Chain:
+    ``events/{event_id}/{id}`` → legacy flat ``{id}`` → ``current_url``.
+
+    Deliberately does NOT fall back to a headshot — a tight face crop must
+    never be used as the full-bleed cover. When nothing resolves the result is
+    "" (or the empty API url), so the caller renders the plain (non-photo) cover.
+    """
+    if event_id:
+        event_photo = _subfolder_photo(athlete_id, "events", event_id)
+        if event_photo:
+            return event_photo
+    return _local_photo(athlete_id) or current_url
+
+
+def resolve_thumb_url(athlete_id, current_url: str) -> str:
+    """Resolve the small square thumbnail (headshot) for data slides.
+
+    Headshots are athlete-level (a face is timeless), so resolution is not
+    event-keyed. Chain: ``faces/{id}`` → legacy flat ``{id}`` → ``current_url``.
+    """
+    return _subfolder_photo(athlete_id, "faces") or _local_photo(athlete_id) or current_url
 
 
 def _apply_photo_overrides(data: dict) -> None:
     """Apply local photo overrides to template data dict (mutates in place).
 
-    Checks these athlete ID → photo URL mappings:
-    - athlete_1_id → athlete_1_photo_url (H2H)
-    - athlete_2_id → athlete_2_photo_url (H2H)
-    - athlete_id → athlete_photo_url (rider profile, athlete rise)
+    H2H athletes (athlete_1_id / athlete_2_id) use the generic flat override.
+
+    The single-athlete case (athlete_id, rider profile / athlete rise) is
+    event-aware: the cover action photo resolves via ``resolve_action_url``
+    (event-specific → flat → API), while a separate square thumbnail
+    (athlete_thumb_url) resolves via ``resolve_thumb_url`` (headshot → flat →
+    API). The thumb chain reads the original API url, NOT the resolved cover.
     """
-    mappings = [
+    for id_key, photo_key in (
         ("athlete_1_id", "athlete_1_photo_url"),
         ("athlete_2_id", "athlete_2_photo_url"),
-        ("athlete_id", "athlete_photo_url"),
-    ]
-    for id_key, photo_key in mappings:
+    ):
         aid = data.get(id_key)
         if aid:
             data[photo_key] = resolve_photo_override(aid, data.get(photo_key, ""))
+
+    aid = data.get("athlete_id")
+    if aid:
+        api_url = data.get("athlete_photo_url", "")
+        data["athlete_photo_url"] = resolve_action_url(aid, data.get("event_id"), api_url)
+        data["athlete_thumb_url"] = resolve_thumb_url(aid, api_url)
 
 
 def render_template(template_name: str, data: dict) -> str:
@@ -89,7 +150,7 @@ def render_template(template_name: str, data: dict) -> str:
     _apply_photo_overrides(data)
 
     # Resolve athlete photo paths to file:// URLs
-    for key in ("athlete_1_photo_url", "athlete_2_photo_url", "athlete_photo_url"):
+    for key in ("athlete_1_photo_url", "athlete_2_photo_url", "athlete_photo_url", "athlete_thumb_url"):
         path = data.get(key, "")
         if path and os.path.exists(path):
             data[key] = "file:///" + os.path.abspath(path).replace(os.sep, "/")

@@ -215,8 +215,8 @@
             <div class="header-athlete">{{ header_athlete }}</div>
         </div>
         <div class="header-photo">
-            {% if athlete_photo_url %}
-            <img src="{{ athlete_photo_url }}" alt="{{ header_athlete }}">
+            {% if athlete_thumb_url or athlete_photo_url %}
+            <img src="{{ athlete_thumb_url or athlete_photo_url }}" alt="{{ header_athlete }}">
             {% else %}
             <div class="photo-placeholder">{{ athlete_initial }}</div>
             {% endif %}
