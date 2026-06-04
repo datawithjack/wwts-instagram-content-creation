@@ -112,6 +112,48 @@ class TestCoverSlide:
         assert cover["placement_ordinal"] == "1st"
 
 
+# ── Event-relative cover photo ───────────────────────────────────────────────
+
+class TestEventRelativeCover:
+    """Cover variant selection now keys on the resolved action photo (filesystem),
+    so local-only event photos trigger rp_cover_photo, and headshots never do."""
+
+    def test_event_id_carried_on_every_slide(self):
+        data = _wave_data()
+        data["athlete_id"] = 178
+        data["event_id"] = 25
+        for slide in build_slides(data):
+            assert slide["event_id"] == 25
+
+    def test_local_event_photo_triggers_photo_cover(self, tmp_path, monkeypatch):
+        """A local events/{event}/{id} photo with an empty API url → rp_cover_photo."""
+        ev = tmp_path / "events" / "25"
+        ev.mkdir(parents=True)
+        (ev / "178.jpg").write_bytes(b"x")
+        monkeypatch.setattr("pipeline.templates.PHOTOS_DIR", str(tmp_path))
+
+        data = _wave_data()
+        data.update({"athlete_id": 178, "event_id": 25, "athlete_photo_url": ""})
+        assert build_slides(data)[0]["type"] == "rp_cover_photo"
+
+    def test_plain_cover_when_no_photo_anywhere(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("pipeline.templates.PHOTOS_DIR", str(tmp_path))
+        data = _wave_data()
+        data.update({"athlete_id": 178, "event_id": 25, "athlete_photo_url": ""})
+        assert build_slides(data)[0]["type"] == "rp_cover"
+
+    def test_face_only_does_not_trigger_photo_cover(self, tmp_path, monkeypatch):
+        """A headshot must not promote the cover to the photo variant."""
+        faces = tmp_path / "faces"
+        faces.mkdir(parents=True)
+        (faces / "178.jpg").write_bytes(b"x")
+        monkeypatch.setattr("pipeline.templates.PHOTOS_DIR", str(tmp_path))
+
+        data = _wave_data()
+        data.update({"athlete_id": 178, "event_id": 25, "athlete_photo_url": ""})
+        assert build_slides(data)[0]["type"] == "rp_cover"
+
+
 # ── Hero Slide (merged with stats) ──────────────────────────────────────────
 
 class TestHeroSlide:
@@ -119,6 +161,12 @@ class TestHeroSlide:
         slides = build_slides(_wave_data())
         hero = slides[1]
         assert "athlete_photo_url" in hero
+
+    def test_hero_has_thumb_key(self):
+        """The face thumbnail source is carried on every slide via common."""
+        slides = build_slides(_wave_data())
+        hero = slides[1]
+        assert "athlete_thumb_url" in hero
 
     def test_hero_has_sail_number(self):
         slides = build_slides(_wave_data())

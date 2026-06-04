@@ -68,8 +68,8 @@
             <div class="slide-title-dimmed">{{ athlete_name | upper }}</div>
         </div>
         <div class="header-photo">
-            {% if athlete_photo_url %}
-            <img src="{{ athlete_photo_url }}" alt="{{ athlete_name }}">
+            {% if athlete_thumb_url or athlete_photo_url %}
+            <img src="{{ athlete_thumb_url or athlete_photo_url }}" alt="{{ athlete_name }}">
             {% else %}
             <div class="photo-placeholder">{{ athlete_name[0] }}</div>
             {% endif %}

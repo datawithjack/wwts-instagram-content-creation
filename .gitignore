@@ -3,7 +3,7 @@ __pycache__/
 *.pyc
 output/png/*
 output/mp4/*
-assets/photos/*
+assets/photos/original/
 .pytest_cache/
 node_modules/
 tmp/

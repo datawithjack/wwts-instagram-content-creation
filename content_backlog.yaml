@@ -299,6 +299,51 @@ posts:
     scheduled_date: "2026-05-29T09:00:00"
     notes: 12:00 Qatar time (UTC+3) — Coco Foveau rider profile, Fiji 2023 3rd place
 
+  # ── 2026 season plan — June (women focus week) ───────────────
+  - id: sniady-gc-2019-profile
+    template: rider_profile
+    params:
+      event: 83
+      athlete1: 11
+      division: Women
+    caption: "🇵🇱 A throwback to Justyna Śniady's best-ever result in the Canaries — runner-up at Pozo in 2019.\n\nPoland's wave-sailing standout pushed all the way to 2nd at one of the most demanding wave spots on tour. With the Canaries back on the calendar this season, can she go one better in 2026?\n\nSwipe for the full breakdown, heat by heat.\n\nFull stats at windsurfworldtourstats.com"
+    category: seasonal
+    scheduled_date: "2026-06-26T09:00:00"
+    notes: Justyna Śniady (POL) — 2nd place, Pozo/Gran Canaria 2019; women-focus week build-up to GC
+
+  # ── 2026 season plan — July: TFS 2024 women's podium throwback (build-up to Tenerife) ──
+  # 3 posts Fri 24 Jul, 3rd → 2nd → 1st. Custom photos (@jcwindsurf / @pwaworldtour).
+  - id: tfs2024-throwback-rp-kiefer-3rd
+    template: rider_profile
+    params:
+      event: 25
+      athlete1: 12
+      division: Women
+    caption: "🇪🇸 The tour returns to Tenerife soon — so we're looking back at the last women's podium at El Médano.\n\nStarting at 3rd: Pozo-born Alexia Kiefer Quintana, another step forward for the young Canarian as she pushes toward the front of the fleet. Here's how she earned her place on the 2024 podium.\n\nSwipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @jcwindsurf | @pwaworldtour"
+    category: seasonal
+    scheduled_date: "2026-07-24T09:00:00"
+    notes: Alexia Kiefer Quintana (ESP) — 3rd, Tenerife 2024; custom photos sail E-59
+  - id: tfs2024-throwback-rp-iballa-2nd
+    template: rider_profile
+    params:
+      event: 25
+      athlete1: 178
+      division: Women
+    caption: "🇪🇸 Tenerife throwback — the 2024 women's podium, continued.\n\nCanarian legend Iballa Ruano Moreno took 2nd at El Médano on home waters. One of the most decorated names in women's wave sailing, still battling at the very front. Here's her 2024 run in full.\n\nSwipe for the breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @jcwindsurf | @pwaworldtour"
+    category: seasonal
+    scheduled_date: "2026-07-24T09:30:00"
+    notes: Iballa Ruano Moreno (ESP) — 2nd, Tenerife 2024; custom photos sail E-63
+  - id: tfs2024-throwback-rp-erpenstein-1st
+    template: rider_profile
+    params:
+      event: 25
+      athlete1: 16
+      division: Women
+    caption: "🇩🇪 Topping the last women's podium at El Médano: Lina Erpenstein.\n\nThe German took the win in tricky, gusty Tenerife conditions in 2024 — a standout performance against a stacked field. Here's how she put it together, heat by heat.\n\nCan she repeat it in 2026? Swipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @jcwindsurf | @pwaworldtour"
+    category: seasonal
+    scheduled_date: "2026-07-24T10:00:00"
+    notes: Lina Erpenstein (GER) — 1st, Tenerife 2024; custom photos sail G-3
+
   # ── Week of April 7 ─────────────────────────────────────────
   # - id:
   #   template:

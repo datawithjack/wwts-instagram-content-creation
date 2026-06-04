@@ -132,6 +132,7 @@ def fetch_athlete_event_stats(event_id: int, athlete_id: int, division: str) -> 
         best_jump = best_jump_raw
 
     data = {
+        "event_id": event_id,
         "athlete_id": athlete_id,
         "athlete_name": athlete.get("name", ""),
         "athlete_country": nationality_to_iso(athlete.get("country", "")) or athlete.get("country_code", ""),

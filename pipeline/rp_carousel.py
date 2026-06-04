@@ -4,6 +4,7 @@ Slides: cover → hero (with stats) → waves → [jumps] → cta
 """
 
 from pipeline.helpers import ordinal
+from pipeline.templates import resolve_action_url
 
 ACCENT_WAVES = "#5AB4CC"
 ACCENT_JUMPS = "#4DA89E"
@@ -37,11 +38,13 @@ def _build_common(data: dict) -> dict:
         "event_date_start": data.get("event_date_start", ""),
         "event_date_end": data.get("event_date_end", ""),
         "event_tier": data.get("event_tier", 0),
+        "event_id": data.get("event_id"),
         "athlete_name": name,
         "athlete_firstname": parts[0].upper() if parts else "",
         "athlete_surname": parts[-1].upper() if parts else "",
         "athlete_id": data.get("athlete_id"),
         "athlete_photo_url": data.get("athlete_photo_url", ""),
+        "athlete_thumb_url": data.get("athlete_thumb_url", ""),
         "athlete_country": data.get("athlete_country", ""),
         "athlete_sail_number": data.get("athlete_sail_number", ""),
     }
@@ -103,9 +106,16 @@ def build_slides(data: dict) -> list[dict]:
 
     slides = []
 
-    # Slide 1: Cover — use photo variant when athlete photo is available
+    # Slide 1: Cover — use photo variant when a cover action photo resolves.
+    # Keys on resolve_action_url (filesystem-aware) so a local-only event/flat
+    # photo triggers rp_cover_photo even with an empty API url. A headshot does
+    # NOT count (it's never used as the full-bleed cover).
     placement = data.get("placement", 0)
-    has_photo = bool(common.get("athlete_photo_url"))
+    has_photo = bool(resolve_action_url(
+        common.get("athlete_id"),
+        common.get("event_id"),
+        common.get("athlete_photo_url", ""),
+    ))
     slides.append({
         "type": "rp_cover_photo" if has_photo else "rp_cover",
         "hide_footer": False,

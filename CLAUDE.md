@@ -102,7 +102,7 @@ python -m pytest tests/ -v
 ## Environment Variables
 See `.env`. Key vars:
 - `API_BASE_URL` — Production API (defaults to `https://api.windsurfworldtourstats.com/api/v1`)
-- `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE` — For top 10 queries
+- `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE` — For top 10 queries. **DB cut over to the JFA Analytics tenant on 2026-05-18** (new password + tunnel target — see Session Progress below). DB-backed templates (`top_10_carousel`, `canary_kings`, `athlete_rise`) only work while the SSH tunnel is up: `ssh -L 3306:10.0.1.240:3306 -i ~/.ssh/ssh-key-2025-08-30.key ubuntu@129.151.141.211`. `rider_profile` + `h2h_carousel` use the API, so they work without the tunnel.
 - `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL` — Cloudflare R2
 - `META_ACCESS_TOKEN`, `META_INSTAGRAM_ACCOUNT_ID` — Meta Graph API publishing
 
@@ -110,6 +110,23 @@ See `.env`. Key vars:
 - Fonts: Bebas Neue (display), Inter (body) — loaded from Google Fonts
 - Colors: see `wwt_instagram_pipeline_plan.md` brand tokens section
 - Output: 1080x1350 portrait (feed), 1080x1080 square (stat of day), 2x DPR
+
+## Session Progress (2026-06-02) — 2026 backlog loading
+Loading `2026_season_content_plan.md` → `content_backlog.yaml`. See `HANDOFF_content_backlog.md` for the full task brief.
+
+**Done this session:**
+- Branch `content-backlog-2026` created off `main` for this work.
+- **DB cutover applied to `.env`** — JFA Analytics tenant (live 2026-05-18). `MYSQL_PASSWORD` → `Windsurf2026!`; `SSH_TUNNEL` target → VM `129.151.141.211`, internal DB `10.0.1.240`. Source of truth: `windsurf-world-tour-stats-app/backend/.env`.
+- **Resolved 2026 event IDs from the API** (the handoff's main blocker): Fiji **205** (Jun 6–14), GC **122** (Jul 4–12), Tenerife **124** (Jul 31–Aug 9), Sylt **126** (Sep 25–Oct 4), Tiree **207** (Oct 10–16), Aloha **128** (Oct 19–30), Chile **132** (Nov 14–29).
+
+**Decisions:**
+- **Focus = rider profiles only.** Skip fantasy announcements. Skip `canary_kings` until its data is extended back to 2005.
+- Workflow: preview → user checks → tick `[x]` in `2026_season_content_plan.md` → add entry to `content_backlog.yaml`. Nothing committed yet.
+
+**Blockers / next session:**
+- `rider_profile` uses the API (no tunnel needed), but the plan's earliest rider profiles are Fiji *recap* posts — Fiji 2026 (event 205) runs Jun 6–14, so podium athlete IDs don't exist yet.
+- Historic-throwback rider profiles still have **year placeholders** (open questions in the plan) to resolve before they're buildable.
+- Pick up by choosing which rider profiles to preview first (historic throwbacks once years are confirmed, or Fiji recap after the event finishes).
 
 ## Next Steps
 1. **Rider profile cover redesign** — Add athlete photo to rider profile cover slide (similar to H2H split-photo cover approach)
