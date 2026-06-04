@@ -407,6 +407,69 @@ posts:
     scheduled_date: "2026-10-19T11:30:00"
     notes: Sarah-Quita Offringa (ARU) — 1st, Aloha Classic 2025 (event 134); custom photos sail ARU-91
 
+  # ── 2026 season plan — November: Chile 2025 podium throwback (build-up to Chile finale) ──
+  # 6 posts Fri 06 Nov, reveal 3rd → 1st alternating M/W. Custom photos (@pwaworldtour).
+  - id: chile2025-rp-m3
+    template: rider_profile
+    params:
+      event: 133
+      athlete1: 63
+      division: Men
+    caption: "🇫🇷 The Chile finale is almost here — let's look back at last year's men's podium.\n\nStarting at 3rd: France's Baptiste Cloarec, sailing with real flair in the powerful Chilean waves to claim his spot on the 2025 podium. Here's how he earned it.\n\nSwipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @pwaworldtour"
+    category: seasonal
+    scheduled_date: "2026-11-06T09:00:00"
+    notes: Baptiste Cloarec (FRA) — 3rd, Chile 2025 (event 133); custom cover sail F-258, no headshot (thumb → API photo)
+  - id: chile2025-rp-w3
+    template: rider_profile
+    params:
+      event: 133
+      athlete1: 5
+      division: Women
+    caption: "🇦🇼 The season finale returns to Chile soon — time to revisit last year's women's podium.\n\nStarting at 3rd: the legendary Sarah-Quita Offringa, adding another World Cup podium to her record in the powerful Chilean waves. Here's how she did it.\n\nSwipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @pwaworldtour"
+    category: seasonal
+    scheduled_date: "2026-11-06T09:30:00"
+    notes: Sarah-Quita Offringa (ARU) — 3rd, Chile 2025 (event 133); custom photos sail ARU-91
+  - id: chile2025-rp-m2
+    template: rider_profile
+    params:
+      event: 133
+      athlete1: 97
+      division: Men
+    caption: "🇪🇸 Chile throwback — last year's men's podium, continued.\n\nIn 2nd: Spain's Marc Paré, pushing hard in the Matanzas swell to land on the podium against a stacked fleet. Here's his 2025 run in full.\n\nSwipe for the breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @pwaworldtour"
+    category: seasonal
+    scheduled_date: "2026-11-06T10:00:00"
+    notes: Marc Paré Rico (ESP) — 2nd, Chile 2025 (event 133); custom cover sail E-334, no headshot (thumb → API photo)
+  - id: chile2025-rp-w2
+    template: rider_profile
+    params:
+      event: 133
+      athlete1: 12
+      division: Women
+    caption: "🇪🇸 Chile throwback — the 2025 women's podium, continued.\n\nIn 2nd: Pozo-born Alexia Kiefer Quintana, the young Canarian continuing her rise with a strong showing in the Chilean swell. Here's her 2025 run in full.\n\nSwipe for the breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @pwaworldtour"
+    category: seasonal
+    scheduled_date: "2026-11-06T10:30:00"
+    notes: Alexia Kiefer Quintana (ESP) — 2nd, Chile 2025 (event 133); custom photos sail E-59
+  - id: chile2025-rp-m1
+    template: rider_profile
+    params:
+      event: 133
+      athlete1: 68
+      division: Men
+    caption: "🇧🇷 The tour heads back to Chile for the season finale soon — so we're revisiting last year's men's podium.\n\nTopping it: Marcílio Browne. The Brazilian was untouchable in the powerful Chilean waves, taking the win in style. Here's how he did it, heat by heat.\n\nSwipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @pwaworldtour"
+    category: seasonal
+    scheduled_date: "2026-11-06T11:00:00"
+    notes: Marcílio Browne (BRA) — 1st, Chile 2025 (event 133); custom photos sail BRA-105
+  - id: chile2025-rp-w1
+    template: rider_profile
+    params:
+      event: 133
+      athlete1: 18
+      division: Women
+    caption: "🇦🇺 Topping the 2025 women's podium in Chile: Australia's Jane Seman.\n\nA standout performance in powerful waves delivered a breakthrough World Cup win. Here's her 2025 run, heat by heat.\n\nCan she do it again in the 2026 finale? Swipe for the full breakdown.\n\nFull stats at windsurfworldtourstats.com\n\n📸 @pwaworldtour"
+    category: seasonal
+    scheduled_date: "2026-11-06T11:30:00"
+    notes: Jane Seman (AUS) — 1st, Chile 2025 (event 133); custom cover sail KA-191, no headshot (thumb → API photo)
+
   # ── Week of April 7 ─────────────────────────────────────────
   # - id:
   #   template:

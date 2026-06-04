@@ -276,9 +276,9 @@
   > 🟠 **BESPOKE** — title-race standings (M) · **Data:** current rankings/scenarios · **Backlog id:** `title-race-men`
 - [ ] **Wed 04 Nov — Title Race, Women** · `bespoke`
   > 🟠 **BESPOKE** — title-race standings (W) · **Backlog id:** `title-race-women`
-- [ ] **Fri 06 Nov — Chile throwback (202X) Top 3 rider profiles (Men & Women)** · `rider` · `rider_profile`
-  `python generate.py --template rider_profile --athlete1 <PODIUM_ATH> --event <CHILE_HIST_ID> --sex Men --dry-run --preview`  *(1st/2nd/3rd × M&W = 6 posts; confirm year)*
-  → backlog: `chile-throwback-rp-m1..m3`, `chile-throwback-rp-w1..w3`
+- [x] **Fri 06 Nov — Chile throwback (2025) Top 3 rider profiles (Men & Women)** — ✅ Chile 2025 (event 133). Men: 1st Browne (68), 2nd Paré (97), 3rd Cloarec (63). Women: 1st Seman (18), 2nd Kiefer (12), 3rd Offringa (5). Custom photos (@pwaworldtour); 6 posts 09:00–11:30, reveal 3rd→1st alternating M/W. No headshots for Cloarec/Paré/Seman (thumb → API photo).
+  `python generate.py --template rider_profile --athlete1 68 --event 133 --division Men --preview`  *(repeat 97/63/18/12/5)*
+  → backlog: `chile2025-rp-m1`, `chile2025-rp-m2`, `chile2025-rp-m3`, `chile2025-rp-w1`, `chile2025-rp-w2`, `chile2025-rp-w3`
 
 ## Week of Sun 08 Nov — 🏆 Chile 5*
 - [ ] **Mon 09 Nov — Chile Top 10 Jump, all time** · `top10` · `top_10_carousel`
