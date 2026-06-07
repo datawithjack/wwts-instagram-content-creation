@@ -10,6 +10,7 @@ from pipeline.h2h_carousel import build_slides as build_h2h_slides
 from pipeline.rp_carousel import build_slides as build_rp_slides
 from pipeline.analysis_carousel import build_canary_kings_slides
 from pipeline.athlete_rise_carousel import build_athlete_rise_slides
+from pipeline.picks_carousel import build_slides as build_picks_slides
 from pipeline.templates import render_template
 
 
@@ -157,6 +158,29 @@ def render_athlete_rise_carousel(
     Returns list of PNG file paths.
     """
     slides = build_athlete_rise_slides(data)
+    os.makedirs(output_dir, exist_ok=True)
+    paths = []
+    for i, slide in enumerate(slides, 1):
+        html = render_template(f"carousel/slide_{slide['type']}", slide)
+        output_path = os.path.join(output_dir, f"{base_name}_{i}.png")
+        render_to_png(html, output_path, width=width, height=height, dpr=dpr)
+        paths.append(output_path)
+    return paths
+
+
+def render_picks_carousel(
+    data: dict,
+    output_dir: str,
+    base_name: str = "event_picks",
+    width: int = 1080,
+    height: int = 1350,
+    dpr: int = 2,
+) -> list[str]:
+    """Render event picks carousel (cover + one slide per pick) into PNGs.
+
+    Returns list of PNG file paths.
+    """
+    slides = build_picks_slides(data)
     os.makedirs(output_dir, exist_ok=True)
     paths = []
     for i, slide in enumerate(slides, 1):

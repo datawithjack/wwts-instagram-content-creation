@@ -28,6 +28,7 @@ def build_caption(
             "rider_profile": _caption_rider_profile,
             "canary_kings": _caption_canary_kings,
             "athlete_rise": _caption_athlete_rise,
+            "event_picks": _caption_event_picks,
         }
         builder = builders.get(template_name, _caption_default)
         body = builder(data, site_url)
@@ -147,6 +148,20 @@ def _caption_athlete_rise(data: dict, site_url: str) -> str:
         f"From {first_year} to {last_year} \u2014 {first_name}\u2019s journey to the top.\n\n"
         f"Can anyone catch them? \U0001f447\n\n"
         f"Full stats \u2192 {site_url}"
+    )
+
+
+def _caption_event_picks(data: dict, site_url: str) -> str:
+    event = data.get("event", {})
+    venue = event.get("venue", "")
+    picks = sorted(data.get("picks", []), key=lambda p: p.get("rank", 0))
+    winner = picks[0]["name"] if picks else "?"
+    return (
+        f"\U0001f3c4‍♂️ My top 4 picks to make the final at {venue}.\n\n"
+        f"Part data, part gut — swipe to see who I’ve got, from 4 down to my pick to win: "
+        f"{winner}.\n\n"
+        f"Who are you backing? Drop your top 4 below \U0001f447\n\n"
+        f"Full stats → {site_url}"
     )
 
 

@@ -43,6 +43,10 @@ templates:
     width: 1080
     height: 1350
     dpr: 2
+  event_picks:
+    width: 1080
+    height: 1350
+    dpr: 2
 
 hashtags:
   head_to_head:
@@ -97,6 +101,12 @@ hashtags:
     - "#PWAWorldTour"
     - "#WindsurfStats"
     - "#Windsurf"
+  event_picks:
+    - "#PWAWorldTour"
+    - "#WindsurfStats"
+    - "#Windsurf"
+    - "#WaveSailing"
+    - "#WindsurfWorldTour"
   default:
     - "#PWAWorldTour"
     - "#WindsurfStats"

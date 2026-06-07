@@ -1,0 +1,53 @@
+{
+  "event": {
+    "name": "Fiji Picks",
+    "venue": "Cloudbreak",
+    "dates": "6–14 Jun 2026",
+    "stars": 4,
+    "tour": "WWT",
+    "mode": "picks",
+    "cover_sub": "My top 4 to make the final at Cloudbreak — one of the best lefthanders on the planet. Down-the-line wave riding, big scores, no room for error."
+  },
+  "picks": [
+    {
+      "rank": 4,
+      "label": null,
+      "name": "Camille Juban",
+      "sail": "GPE-8",
+      "nation": "Guadeloupe",
+      "brand": null,
+      "photo": "assets/picks/camille_juban.jpg",
+      "why": ""
+    },
+    {
+      "rank": 3,
+      "label": null,
+      "name": "Sugi",
+      "sail": "JPN-7",
+      "nation": "Japan",
+      "brand": null,
+      "photo": "assets/picks/sugi.jpg",
+      "why": ""
+    },
+    {
+      "rank": 2,
+      "label": null,
+      "name": "Baptiste Cloarec",
+      "sail": "F-258",
+      "nation": "France",
+      "brand": null,
+      "photo": "assets/picks/baptiste_cloarec.jpg",
+      "why": ""
+    },
+    {
+      "rank": 1,
+      "label": "Pick to Win",
+      "name": "Robby Swift",
+      "sail": "K-89",
+      "nation": "British",
+      "brand": null,
+      "photo": "assets/picks/robby_swift.jpg",
+      "why": ""
+    }
+  ]
+}

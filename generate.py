@@ -17,7 +17,7 @@ from pipeline.db import run_query
 from pipeline.helpers import nationality_to_iso, clean_event_name, heat_label_from_id, short_round_name
 from pipeline.queries import build_top10_query, build_canary_kings_query, build_athlete_rise_query
 from pipeline.templates import render_template, get_dummy_data
-from pipeline.renderer import render_to_png, render_to_video, render_carousel, render_h2h_carousel, render_rp_carousel, render_analysis_carousel, render_athlete_rise_carousel
+from pipeline.renderer import render_to_png, render_to_video, render_carousel, render_h2h_carousel, render_rp_carousel, render_analysis_carousel, render_athlete_rise_carousel, render_picks_carousel
 
 
 def fetch_live_data(template_name: str, args) -> dict:
@@ -210,6 +210,13 @@ def fetch_live_data(template_name: str, args) -> dict:
             "yearly_data": yearly_data,
         }
 
+    if template_name == "event_picks":
+        if not args.picks_data:
+            print("Event picks requires: --picks-data <path to JSON> (or use --dry-run)")
+            sys.exit(1)
+        from pipeline.picks_carousel import load_picks_data
+        return load_picks_data(args.picks_data)
+
     print(f"Live data not implemented for template: {template_name}")
     sys.exit(1)
 
@@ -225,7 +232,7 @@ def main():
     parser.add_argument(
         "--template",
         required=True,
-        choices=["head_to_head", "head_to_head_jump", "h2h_carousel", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile", "canary_kings", "athlete_rise", "fantasy_league_announce"],
+        choices=["head_to_head", "head_to_head_jump", "h2h_carousel", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile", "canary_kings", "athlete_rise", "fantasy_league_announce", "event_picks"],
     )
     parser.add_argument("--athlete1", type=int, help="Athlete 1 unified ID")
     parser.add_argument("--athlete2", type=int, help="Athlete 2 unified ID")
@@ -233,6 +240,7 @@ def main():
     parser.add_argument("--division", choices=["Men", "Women"], help="Division for H2H")
     parser.add_argument("--sex", choices=["Men", "Women"], help="Sex filter for top 10 / athlete rise")
     parser.add_argument("--location", help="Location pattern for athlete rise (e.g. 'Gran Canaria')")
+    parser.add_argument("--picks-data", help="Path to event picks JSON file (event_picks template)")
     parser.add_argument("--score-type", choices=["Wave", "Jump"], help="Score type for top 10")
     parser.add_argument("--year", type=int, help="Year filter for top 10")
     parser.add_argument("--day", type=int, help="Day number for daily top 10 label (e.g. 1, 2, 3)")
@@ -288,7 +296,7 @@ def main():
     if getattr(args, "finals_day", False):
         data["finals_day"] = True
 
-    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "h2h_carousel", "rider_profile", "canary_kings", "athlete_rise")
+    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "h2h_carousel", "rider_profile", "canary_kings", "athlete_rise", "event_picks")
 
     # Carousel preview: open all slides in browser tabs
     if is_carousel and args.preview:
@@ -306,6 +314,9 @@ def main():
         elif template_name == "athlete_rise":
             from pipeline.athlete_rise_carousel import build_athlete_rise_slides
             slides = build_athlete_rise_slides(data)
+        elif template_name == "event_picks":
+            from pipeline.picks_carousel import build_slides as build_picks_slides
+            slides = build_picks_slides(data)
         else:
             from pipeline.carousel import build_slides
             slides = build_slides(data)
@@ -372,6 +383,12 @@ def main():
             result_paths = render_athlete_rise_carousel(
                 data, carousel_dir,
                 base_name=f"athlete_rise_{timestamp}",
+                width=width, height=height, dpr=dpr,
+            )
+        elif template_name == "event_picks":
+            result_paths = render_picks_carousel(
+                data, carousel_dir,
+                base_name=f"event_picks_{timestamp}",
                 width=width, height=height, dpr=dpr,
             )
         else:

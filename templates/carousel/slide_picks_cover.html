@@ -1,0 +1,108 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: flex-start;
+        justify-content: flex-end;
+        text-align: left;
+        padding: 0 72px 110px;
+        gap: 0;
+    }
+
+    /* ── Mode eyebrow ── */
+    .picks-eyebrow {
+        font-family: var(--font-body);
+        font-size: 30px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: var(--color-discipline);
+        margin-bottom: 18px;
+    }
+
+    /* ── Big "OUR PICKS" title ── */
+    .picks-title {
+        font-family: var(--font-display);
+        font-size: 230px;
+        letter-spacing: -0.01em;
+        line-height: 0.84;
+        color: var(--color-text-primary);
+        margin-bottom: 28px;
+    }
+
+    .picks-title .accent {
+        color: var(--color-discipline);
+    }
+
+    /* ── Event line ── */
+    .picks-event {
+        font-family: var(--font-display);
+        font-size: 76px;
+        letter-spacing: 0.02em;
+        line-height: 1.0;
+        color: var(--color-text-primary);
+        margin-bottom: 14px;
+    }
+
+    .picks-meta {
+        font-family: var(--font-body);
+        font-size: 28px;
+        font-weight: 500;
+        letter-spacing: 0.05em;
+        color: var(--color-text-muted);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 36px;
+    }
+
+    .picks-meta .stars {
+        color: var(--color-gold);
+        letter-spacing: 0.1em;
+    }
+
+    .meta-sep { color: rgba(255,255,255,0.25); }
+
+    /* ── Intro paragraph ── */
+    .picks-sub {
+        font-family: var(--font-body);
+        font-size: 32px;
+        font-weight: 400;
+        line-height: 1.45;
+        color: rgba(255,255,255,0.82);
+        max-width: 880px;
+    }
+
+    .picks-accent-bar {
+        width: 120px;
+        height: 6px;
+        background: var(--color-discipline);
+        border-radius: 3px;
+        margin-bottom: 34px;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="picks-eyebrow">
+        My top 4 to make the final{% if tour %} &middot; {{ tour }}{% endif %}
+    </div>
+
+    <div class="picks-title">MY<br><span class="accent">PICKS</span></div>
+
+    <div class="picks-accent-bar"></div>
+
+    <div class="picks-event">{{ venue | upper }}</div>
+    <div class="picks-meta">
+        <span>{{ dates }}</span>
+        {% if stars %}
+        <span class="meta-sep">&middot;</span>
+        <span class="stars">{{ '★' * stars }}</span>
+        {% endif %}
+    </div>
+
+    <div class="picks-sub">{{ cover_sub }}</div>
+</div>
+{% endblock %}

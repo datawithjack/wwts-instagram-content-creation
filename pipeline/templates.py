@@ -401,6 +401,11 @@ def get_dummy_data(template_name: str) -> dict:
                 {"year": 2025, "placement": 3, "best_heat": 27.47, "best_wave": 5.62, "best_jump": 10.00, "best_jump_type": "PF"},
             ],
         }
+    if template_name == "event_picks":
+        from pipeline.picks_carousel import load_picks_data
+        return load_picks_data(
+            os.path.join(os.path.dirname(__file__), "..", "data", "picks", "fiji.json")
+        )
     if template_name == "rider_profile":
         return {
             "athlete_name": "Marc Pare Rico",

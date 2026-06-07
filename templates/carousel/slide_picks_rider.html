@@ -1,0 +1,252 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        padding: 0;
+        gap: 0;
+        position: relative;
+    }
+
+    {% if is_winner %}
+    /* Winner override — gold accent instead of the discipline accent. */
+    .rider--winner {
+        --color-discipline: {{ winner_color }};
+    }
+    {% endif %}
+
+    /* ── Top-bleed hero photo (dissolves into the solid block below) ── */
+    .hero {
+        position: relative;
+        width: 100%;
+        height: 840px;
+        flex-shrink: 0;
+        overflow: hidden;
+        background: var(--color-bg-card);
+    }
+
+    .hero img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center 35%;
+        display: block;
+    }
+
+    /* Top scrim (event context legibility) + bottom fade fully to navy
+       so the photo blends seamlessly into the solid block beneath it. */
+    .hero::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+            to bottom,
+            rgba(10, 14, 26, 0.55) 0%,
+            rgba(10, 14, 26, 0.10) 15%,
+            rgba(10, 14, 26, 0.00) 45%,
+            rgba(10, 14, 26, 0.35) 72%,
+            rgba(10, 14, 26, 0.85) 90%,
+            var(--color-bg) 100%
+        );
+    }
+
+    .photo-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        background:
+            repeating-linear-gradient(
+                45deg,
+                rgba(255,255,255,0.015),
+                rgba(255,255,255,0.015) 14px,
+                transparent 14px,
+                transparent 28px
+            );
+    }
+
+    .photo-placeholder .ph-sail {
+        font-family: var(--font-display);
+        font-size: 130px;
+        line-height: 1;
+        color: rgba(255,255,255,0.22);
+        letter-spacing: 0.02em;
+    }
+
+    .photo-placeholder .ph-note {
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: rgba(255,255,255,0.30);
+    }
+
+    /* ── Event context — top of every slide (share-safe) ── */
+    .event-context {
+        position: absolute;
+        top: 48px;
+        left: 56px;
+        right: 56px;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        font-family: var(--font-body);
+        font-size: 25px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--color-text-primary);
+        text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+    }
+
+    .event-context .ctx-sep { color: rgba(255,255,255,0.45); }
+    .event-context .ctx-stars { color: var(--color-gold); letter-spacing: 0.06em; }
+
+    /* ── Solid colour block — runs flat to the bottom ── */
+    .content {
+        position: relative;
+        z-index: 3;
+        flex: 1;
+        background: var(--color-bg);
+        padding: 44px 56px 80px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .reveal-row {
+        display: flex;
+        align-items: baseline;
+        gap: 22px;
+        margin-bottom: 10px;
+    }
+
+    .reveal-rank {
+        font-family: var(--font-display);
+        font-size: 130px;
+        line-height: 0.8;
+        letter-spacing: -0.02em;
+        color: var(--color-discipline);
+        text-shadow: 0 2px 16px rgba(0,0,0,0.5);
+    }
+
+    .reveal-label {
+        font-family: var(--font-body);
+        font-size: 30px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--color-discipline);
+        padding-bottom: 14px;
+    }
+
+    .rider-name {
+        font-family: var(--font-display);
+        font-size: 110px;
+        line-height: 0.92;
+        letter-spacing: 0.01em;
+        color: var(--color-text-primary);
+        margin-bottom: 14px;
+    }
+
+    .rider-meta {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 14px;
+        font-family: var(--font-body);
+        font-size: 26px;
+        font-weight: 500;
+        color: var(--color-text-muted);
+        margin-bottom: 24px;
+    }
+
+    .rider-meta .flag img {
+        width: 38px;
+        height: auto;
+        border-radius: 3px;
+        display: block;
+    }
+
+    .rider-meta .sail {
+        font-family: var(--font-display);
+        font-size: 34px;
+        letter-spacing: 0.06em;
+        color: var(--color-discipline);
+    }
+
+    .meta-sep { color: rgba(255,255,255,0.22); }
+
+    .rider-why {
+        font-family: var(--font-body);
+        font-size: 32px;
+        font-weight: 400;
+        line-height: 1.45;
+        color: rgba(255,255,255,0.85);
+    }
+
+    .rider-why b {
+        font-weight: 700;
+        color: var(--color-discipline);
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container{% if is_winner %} rider--winner{% endif %}">
+    <div class="hero">
+        {% if has_photo %}
+        <img src="{{ photo_url }}" alt="{{ name }}">
+        {% else %}
+        <div class="photo-placeholder">
+            <div class="ph-sail">{{ sail }}</div>
+            <div class="ph-note">Photo to come</div>
+        </div>
+        {% endif %}
+
+        <div class="event-context">
+            <span>{{ event_name | upper }}</span>
+            {% if venue %}
+            <span class="ctx-sep">&middot;</span>
+            <span>{{ venue | upper }}</span>
+            {% endif %}
+            {% if stars %}
+            <span class="ctx-sep">&middot;</span>
+            <span class="ctx-stars">{{ '★' * stars }}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="reveal-row">
+            <div class="reveal-rank">#{{ rank }}</div>
+            {% if label %}<div class="reveal-label">{{ label }}</div>{% endif %}
+        </div>
+
+        <div class="rider-name" data-autofit>{{ name | upper }}</div>
+
+        <div class="rider-meta">
+            {% if nation_iso %}
+            <span class="flag"><img src="https://flagcdn.com/w40/{{ nation_iso }}.png" alt="{{ nation }}"></span>
+            {% endif %}
+            <span>{{ nation }}</span>
+            {% if sail and sail != '#__' %}
+            <span class="meta-sep">&middot;</span>
+            <span class="sail">{{ sail }}</span>
+            {% endif %}
+            {% if brand %}
+            <span class="meta-sep">&middot;</span>
+            <span>{{ brand }}</span>
+            {% endif %}
+        </div>
+
+        <div class="rider-why">{{ why_html | safe }}</div>
+    </div>
+</div>
+{% include "carousel/_autofit.html" %}
+{% endblock %}
