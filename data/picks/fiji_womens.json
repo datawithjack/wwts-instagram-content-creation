@@ -1,0 +1,55 @@
+{
+  "event": {
+    "name": "Fiji Surf Pro",
+    "venue": "Cloudbreak",
+    "dates": "6-14 Jun 2026",
+    "stars": 4,
+    "tour": "WWT",
+    "category": "Women's",
+    "mode": "picks",
+    "cover_sub": "My top 4 women to make the final at Cloudbreak - one of the best lefthanders on the planet. Down-the-line wave riding, big scores, no room for error.",
+    "photo_credit": "@pwaworldtour | @fishbowldiaries | @jcwindsurf"
+  },
+  "picks": [
+    {
+      "rank": 4,
+      "label": null,
+      "name": "Jessica Crisp",
+      "sail": "AUS-15",
+      "nation": "Australia",
+      "brand": null,
+      "photo": "assets/picks/jessica_crisp.jpg",
+      "why": "The {{2022 Aloha Classic champion}} - and that's just one line on a stacked CV. Tough call to leave her in 4th."
+    },
+    {
+      "rank": 3,
+      "label": null,
+      "name": "Maria Andres",
+      "sail": "E-2",
+      "nation": "Spain",
+      "brand": null,
+      "photo": "assets/picks/maria_andres.jpg",
+      "why": "5th here in Fiji last time out, and 4th at Margaret River this year - {{right behind our top two}}."
+    },
+    {
+      "rank": 2,
+      "label": null,
+      "name": "Sarah Kenyon",
+      "sail": "AUS-09",
+      "nation": "Australia",
+      "brand": null,
+      "photo": "assets/picks/sarah_kenyon.jpg",
+      "why": "{{Beat Jane Seman}} in the Margaret River final earlier this year - arrives with the upper hand."
+    },
+    {
+      "rank": 1,
+      "label": "Pick to Win",
+      "name": "Jane Seman",
+      "sail": "KA-191",
+      "nation": "Australia",
+      "brand": null,
+      "photo": "assets/picks/jane_seman.jpg",
+      "why": "If Cloudbreak turns on big - and it looks like it will - we don't see {{anyone getting close}}. Out to level the score with Sarah after Margaret River."
+    }
+  ]
+}
