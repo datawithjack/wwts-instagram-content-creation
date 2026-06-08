@@ -253,8 +253,20 @@ def fetch_site_stats() -> dict:
 
     result = {}
     for item in raw["stats"]:
-        template_key = metric_map.get(item["metric"])
+        # Normalize metric name: API has used both "total_events" and
+        # "total events" (spaces) over time. Collapse to underscore form.
+        metric = str(item["metric"]).strip().lower().replace(" ", "_")
+        template_key = metric_map.get(metric)
         if template_key:
             result[template_key] = int(item["value"])
+
+    # Guard: never return all-zero/empty stats — that publishes a broken
+    # "0 athletes. 0 scores. 0 events." post. Fail loudly instead.
+    missing = [k for k in metric_map.values() if not result.get(k)]
+    if missing:
+        raise ValueError(
+            f"Site stats API returned no usable values for {missing}. "
+            f"Raw metrics: {[i['metric'] for i in raw['stats']]}"
+        )
 
     return result

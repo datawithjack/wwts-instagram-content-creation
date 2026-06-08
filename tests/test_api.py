@@ -176,6 +176,45 @@ class TestFetchSiteStats:
         call_args = mock_get.call_args
         assert "/stats" in call_args[0][0]
 
+    @patch("pipeline.api.requests.get")
+    def test_raises_when_metrics_unmatched(self, mock_get):
+        # API returns metrics we can't map (e.g. a future rename) -> must not
+        # silently yield zeros that get published. Should raise loudly.
+        mock_get.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "stats": [
+                    {"metric": "something_new", "value": "118"},
+                    {"metric": "another_metric", "value": "359"},
+                ],
+                "generated_at": "2026-06-08T10:00:00Z",
+            },
+        )
+
+        with pytest.raises(ValueError):
+            fetch_site_stats()
+
+    @patch("pipeline.api.requests.get")
+    def test_handles_underscore_metric_names(self, mock_get):
+        # Backwards-compat: older API shape used underscores.
+        mock_get.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "stats": [
+                    {"metric": "total_events", "value": "85"},
+                    {"metric": "total_athletes", "value": "698"},
+                    {"metric": "total_scores", "value": "42221"},
+                ],
+                "generated_at": "2026-06-08T10:00:00Z",
+            },
+        )
+
+        result = fetch_site_stats()
+
+        assert result["events_count"] == 85
+        assert result["athletes_count"] == 698
+        assert result["scores_count"] == 42221
+
 
 def _mock_athlete_stats_response():
     return MagicMock(
