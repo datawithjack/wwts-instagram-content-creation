@@ -154,13 +154,18 @@ def _caption_athlete_rise(data: dict, site_url: str) -> str:
 def _caption_event_picks(data: dict, site_url: str) -> str:
     event = data.get("event", {})
     venue = event.get("venue", "")
+    photo_credit = event.get("photo_credit", "")
+    category = event.get("category", "")
+    cat_str = f"{category.lower()} " if category else ""
     picks = sorted(data.get("picks", []), key=lambda p: p.get("rank", 0))
     winner = picks[0]["name"] if picks else "?"
+    credit_line = f"\U0001f4f8 {photo_credit}\n\n" if photo_credit else ""
     return (
-        f"\U0001f3c4‍♂️ My top 4 picks to make the final at {venue}.\n\n"
-        f"Part data, part gut — swipe to see who I’ve got, from 4 down to my pick to win: "
+        f"\U0001f3c4‍♂️ Our top 4 {cat_str}picks to make the final at {venue}.\n\n"
+        f"Part data, part gut - swipe to see who we’ve got, from 4 down to our pick to win: "
         f"{winner}.\n\n"
         f"Who are you backing? Drop your top 4 below \U0001f447\n\n"
+        f"{credit_line}"
         f"Full stats → {site_url}"
     )
 

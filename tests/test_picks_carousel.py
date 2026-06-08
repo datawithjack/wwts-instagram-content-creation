@@ -75,15 +75,15 @@ class TestSlideStructure:
 
     def test_cover_carries_event_fields(self):
         cover = build_slides(_data())[0]
-        assert cover["event_name"] == "Fiji Picks"
+        assert cover["event_name"] == "Fiji Surf Pro"
         assert cover["venue"] == "Cloudbreak"
-        assert cover["dates"] == "6–14 Jun 2026"
+        assert cover["dates"] == "6-14 Jun 2026"
         assert cover["stars"] == 4
         assert cover["cover_sub"]
 
     def test_rider_carries_event_name_for_context(self):
         slides = build_slides(_data())
-        assert slides[1]["event_name"] == "Fiji Picks"
+        assert slides[1]["event_name"] == "Fiji Surf Pro"
 
 
 # ── Reveal order ────────────────────────────────────────────────────────────────
@@ -139,7 +139,8 @@ class TestRiderFields:
 
     def test_empty_why_is_blank(self):
         # Picks may ship with an empty why (justification added later).
-        assert self._by_rank(1)["why_html"] == ""
+        data = {"event": {}, "picks": [{"rank": 1, "why": ""}]}
+        assert build_slides(data)[1]["why_html"] == ""
 
 
 # ── Photo resolution ─────────────────────────────────────────────────────────────

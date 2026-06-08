@@ -1,12 +1,14 @@
 {
   "event": {
-    "name": "Fiji Picks",
+    "name": "Fiji Surf Pro",
     "venue": "Cloudbreak",
-    "dates": "6–14 Jun 2026",
+    "dates": "6-14 Jun 2026",
     "stars": 4,
     "tour": "WWT",
+    "category": "Men's",
     "mode": "picks",
-    "cover_sub": "My top 4 to make the final at Cloudbreak — one of the best lefthanders on the planet. Down-the-line wave riding, big scores, no room for error."
+    "cover_sub": "My top 4 to make the final at Cloudbreak - one of the best lefthanders on the planet. Down-the-line wave riding, big scores, no room for error.",
+    "photo_credit": "@pwaworldtour | @fishbowldiaries"
   },
   "picks": [
     {
@@ -17,7 +19,7 @@
       "nation": "Guadeloupe",
       "brand": null,
       "photo": "assets/picks/camille_juban.jpg",
-      "why": ""
+      "why": "The 2022 IWT Fiji event winner, with countless {{port-tack down-the-line}} wins under his belt."
     },
     {
       "rank": 3,
@@ -27,7 +29,7 @@
       "nation": "Japan",
       "brand": null,
       "photo": "assets/picks/sugi.jpg",
-      "why": ""
+      "why": "A {{surprise finalist}} here in 2023 - and we reckon he can do it again."
     },
     {
       "rank": 2,
@@ -37,7 +39,7 @@
       "nation": "France",
       "brand": null,
       "photo": "assets/picks/baptiste_cloarec.jpg",
-      "why": ""
+      "why": "Winner here in 2023 and {{simply unstoppable}} when Cloudbreak turns on."
     },
     {
       "rank": 1,
@@ -47,7 +49,7 @@
       "nation": "British",
       "brand": null,
       "photo": "assets/picks/robby_swift.jpg",
-      "why": ""
+      "why": "Third in 2023, and skipping the full 2026 tour - sounds like a {{man on a mission}}."
     }
   ]
 }

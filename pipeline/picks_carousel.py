@@ -85,6 +85,7 @@ def build_slides(data: dict) -> list[dict]:
         "dates": event.get("dates", ""),
         "stars": event.get("stars", 0),
         "tour": event.get("tour", ""),
+        "category": event.get("category", ""),
         "mode": mode,
     }
 

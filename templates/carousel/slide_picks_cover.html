@@ -6,7 +6,7 @@
         align-items: flex-start;
         justify-content: flex-end;
         text-align: left;
-        padding: 0 72px 110px;
+        padding: 0 72px 200px;
         gap: 0;
     }
 
@@ -87,22 +87,24 @@
 {% block carousel_content %}
 <div class="container">
     <div class="picks-eyebrow">
-        My top 4 to make the final{% if tour %} &middot; {{ tour }}{% endif %}
+        {% if category %}{{ category }} {% endif %}top 4 to make the final
     </div>
 
-    <div class="picks-title">MY<br><span class="accent">PICKS</span></div>
+    <div class="picks-title">OUR<br><span class="accent">PICKS</span></div>
 
     <div class="picks-accent-bar"></div>
 
-    <div class="picks-event">{{ venue | upper }}</div>
+    <div class="picks-event">{{ event_name | upper }}</div>
     <div class="picks-meta">
+        {% if venue %}
+        <span>{{ venue }}</span>
+        <span class="meta-sep">&middot;</span>
+        {% endif %}
         <span>{{ dates }}</span>
         {% if stars %}
         <span class="meta-sep">&middot;</span>
         <span class="stars">{{ '★' * stars }}</span>
         {% endif %}
     </div>
-
-    <div class="picks-sub">{{ cover_sub }}</div>
 </div>
 {% endblock %}
