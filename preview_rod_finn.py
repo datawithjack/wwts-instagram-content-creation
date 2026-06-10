@@ -12,10 +12,14 @@ from collections import defaultdict
 from pipeline.db import run_query
 from pipeline.helpers import short_round_name, clean_event_name, nationality_to_iso
 from pipeline.rp_carousel import build_slides
-from pipeline.templates import render_template
+from pipeline.templates import render_template, resolve_action_url
 
 ATHLETE_ID = 35       # Finn Mellon (unified)
 EVENT_ID = 490099     # Fiji 2026 DB pwa_event_id
+
+# Cover resolves to the local folder photo (events/490099/35.jpg) automatically;
+# small headshots fall back to this API headshot (liveheats profile image).
+API_HEADSHOT = "https://liveheats.com/images/e37f51eb-0079-49b2-9280-dbe8ac451b80.webp"
 
 # All Finn Mellon wave scores at Fiji
 rows = run_query(
@@ -63,8 +67,11 @@ data = {
     "athlete_id": ATHLETE_ID,
     "athlete_name": ath["primary_name"],
     "athlete_country": nationality_to_iso(ath["nationality"] or ""),
-    "athlete_photo_url": "",
-    "athlete_sail_number": "",
+    # Pass the API headshot as the source url. render_template's photo override
+    # then resolves: COVER -> local event photo (events/490099/35.jpg, hi-res),
+    # THUMBS -> this API headshot (no local faces/flat photo exists).
+    "athlete_photo_url": API_HEADSHOT,
+    "athlete_sail_number": "IR-7",
     "event_name": clean_event_name(ev["event_name"]),
     "event_country": ev.get("country_code", ""),
     "event_tier": ev.get("stars", 0) or 0,
@@ -84,13 +91,18 @@ data = {
 }
 
 slides = build_slides(data)
-for slide in slides:
-    html = render_template(f"carousel/slide_{slide['type']}", slide)
-    html = html.replace("<body>", '<body style="zoom: 0.5;">')
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".html", delete=False, encoding="utf-8") as f:
-        f.write(html)
-        print(f"Preview: {f.name}")
-        webbrowser.open(f"file:///{f.name.replace(os.sep, '/')}")
 
-print(f"Built {len(slides)} slides for {data['athlete_name']} @ {data['event_name']}")
-print(f"best_heat={best_heat:.2f} ({best_heat_round}) best_wave={best_wave:.2f} avg_wave={avg_wave:.2f}")
+# Cover (full-bleed showcase) uses the high-quality local photo; every small
+# 100x100 header thumbnail (hero/waves/cta) uses the local faces/35 crop.
+# Guarded so `data` can be imported by the publish script without side effects.
+if __name__ == "__main__":
+    for slide in slides:
+        html = render_template(f"carousel/slide_{slide['type']}", slide)
+        html = html.replace("<body>", '<body style="zoom: 0.5;">')
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".html", delete=False, encoding="utf-8") as f:
+            f.write(html)
+            print(f"Preview: {f.name}")
+            webbrowser.open(f"file:///{f.name.replace(os.sep, '/')}")
+
+    print(f"Built {len(slides)} slides for {data['athlete_name']} @ {data['event_name']}")
+    print(f"best_heat={best_heat:.2f} ({best_heat_round}) best_wave={best_wave:.2f} avg_wave={avg_wave:.2f}")
