@@ -100,6 +100,9 @@ def short_round_name(round_name: str) -> str:
     m = re.match(r"^Round\s+(\d+)$", round_name, re.IGNORECASE)
     if m:
         return f"R{m.group(1)}"
+    m = re.match(r"^RUN[_\s]+(\d+)$", round_name, re.IGNORECASE)
+    if m:
+        return f"Run {m.group(1)}"
     abbrevs = {
         "final": "Final",
         "semifinal": "SF",

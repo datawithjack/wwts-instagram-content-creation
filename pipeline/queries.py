@@ -154,6 +154,7 @@ def build_top10_query(
     year: int = None,
     event_id: int = None,
     rounds: list[str] = None,
+    include_non_counting: bool = False,
 ) -> tuple[str, tuple]:
     """Build a top 10 scores query with optional filters.
 
@@ -163,13 +164,16 @@ def build_top10_query(
         year: Filter to a specific year (optional)
         event_id: Filter to a specific event (optional)
         rounds: Filter to specific round names (optional, e.g. ["Final", "R5 B-Final"])
+        include_non_counting: Include scores that didn't count toward the heat
+            total (default False — only counting scores). Use to surface a fuller
+            top 10 from a small heat/round where few scores counted.
 
     Returns:
         (sql, params) tuple ready for db.run_query()
     """
     params = []
 
-    where_clauses = ["s.counting = 1"]
+    where_clauses = [] if include_non_counting else ["s.counting = 1"]
 
     if score_type == "Jump":
         # "Jump" means everything that isn't a Wave score — includes

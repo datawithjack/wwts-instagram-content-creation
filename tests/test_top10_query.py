@@ -83,3 +83,15 @@ class TestBuildTop10Query:
     def test_no_rounds_filter_by_default(self):
         sql, params = build_top10_query(score_type="Wave")
         assert "round_name IN" not in sql
+
+    def test_counting_filter_on_by_default(self):
+        sql, _ = build_top10_query(score_type="Wave")
+        assert "s.counting = 1" in sql
+
+    def test_include_non_counting_drops_counting_filter(self):
+        sql, _ = build_top10_query(score_type="Wave", include_non_counting=True)
+        assert "s.counting = 1" not in sql
+
+    def test_include_non_counting_keeps_type_filter(self):
+        sql, params = build_top10_query(score_type="Wave", include_non_counting=True)
+        assert "Wave" in params

@@ -11,7 +11,23 @@ from pipeline.helpers import (
     compute_deltas,
     format_number,
     country_flag,
+    short_round_name,
 )
+
+
+class TestShortRoundName:
+    def test_round_number(self):
+        assert short_round_name("Round 7") == "R7"
+
+    def test_final(self):
+        assert short_round_name("Final") == "Final"
+
+    def test_run_underscore(self):
+        assert short_round_name("RUN_1") == "Run 1"
+        assert short_round_name("RUN_2") == "Run 2"
+
+    def test_empty(self):
+        assert short_round_name("") == ""
 
 
 class TestOrdinal:

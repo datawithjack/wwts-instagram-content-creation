@@ -22,6 +22,15 @@
 # so there's no final standing). Likely a trimmed rider_profile: cover (no "1ST"
 # placement hero) -> hero/photo -> that day's standout waves/jumps -> CTA.
 # TODO: build as a new template or a `--no-placement` mode on rider_profile.
+#
+# ── REVIEW: surface counting vs non-counting on top 10 posts ───
+# Top 10 carousels now include non-counting wave/jump scores by default (a
+# score that didn't count toward its heat total). The leaderboard does NOT
+# currently indicate which scores counted vs didn't. Decide how (if at all) to
+# show this on-slide — e.g. a small marker/asterisk on non-counting rows, a
+# legend, or leave it implicit. Affects clarity for per-event/per-round posts
+# where many entries are non-counting (see Fiji 2026 Women Day 1/2).
+# TODO: design + implement counting indicator, or decide to omit.
 
 posts:
   # ── Tonight's test batch (March 19) ──────────────────────────

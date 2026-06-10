@@ -94,6 +94,7 @@ def fetch_live_data(template_name: str, args) -> dict:
             year=args.year,
             event_id=args.event,
             rounds=rounds_list,
+            include_non_counting=not getattr(args, "counting_only", False),
         )
         rows = run_query(sql, params)
         gender_map = {"Men": "Men's", "Women": "Women's"}
@@ -246,6 +247,7 @@ def main():
     parser.add_argument("--day", type=int, help="Day number for daily top 10 label (e.g. 1, 2, 3)")
     parser.add_argument("--finals-day", action="store_true", help="Label as Finals Day instead of Day N")
     parser.add_argument("--rounds", help="Comma-separated round names to filter (e.g. 'Final,R5 B-Final')")
+    parser.add_argument("--counting-only", action="store_true", help="Top 10: only scores that counted toward the heat total (default now includes non-counting)")
     parser.add_argument("--mode", help="Variant mode for a template (e.g. 'perfect-10s' for the all-time perfect-10 wave carousel)")
     parser.add_argument("--rider-of-day", action="store_true", help="Rider profile mid-comp variant: no finish position (cover shows 'RIDER OF THE DAY', placing shows TBC)")
     parser.add_argument(
