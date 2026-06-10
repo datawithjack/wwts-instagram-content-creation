@@ -31,6 +31,9 @@ rows = run_query(
 )
 counting = [r for r in rows if r["counting"] == 1]
 
+# Heats sailed so far (distinct heats the rider has competed in, mid-comp)
+heats_sailed = len({r["heat_id"] for r in rows})
+
 # best_heat = max combined counting-wave score within a single heat
 heat_totals = defaultdict(float)
 heat_round = {}
@@ -68,6 +71,7 @@ data = {
     "event_date_start": ev.get("start_date"),
     "event_date_end": ev.get("end_date"),
     "placement": 0,
+    "heats_sailed": heats_sailed,
     "best_heat": best_heat,
     "best_heat_round": best_heat_round,
     "best_wave": best_wave,

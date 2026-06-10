@@ -260,12 +260,15 @@ class TestRiderOfDay:
             assert slide["rider_of_day"] is True
             assert slide["show_placement"] is False
 
-    def test_stats_keep_placing_as_tbc(self):
-        hero = build_slides(self._rod_data())[1]
-        placing = [s for s in hero["stats"] if s.get("is_placing")]
-        assert len(placing) == 1
-        assert placing[0]["label"] == "Placing"
-        assert placing[0]["value"] == "TBC"
+    def test_stats_lead_is_heats_sailed(self):
+        data = self._rod_data()
+        data["heats_sailed"] = 4
+        hero = build_slides(data)[1]
+        lead = [s for s in hero["stats"] if s.get("is_placing")]
+        assert len(lead) == 1
+        assert lead[0]["label"] == "Heats Sailed"
+        assert lead[0]["value"] == "4"
+        assert lead[0]["detail"] == "(so far)"
 
     def test_default_stats_show_placing_ordinal(self):
         hero = build_slides(_wave_data())[1]

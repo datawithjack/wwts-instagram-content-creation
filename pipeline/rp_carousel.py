@@ -67,15 +67,24 @@ def _build_stats(data: dict) -> list[dict]:
     top_jumps = data.get("top_jumps") or []
     best_jump_round = top_jumps[0].get("round", "") if top_jumps else ""
 
-    # Mid-comp "Rider of the Day" posts have no final standing yet — show TBC.
-    placing_value = "TBC" if data.get("rider_of_day") else ordinal(placement)
-    stats = [
-        {
+    # Mid-comp "Rider of the Day" posts have no final standing yet — lead with
+    # "Heats Sailed (so far)" instead of a placement.
+    if data.get("rider_of_day"):
+        lead_stat = {
+            "label": "Heats Sailed",
+            "value": str(data.get("heats_sailed", 0)),
+            "detail": "(so far)",
+            "is_placing": True,
+        }
+    else:
+        lead_stat = {
             "label": "Placing",
-            "value": placing_value,
+            "value": ordinal(placement),
             "detail": "",
             "is_placing": True,
-        },
+        }
+    stats = [
+        lead_stat,
         {
             "label": "Best Heat",
             "value": _fmt_score(data.get("best_heat", 0)),
