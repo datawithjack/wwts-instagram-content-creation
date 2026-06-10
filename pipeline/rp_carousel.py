@@ -31,7 +31,12 @@ def _build_common(data: dict) -> dict:
     is_jump = _has_jump(data)
     name = data.get("athlete_name", "")
     parts = name.split() if name else []
+    rider_of_day = data.get("rider_of_day", False)
     return {
+        "rider_of_day": rider_of_day,
+        "show_placement": not rider_of_day,
+        "day": data.get("day"),
+        "finals_day": data.get("finals_day", False),
         "accent_color": ACCENT_JUMPS if is_jump else ACCENT_WAVES,
         "event_name": data.get("event_name", ""),
         "event_country": data.get("event_country", ""),
@@ -62,10 +67,12 @@ def _build_stats(data: dict) -> list[dict]:
     top_jumps = data.get("top_jumps") or []
     best_jump_round = top_jumps[0].get("round", "") if top_jumps else ""
 
+    # Mid-comp "Rider of the Day" posts have no final standing yet — show TBC.
+    placing_value = "TBC" if data.get("rider_of_day") else ordinal(placement)
     stats = [
         {
             "label": "Placing",
-            "value": ordinal(placement),
+            "value": placing_value,
             "detail": "",
             "is_placing": True,
         },

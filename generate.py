@@ -247,6 +247,7 @@ def main():
     parser.add_argument("--finals-day", action="store_true", help="Label as Finals Day instead of Day N")
     parser.add_argument("--rounds", help="Comma-separated round names to filter (e.g. 'Final,R5 B-Final')")
     parser.add_argument("--mode", help="Variant mode for a template (e.g. 'perfect-10s' for the all-time perfect-10 wave carousel)")
+    parser.add_argument("--rider-of-day", action="store_true", help="Rider profile mid-comp variant: no finish position (cover shows 'RIDER OF THE DAY', placing shows TBC)")
     parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -295,6 +296,10 @@ def main():
         data["day"] = args.day
     if getattr(args, "finals_day", False):
         data["finals_day"] = True
+
+    # Thread --rider-of-day into rider profile data (mid-comp, no placement)
+    if getattr(args, "rider_of_day", False):
+        data["rider_of_day"] = True
 
     is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "h2h_carousel", "rider_profile", "canary_kings", "athlete_rise", "event_picks")
 

@@ -22,7 +22,7 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
-        object-position: center 20%;
+        object-position: center;
     }
 
     /* ── Gradient overlay — deep bottom wash ── */
@@ -65,6 +65,30 @@
         line-height: 1;
         color: var(--color-bg);
         text-transform: uppercase;
+    }
+
+    /* ── Rider of the Day — solid accent pill in place of placement badge ── */
+    .rod-pill {
+        position: absolute;
+        top: 48px;
+        left: 48px;
+        z-index: 3;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 54px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        line-height: 1;
+        text-transform: uppercase;
+        color: var(--color-bg);
+        background: #FFFFFF;
+        border-radius: 18px;
+        /* asymmetric padding pixel-centres the glyph ink: extra top vs bottom
+           offsets the cap-height; extra right vs left offsets the side-bearings */
+        padding: 22px 31px 16px 29px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     }
 
     /* ── Content layer — bottom-heavy ── */
@@ -113,7 +137,7 @@
         letter-spacing: 0.04em;
         line-height: 1.0;
         white-space: nowrap;
-        color: rgba(255,255,255,0.8);
+        color: rgba(255,255,255,0.50);
         text-shadow: 0 2px 12px rgba(0,0,0,0.5);
         margin-bottom: 10px;
     }
@@ -135,11 +159,11 @@
         display: inline-flex;
         align-items: center;
         gap: 4px;
-        background: rgba(240, 192, 64, 0.15);
+        background: none;
         color: var(--color-gold);
-        border-radius: 4px;
-        padding: 2px 10px;
-        font-size: 22px;
+        opacity: 0.6;
+        padding: 0;
+        font-size: 24px;
         font-weight: 700;
         letter-spacing: 0.04em;
     }
@@ -151,25 +175,6 @@
     .meta-sep {
         color: rgba(255,255,255,0.25);
     }
-
-    /* ── Brand watermark override ── */
-    .carousel-footer {
-        position: absolute;
-        bottom: 28px;
-        left: 50%;
-        right: auto;
-        transform: translateX(-50%);
-        font-family: var(--font-body);
-        font-size: 20px;
-        font-weight: 500;
-        color: rgba(255,255,255,0.25);
-        letter-spacing: 0.06em;
-        z-index: 10;
-        background: rgba(255,255,255,0.06);
-        padding: 6px 20px;
-        border-radius: 20px;
-        border-top: 1px solid rgba(255,255,255,0.10);
-    }
 </style>
 {% endblock %}
 
@@ -180,10 +185,14 @@
         <img src="{{ athlete_photo_url }}" alt="{{ athlete_name }}">
     </div>
 
-    <!-- Placement badge — top left -->
+    <!-- Top-left badge: placement, or Rider of the Day pill mid-comp -->
+    {% if show_placement %}
     <div class="placement-badge">
         <span class="placement-text">{{ placement_ordinal }}</span>
     </div>
+    {% elif rider_of_day %}
+    <div class="rod-pill">RIDER OF THE DAY</div>
+    {% endif %}
 
     <!-- Content over photo — bottom-heavy -->
     <div class="content-layer">
@@ -216,7 +225,7 @@
                 {% endif %}
                 {% if event_tier %}
                 <span class="meta-sep">&middot;</span>
-                <span class="tier-pill"><span class="star">★</span> {{ event_tier }}-STAR</span>
+                <span class="tier-pill">{{ '★' * event_tier }}</span>
                 {% endif %}
             </div>
         </div>

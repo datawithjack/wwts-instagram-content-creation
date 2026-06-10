@@ -234,6 +234,71 @@ class TestHeroSlide:
         assert best_heat["detail"] == "Final"
 
 
+# ── Rider of the Day mode (mid-comp, no placement) ──────────────────────────
+
+class TestRiderOfDay:
+    """`rider_of_day=True` drops the finish position everywhere and swaps the
+    cover's placement hero for a 'RIDER OF THE DAY' eyebrow."""
+
+    def _rod_data(self):
+        data = _wave_data()
+        data["rider_of_day"] = True
+        return data
+
+    def test_default_keeps_placement(self):
+        cover = build_slides(_wave_data())[0]
+        assert cover["show_placement"] is True
+        assert cover.get("rider_of_day", False) is False
+
+    def test_cover_hides_placement(self):
+        cover = build_slides(self._rod_data())[0]
+        assert cover["show_placement"] is False
+        assert cover["rider_of_day"] is True
+
+    def test_flag_on_every_slide(self):
+        for slide in build_slides(self._rod_data()):
+            assert slide["rider_of_day"] is True
+            assert slide["show_placement"] is False
+
+    def test_stats_keep_placing_as_tbc(self):
+        hero = build_slides(self._rod_data())[1]
+        placing = [s for s in hero["stats"] if s.get("is_placing")]
+        assert len(placing) == 1
+        assert placing[0]["label"] == "Placing"
+        assert placing[0]["value"] == "TBC"
+
+    def test_default_stats_show_placing_ordinal(self):
+        hero = build_slides(_wave_data())[1]
+        placing = [s for s in hero["stats"] if s.get("is_placing")]
+        assert len(placing) == 1
+        assert placing[0]["value"] == "1st"
+
+    def test_plain_cover_shows_eyebrow_not_placement(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("pipeline.templates.PHOTOS_DIR", str(tmp_path))
+        data = self._rod_data()
+        data.update({"athlete_id": 178, "event_id": 25, "athlete_photo_url": ""})
+        cover = build_slides(data)[0]
+        assert cover["type"] == "rp_cover"
+        html = render_template("carousel/slide_rp_cover", cover)
+        assert "RIDER OF THE DAY" in html
+        # the placement ordinal must not appear as the hero element
+        assert ">1st<" not in html.lower()
+
+    def test_photo_cover_shows_eyebrow_not_badge(self, tmp_path, monkeypatch):
+        ev = tmp_path / "events" / "25"
+        ev.mkdir(parents=True)
+        (ev / "178.jpg").write_bytes(b"x")
+        monkeypatch.setattr("pipeline.templates.PHOTOS_DIR", str(tmp_path))
+        data = self._rod_data()
+        data.update({"athlete_id": 178, "event_id": 25, "athlete_photo_url": ""})
+        cover = build_slides(data)[0]
+        assert cover["type"] == "rp_cover_photo"
+        html = render_template("carousel/slide_rp_cover_photo", cover)
+        assert "RIDER OF THE DAY" in html
+        # the badge div (and its rendered ordinal span) must not be emitted
+        assert 'class="placement-text"' not in html
+
+
 # ── Waves Slide ──────────────────────────────────────────────────────────────
 
 class TestWavesSlide:

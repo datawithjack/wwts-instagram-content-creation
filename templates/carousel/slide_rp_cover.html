@@ -57,6 +57,17 @@
         margin-bottom: 24px;
     }
 
+    /* ── Rider of the Day — eyebrow in place of placement ── */
+    .rod-eyebrow {
+        font-family: var(--font-display);
+        font-size: 96px;
+        letter-spacing: 0.04em;
+        line-height: 1;
+        color: var(--color-discipline);
+        text-transform: uppercase;
+        margin-bottom: 24px;
+    }
+
     /* ── Athlete name block ── */
     .athlete-block {
         display: flex;
@@ -94,8 +105,12 @@
         </div>
     </div>
 
-    <!-- Placement as hero -->
+    <!-- Placement as hero (or Rider of the Day eyebrow mid-comp) -->
+    {% if show_placement %}
     <div class="placement-hero">{{ placement_ordinal }}</div>
+    {% elif rider_of_day %}
+    <div class="rod-eyebrow">RIDER OF THE DAY</div>
+    {% endif %}
 
     <!-- Athlete name stacked -->
     <div class="athlete-block" data-autofit-group>

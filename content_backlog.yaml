@@ -15,6 +15,13 @@
 #   category:       evergreen | seasonal | recurring
 #   scheduled_date: Publish date/time in ISO 8601 UTC (e.g. 2026-03-25T12:00:00) — REQUIRED for scheduling
 #   notes:          Planning notes (not used by scheduler, just for reference)
+#
+# ── TEMPLATE IDEA: "Rider of the Day" (mid-comp) ───────────────
+# A rider_profile variant for use DURING a live event. Highlight a rider we were
+# impressed by on the day, WITHOUT a finish/placement position (event isn't over,
+# so there's no final standing). Likely a trimmed rider_profile: cover (no "1ST"
+# placement hero) -> hero/photo -> that day's standout waves/jumps -> CTA.
+# TODO: build as a new template or a `--no-placement` mode on rider_profile.
 
 posts:
   # ── Tonight's test batch (March 19) ──────────────────────────
