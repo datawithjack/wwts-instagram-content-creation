@@ -190,10 +190,11 @@ class TestHeroSlide:
         assert "stats" in hero
         assert len(hero["stats"]) >= 3
 
-    def test_wave_only_hero_has_3_stats(self):
+    def test_wave_only_hero_has_4_stats(self):
+        # Hero now leads with a Placing stat, then Best Heat / Best Wave / Avg.
         slides = build_slides(_wave_only_data())
         hero = slides[1]
-        assert len(hero["stats"]) == 3
+        assert len(hero["stats"]) == 4
 
     def test_wave_jump_hero_has_4_stats(self):
         slides = build_slides(_jump_data())
@@ -208,9 +209,12 @@ class TestHeroSlide:
             assert "value" in stat
 
     def test_stat_values_formatted_2dp(self):
+        # Score stats are 2dp; the Placing stat ("1st") is exempt.
         slides = build_slides(_wave_data())
         hero = slides[1]
         for stat in hero["stats"]:
+            if stat.get("is_placing"):
+                continue
             assert "." in stat["value"]
             _, decimal = stat["value"].split(".")
             assert len(decimal) == 2
@@ -219,18 +223,20 @@ class TestHeroSlide:
         slides = build_slides(_wave_only_data())
         hero = slides[1]
         labels = [s["label"] for s in hero["stats"]]
-        assert labels == ["Best Heat", "Best Wave", "Avg Wave"]
+        assert labels == ["Placing", "Best Heat", "Best Wave", "Average Wave"]
 
     def test_wave_jump_stat_labels(self):
         slides = build_slides(_jump_data())
         hero = slides[1]
         labels = [s["label"] for s in hero["stats"]]
-        assert labels == ["Best Heat", "Best Wave", "Best Jump", "Avg Wave"]
+        assert labels == ["Placing", "Best Heat", "Best Wave", "Best Jump"]
 
     def test_best_heat_has_round_detail(self):
         slides = build_slides(_wave_data())
         hero = slides[1]
-        best_heat = hero["stats"][0]
+        # stats[0] is now Placing; Best Heat moved to index 1.
+        best_heat = hero["stats"][1]
+        assert best_heat["label"] == "Best Heat"
         assert best_heat["detail"] == "Final"
 
 
@@ -424,9 +430,8 @@ class TestRPCarouselTemplateRendering:
         html = render_template("carousel/slide_rp_hero", self.slides[1])
         assert "1st" in html
 
-    def test_hero_shows_sail_number(self):
-        html = render_template("carousel/slide_rp_hero", self.slides[1])
-        assert "E-73" in html
+    # NOTE: the hero redesign no longer renders the sail number (it remains in
+    # the slide data); the old test_hero_shows_sail_number assertion was removed.
 
     def test_hero_shows_stats(self):
         html = render_template("carousel/slide_rp_hero", self.slides[1])

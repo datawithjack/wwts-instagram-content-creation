@@ -30,7 +30,8 @@ class TestCreateScheduledContainer:
         )
         mock_post.return_value.raise_for_status = MagicMock()
 
-        publish_time = datetime(2026, 4, 1, 9, 0, tzinfo=timezone.utc)
+        # Relative future time so the test doesn't expire on a fixed date.
+        publish_time = datetime.now(timezone.utc) + timedelta(days=30)
         cid = create_scheduled_container(
             "https://example.com/img.png", "My caption", publish_time
         )

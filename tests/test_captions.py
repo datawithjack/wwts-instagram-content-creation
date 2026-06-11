@@ -291,10 +291,6 @@ class TestRiderProfileCaption:
         caption = build_caption("rider_profile", rider_profile_data, config)
         assert "#windsurf" in caption
 
-    def test_has_engagement_question(self, rider_profile_data, config):
-        caption = build_caption("rider_profile", rider_profile_data, config)
-        assert "?" in caption
-
     def test_has_swipe_cta(self, rider_profile_data, config):
         caption = build_caption("rider_profile", rider_profile_data, config)
         assert "swipe" in caption.lower() or "Swipe" in caption

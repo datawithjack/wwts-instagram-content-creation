@@ -132,19 +132,10 @@ class TestRenderTop10PerEvent:
             entry["heat"] = i + 1
         self.html = render_template("top_10", self.data)
 
-    def test_shows_event_header(self):
-        assert "event-title" in self.html
-        assert "GRAN CANARIA" in self.html
-
-    def test_shows_event_meta(self):
-        assert "event-meta" in self.html
-
-    def test_shows_heat_column(self):
-        assert "col-heat" in self.html
-
-    def test_hides_event_column(self):
-        # In per-event mode, should not have the EVENT column
-        assert ">EVENT<" not in self.html
+    # NOTE: Per-event support on the single-page top_10.html (event header,
+    # HEAT column, hidden EVENT column) was removed when per-event top 10s
+    # moved to top_10_carousel. Those assertions were deleted; the carousel's
+    # per-event behaviour is covered in test_carousel.py.
 
     def test_title_no_year(self):
         # Title should be "MEN'S TOP 10 WAVES" without year
@@ -208,36 +199,6 @@ class TestGetDummyData:
             assert "round" in wave
 
 
-class TestRenderRiderProfile:
-    def setup_method(self):
-        self.data = get_dummy_data("rider_profile")
-        self.html = render_template("rider_profile", self.data)
-
-    def test_returns_html_string(self):
-        assert isinstance(self.html, str)
-        assert "<html" in self.html
-
-    def test_contains_athlete_name(self):
-        assert "MARC" in self.html
-        assert "PARE RICO" in self.html
-
-    def test_contains_event_name(self):
-        assert self.data["event_name"].upper() in self.html
-
-    def test_contains_placement_ordinal(self):
-        assert "1st" in self.html
-
-    def test_contains_stat_values(self):
-        assert "16.33" in self.html  # best heat
-        assert "8.83" in self.html   # best wave
-
-    def test_contains_top_waves_table(self):
-        for wave in self.data["top_waves"]:
-            assert f"{wave['score']:.2f}" in self.html
-
-    def test_contains_footer(self):
-        assert "windsurfworldtourstats.com" in self.html.lower()
-
-    def test_contains_brand_fonts(self):
-        assert "Bebas Neue" in self.html
-        assert "Inter" in self.html
+# NOTE: The single-page rider_profile.html template was removed when the
+# rider profile became a carousel (slide_rp_* templates). Its render tests
+# were deleted; carousel rendering is covered in test_rp_carousel.py.

@@ -143,13 +143,13 @@ class TestStatSlides:
         slides = build_slides(_wave_data())
         waves = slides[3]
         labels = [m["label"] for m in waves["metrics"]]
-        assert labels == ["BEST WAVE", "AVG. COUNTING WAVE"]
+        assert labels == ["BEST WAVE", "AVERAGE COUNTING WAVE"]
 
     def test_jump_scores_metrics(self):
         slides = build_slides(_jump_data())
         jumps = slides[4]
         labels = [m["label"] for m in jumps["metrics"]]
-        assert labels == ["BEST JUMP", "AVG. COUNTING JUMP"]
+        assert labels == ["BEST JUMP", "AVERAGE COUNTING JUMP"]
 
 
 # ── Metric Winners ───────────────────────────────────────────────────────────
@@ -372,8 +372,10 @@ class TestH2HCarouselTemplateRendering:
         assert "bar-photo" in html
 
     def test_overview_has_table_rows(self):
+        # Overview was redesigned from "metric-row" to a grid layout with
+        # metric-label / metric-val cells; assert the new metric markup.
         html = render_template("carousel/slide_h2h_stat", self.slides[1])
-        assert "metric-row" in html
+        assert "metric-label" in html
 
     def test_score_slide_has_bars(self):
         html = render_template("carousel/slide_h2h_stat", self.slides[2])
