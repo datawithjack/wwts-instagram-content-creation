@@ -213,6 +213,29 @@ class TestTop10DailyCaption:
         caption = build_caption("top_10_carousel", top10_data, config)
         assert "Day" not in caption
 
+    def test_finals_day_without_day_number_uses_daily_caption(self, top10_data, config):
+        # Finals-day posts set finals_day but no day number; the caption
+        # should still use the event-named daily branch, not the generic one.
+        top10_data["finals_day"] = True
+        top10_data["event_name"] = "Fiji Surf Pro - Cloudbreak"
+        caption = build_caption("top_10_carousel", top10_data, config)
+        assert "Finals Day" in caption
+        assert "Fiji Surf Pro - Cloudbreak" in caption
+
+    def test_daily_caption_avoids_overstating_count(self, top10_data, config):
+        # Small fleets may have fewer than 10 scores; avoid "the 10 best".
+        top10_data["finals_day"] = True
+        top10_data["event_name"] = "Fiji Surf Pro - Cloudbreak"
+        caption = build_caption("top_10_carousel", top10_data, config)
+        assert "10 best" not in caption
+
+    def test_daily_caption_avoids_today(self, top10_data, config):
+        # "today" is time-sensitive; posts may go out later.
+        top10_data["finals_day"] = True
+        top10_data["event_name"] = "Fiji Surf Pro - Cloudbreak"
+        caption = build_caption("top_10_carousel", top10_data, config)
+        assert "today" not in caption.lower()
+
 
 # ── Site Stats caption ──────────────────────────────────────────
 

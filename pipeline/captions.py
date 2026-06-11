@@ -65,13 +65,13 @@ def _caption_top_10(data: dict, site_url: str) -> str:
             f"Full stats \u2192 {site_url}"
         )
 
-    if day:
+    if day or data.get("finals_day"):
         event_name = data.get("event_name", "")
         day_label = "Finals Day" if data.get("finals_day") else f"Day {day}"
         return (
-            f"\U0001f3c6 {day_label} \u2014 the 10 best {gender.lower()} {metric.lower()} at {event_name}.\n\n"
+            f"\U0001f3c6 {day_label} \u2014 the best {gender.lower()} {metric.lower()} at {event_name}.\n\n"
             f"Swipe to see who made the list.\n\n"
-            f"Who impressed you today? \U0001f447\n\n"
+            f"Who impressed you this round? \U0001f447\n\n"
             f"Full leaderboard \u2192 {site_url}"
         )
 
