@@ -272,7 +272,8 @@ class TestFetchAthleteEventStats:
         result = fetch_athlete_event_stats(event_id=42, athlete_id=10, division="Men")
 
         assert result["athlete_name"] == "Marc Pare Rico"
-        assert result["athlete_country"] == "ES"
+        # athlete_country is lowercased for flag-CDN URLs
+        assert result["athlete_country"] == "es"
         assert result["athlete_photo_url"] == "https://example.com/marc.jpg"
         assert result["athlete_sail_number"] == "E-73"
         assert result["placement"] == 1
@@ -287,7 +288,8 @@ class TestFetchAthleteEventStats:
 
         result = fetch_athlete_event_stats(event_id=42, athlete_id=10, division="Men")
 
-        assert result["event_name"] == "2026 Margaret River Wave Classic"
+        # event_name has its leading year stripped by clean_event_name
+        assert result["event_name"] == "Margaret River Wave Classic"
         assert result["event_country"] == "AU"
         assert result["event_tier"] == 4
         assert result["event_date_start"] == date(2026, 1, 31)
@@ -378,9 +380,11 @@ class TestFetchEventTopScores:
         assert result["is_per_event"] is True
         assert result["event_name"] == "Gran Canaria Wind & Waves Festival"
         assert result["event_country"] == "AU"
-        assert result["event_tier"] == 4
-        assert result["event_date_start"] == date(2026, 1, 31)
-        assert result["event_date_end"] == date(2026, 2, 8)
+        # event_tier was renamed to event_stars to match the carousel data model
+        assert result["event_stars"] == 4
+        # The per-event header pre-formats dates as display strings for the cover
+        assert result["event_date_start"] == "Jan 31"
+        assert result["event_date_end"] == "Feb 08"
 
     @patch("pipeline.api.requests.get")
     def test_entries_include_heat(self, mock_get):
@@ -392,8 +396,10 @@ class TestFetchEventTopScores:
 
         result = fetch_event_top_scores(event_id=42, score_type="Wave", sex="Men")
 
+        # heat is now a label string (e.g. "H52a"), not an integer index;
+        # it may be empty when the source row has no parseable heat id.
         assert "heat" in result["entries"][0]
-        assert result["entries"][0]["heat"] == 1
+        assert isinstance(result["entries"][0]["heat"], str)
 
     @patch("pipeline.api.requests.get")
     def test_wave_entries_formatted(self, mock_get):

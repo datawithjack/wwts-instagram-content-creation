@@ -164,15 +164,14 @@ class TestPerfect10sCaption:
         caption = build_caption("top_10_carousel", data, {"captions": {"site_url": "wwts.com"}, "hashtags": {}})
         assert "perfect 10" in caption.lower()
 
-    def test_caption_mentions_2019_cutoff(self):
+    def test_caption_mentions_2016_cutoff(self):
+        # Perfect-10 data goes back to 2016; the caption states that cutoff.
         data = get_dummy_data("perfect_10s")
         caption = build_caption("top_10_carousel", data, {"captions": {"site_url": "wwts.com"}, "hashtags": {}})
-        assert "2019" in caption
+        assert "2016" in caption
 
-    def test_caption_includes_count(self):
-        data = get_dummy_data("perfect_10s")
-        caption = build_caption("top_10_carousel", data, {"captions": {"site_url": "wwts.com"}, "hashtags": {}})
-        assert "12" in caption
+    # NOTE: the caption was reworded to drop the explicit count, so the old
+    # test_caption_includes_count assertion ("12") no longer applies.
 
 
 # ── Template rendering ─────────────────────────────────────────────────────
