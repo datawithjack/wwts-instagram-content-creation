@@ -21,6 +21,22 @@
         background: linear-gradient(to top, rgba(240,192,64,0.08), transparent);
     }
 
+    /* ── Event eyebrow (so a shared slide still names the event) ── */
+    .event-eyebrow {
+        position: absolute;
+        top: 48px;
+        left: 56px;
+        right: 56px;
+        text-align: center;
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgba(255, 255, 255, 0.30);
+        z-index: 1;
+    }
+
     /* ── Gold badge for #1 ── */
     .rank-badge {
         font-family: var(--font-display);
@@ -143,6 +159,9 @@
 
 {% block carousel_content %}
 <div class="container">
+    {% if is_per_event and event_name %}
+    <div class="event-eyebrow">{{ event_name }}{% if day or finals_day %} &middot; {% if finals_day %}FINALS DAY{% else %}DAY {{ day }}{% endif %}{% endif %}</div>
+    {% endif %}
     <div class="rank-badge">BEST {{ title_metric | upper | replace("WAVES", "WAVE") | replace("JUMPS", "JUMP") }} SCORE{% if tie_count >= 2 %}S{% endif %}</div>
 
     <div class="big-score">{{ "%.2f" | format(top_score) }}</div>
