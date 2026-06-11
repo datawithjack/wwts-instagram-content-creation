@@ -12,6 +12,7 @@ from pipeline.helpers import (
     format_number,
     country_flag,
     short_round_name,
+    full_round_name,
 )
 
 
@@ -28,6 +29,30 @@ class TestShortRoundName:
 
     def test_empty(self):
         assert short_round_name("") == ""
+
+
+class TestFullRoundName:
+    def test_keeps_semifinal_unabbreviated(self):
+        assert full_round_name("Semifinal") == "Semifinal"
+
+    def test_keeps_quarterfinal_unabbreviated(self):
+        assert full_round_name("Quarterfinal") == "Quarterfinal"
+
+    def test_titlecases_allcaps_final(self):
+        assert full_round_name("FINAL") == "Final"
+
+    def test_prettifies_run_underscore(self):
+        assert full_round_name("RUN_1") == "Run 1"
+        assert full_round_name("RUN_3") == "Run 3"
+
+    def test_keeps_mixed_case_compound(self):
+        assert full_round_name("R6 Redemption") == "R6 Redemption"
+
+    def test_titlecases_allcaps_round(self):
+        assert full_round_name("ROUND 7") == "Round 7"
+
+    def test_empty(self):
+        assert full_round_name("") == ""
 
 
 class TestOrdinal:

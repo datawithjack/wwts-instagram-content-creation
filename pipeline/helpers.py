@@ -114,6 +114,27 @@ def short_round_name(round_name: str) -> str:
     return abbrevs.get(round_name.strip().lower(), round_name)
 
 
+def full_round_name(round_name: str) -> str:
+    """Full, prettified round name for display (no abbreviation).
+
+    Unlike short_round_name, this keeps names readable in full
+    ('Semifinal', not 'SF') while still tidying machine formats:
+    'RUN_3' -> 'Run 3', 'FINAL' -> 'Final', 'R6 Redemption' unchanged.
+    """
+    if not round_name:
+        return ""
+    import re
+    s = round_name.strip()
+    m = re.match(r"^RUN[_\s]+(\d+)$", s, re.IGNORECASE)
+    if m:
+        return f"Run {m.group(1)}"
+    # Tidy shouty all-caps names (FINAL, ROUND 7) to Title Case; leave
+    # mixed-case compounds like 'R6 Redemption' untouched.
+    if s.isupper():
+        return s.title()
+    return s
+
+
 def country_flag(code: str) -> str:
     """Convert 2-letter country code to flag emoji. e.g. 'ES' -> '🇪🇸'."""
     return "".join(chr(0x1F1E6 + ord(c) - ord("A")) for c in code.upper())

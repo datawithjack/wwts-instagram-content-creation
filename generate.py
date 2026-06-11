@@ -14,7 +14,7 @@ load_dotenv()
 from pipeline.api import fetch_head_to_head, fetch_site_stats, fetch_athlete_event_stats, fetch_event_top_scores
 from pipeline.captions import build_caption
 from pipeline.db import run_query
-from pipeline.helpers import nationality_to_iso, clean_event_name, heat_label_from_id, short_round_name
+from pipeline.helpers import nationality_to_iso, clean_event_name, heat_label_from_id, short_round_name, full_round_name
 from pipeline.queries import build_top10_query, build_canary_kings_query, build_athlete_rise_query
 from pipeline.templates import render_template, get_dummy_data
 from pipeline.renderer import render_to_png, render_to_video, render_carousel, render_h2h_carousel, render_rp_carousel, render_analysis_carousel, render_athlete_rise_carousel, render_picks_carousel
@@ -103,11 +103,9 @@ def fetch_live_data(template_name: str, args) -> dict:
 
         entries = []
         for i, r in enumerate(rows):
-            # Show the full round name (e.g. "Semifinal", not "SF"); only
-            # tidy all-caps names like "FINAL" -> "Final" for consistent casing.
-            round_str = r.get("round", "") or ""
-            if round_str.isupper():
-                round_str = round_str.title()
+            # Show the full round name (e.g. "Semifinal", not "SF"), tidying
+            # machine formats like "RUN_3" -> "Run 3" and "FINAL" -> "Final".
+            round_str = full_round_name(r.get("round", ""))
             heat = heat_label_from_id(r.get("heat_id", ""))
             entry = {
                 "rank": i + 1,
