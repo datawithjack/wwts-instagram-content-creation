@@ -103,6 +103,21 @@
         color: #FFFFFF;
     }
 
+    .athlete-row.non-counting {
+        opacity: 0.5;
+    }
+
+    .hero-footnote {
+        font-family: var(--font-body);
+        font-size: 22px;
+        font-weight: 400;
+        font-style: italic;
+        color: var(--color-text-muted);
+        letter-spacing: 0.04em;
+        text-align: center;
+        position: relative;
+    }
+
     /* ── Single athlete (no tie) — more spacious, centred ── */
     {% if tie_count == 0 %}
     .athlete-row .name {
@@ -134,7 +149,7 @@
 
     <div class="athlete-list">
     {% for row in rows %}
-        <div class="athlete-row">
+        <div class="athlete-row{% if row.counting is defined and not row.counting %} non-counting{% endif %}">
             <div class="flag"><img src="https://flagcdn.com/w80/{{ row.country | lower }}.png" alt="{{ row.country }}"></div>
             <div class="name">{{ row.athlete | upper }}</div>
             {% if show_trick_type and row.trick_type %}
@@ -146,6 +161,10 @@
         </div>
     {% endfor %}
     </div>
+
+    {% if has_non_counting %}
+    <div class="hero-footnote">Dimmed = didn't count toward heat total</div>
+    {% endif %}
 
 </div>
 {% endblock %}

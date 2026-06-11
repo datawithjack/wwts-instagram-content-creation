@@ -44,7 +44,7 @@ def _build_common(data: dict) -> dict:
         "show_trick_type": data.get("show_trick_type", False),
         "day": data.get("day"),
         "finals_day": data.get("finals_day", False),
-        "show_round": bool(data.get("day")),
+        "show_round": bool(data.get("day")) or data.get("finals_day", False),
         "perfect_10s_mode": data.get("perfect_10s_mode", False),
         "show_year_sex": data.get("perfect_10s_mode", False),
         "custom_title": data.get("custom_title", ""),
@@ -128,6 +128,9 @@ def build_slides(data: dict) -> list[dict]:
     """
     rows = data["entries"]
     common = _build_common(data)
+    # Footnote flag: surface the "dimmed = didn't count" note only when at
+    # least one row actually didn't count toward its heat total.
+    common["has_non_counting"] = any(not r.get("counting", 1) for r in rows)
 
     slides = [{"type": "cover", **common}]
     if common["perfect_10s_mode"]:

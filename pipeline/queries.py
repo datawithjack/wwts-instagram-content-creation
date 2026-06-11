@@ -216,6 +216,7 @@ def build_top10_query(
             a.primary_name AS athlete,
             a.nationality AS country,
             s.score,
+            s.counting AS counting,
             {type_col}
             e.event_name AS event,
             hp.round_name AS round,

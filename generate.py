@@ -103,7 +103,11 @@ def fetch_live_data(template_name: str, args) -> dict:
 
         entries = []
         for i, r in enumerate(rows):
-            round_str = short_round_name(r.get("round", ""))
+            # Show the full round name (e.g. "Semifinal", not "SF"); only
+            # tidy all-caps names like "FINAL" -> "Final" for consistent casing.
+            round_str = r.get("round", "") or ""
+            if round_str.isupper():
+                round_str = round_str.title()
             heat = heat_label_from_id(r.get("heat_id", ""))
             entry = {
                 "rank": i + 1,
@@ -113,6 +117,7 @@ def fetch_live_data(template_name: str, args) -> dict:
                 "event": clean_event_name(r["event"]),
                 "round": round_str,
                 "heat": heat,
+                "counting": int(r.get("counting", 1)),
             }
             if is_jump:
                 entry["trick_type"] = r.get("trick_type", "")

@@ -95,6 +95,23 @@
         letter-spacing: 0.04em;
     }
 
+    /* ── Non-counting score: dim the whole row slightly ── */
+    .table-row.non-counting {
+        opacity: 0.5;
+    }
+
+    /* ── Footnote ── */
+    .table-footnote {
+        font-family: var(--font-body);
+        font-size: 22px;
+        font-weight: 400;
+        font-style: italic;
+        color: var(--color-text-muted);
+        letter-spacing: 0.04em;
+        margin-top: 28px;
+        text-align: center;
+    }
+
     /* ── Perfect 10s mode: year column + event meta subtitle ── */
     .col-year {
         width: 110px;
@@ -144,5 +161,9 @@
     {% endif %}
 
     {{ table_component(rows, show_trick_type, is_per_event, '192px', show_round, show_year_sex) }}
+
+    {% if has_non_counting %}
+    <div class="table-footnote">Dimmed = didn't count toward heat total</div>
+    {% endif %}
 </div>
 {% endblock %}

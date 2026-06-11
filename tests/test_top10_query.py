@@ -95,3 +95,10 @@ class TestBuildTop10Query:
     def test_include_non_counting_keeps_type_filter(self):
         sql, params = build_top10_query(score_type="Wave", include_non_counting=True)
         assert "Wave" in params
+
+    def test_selects_counting_flag(self):
+        # Rows must carry the counting flag so the carousel can dim
+        # non-counting scores even when include_non_counting is on.
+        sql, _ = build_top10_query(score_type="Wave", include_non_counting=True)
+        assert "s.counting" in sql.lower()
+        assert "as counting" in sql.lower()
