@@ -27,6 +27,7 @@ def build_caption(
             "site_stats_reel": _caption_site_stats,
             "rider_profile": _caption_rider_profile,
             "canary_kings": _caption_canary_kings,
+            "wave_count": _caption_wave_count,
             "athlete_rise": _caption_athlete_rise,
             "event_picks": _caption_event_picks,
         }
@@ -133,6 +134,27 @@ def _caption_canary_kings(data: dict, site_url: str) -> str:
         f"Since 2016, {king} and {queen} have dominated Gran Canaria and Tenerife.\n\n"
         f"Swipe to see the full rankings. Who\u2019s next? \U0001f447\n\n"
         f"Full stats \u2192 {site_url}"
+    )
+
+
+def _caption_wave_count(data: dict, site_url: str) -> str:
+    def _leaders(rows):
+        if not rows:
+            return "?"
+        top = max(int(r["wave_count"]) for r in rows)
+        names = [r["athlete"] for r in rows if int(r["wave_count"]) == top]
+        if len(names) == 1:
+            return names[0]
+        return " & ".join([", ".join(names[:-1]), names[-1]]) if len(names) > 2 else " & ".join(names)
+
+    king = _leaders(data.get("men", []))
+    queen = _leaders(data.get("women", []))
+    return (
+        f"\U0001f30a Who made the most of Cloudbreak?\n\n"
+        f"Pure wave count — not who won, but who put in the work. "
+        f"{queen} and {king} caught the most waves in Fiji.\n\n"
+        f"(More heats means more waves — swipe for the per-heat numbers too.)\n\n"
+        f"Full stats → {site_url}"
     )
 
 

@@ -492,6 +492,23 @@ posts:
     scheduled_date: "2026-11-06T11:30:00"
     notes: Jane Seman (AUS) — 1st, Chile 2025 (event 133); custom cover sail KA-191, no headshot (thumb → API photo)
 
+  # ── DRAFT (no scheduled_date — poller ignores until scheduled) ──
+  - id: fiji2026-wave-count
+    template: wave_count
+    params:
+      event: 490099
+    category: seasonal
+    notes: >
+      Fun event-wrap stat — who made the most of Cloudbreak (Fiji 2026, DB event
+      490099). 4-slide carousel: cover ("Who made the most of Cloudbreak?") →
+      top WOMAN hero shot → top MAN hero shot → CTA. Each hero = full-bleed action
+      photo, name lower-left, stats beneath (waves caught, heats sailed, per heat).
+      DB-backed: needs the SSH tunnel up to render live. NEEDS PHOTOS: drop a
+      full-bleed action shot for each top rider into
+      assets/photos/events/490099/{athlete_id}.jpg before publishing (else hero
+      falls back to a dark gradient). Add a scheduled_date (ISO UTC) once the event
+      finishes (after Jun 14) and data is final, then push to main to publish.
+
   # ── Week of April 7 ─────────────────────────────────────────
   # - id:
   #   template:
@@ -531,6 +548,9 @@ posts:
 #
 # canary_kings:
 #   (no params — pulls from DB)
+#
+# wave_count:
+#   event: 490099  (DB pwa_event_id — most waves caught at one event, Men + Women in one carousel)
 #
 # athlete_rise:
 #   athlete1: 48

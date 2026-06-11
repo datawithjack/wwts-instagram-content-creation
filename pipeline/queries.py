@@ -238,6 +238,53 @@ def build_top10_query(
     return sql, tuple(params)
 
 
+def build_wave_count_query(
+    sex: str,
+    event_id: int,
+    include_non_counting: bool = True,
+) -> tuple[str, tuple]:
+    """Build a per-athlete wave-count query for a single event.
+
+    Counts how many waves each athlete caught (scored by the judges) at one
+    event — a pure volume / work-rate stat, distinct from placement. Also
+    returns the number of distinct heats sailed so the caller can derive a
+    waves-per-heat figure.
+
+    Args:
+        sex: "Men" or "Women"
+        event_id: DB pwa_event_id to filter to
+        include_non_counting: Count every wave scored, including those that
+            didn't count toward the heat total (default True — "most waves
+            caught" means total volume). Set False to count only counting waves.
+
+    Returns:
+        (sql, params) tuple ready for db.run_query(). Rows carry: athlete,
+        nationality, athlete_id, photo_url, wave_count, heats — ordered by
+        wave_count DESC.
+    """
+    counting_clause = "" if include_non_counting else "\n          AND s.counting = 1"
+
+    sql = f"""
+        SELECT a.primary_name AS athlete,
+               a.nationality,
+               a.id AS athlete_id,
+               a.liveheats_image_url AS photo_url,
+               COUNT(*) AS wave_count,
+               COUNT(DISTINCT s.heat_id) AS heats
+        FROM PWA_IWT_HEAT_SCORES s
+        JOIN ATHLETE_SOURCE_IDS asi
+            ON asi.source = s.source AND asi.source_id = s.athlete_id
+        JOIN ATHLETES a
+            ON a.id = asi.athlete_id
+        WHERE s.type = 'Wave'
+          AND s.pwa_event_id = %s
+          AND s.sex = %s{counting_clause}
+        GROUP BY a.id, a.primary_name, a.nationality, a.liveheats_image_url
+        ORDER BY wave_count DESC, a.primary_name
+    """
+    return sql, (event_id, sex)
+
+
 def build_perfect_10s_wave_query() -> tuple[str, tuple]:
     """Build query for every perfect 10.00 wave score ever scored.
 

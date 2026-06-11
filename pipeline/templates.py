@@ -383,6 +383,26 @@ def get_dummy_data(template_name: str) -> dict:
                 {"athlete": "Lina Erpenstein", "nationality": "Germany", "athlete_id": 16, "wins": 1, "gc_wins": 0, "tf_wins": 1, "photo_url": "https://www.liveheats.com/images/4d2e15d9-b0ab-461e-9b3f-e2f65e4dc541.webp"},
             ],
         }
+    if template_name == "wave_count":
+        return {
+            "event_meta": {"location": "CLOUDBREAK", "event_name": "FIJI Surf Pro - Cloudbreak", "year": 2026, "event_id": 490099, "country": "FJ", "start_date": date(2026, 6, 6), "end_date": date(2026, 6, 14), "stars": 4},
+            "men": [
+                {"athlete": "Marcilio Browne", "nationality": "Brazil", "athlete_id": 68, "wave_count": 47, "heats": 6, "photo_url": "https://www.liveheats.com/images/877ad891-76ec-49fc-8eb6-d9f899293e9f.webp"},
+                {"athlete": "Robby Swift", "nationality": "United Kingdom of Great Britain and Northern Ireland", "athlete_id": 70, "wave_count": 41, "heats": 5, "photo_url": None},
+                {"athlete": "Takuma Sugi", "nationality": "Japan", "athlete_id": 120, "wave_count": 38, "heats": 5, "photo_url": None},
+                {"athlete": "Baptiste Cloarec", "nationality": "France", "athlete_id": 134, "wave_count": 34, "heats": 5, "photo_url": None},
+                {"athlete": "Camille Juban", "nationality": "France", "athlete_id": 88, "wave_count": 29, "heats": 4, "photo_url": None},
+                {"athlete": "Bernd Roediger", "nationality": "United States of America", "athlete_id": 92, "wave_count": 26, "heats": 4, "photo_url": None},
+                {"athlete": "Antoine Martin", "nationality": "France", "athlete_id": 73, "wave_count": 22, "heats": 3, "photo_url": None},
+                {"athlete": "Morgan Noireaux", "nationality": "United States of America", "athlete_id": 75, "wave_count": 18, "heats": 3, "photo_url": None},
+            ],
+            "women": [
+                {"athlete": "Sarah Kenyon", "nationality": "Australia", "athlete_id": 210, "wave_count": 31, "heats": 5, "photo_url": "https://www.liveheats.com/images/7c3df566-6afe-4912-83bf-2b21b73ae490.webp"},
+                {"athlete": "Jane Seman", "nationality": "Australia", "athlete_id": 211, "wave_count": 27, "heats": 5, "photo_url": None},
+                {"athlete": "Maria Andres", "nationality": "Spain", "athlete_id": 212, "wave_count": 22, "heats": 4, "photo_url": None},
+                {"athlete": "Jessica Crisp", "nationality": "Australia", "athlete_id": 213, "wave_count": 16, "heats": 3, "photo_url": None},
+            ],
+        }
     if template_name == "athlete_rise":
         return {
             "title": "THE RISE OF MARINO GIL GHERARDI AT THE GRAN CANARIA WORLD CUP",

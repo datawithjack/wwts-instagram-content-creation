@@ -15,9 +15,9 @@ from pipeline.api import fetch_head_to_head, fetch_site_stats, fetch_athlete_eve
 from pipeline.captions import build_caption
 from pipeline.db import run_query
 from pipeline.helpers import nationality_to_iso, clean_event_name, heat_label_from_id, short_round_name, full_round_name
-from pipeline.queries import build_top10_query, build_canary_kings_query, build_athlete_rise_query
+from pipeline.queries import build_top10_query, build_canary_kings_query, build_athlete_rise_query, build_wave_count_query
 from pipeline.templates import render_template, get_dummy_data
-from pipeline.renderer import render_to_png, render_to_video, render_carousel, render_h2h_carousel, render_rp_carousel, render_analysis_carousel, render_athlete_rise_carousel, render_picks_carousel
+from pipeline.renderer import render_to_png, render_to_video, render_carousel, render_h2h_carousel, render_rp_carousel, render_analysis_carousel, render_athlete_rise_carousel, render_picks_carousel, render_wave_count_carousel
 
 
 def fetch_live_data(template_name: str, args) -> dict:
@@ -179,6 +179,40 @@ def fetch_live_data(template_name: str, args) -> dict:
         women_data = run_query(women_sql, women_params)
         return {"men": men_data, "women": women_data}
 
+    if template_name == "wave_count":
+        if not args.event:
+            print("Wave count requires: --event (DB pwa_event_id)")
+            sys.exit(1)
+        include_non_counting = not getattr(args, "counting_only", False)
+        men_sql, men_params = build_wave_count_query("Men", args.event, include_non_counting)
+        women_sql, women_params = build_wave_count_query("Women", args.event, include_non_counting)
+        men_data = run_query(men_sql, men_params)
+        women_data = run_query(women_sql, women_params)
+        # Event metadata for the cover (name, country, dates, stars) + hero photo
+        event_meta = {"event_id": args.event}
+        event_row = run_query(
+            "SELECT event_name, start_date, end_date, stars, country_code "
+            "FROM PWA_IWT_EVENTS WHERE event_id = %s LIMIT 1",
+            (args.event,),
+        )
+        if event_row:
+            ev = event_row[0]
+            from datetime import date as dt_date
+            event_meta["event_name"] = clean_event_name(ev["event_name"])
+            event_meta["country"] = ev.get("country_code", "")
+            event_meta["stars"] = ev.get("stars", 0)
+            start = ev.get("start_date")
+            end = ev.get("end_date")
+            if isinstance(start, str):
+                start = dt_date.fromisoformat(start)
+            if isinstance(end, str):
+                end = dt_date.fromisoformat(end)
+            event_meta["start_date"] = start
+            event_meta["end_date"] = end
+            if start:
+                event_meta["year"] = start.year
+        return {"men": men_data, "women": women_data, "event_meta": event_meta}
+
     if template_name == "athlete_rise":
         if not all([args.athlete1, args.location, args.sex]):
             print("Athlete rise requires: --athlete1, --location, --sex")
@@ -236,7 +270,7 @@ def main():
     parser.add_argument(
         "--template",
         required=True,
-        choices=["head_to_head", "head_to_head_jump", "h2h_carousel", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile", "canary_kings", "athlete_rise", "fantasy_league_announce", "event_picks"],
+        choices=["head_to_head", "head_to_head_jump", "h2h_carousel", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "fantasy_league_announce", "event_picks"],
     )
     parser.add_argument("--athlete1", type=int, help="Athlete 1 unified ID")
     parser.add_argument("--athlete2", type=int, help="Athlete 2 unified ID")
@@ -306,7 +340,7 @@ def main():
     if getattr(args, "rider_of_day", False):
         data["rider_of_day"] = True
 
-    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "h2h_carousel", "rider_profile", "canary_kings", "athlete_rise", "event_picks")
+    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "h2h_carousel", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "event_picks")
 
     # Carousel preview: open all slides in browser tabs
     if is_carousel and args.preview:
@@ -324,6 +358,9 @@ def main():
         elif template_name == "athlete_rise":
             from pipeline.athlete_rise_carousel import build_athlete_rise_slides
             slides = build_athlete_rise_slides(data)
+        elif template_name == "wave_count":
+            from pipeline.wave_count_carousel import build_wave_count_slides
+            slides = build_wave_count_slides(data["men"], data["women"], data.get("event_meta"))
         elif template_name == "event_picks":
             from pipeline.picks_carousel import build_slides as build_picks_slides
             slides = build_picks_slides(data)
@@ -393,6 +430,13 @@ def main():
             result_paths = render_athlete_rise_carousel(
                 data, carousel_dir,
                 base_name=f"athlete_rise_{timestamp}",
+                width=width, height=height, dpr=dpr,
+            )
+        elif template_name == "wave_count":
+            result_paths = render_wave_count_carousel(
+                data["men"], data["women"], carousel_dir,
+                base_name=f"wave_count_{timestamp}",
+                event_meta=data.get("event_meta"),
                 width=width, height=height, dpr=dpr,
             )
         elif template_name == "event_picks":

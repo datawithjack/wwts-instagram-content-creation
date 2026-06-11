@@ -145,6 +145,32 @@ def render_analysis_carousel(
     return paths
 
 
+def render_wave_count_carousel(
+    men_data: list[dict],
+    women_data: list[dict],
+    output_dir: str,
+    base_name: str = "wave_count",
+    event_meta: dict = None,
+    width: int = 1080,
+    height: int = 1350,
+    dpr: int = 2,
+) -> list[str]:
+    """Render the wave-count carousel into 4 slide PNGs.
+
+    Returns list of PNG file paths.
+    """
+    from pipeline.wave_count_carousel import build_wave_count_slides
+    slides = build_wave_count_slides(men_data, women_data, event_meta)
+    os.makedirs(output_dir, exist_ok=True)
+    paths = []
+    for i, slide in enumerate(slides, 1):
+        html = render_template(f"carousel/slide_{slide['type']}", slide)
+        output_path = os.path.join(output_dir, f"{base_name}_{i}.png")
+        render_to_png(html, output_path, width=width, height=height, dpr=dpr)
+        paths.append(output_path)
+    return paths
+
+
 def render_athlete_rise_carousel(
     data: dict,
     output_dir: str,

@@ -1,0 +1,113 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 60px 48px 64px;
+        gap: 0;
+        position: relative;
+    }
+
+    /* Event info — pinned to the top, dimmed white */
+    .event-block {
+        position: absolute;
+        top: 60px;
+        left: 48px;
+        right: 48px;
+        text-align: center;
+    }
+
+    .event-line {
+        font-family: var(--font-body);
+        font-size: 34px;
+        font-weight: 600;
+        letter-spacing: 0.10em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.55);
+    }
+
+    .event-meta {
+        margin-top: 12px;
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.40);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+    }
+
+    .event-meta .meta-sep { color: rgba(255, 255, 255, 0.22); }
+    .event-meta .stars { color: var(--color-gold); opacity: 0.7; letter-spacing: 0.02em; }
+
+    .cover-title {
+        font-family: var(--font-display);
+        font-size: 150px;
+        letter-spacing: -0.02em;
+        line-height: 0.92;
+        color: #FFFFFF;
+        margin-bottom: 16px;
+    }
+
+    .cover-title .accent {
+        color: {{ bar_color | default('#9478B5') }};
+    }
+
+    .cover-subtitle {
+        font-family: var(--font-body);
+        font-size: 28px;
+        font-weight: 500;
+        color: var(--color-text-muted);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        max-width: 880px;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="event-block">
+        <div class="event-line">{{ event_name }}{% if event_year %} {{ event_year }}{% endif %}</div>
+        <div class="event-meta">
+            {% if event_country %}<span>{{ event_country }}</span>{% endif %}
+            {% if event_date_start and event_date_end %}
+            <span class="meta-sep">&middot;</span>
+            <span>{{ format_date_range(event_date_start, event_date_end) }}</span>
+            {% endif %}
+            {% if event_tier %}
+            <span class="meta-sep">&middot;</span>
+            <span class="stars">{{ '★' * event_tier }}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="cover-title" data-autofit>
+        <span class="accent">WHO MADE</span><br>
+        <span class="accent">THE MOST</span> OF<br>
+        CLOUDBREAK?
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="cover-subtitle">The riders who caught the most waves in Fiji</div>
+</div>
+<script>
+document.fonts.ready.then(() => {
+    document.querySelectorAll('[data-autofit]').forEach(el => {
+        const maxWidth = el.parentElement.offsetWidth;
+        let size = parseInt(getComputedStyle(el).fontSize);
+        while (el.scrollWidth > maxWidth && size > 40) {
+            size -= 4;
+            el.style.fontSize = size + 'px';
+        }
+    });
+});
+</script>
+{% endblock %}
