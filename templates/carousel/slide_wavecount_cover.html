@@ -48,7 +48,7 @@
 
     .cover-title {
         font-family: var(--font-display);
-        font-size: 150px;
+        font-size: 190px;
         letter-spacing: -0.02em;
         line-height: 0.92;
         color: #FFFFFF;
@@ -76,9 +76,7 @@
     <div class="event-block">
         <div class="event-line">{{ event_name }}{% if event_year %} {{ event_year }}{% endif %}</div>
         <div class="event-meta">
-            {% if event_country %}<span>{{ event_country }}</span>{% endif %}
             {% if event_date_start and event_date_end %}
-            <span class="meta-sep">&middot;</span>
             <span>{{ format_date_range(event_date_start, event_date_end) }}</span>
             {% endif %}
             {% if event_tier %}
