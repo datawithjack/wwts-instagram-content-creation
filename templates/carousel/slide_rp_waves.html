@@ -64,7 +64,7 @@
     <!-- Header with rider photo -->
     <div class="header-row">
         <div class="header-text">
-            <div class="eyebrow-dimmed">{{ event_name | upper }}</div>
+            <div class="eyebrow-dimmed">{{ event_name | upper | replace(' - ', ' · ') }}{% if event_date_start %} &middot; {{ event_date_start.year }}{% endif %}</div>
             <div class="slide-title-dimmed">{{ athlete_name | upper }}</div>
         </div>
         <div class="header-photo">

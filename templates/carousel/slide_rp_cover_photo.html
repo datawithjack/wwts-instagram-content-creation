@@ -212,11 +212,9 @@
 
         <!-- Event info -->
         <div class="event-info">
-            <div class="event-name" data-autofit>{{ event_name | upper }}</div>
+            <div class="event-name" data-autofit>{{ event_name | upper | replace(' - ', ' · ') }}</div>
             <div class="event-meta">
-                <span>{{ event_country }}</span>
                 {% if event_date_start and event_date_end %}
-                <span class="meta-sep">&middot;</span>
                 <span>{{ format_date_range(event_date_start, event_date_end) }}</span>
                 {% endif %}
                 {% if event_date_start %}
