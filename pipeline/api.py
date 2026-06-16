@@ -5,7 +5,7 @@ from datetime import date
 import requests
 from dotenv import load_dotenv
 
-from pipeline.helpers import clean_event_name, country_code_to_iso2, heat_label_from_id, nationality_to_iso
+from pipeline.helpers import clean_event_name, country_code_to_iso2, full_round_name, heat_label_from_id, nationality_to_iso
 
 load_dotenv()
 
@@ -98,7 +98,7 @@ def fetch_athlete_event_stats(event_id: int, athlete_id: int, division: str) -> 
     # Top 5 waves sorted desc
     sorted_waves = sorted(wave_scores, key=lambda w: w["score"], reverse=True)[:5]
     top_waves = [
-        {"rank": i + 1, "score": w["score"], "round": w.get("round") or w.get("round_name", "")}
+        {"rank": i + 1, "score": w["score"], "round": full_round_name(w.get("round") or w.get("round_name", ""))}
         for i, w in enumerate(sorted_waves)
     ]
 
@@ -109,7 +109,7 @@ def fetch_athlete_event_stats(event_id: int, athlete_id: int, division: str) -> 
         {
             "rank": i + 1,
             "score": j["score"],
-            "round": j.get("round") or j.get("round_name", ""),
+            "round": full_round_name(j.get("round") or j.get("round_name", "")),
             "move": j.get("move", ""),
         }
         for i, j in enumerate(sorted_jumps)
@@ -118,7 +118,7 @@ def fetch_athlete_event_stats(event_id: int, athlete_id: int, division: str) -> 
     # Extract best heat — handle both "best_heat" and "best_heat_score" keys
     best_heat_obj = summary.get("best_heat") or summary.get("best_heat_score", {})
     best_heat = best_heat_obj.get("score", 0)
-    best_heat_round = best_heat_obj.get("round") or best_heat_obj.get("round_name", "")
+    best_heat_round = full_round_name(best_heat_obj.get("round") or best_heat_obj.get("round_name", ""))
 
     # Extract best wave — either a bare number or nested object
     best_wave_raw = summary.get("best_wave") or summary.get("best_wave_score", {})

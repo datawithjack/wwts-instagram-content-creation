@@ -31,6 +31,15 @@
 # legend, or leave it implicit. Affects clarity for per-event/per-round posts
 # where many entries are non-counting (see Fiji 2026 Women Day 1/2).
 # TODO: design + implement counting indicator, or decide to omit.
+#
+# ── TEMPLATE IDEA: finalist comparison (single-page) ───────────
+# A one-page post comparing the event finalists across several metrics side by
+# side — e.g. best wave, average wave, best heat, final-heat average, etc. Think
+# a compact stat matrix (finalists as columns, metrics as rows) so you can see
+# at a glance who topped each category in the final. Good post-event recap piece.
+# Data: per-finalist event stats (best/avg wave, best heat, final avg) — already
+# available via the /events/{id}/athletes/{id}/stats path used by rider_profile.
+# TODO: new single-page template + data builder; decide which metrics to show.
 
 posts:
   # ── Tonight's test batch (March 19) ──────────────────────────
