@@ -49,68 +49,11 @@ templates:
     dpr: 2
 
 hashtags:
-  head_to_head:
-    - "#PWAWorldTour"
-    - "#WindsurfStats"
-    - "#HeadToHead"
-    - "#Windsurf"
-  h2h_carousel:
-    - "#PWAWorldTour"
-    - "#WindsurfStats"
-    - "#HeadToHead"
-    - "#Windsurf"
-  top_10:
-    - "#PWAWorldTour"
-    - "#WindsurfStats"
-    - "#TopWaveScores"
-    - "#Windsurf"
-  top_10_carousel:
-    - "#PWAWorldTour"
-    - "#WindsurfStats"
-    - "#TopWaveScores"
-    - "#Windsurf"
-    - "#WorldWaveTour"
-    - "#WWT"
-  rider_profile:
-    - "#PWAWorldTour"
-    - "#WindsurfStats"
-    - "#AthleteProfile"
-    - "#Windsurf"
-  canary_kings:
-    - "#PWAWorldTour"
-    - "#WindsurfStats"
-    - "#CanaryIslands"
-    - "#GranCanaria"
-    - "#Tenerife"
-  athlete_rise:
-    - "#PWAWorldTour"
-    - "#WindsurfStats"
-    - "#GranCanaria"
-    - "#Windsurf"
-  site_stats:
-    - "#PWAWorldTour"
-    - "#WindsurfStats"
-    - "#Windsurf"
-  site_stats_reel:
-    - "#PWAWorldTour"
-    - "#WindsurfStats"
-    - "#Windsurf"
-  fantasy_league_announce:
-    - "#WindsurfFantasyLeague"
-    - "#FantasySports"
-    - "#PWAWorldTour"
-    - "#WindsurfStats"
-    - "#Windsurf"
-  event_picks:
-    - "#PWAWorldTour"
-    - "#WindsurfStats"
-    - "#Windsurf"
-    - "#WaveSailing"
-    - "#WindsurfWorldTour"
+  # Single brand hashtag set used for every post (2026-06-18 decision).
   default:
-    - "#PWAWorldTour"
-    - "#WindsurfStats"
-    - "#Windsurf"
+    - "#windsurf"
+    - "#pwaworldtour"
+    - "#wwt"
 
 captions:
   site_url: "windsurfworldtourstats.com"

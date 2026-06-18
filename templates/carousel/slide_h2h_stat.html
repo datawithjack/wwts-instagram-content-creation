@@ -29,13 +29,8 @@
         align-items: center;
         gap: 16px;
         padding: 28px 24px;
-        border-radius: 16px;
-        border: 2px solid;
         width: 100%;
     }
-
-    .athlete-col-left { border-color: var(--color-athlete-left); }
-    .athlete-col-right { border-color: var(--color-athlete-right); }
 
     .athlete-photo-lg {
         width: 220px;
@@ -241,7 +236,7 @@
 {% block carousel_content %}
 <div class="container">
     <!-- Header — matches top 10 pattern: eyebrow → slide-title → pill -->
-    <div class="eyebrow-dimmed">{{ event_name | upper }}</div>
+    <div class="eyebrow-dimmed">{{ event_name | upper | replace(' - ', ' · ') }}{% if event_date_start %} &middot; {{ event_date_start.year }}{% endif %}</div>
     <div class="slide-title-dimmed">HEAD TO HEAD</div>
     <div class="pill-muted">{{ section_title }}</div>
 
