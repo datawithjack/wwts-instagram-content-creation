@@ -131,7 +131,7 @@ def _caption_canary_kings(data: dict, site_url: str) -> str:
     queen = women[0]["athlete"] if women else "?"
     return (
         f"\U0001f3c6 Who are the Kings and Queens of the Canary Islands?\n\n"
-        f"Since 2016, {king} and {queen} have dominated Gran Canaria and Tenerife.\n\n"
+        f"Since 2006, {king} and {queen} have dominated Gran Canaria and Tenerife.\n\n"
         f"Swipe to see the full rankings. Who\u2019s next? \U0001f447\n\n"
         f"Full stats \u2192 {site_url}"
     )

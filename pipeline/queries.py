@@ -2,11 +2,15 @@
 
 
 def build_canary_kings_query(sex: str) -> tuple[str, tuple]:
-    """Build query for event winners at Tenerife/Gran Canaria since 2016.
+    """Build query for WAVE event winners at Tenerife/Gran Canaria since 2006.
 
     Returns athlete name, nationality, unified athlete ID, total wins,
-    and per-location breakdown (gc_wins, tf_wins). Excludes events with
-    joint winners (multiple 1st places in same event+sex).
+    and per-location breakdown (gc_wins, tf_wins).
+
+    Filters on division_label ('Wave Men' / 'Wave Women') so that
+    multi-discipline "Grand Slam" events (which crown separate wave, slalom
+    and foil champions) contribute only their wave winner — rather than being
+    dropped entirely as apparent joint winners.
 
     Args:
         sex: "Men" or "Women"
@@ -31,28 +35,19 @@ def build_canary_kings_query(sex: str) -> tuple[str, tuple]:
             ON e.event_id = r.event_id AND e.source = 'PWA'
         WHERE r.place = '1'
           AND r.source = 'PWA'
-          AND r.sex = %s
+          AND r.division_label = %s
           AND r.event_id IN (
               SELECT ev.event_id
               FROM PWA_IWT_EVENTS ev
               WHERE (ev.event_name LIKE '%%Tenerife%%'
                   OR ev.event_name LIKE '%%Gran Canaria%%')
-                AND ev.year >= 2016
+                AND ev.year >= 2006
                 AND ev.source = 'PWA'
-          )
-          AND r.event_id NOT IN (
-              SELECT sub.event_id
-              FROM PWA_IWT_RESULTS sub
-              WHERE sub.place = '1'
-                AND sub.source = 'PWA'
-                AND sub.sex = %s
-              GROUP BY sub.event_id, sub.sex
-              HAVING COUNT(*) > 1
           )
         GROUP BY a.id, a.primary_name, a.nationality
         ORDER BY wins DESC, a.primary_name
     """
-    return sql, (sex, sex)
+    return sql, (f"Wave {sex}",)
 
 
 def build_athlete_rise_query(
