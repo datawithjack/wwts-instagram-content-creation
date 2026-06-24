@@ -237,6 +237,14 @@ def fetch_live_data(template_name: str, args) -> dict:
         )
         athlete_name = name_rows[0]["primary_name"] if name_rows else f"Athlete {args.athlete1}"
         athlete_photo_url = name_rows[0].get("liveheats_image_url", "") if name_rows else ""
+        # Custom rise-cover hero override: assets/photos/rise/{athlete_id}.{ext}
+        # (scoped to athlete_rise so it doesn't affect rider_profile photos)
+        rise_dir = os.path.join(os.path.dirname(__file__), "assets", "photos", "rise")
+        for ext in ("webp", "jpg", "png"):
+            local_hero = os.path.join(rise_dir, f"{args.athlete1}.{ext}")
+            if os.path.exists(local_hero):
+                athlete_photo_url = "file:///" + os.path.abspath(local_hero).replace(os.sep, "/")
+                break
         return {
             "title": f"THE RISE OF {athlete_name.upper()} IN {args.location.upper()}",
             "subtitle": f"Check out the meteoric rise of {athlete_name.split()[0]}'s world cup performances at {args.location}",
