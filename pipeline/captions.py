@@ -30,6 +30,7 @@ def build_caption(
             "wave_count": _caption_wave_count,
             "athlete_rise": _caption_athlete_rise,
             "event_picks": _caption_event_picks,
+            "fantasy_league_announce": _caption_fantasy_league,
         }
         builder = builders.get(template_name, _caption_default)
         body = builder(data, site_url)
@@ -189,6 +190,18 @@ def _caption_event_picks(data: dict, site_url: str) -> str:
         f"Who are you backing? Drop your top 4 below\n\n"
         f"{credit_line}"
         f"Full stats → {site_url}"
+    )
+
+
+def _caption_fantasy_league(data: dict, site_url: str) -> str:
+    return (
+        "\U0001f6a8 The Windsurf Fantasy League is LIVE! \U0001f6a8\n\n"
+        "Build your dream team, pick your riders, and score points across "
+        "every event of the 2026 PWA World Tour.\n\n"
+        "It’s free to play — sign up now and get your team in before "
+        "the next event.\n\n"
+        f"\U0001f449 Sign up: link in bio ({site_url})\n\n"
+        "Tag a mate you’d back yourself against \U0001f447"
     )
 
 
