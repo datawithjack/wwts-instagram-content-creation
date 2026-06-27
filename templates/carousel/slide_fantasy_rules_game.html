@@ -1,0 +1,85 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        justify-content: center;
+        padding: 96px 80px;
+        gap: 0;
+    }
+
+    .game-eyebrow {
+        font-family: var(--font-body);
+        font-size: 26px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: var(--color-discipline);
+        margin-bottom: 16px;
+    }
+
+    .game-name {
+        font-family: var(--font-display);
+        font-size: 150px;
+        letter-spacing: 0.02em;
+        line-height: 0.95;
+        color: var(--color-text-primary);
+        margin-bottom: 16px;
+    }
+
+    .game-tagline {
+        font-family: var(--font-body);
+        font-size: 38px;
+        font-weight: 500;
+        font-style: italic;
+        color: var(--color-text-muted);
+        letter-spacing: 0.01em;
+        margin-bottom: 56px;
+    }
+
+    .game-points {
+        display: flex;
+        flex-direction: column;
+        gap: 32px;
+    }
+
+    .game-point {
+        display: flex;
+        align-items: flex-start;
+        gap: 28px;
+    }
+
+    .game-point .marker {
+        flex-shrink: 0;
+        width: 18px;
+        height: 18px;
+        margin-top: 14px;
+        border-radius: 4px;
+        background: var(--color-discipline);
+    }
+
+    .game-point .text {
+        font-family: var(--font-body);
+        font-size: 40px;
+        font-weight: 400;
+        line-height: 1.32;
+        color: var(--color-text-primary);
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="game-eyebrow">{{ eyebrow }}</div>
+    <div class="game-name">{{ name | upper }}</div>
+    <div class="game-tagline">{{ tagline }}</div>
+    <div class="game-points">
+        {% for point in points %}
+        <div class="game-point">
+            <div class="marker"></div>
+            <div class="text">{{ point }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

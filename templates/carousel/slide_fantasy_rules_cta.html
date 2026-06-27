@@ -1,0 +1,12 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_content %}
+<div class="container cta-container">
+    <div class="cta-accent-line"></div>
+    <div class="cta-headline">{{ headline }}</div>
+    <div class="cta-subtitle">{{ subtitle }}</div>
+    <div class="cta-url">{{ cta_line | upper }}</div>
+    <div class="cta-accent-line"></div>
+    <div class="cta-follow">{{ handle }} · Follow for more</div>
+</div>
+{% endblock %}

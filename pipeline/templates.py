@@ -345,6 +345,15 @@ def get_dummy_data(template_name: str) -> dict:
     if template_name == "coming_soon_carousel":
         from pipeline.coming_soon import build_coming_soon_slides
         return {"slides": build_coming_soon_slides()}
+    if template_name == "fantasy_rules":
+        from pipeline.fantasy_rules import build_fantasy_rules_slides
+        return {"slides": build_fantasy_rules_slides()}
+    if template_name == "tour_rules_reel":
+        from pipeline.tour_rules import build_tour_rules_reel_data
+        return build_tour_rules_reel_data()
+    if template_name == "tour_availability_reel":
+        from pipeline.tour_availability import build_tour_availability_reel_data
+        return build_tour_availability_reel_data()
     if template_name == "h2h_carousel":
         return get_dummy_data("head_to_head")
     if template_name == "h2h_carousel_jump":
