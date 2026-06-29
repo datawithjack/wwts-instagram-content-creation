@@ -1,0 +1,446 @@
+{% extends "base.html" %}
+
+{# How-to-make-picks explainer reel — animated 1080x1920 page recorded to MP4 by
+   Playwright (render_to_video). The branded card track of the post; live picks
+   screen-record footage is intercut between these cards later by pipeline/reel_edit.py.
+   Message: Save Draft keeps progress but does NOT enter you; Confirm & Lock does.
+   Styling mirrors the fantasy app + sibling reels. Data: pipeline/how_to_pick.py. #}
+
+{% block head %}
+<style>
+    :root {
+        --tour-400: {{ accent_tour }};
+        --warn-400: {{ accent_warn }};
+        --slate-100: #f1f5f9;
+        --slate-300: #cbd5e1;
+        --slate-400: #94a3b8;
+        --slate-500: #64748b;
+        --surface-bg: rgba(30, 41, 59, 0.55);
+        --surface-border: rgba(51, 65, 85, 0.6);
+    }
+
+    /* Reels record at a 1920px viewport, but base.html's body height defaults to
+       1350 when height isn't threaded into the template data (e.g. preview/generate
+       paths), which would leave dead space below. Force the full frame so
+       justify-content:center actually centres. See project_reel_body_height_bug. */
+    html, body { height: 1920px; }
+
+    .container { width: 100%; height: 100%; position: relative; }
+
+    .screen {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 0 80px;
+        text-align: center;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+    }
+    .screen.visible { opacity: 1; }
+
+    .kicker {
+        font-family: var(--font-body);
+        font-size: 32px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.28em;
+        color: var(--tour-400);
+        margin-bottom: 28px;
+    }
+
+    /* ── Hook ── */
+    .hook-eyebrow {
+        font-family: var(--font-body);
+        font-size: 34px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3em;
+        color: var(--tour-400);
+        margin-bottom: 36px;
+    }
+    .hook-title {
+        font-family: var(--font-display);
+        font-size: 220px;
+        line-height: 0.88;
+        letter-spacing: 0.03em;
+        color: var(--color-text-primary);
+        text-transform: uppercase;
+        white-space: pre-line;
+    }
+    .hook-sub {
+        font-family: var(--font-body);
+        font-size: 48px;
+        font-weight: 400;
+        line-height: 1.4;
+        color: var(--slate-400);
+        margin-top: 48px;
+        max-width: 840px;
+    }
+
+    /* ── Numbered step (build / lock) ── */
+    .step-num {
+        width: 132px;
+        height: 132px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 92px;
+        line-height: 1;
+        color: #07121a;
+        background: var(--tour-400);
+        margin-bottom: 44px;
+        opacity: 0;
+        transform: scale(0.6);
+        transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .screen.visible .step-num { opacity: 1; transform: scale(1); }
+    .step-num.warn { background: var(--warn-400); }
+
+    .step-title {
+        font-family: var(--font-display);
+        font-size: 138px;
+        line-height: 0.94;
+        letter-spacing: 0.03em;
+        color: var(--color-text-primary);
+        text-transform: uppercase;
+    }
+    .step-sub {
+        font-family: var(--font-body);
+        font-size: 46px;
+        font-weight: 400;
+        line-height: 1.4;
+        color: var(--slate-400);
+        margin-top: 40px;
+        max-width: 840px;
+    }
+
+    /* ── Contrast: title + the two options ── */
+    .contrast-title {
+        font-family: var(--font-display);
+        font-size: 104px;
+        line-height: 0.92;
+        letter-spacing: 0.03em;
+        color: var(--color-text-primary);
+        text-transform: uppercase;
+        white-space: pre-line;
+        text-align: center;
+        margin-bottom: 44px;
+    }
+    .contrast-footnote {
+        font-family: var(--font-body);
+        font-size: 36px;
+        font-weight: 500;
+        line-height: 1.36;
+        color: var(--slate-400);
+        text-align: center;
+        margin-top: 44px;
+        max-width: 880px;
+    }
+    .contrast-row {
+        display: flex;
+        flex-direction: column;
+        gap: 40px;
+        margin-top: 24px;
+        width: 100%;
+        max-width: 900px;
+    }
+    .btn-card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 28px;
+        padding: 44px 48px;
+        border-radius: 28px;
+        background: var(--surface-bg);
+        border: 2px solid var(--surface-border);
+        width: 100%;
+        opacity: 0;
+        transform: translateY(28px);
+        transition: opacity 0.45s ease, transform 0.45s ease;
+    }
+    .btn-card.in { opacity: 1; transform: none; }
+
+    /* The mock button chip inside each card */
+    .btn-chip {
+        font-family: var(--font-body);
+        font-size: 44px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        padding: 20px 48px;
+        border-radius: 16px;
+    }
+
+    /* Trade-off bullets */
+    .points {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        width: 100%;
+    }
+    .point {
+        position: relative;
+        padding-left: 50px;
+        font-family: var(--font-body);
+        font-size: 37px;
+        font-weight: 500;
+        line-height: 1.3;
+        color: var(--slate-300);
+        text-align: left;
+    }
+    .point::before {
+        content: '';
+        position: absolute;
+        left: 8px;
+        top: 0.5em;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--slate-500);
+    }
+    .point.warn { color: #e0b13a; font-weight: 600; }
+    .point.warn::before {
+        content: '!';
+        left: 4px;
+        top: 0;
+        width: auto;
+        height: auto;
+        font-family: var(--font-display);
+        font-size: 40px;
+        line-height: 1.05;
+        color: #e0b13a;
+        border-radius: 0;
+        background: none;
+    }
+
+    /* Both cards: neutral surface (the site's palette is mostly mono + one accent) */
+    .btn-card.save,
+    .btn-card.confirm { border-color: var(--surface-border); }
+
+    /* Save Draft = the site's neutral ghost button (NOT yellow) */
+    .btn-card.save .btn-chip {
+        background: transparent;
+        color: var(--slate-100);
+        border: 2px solid var(--slate-500);
+    }
+
+    /* Confirm & Lock = the site's cyan button (the single accent) */
+    .btn-card.confirm .btn-chip {
+        background: var(--tour-400);
+        color: #07121a;
+    }
+
+    /* ── Countdown CTA ── */
+    .cd-eyebrow {
+        font-family: var(--font-body);
+        font-size: 34px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        color: var(--tour-400);
+        margin-bottom: 52px;
+        text-align: center;
+    }
+    .cd-when {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .cd-time {
+        font-family: var(--font-display);
+        font-size: 200px;
+        line-height: 0.86;
+        color: var(--tour-400);
+    }
+    .cd-date {
+        font-family: var(--font-display);
+        font-size: 112px;
+        line-height: 0.9;
+        color: var(--color-text-primary);
+        letter-spacing: 0.02em;
+        margin-top: 14px;
+    }
+    .cd-tz {
+        font-family: var(--font-body);
+        font-size: 28px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: var(--slate-400);
+        margin-top: 26px;
+    }
+    .cd-sub {
+        font-family: var(--font-body);
+        font-size: 48px;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        margin-top: 64px;
+        max-width: 840px;
+        line-height: 1.3;
+        text-align: center;
+    }
+    .cta-handle {
+        font-family: var(--font-body);
+        font-size: 38px;
+        font-weight: 600;
+        color: var(--slate-400);
+        letter-spacing: 0.04em;
+        margin-top: 52px;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+    }
+    .cta-handle.visible { opacity: 1; }
+
+    .watermark {
+        position: absolute;
+        bottom: 40px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.22);
+        letter-spacing: 0.06em;
+        z-index: 10;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <!-- 1. Hook -->
+    <div class="screen" id="screen-hook">
+        <div class="hook-eyebrow">{{ hook_eyebrow }}</div>
+        <div class="hook-title">{{ hook_title }}</div>
+        <div class="hook-sub">{{ hook_sub }}</div>
+    </div>
+
+    <!-- 2. Build your squad -->
+    <div class="screen" id="screen-build">
+        <div class="step-num">{{ build_num }}</div>
+        <div class="step-title">{{ build_title }}</div>
+        <div class="step-sub">{{ build_sub }}</div>
+    </div>
+
+    <!-- 3. The two options and their trade-offs -->
+    <div class="screen" id="screen-contrast">
+        <div class="contrast-title">{{ contrast_title }}</div>
+        <div class="contrast-row" id="contrast-row">
+            <div class="btn-card save">
+                <div class="btn-chip">{{ save.label }}</div>
+                <ul class="points">
+                    {% for p in save.points %}<li class="point">{{ p }}</li>{% endfor %}
+                </ul>
+            </div>
+            <div class="btn-card confirm">
+                <div class="btn-chip">{{ confirm.label }}</div>
+                <ul class="points">
+                    {% for p in confirm.points %}<li class="point">{{ p }}</li>{% endfor %}
+                    {% if confirm.warning %}<li class="point warn">{{ confirm.warning }}</li>{% endif %}
+                </ul>
+            </div>
+        </div>
+        <div class="contrast-footnote">{{ contrast_footnote }}</div>
+    </div>
+
+    <!-- 4. Confirm & Lock -->
+    <div class="screen" id="screen-lock">
+        <div class="step-num">{{ lock_num }}</div>
+        <div class="step-title">{{ lock_title }}</div>
+        <div class="step-sub">{{ lock_sub }}</div>
+    </div>
+
+    <!-- 5. Countdown to Gran Canaria picks lock -->
+    <div class="screen" id="screen-cta">
+        <div class="cd-eyebrow">{{ countdown_eyebrow }}</div>
+        <div class="cd-when">
+            <div class="cd-time">{{ lock_time }}</div>
+            <div class="cd-date">{{ lock_date }}</div>
+            <div class="cd-tz">{{ lock_tz }}</div>
+        </div>
+        <div class="cd-sub">{{ countdown_sub }}</div>
+        <div class="cta-handle" id="cta-handle">{{ handle }} · Link in bio</div>
+    </div>
+
+    <div class="watermark">{{ url }}</div>
+</div>
+
+<script>
+    const FADE = 500;
+    // Solo mode: render a single screen as a standalone clip (used by reel_edit.py
+    // to intercut cards with footage). null = play the full sequence.
+    const SOLO = {{ (solo if solo is defined else none) | tojson }};
+    const SOLO_HOLD = {{ (solo_hold_ms if solo_hold_ms is defined else 2400) | tojson }};
+
+    function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+    // Bring a screen on-screen, triggering its inner element animations.
+    async function enter(id) {
+        const el = document.getElementById(id);
+        el.classList.add('visible');
+        if (id === 'screen-contrast') {
+            await wait(FADE);
+            const cards = el.querySelectorAll('.btn-card');
+            cards[0].classList.add('in');
+            await wait(900);
+            cards[1].classList.add('in');
+            return;
+        }
+        if (id === 'screen-cta') {
+            await wait(900);
+            document.getElementById('cta-handle').classList.add('visible');
+            return;
+        }
+        await wait(FADE);
+    }
+
+    async function leave(id) {
+        document.getElementById(id).classList.remove('visible');
+        await wait(FADE);
+    }
+
+    async function showHold(id, ms) {
+        await enter(id);
+        await wait(ms);
+        await leave(id);
+    }
+
+    async function runAnimation() {
+        // 1. Hook
+        await showHold('screen-hook', 2200);
+
+        // 2. Build your squad
+        await showHold('screen-build', 2400);
+
+        // 3. The contrast — both button cards slide in, then hold
+        await showHold('screen-contrast', 3000);
+
+        // 4. Confirm & Lock
+        await showHold('screen-lock', 2400);
+
+        // 5. CTA
+        await showHold('screen-cta', 2400);
+
+        document.body.dataset.animationComplete = 'true';
+    }
+
+    async function runSolo() {
+        await enter('screen-' + SOLO);
+        await wait(SOLO_HOLD);
+        await leave('screen-' + SOLO);
+        document.body.dataset.animationComplete = 'true';
+    }
+
+    document.fonts.ready.then(() => {
+        setTimeout(SOLO ? runSolo : runAnimation, 300);
+    });
+</script>
+{% endblock %}

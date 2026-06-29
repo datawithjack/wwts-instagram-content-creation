@@ -31,6 +31,8 @@ def build_caption(
             "athlete_rise": _caption_athlete_rise,
             "event_picks": _caption_event_picks,
             "fantasy_league_announce": _caption_fantasy_league,
+            "fantasy_rules": _caption_fantasy_rules,
+            "how_to_pick_reel": _caption_how_to_pick_reel,
         }
         builder = builders.get(template_name, _caption_default)
         body = builder(data, site_url)
@@ -202,6 +204,30 @@ def _caption_fantasy_league(data: dict, site_url: str) -> str:
         "the next event.\n\n"
         f"\U0001f449 Sign up: link in bio ({site_url})\n\n"
         "Tag a mate you’d back yourself against \U0001f447"
+    )
+
+
+def _caption_fantasy_rules(data: dict, site_url: str) -> str:
+    return (
+        "\U0001f3c4 How does the Windsurf Fantasy League work?\n\n"
+        "Two ways to play, same windsurfing action:\n\n"
+        "\U0001f30a The Tour — build one squad and score across the whole season.\n"
+        "⚡ The Session — pick a team for a single event and score every heat.\n\n"
+        "Swipe for the breakdown — then get your team in.\n\n"
+        f"\U0001f449 Sign up: link in bio ({site_url})"
+    )
+
+
+def _caption_how_to_pick_reel(data: dict, site_url: str) -> str:
+    return (
+        "\U0001f3c4 Making your fantasy picks: save a draft, or confirm and lock?\n\n"
+        "\U0001f4dd Save Draft: keep editing right up to the deadline. Your draft "
+        "auto-confirms at 6am on day one, so you are always entered.\n\n"
+        "\U0001f512 Confirm & Lock: lock your team in early and unlock everyone "
+        "else's confirmed teams. The catch, if one of your riders drops out, you "
+        "lose that pick.\n\n"
+        "Gran Canaria picks close 6am local time, Saturday 4 July.\n\n"
+        f"\U0001f449 Sign up and get your team in: link in bio ({site_url})"
     )
 
 

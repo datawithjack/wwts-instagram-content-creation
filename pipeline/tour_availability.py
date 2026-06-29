@@ -82,12 +82,12 @@ def _base_data(roster: list[dict]) -> dict:
         "roster": roster,
 
         "event1_caption": "Spend 5 of your stars at Gran Canaria.",
-        "event2_caption": "Those 5 are gone — at Tenerife you pick from who’s left.",
+        "event2_caption": "Those 5 are gone. At Tenerife you pick from who’s left.",
 
         # Screen 5 — captain exception
         "captain_kicker": "The one exception",
         "captain_title": "YOUR CAPTAINS",
-        "captain_text": "Name a men’s & women’s captain from the Top 5 — they’re the only riders you can pick twice.",
+        "captain_text": "Name a men’s & women’s captain from the Top 5. They’re the only riders you can pick twice.",
         "captains": _captains(roster),
 
         # Screen 6 — CTA

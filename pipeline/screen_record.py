@@ -1,26 +1,31 @@
 """Screen-record the live fantasy picks flow as a portrait video.
 
 Drives the production web app with Playwright — logs in with the FANTASY_EMAIL /
-FANTASY_PASSWORD creds from .env, opens the picks builder for an event, and clicks
-through filling a squad while recording the session. Output is B-roll footage to be
-intercut with the rendered tour-rules reel cards (see pipeline/reel_edit.py, TBD).
+FANTASY_PASSWORD creds from .env, opens on the /fantasy hub, taps the event card to
+enter the picks builder, then clicks through filling a squad while recording the
+session. Output is B-roll footage intercut with the rendered explainer cards by
+pipeline/reel_edit.py.
 
 This is screen-capture of the REAL app, NOT an HTML render — so it's inherently
 side-effectful (live site, real browser) and verified by running, not unit tests.
 
-Stops BEFORE "Confirm & Lock Team" — picks are left as an unsaved draft, nothing is
-committed to the account.
+Scrolls to and highlights "Confirm & Lock Team" as the payoff beat but NEVER clicks it
+— picks are left as an unsaved draft, nothing is committed to the account. Writes a
+sidecar <out>.markers.json (build_start/end, confirm_start/end) so pipeline/reel_edit.py
+can cut the footage into the right slices.
 
 Usage:
     python -m pipeline.screen_record                 # default event 122 (Gran Canaria)
     python -m pipeline.screen_record --event 122 --out output/mp4/picks_raw.mp4
 """
 import argparse
+import json
 import os
 import re
 import shutil
 import subprocess
 import tempfile
+import time
 
 from dotenv import load_dotenv
 from playwright.sync_api import sync_playwright
@@ -54,6 +59,7 @@ BEAT = 1100          # between pick actions
 SETTLE = 600         # let a modal animate in
 HOLD_START = 2200    # linger on the empty squad
 HOLD_END = 3200      # linger on the completed squad
+POPUP_HOLD = 4400    # pause on the confirm pop-out (no button is pressed)
 GLIDE = 650          # fake-cursor travel time (matches the CSS transition)
 SCROLL_STEPS = 22    # increments per slow scroll
 SCROLL_PAUSE = 40    # ms between scroll increments
@@ -101,9 +107,9 @@ window.__cursor_tap = () => {
 def _login(page, email: str, password: str, next_path: str) -> None:
     """Sign in via the native email/password form, redirecting to next_path.
 
-    The auth endpoint is occasionally slow (>30s), so we treat the redirect to the
-    picks page as the success signal with a generous timeout rather than blocking
-    on the response event. A 401 (bad creds) surfaces as an inline alert.
+    The auth endpoint is occasionally slow (>30s), so we treat leaving the login page
+    as the success signal with a generous timeout rather than blocking on the response
+    event. A 401 (bad creds) surfaces as an inline alert.
     """
     page.goto(f"{LOGIN_URL}?next={next_path}")
     page.get_by_role("button", name="Sign In", exact=True).first.click()
@@ -118,11 +124,11 @@ def _login(page, email: str, password: str, next_path: str) -> None:
     )
     page.locator("form").get_by_role("button", name="Sign In").click()
     try:
-        page.wait_for_url("**/fantasy/picks/**", timeout=45000)
+        page.wait_for_url(lambda u: "/fantasy/login" not in u, timeout=45000)
     except Exception:
         code = status.get("code")
         raise RuntimeError(
-            f"Login did not reach the picks page (auth status={code}). "
+            f"Login did not redirect off the login page (auth status={code}). "
             "Check FANTASY_EMAIL / FANTASY_PASSWORD in .env, or retry (the auth "
             "endpoint can be slow)."
         )
@@ -179,6 +185,35 @@ def _force_dark_bg(page) -> None:
     )
 
 
+def _event_card_pick_link(page, event_id: int):
+    """The "Pick Tour Team" link ON THE EVENT CARD (not the reminder banner).
+
+    Both the banner and the card link to /fantasy/picks/{id}, but only the card pairs
+    it with a "Pick Session Team" link (/fantasy/session/{id}) in the same row. So we
+    anchor on the session link (card-only) and grab the Tour link from its parent row,
+    falling back to the last picks link (the card sits below the banner)."""
+    tour_sel = f'a[href$="/fantasy/picks/{event_id}"]'
+    session = page.locator(f'a[href$="/fantasy/session/{event_id}"]').first
+    if session.count() > 0:
+        row = session.locator("xpath=..")
+        link = row.locator(tour_sel).first
+        if link.count() > 0:
+            return link
+    return page.locator(tour_sel).last
+
+
+def _click_through_event_card(page, event_id: int) -> None:
+    """From the /fantasy hub, scroll to the event card's "Pick Tour Team" button and
+    tap it to enter the picks builder — the natural way a real user starts."""
+    link = _event_card_pick_link(page, event_id)
+    link.wait_for(state="visible", timeout=12000)
+    _slow_scroll_into_view(page, link)
+    page.wait_for_timeout(SETTLE)
+    _tap(page, link)
+    page.wait_for_url(f"**/fantasy/picks/{event_id}", timeout=15000)
+    page.wait_for_timeout(SETTLE)
+
+
 def _dismiss_captains_dialog(page) -> None:
     """The "Choose your captains" modal auto-opens on load — close it via the X
     button (Escape only hides it visually; the app re-opens it on the next tap)."""
@@ -218,6 +253,63 @@ def _pick_next_slot(page) -> str:
     return name
 
 
+_CONFIRM_RE = re.compile(r"confirm\s*(&|and)\s*lock", re.I)
+_CONFIRM_PICKS_RE = re.compile(r"confirm picks", re.I)
+
+
+def _open_confirm_popup(page) -> str:
+    """Highlight + tap "Confirm & Lock Team" to open the confirmation pop-out, then
+    pause on it (the payoff beat: it spells out that the team locks and becomes visible
+    to other players). No button inside the modal is ever pressed — not Confirm Picks,
+    not Save Draft, not Cancel — so nothing is committed; the modal is simply left open
+    and discarded when the browser closes.
+
+    Returns "popup" if the modal was captured, "button" if the confirm button was only
+    highlighted (e.g. disabled because captains aren't set), or "" if not found."""
+    btn = page.get_by_role("button", name=_CONFIRM_RE).first
+    try:
+        btn.wait_for(state="visible", timeout=6000)
+    except Exception:
+        print("Confirm & Lock button not found — skipping confirm footage.")
+        return ""
+    _slow_scroll_into_view(page, btn)
+    page.wait_for_timeout(SETTLE)
+
+    if not btn.is_enabled():
+        # Captains not set → button disabled. Highlight it (no click) and move on.
+        print("Confirm & Lock disabled (captains likely unset) — highlighting only.")
+        _install_cursor(page)
+        box = btn.bounding_box()
+        if box:
+            page.evaluate(
+                "([x, y]) => window.__cursor_move(x, y)",
+                [box["x"] + box["width"] / 2, box["y"] + box["height"] / 2],
+            )
+        page.wait_for_timeout(GLIDE)
+        page.evaluate("window.__cursor_tap && window.__cursor_tap()")
+        page.wait_for_timeout(HOLD_END)
+        return "button"
+
+    _tap(page, btn)  # opens the ConfirmPicksModal pop-out (does NOT commit)
+    # Confirm the pop-out is up via its commit button — which we deliberately avoid.
+    try:
+        page.get_by_role("button", name=_CONFIRM_PICKS_RE).first.wait_for(
+            state="visible", timeout=6000
+        )
+    except Exception:
+        print("Confirm pop-out did not appear — showing button highlight only.")
+        page.wait_for_timeout(HOLD_END)
+        return "button"
+    # Park the cursor on the modal body (away from its action buttons) and just hold,
+    # so the footage reads as "here's the pop-out" rather than about to press anything.
+    page.evaluate(
+        "([x, y]) => window.__cursor_move(x, y)",
+        [VIDEO_SIZE["width"] / 2, VIDEO_SIZE["height"] * 0.3],
+    )
+    page.wait_for_timeout(POPUP_HOLD)  # pause on the pop-out (this is the footage)
+    return "popup"
+
+
 def record_picks_flow(event_id: int, out_path: str) -> str:
     """Record the picks flow for one event to a portrait mp4. Returns the path."""
     email = os.getenv("FANTASY_EMAIL")
@@ -225,11 +317,14 @@ def record_picks_flow(event_id: int, out_path: str) -> str:
     if not email or not password:
         raise RuntimeError("FANTASY_EMAIL / FANTASY_PASSWORD must be set in .env")
 
-    next_path = f"%2Ffantasy%2Fpicks%2F{event_id}"
+    # Start on the /fantasy hub so the footage opens on the event card, then clicks
+    # through into picks (the natural user journey).
+    next_path = "%2Ffantasy"
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     video_dir = tempfile.mkdtemp()
 
     picked: list[str] = []
+    markers: dict = {}
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch()
@@ -239,13 +334,23 @@ def record_picks_flow(event_id: int, out_path: str) -> str:
                 **MOBILE_CONTEXT,
             )
             page = context.new_page()
+            # Video recording starts with the context; mark times relative to here so
+            # the marker offsets line up with the recorded timeline (login + dead
+            # time before build_start is trimmed out by reel_edit.py).
+            t0 = time.monotonic()
             page.add_init_script(CURSOR_JS)  # cursor helpers on every document
 
             _login(page, email, password, next_path)
             _force_dark_bg(page)
             _install_cursor(page)
-            _dismiss_captains_dialog(page)
+
+            # Open on the event card, linger, then click through into the picks builder.
+            markers["build_start"] = round(time.monotonic() - t0, 2)
             page.wait_for_timeout(HOLD_START)
+            _click_through_event_card(page, event_id)
+
+            _dismiss_captains_dialog(page)
+            page.wait_for_timeout(SETTLE)
 
             for _ in range(5):  # Man 1, Man 2, Woman 1, Woman 2, Wildcard
                 name = _pick_next_slot(page)
@@ -255,6 +360,16 @@ def record_picks_flow(event_id: int, out_path: str) -> str:
             # Slow-scroll back to the top to reveal the whole completed squad.
             _slow_scroll_into_view(page, page.get_by_role("heading", name="MEN'S PICKS", exact=True))
             page.wait_for_timeout(HOLD_END)
+            markers["build_end"] = round(time.monotonic() - t0, 2)
+
+            # Payoff beat: tap Confirm & Lock to surface the pop-out (locks team /
+            # visible to others) and pause on it. No modal button is pressed, so
+            # nothing is committed — the modal is just discarded when the browser closes.
+            markers["confirm_start"] = round(time.monotonic() - t0, 2)
+            if _open_confirm_popup(page):
+                markers["confirm_end"] = round(time.monotonic() - t0, 2)
+            else:
+                markers.pop("confirm_start", None)
 
             page.close()
             context.close()
@@ -286,7 +401,14 @@ def record_picks_flow(event_id: int, out_path: str) -> str:
     finally:
         shutil.rmtree(video_dir, ignore_errors=True)
 
+    # Sidecar markers: reel_edit.py reads these to cut the footage into the
+    # build-squad and confirm-button slices (skipping login + dead time).
+    markers_path = out_path + ".markers.json"
+    with open(markers_path, "w", encoding="utf-8") as f:
+        json.dump(markers, f, indent=2)
+
     print("Picked squad:", ", ".join(picked) if picked else "(none)")
+    print("Markers:", markers)
     print("Saved:", out_path)
     return out_path
 

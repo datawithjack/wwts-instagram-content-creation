@@ -41,7 +41,7 @@ def build_tour_rules_reel_data() -> dict:
         "captains_points": [
             "1 men’s & 1 women’s captain from the Top 5",
             "Captains can be picked twice",
-            "Locked once set — no scoring bonus",
+            "Locked once set, no scoring bonus",
         ],
 
         # Screen 5 — scoring (position-based). Trimmed to 6 rows for phone legibility.

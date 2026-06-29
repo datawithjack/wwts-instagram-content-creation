@@ -282,7 +282,7 @@ def main():
     parser.add_argument(
         "--template",
         required=True,
-        choices=["head_to_head", "head_to_head_jump", "h2h_carousel", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "fantasy_league_announce", "fantasy_rules", "tour_rules_reel", "tour_availability_reel", "event_picks"],
+        choices=["head_to_head", "head_to_head_jump", "h2h_carousel", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "fantasy_league_announce", "fantasy_rules", "tour_rules_reel", "tour_availability_reel", "session_vs_tour_reel", "how_to_pick_reel", "event_picks"],
     )
     parser.add_argument("--athlete1", type=int, help="Athlete 1 unified ID")
     parser.add_argument("--athlete2", type=int, help="Athlete 2 unified ID")
@@ -333,7 +333,7 @@ def main():
     dpr = template_config.get("dpr", 2)
 
     # Get data
-    if args.dry_run or template_name in ("coming_soon_carousel", "about_carousel", "fantasy_rules", "tour_rules_reel"):
+    if args.dry_run or template_name in ("coming_soon_carousel", "about_carousel", "fantasy_rules", "tour_rules_reel", "session_vs_tour_reel", "how_to_pick_reel"):
         # --mode perfect-10s overrides the dummy lookup for top_10_carousel
         if template_name in ("top_10", "top_10_carousel") and getattr(args, "mode", None) == "perfect-10s":
             data = get_dummy_data("perfect_10s")

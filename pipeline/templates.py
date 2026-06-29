@@ -354,6 +354,12 @@ def get_dummy_data(template_name: str) -> dict:
     if template_name == "tour_availability_reel":
         from pipeline.tour_availability import build_tour_availability_reel_data
         return build_tour_availability_reel_data()
+    if template_name == "session_vs_tour_reel":
+        from pipeline.fantasy_modes import build_fantasy_modes_reel_data
+        return build_fantasy_modes_reel_data()
+    if template_name == "how_to_pick_reel":
+        from pipeline.how_to_pick import build_how_to_pick_reel_data
+        return build_how_to_pick_reel_data()
     if template_name == "h2h_carousel":
         return get_dummy_data("head_to_head")
     if template_name == "h2h_carousel_jump":

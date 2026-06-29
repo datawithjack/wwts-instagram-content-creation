@@ -22,7 +22,7 @@ GAMES = [
         "tagline": "One squad. The full season.",
         "color": TOUR_COLOR,
         "points": [
-            "Pick 5 riders each event — 2 men, 2 women & a wildcard",
+            "Pick 5 riders each event: 2 men, 2 women & a wildcard",
             "Scored on where your riders finish on tour",
             "Your best events build a season-long total",
         ],
@@ -69,7 +69,7 @@ def build_fantasy_rules_slides() -> list[dict]:
         "type": "fantasy_rules_cta",
         "headline": "PLAY NOW",
         "subtitle": "Get your team in before the next event.",
-        "cta_line": "Sign up — link in bio",
+        "cta_line": "Sign up. Link in bio",
         "handle": "@windsurfworldtourstats",
         "accent_color": ACCENT_COLOR,
     })
