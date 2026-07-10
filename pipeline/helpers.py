@@ -71,6 +71,18 @@ def trick_type_label(code: str) -> str:
     return TRICK_TYPE_LABELS.get(code.strip(), code.strip())
 
 
+def modifier_label(value: str) -> str:
+    """Tidy a jump modifier for display (e.g. '1-Foot' -> '1 Foot').
+
+    Modifiers describe a variation on the base trick — one-footed, one-handed,
+    tweaked. The DB stores them hyphenated; we show them spaced. Empty/None
+    returns "" so blank cells don't print 'None'.
+    """
+    if not value:
+        return ""
+    return value.strip().replace("-", " ")
+
+
 def clean_event_name(name: str) -> str:
     """Strip leading year and trailing star ratings from event names.
 

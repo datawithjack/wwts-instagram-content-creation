@@ -59,6 +59,20 @@
         text-shadow: 0 0 50px rgba(240,192,64,0.2);
     }
 
+    /* Trick + modifier under the score (single-winner card) */
+    .score-trick {
+        position: relative;
+        font-family: var(--font-body);
+        font-size: 36px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--color-discipline);
+        text-align: center;
+        margin-top: -8px;
+        white-space: nowrap;
+    }
+
     /* ── Athlete rows ── */
     .athlete-list {
         position: relative;
@@ -97,13 +111,10 @@
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.04em;
-        background: rgba(255,255,255,0.15);
         color: #FFFFFF;
-        border-radius: 4px;
-        padding: 6px 14px;
         flex-shrink: 0;
         text-align: center;
-        max-width: 140px;
+        white-space: nowrap;
     }
 
     .athlete-row .detail {
@@ -165,14 +176,17 @@
     <div class="rank-badge">BEST {{ title_metric | upper | replace("WAVES", "WAVE") | replace("JUMPS", "JUMP") }} SCORE{% if tie_count >= 2 %}S{% endif %}</div>
 
     <div class="big-score">{{ "%.2f" | format(top_score) }}</div>
+    {% if show_trick_type and tie_count == 0 and rows[0].trick_type %}
+    <div class="score-trick">{{ rows[0].trick_type | trick_type_label }}{% if rows[0].modifier %} &middot; {{ rows[0].modifier | modifier_label }}{% endif %}</div>
+    {% endif %}
 
     <div class="athlete-list">
     {% for row in rows %}
         <div class="athlete-row{% if row.counting is defined and not row.counting %} non-counting{% endif %}">
             <div class="flag"><img src="https://flagcdn.com/w80/{{ row.country | lower }}.png" alt="{{ row.country }}"></div>
             <div class="name">{{ row.athlete | upper }}</div>
-            {% if show_trick_type and row.trick_type %}
-            <div class="trick">{{ row.trick_type | trick_type_label }}</div>
+            {% if show_trick_type and row.trick_type and tie_count >= 2 %}
+            <div class="trick">{{ row.trick_type | trick_type_label }}{% if row.modifier %} &middot; {{ row.modifier | modifier_label }}{% endif %}</div>
             {% endif %}
             <div class="detail">
                 {% if not is_per_event %}{{ row.event }} · {% endif %}<span class="round">{{ row.round }}{% if row.heat %} ({{ row.heat }}){% endif %}</span>

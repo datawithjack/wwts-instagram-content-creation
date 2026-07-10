@@ -13,6 +13,7 @@ from pipeline.helpers import (
     format_number,
     country_flag,
     trick_type_label,
+    modifier_label,
 )
 
 TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "..", "templates")
@@ -29,6 +30,7 @@ def get_jinja_env() -> Environment:
     env.globals["format_date_range"] = format_date_range
     env.filters["country_flag"] = country_flag
     env.filters["trick_type_label"] = trick_type_label
+    env.filters["modifier_label"] = modifier_label
     return env
 
 
@@ -245,16 +247,16 @@ def get_dummy_data(template_name: str) -> dict:
             "event_stars": 5,
             "show_trick_type": True,
             "entries": [
-                {"rank": 1, "athlete": "Antoine Albert", "country": "gp", "score": 10.00, "event": "Gran Canaria World Cup", "round": "Final", "heat": "H52a", "trick_type": "2xF"},
-                {"rank": 1, "athlete": "Julien Mas", "country": "fr", "score": 10.00, "event": "Gran Canaria World Cup", "round": "Semi", "heat": "H48b", "trick_type": "P"},
-                {"rank": 1, "athlete": "Marc Pare Rico", "country": "es", "score": 10.00, "event": "Gran Canaria World Cup", "round": "Final", "heat": "H52b", "trick_type": "F"},
-                {"rank": 1, "athlete": "Takara Ishii", "country": "jp", "score": 10.00, "event": "Gran Canaria World Cup", "round": "QF", "heat": "H44a", "trick_type": "B"},
-                {"rank": 5, "athlete": "Jaegar Stone", "country": "au", "score": 9.50, "event": "Gran Canaria World Cup", "round": "Final", "heat": "H52a", "trick_type": "F"},
-                {"rank": 6, "athlete": "Bernd Roediger", "country": "us", "score": 9.30, "event": "Gran Canaria World Cup", "round": "Semi", "heat": "H49a", "trick_type": "P"},
-                {"rank": 7, "athlete": "Philip Koster", "country": "de", "score": 9.10, "event": "Gran Canaria World Cup", "round": "QF", "heat": "H45a", "trick_type": "2xF"},
-                {"rank": 8, "athlete": "Leon Jamaer", "country": "de", "score": 8.90, "event": "Gran Canaria World Cup", "round": "R3", "heat": "H38a", "trick_type": "B"},
-                {"rank": 9, "athlete": "Ricardo Campello", "country": "ve", "score": 8.70, "event": "Gran Canaria World Cup", "round": "Semi", "heat": "H48a", "trick_type": "P"},
-                {"rank": 10, "athlete": "Alex Mussolini", "country": "es", "score": 8.50, "event": "Gran Canaria World Cup", "round": "R3", "heat": "H38b", "trick_type": "F"},
+                {"rank": 1, "athlete": "Antoine Albert", "country": "gp", "score": 10.00, "event": "Gran Canaria World Cup", "round": "Final", "heat": "H52a", "trick_type": "2xF", "modifier": ""},
+                {"rank": 1, "athlete": "Julien Mas", "country": "fr", "score": 10.00, "event": "Gran Canaria World Cup", "round": "Semi", "heat": "H48b", "trick_type": "P", "modifier": ""},
+                {"rank": 1, "athlete": "Marc Pare Rico", "country": "es", "score": 10.00, "event": "Gran Canaria World Cup", "round": "Final", "heat": "H52b", "trick_type": "F", "modifier": ""},
+                {"rank": 1, "athlete": "Takara Ishii", "country": "jp", "score": 10.00, "event": "Gran Canaria World Cup", "round": "QF", "heat": "H44a", "trick_type": "B", "modifier": "1-Foot"},
+                {"rank": 5, "athlete": "Jaegar Stone", "country": "au", "score": 9.50, "event": "Gran Canaria World Cup", "round": "Final", "heat": "H52a", "trick_type": "F", "modifier": ""},
+                {"rank": 6, "athlete": "Bernd Roediger", "country": "us", "score": 9.30, "event": "Gran Canaria World Cup", "round": "Semi", "heat": "H49a", "trick_type": "P", "modifier": "Tweaked"},
+                {"rank": 7, "athlete": "Philip Koster", "country": "de", "score": 9.10, "event": "Gran Canaria World Cup", "round": "QF", "heat": "H45a", "trick_type": "2xF", "modifier": ""},
+                {"rank": 8, "athlete": "Leon Jamaer", "country": "de", "score": 8.90, "event": "Gran Canaria World Cup", "round": "R3", "heat": "H38a", "trick_type": "B", "modifier": "1-Hand"},
+                {"rank": 9, "athlete": "Ricardo Campello", "country": "ve", "score": 8.70, "event": "Gran Canaria World Cup", "round": "Semi", "heat": "H48a", "trick_type": "P", "modifier": ""},
+                {"rank": 10, "athlete": "Alex Mussolini", "country": "es", "score": 8.50, "event": "Gran Canaria World Cup", "round": "R3", "heat": "H38b", "trick_type": "F", "modifier": "1-Foot"},
             ],
         }
     if template_name == "top_10_carousel_waves":
