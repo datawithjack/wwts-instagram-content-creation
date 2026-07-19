@@ -11,17 +11,18 @@
 
     .eyebrow {
         margin-bottom: 28px;
-        font-size: 30px;
+        font-size: 36px;
         letter-spacing: 0.16em;
     }
 
     .cover-title {
         font-family: var(--font-display);
-        font-size: 200px;
+        font-size: 300px;
         letter-spacing: 0.03em;
         line-height: 0.92;
         color: var(--color-text-primary);
         margin-bottom: 32px;
+        white-space: nowrap;
     }
 
     .divider {
@@ -59,9 +60,10 @@
 {% block carousel_content %}
 <div class="container">
     <div class="eyebrow">{{ eyebrow }}</div>
-    <div class="cover-title">{{ title | upper }}</div>
+    <div class="cover-title" data-autofit>{{ title | upper }}</div>
     <div class="divider"></div>
     <div class="cover-subtitle">{{ subtitle }}</div>
     <div class="swipe-hint">Swipe <span class="arrow">→</span></div>
 </div>
+{% include "carousel/_autofit.html" %}
 {% endblock %}
