@@ -338,6 +338,77 @@ class TestAthleteRiseCaption:
         assert "?" in caption
 
 
+# ── Freestyle scores live announcement ──────────────────────────
+
+
+class TestFreestyleScoresLiveCaption:
+    def test_announces_scores_are_live(self, config):
+        caption = build_caption("freestyle_scores_live", {}, config)
+        assert "live" in caption.lower()
+        assert "score" in caption.lower()
+
+    def test_names_fuerteventura(self, config):
+        caption = build_caption("freestyle_scores_live", {}, config)
+        assert "Fuerteventura" in caption
+
+    def test_mentions_freestyle(self, config):
+        caption = build_caption("freestyle_scores_live", {}, config)
+        assert "freestyle" in caption.lower()
+
+    def test_has_engagement_prompt(self, config):
+        caption = build_caption("freestyle_scores_live", {}, config)
+        assert "?" in caption or "\U0001f447" in caption
+
+    def test_no_em_dashes(self, config):
+        # House rule: no em dashes in post/caption copy.
+        caption = build_caption("freestyle_scores_live", {}, config)
+        assert "—" not in caption
+
+    def test_ends_with_hashtags(self, config):
+        caption = build_caption("freestyle_scores_live", {}, config)
+        assert caption.rstrip().split("\n")[-1].lstrip().startswith("#")
+
+    def test_promotes_slalom_x_deadline(self, config):
+        caption = build_caption("freestyle_scores_live", {}, config).lower()
+        assert "slalom x" in caption
+        assert "1 day" in caption
+
+
+# ── Slalom X scores live announcement ───────────────────────────
+
+
+class TestSlalomScoresLiveCaption:
+    def test_announces_scores_are_live(self, config):
+        caption = build_caption("slalom_scores_live", {}, config)
+        assert "live" in caption.lower()
+        assert "score" in caption.lower()
+
+    def test_names_fuerteventura(self, config):
+        caption = build_caption("slalom_scores_live", {}, config)
+        assert "Fuerteventura" in caption
+
+    def test_mentions_slalom_x(self, config):
+        caption = build_caption("slalom_scores_live", {}, config)
+        assert "slalom x" in caption.lower()
+
+    def test_promotes_tenerife_picks(self, config):
+        caption = build_caption("slalom_scores_live", {}, config).lower()
+        assert "tenerife" in caption
+
+    def test_has_engagement_prompt(self, config):
+        caption = build_caption("slalom_scores_live", {}, config)
+        assert "?" in caption or "\U0001f447" in caption
+
+    def test_no_em_dashes(self, config):
+        # House rule: no em dashes in post/caption copy.
+        caption = build_caption("slalom_scores_live", {}, config)
+        assert "—" not in caption
+
+    def test_ends_with_hashtags(self, config):
+        caption = build_caption("slalom_scores_live", {}, config)
+        assert caption.rstrip().split("\n")[-1].lstrip().startswith("#")
+
+
 # ── Fallback / Override ─────────────────────────────────────────
 
 

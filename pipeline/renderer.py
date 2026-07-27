@@ -171,6 +171,30 @@ def render_wave_count_carousel(
     return paths
 
 
+def render_fuerte_fantasy_mvps_carousel(
+    data: dict,
+    output_dir: str,
+    base_name: str = "fuerte_fantasy_mvps",
+    width: int = 1080,
+    height: int = 1350,
+    dpr: int = 2,
+) -> list[str]:
+    """Render the Fuerteventura Fantasy MVPs carousel into slide PNGs.
+
+    Returns list of PNG file paths.
+    """
+    from pipeline.fuerte_fantasy_mvps import build_slides as build_mvp_slides
+    slides = build_mvp_slides(data)
+    os.makedirs(output_dir, exist_ok=True)
+    paths = []
+    for i, slide in enumerate(slides, 1):
+        html = render_template(f"carousel/slide_{slide['type']}", slide)
+        output_path = os.path.join(output_dir, f"{base_name}_{i}.png")
+        render_to_png(html, output_path, width=width, height=height, dpr=dpr)
+        paths.append(output_path)
+    return paths
+
+
 def render_athlete_rise_carousel(
     data: dict,
     output_dir: str,

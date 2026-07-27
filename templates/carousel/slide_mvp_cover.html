@@ -1,0 +1,76 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 60px 48px 64px;
+        gap: 0;
+    }
+
+    .eyebrow {
+        font-size: 34px;
+        margin-bottom: 16px;
+        color: var(--color-discipline);
+        letter-spacing: 0.12em;
+    }
+
+    .cover-title {
+        font-family: var(--font-display);
+        font-size: 300px;
+        letter-spacing: -0.03em;
+        line-height: 0.84;
+        transform: scaleX(0.9);
+        transform-origin: center;
+        color: #FFFFFF;
+        margin-bottom: 20px;
+        white-space: nowrap;
+    }
+
+    .cover-title .accent {
+        color: var(--color-discipline);
+    }
+
+    .cover-subtitle {
+        font-family: var(--font-body);
+        font-size: 28px;
+        font-weight: 500;
+        color: var(--color-text-muted);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        max-width: 820px;
+        margin-top: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="eyebrow">Fantasy &middot; Freestyle</div>
+
+    <div class="cover-title" data-autofit>
+        FANTASY<br>
+        <span class="accent">MVPS</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="cover-subtitle">
+        {{ event.location | default('Fuerteventura') }} {{ event.year | default('') }} &middot; Who won you the points
+    </div>
+</div>
+<script>
+document.fonts.ready.then(() => {
+    document.querySelectorAll('[data-autofit]').forEach(el => {
+        const maxWidth = el.parentElement.offsetWidth;
+        let size = parseInt(getComputedStyle(el).fontSize);
+        while (el.scrollWidth > maxWidth && size > 40) {
+            size -= 4;
+            el.style.fontSize = size + 'px';
+        }
+    });
+});
+</script>
+{% endblock %}

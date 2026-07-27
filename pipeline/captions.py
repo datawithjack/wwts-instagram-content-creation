@@ -30,6 +30,9 @@ def build_caption(
             "wave_count": _caption_wave_count,
             "athlete_rise": _caption_athlete_rise,
             "event_picks": _caption_event_picks,
+            "freestyle_scores_live": _caption_freestyle_scores_live,
+            "slalom_scores_live": _caption_slalom_scores_live,
+            "fuerte_fantasy_mvps": _caption_fantasy_mvps,
         }
         builder = builders.get(template_name, _caption_default)
         body = builder(data, site_url)
@@ -137,6 +140,25 @@ def _caption_canary_kings(data: dict, site_url: str) -> str:
     )
 
 
+def _caption_fantasy_mvps(data: dict, site_url: str) -> str:
+    men = data.get("men", [])
+    women = data.get("women", [])
+    event = data.get("event", {})
+    location = event.get("location", "Fuerteventura")
+    top_man = men[0]["athlete"] if men else "?"
+    top_woman = women[0]["athlete"] if women else "?"
+    return (
+        f"\U0001f3c6 The Fantasy MVPs of {location}.\n\n"
+        f"These are the riders who won you the most fantasy points at the "
+        f"freestyle event, scored across the single and double eliminations.\n\n"
+        f"{top_man} and {top_woman} topped the men's and women's charts. "
+        f"Swipe for the full top 10, plus how many players had them on their team.\n\n"
+        f"Don't forget to get a team in for the Tenerife wave event, starting at "
+        f"the end of July. Link in bio.\n\n"
+        f"Full stats → {site_url}"
+    )
+
+
 def _caption_wave_count(data: dict, site_url: str) -> str:
     def _leaders(rows):
         if not rows:
@@ -189,6 +211,30 @@ def _caption_event_picks(data: dict, site_url: str) -> str:
         f"Who are you backing? Drop your top 4 below\n\n"
         f"{credit_line}"
         f"Full stats → {site_url}"
+    )
+
+
+def _caption_freestyle_scores_live(data: dict, site_url: str) -> str:
+    return (
+        "\U0001f6a8 Windsurf Fantasy League scores are LIVE! \U0001f6a8\n\n"
+        "The freestyle results are in from Fuerteventura. See how your picks "
+        "stacked up and where you land on the leaderboard.\n\n"
+        "How did you do?! \U0001f447\n\n"
+        f"\U0001f449 Check your score: link in bio ({site_url})\n\n"
+        "⏳ And there's just 1 day left to get your Slalom X team in for "
+        "Fuerteventura. Lock is 06:00 local, Wednesday 22 July."
+    )
+
+
+def _caption_slalom_scores_live(data: dict, site_url: str) -> str:
+    return (
+        "\U0001f6a8 Windsurf Fantasy League scores are LIVE! \U0001f6a8\n\n"
+        "The Slalom X results are in from Fuerteventura. See how your picks "
+        "stacked up and where you land on the leaderboard.\n\n"
+        "How did you do?! \U0001f447\n\n"
+        f"\U0001f449 Check your score: link in bio ({site_url})\n\n"
+        "\U0001f30a Next up: Tenerife picks are open now, so get your team in "
+        "before the wave action starts."
     )
 
 
