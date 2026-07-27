@@ -47,6 +47,10 @@ templates:
     width: 1080
     height: 1350
     dpr: 2
+  fuerte_fantasy_mvps:
+    width: 1080
+    height: 1350
+    dpr: 2
 
 hashtags:
   # Single brand hashtag set used for every post (2026-06-18 decision).

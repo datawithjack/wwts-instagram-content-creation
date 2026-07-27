@@ -314,3 +314,85 @@ def build_perfect_10s_wave_query() -> tuple[str, tuple]:
         ORDER BY e.year DESC, e.event_name, a.primary_name
     """
     return sql, ()
+
+
+def build_fantasy_mvp_points_query(event_id: int) -> tuple[str, tuple]:
+    """Fantasy points per athlete at a freestyle Session event, split by elimination.
+
+    An athlete's fantasy points = the "heat aggregate" the Session scoring engine
+    uses: the sum of ``PWA_IWT_HEAT_RESULTS.result_total`` across every freestyle
+    heat they competed in at the event (the raw pre-wildcard-multiplier score —
+    the ×1.25 wildcard bonus is applied per-picker, not to the athlete). Grouping
+    by ``hp.elimination_name`` returns one row per (athlete, elimination): the
+    field encodes both the elimination ("Single"/"Double") and the gender
+    ("Mens"/"Womens"), which the caller parses in Python.
+
+    The freestyle scoping (``EXISTS ... PWA_IWT_FREESTYLE_HEAT_SCORES``) mirrors
+    the backend scoring engine so a dual-discipline rider's slalom heats at the
+    same multi-discipline event (e.g. Fuerteventura hosts freestyle + slalom)
+    never leak in.
+
+    Args:
+        event_id: App/DB event id (``PWA_IWT_EVENTS.id``).
+
+    Returns:
+        (sql, params) tuple ready for db.run_query().
+    """
+    sql = """
+        SELECT a.primary_name AS athlete,
+               a.nationality AS country,
+               a.country_code AS country_code,
+               asi.athlete_id AS athlete_id,
+               hp.elimination_name,
+               SUM(hr.result_total) AS points
+        FROM PWA_IWT_HEAT_RESULTS hr
+        JOIN PWA_IWT_EVENTS e
+            ON e.event_id = hr.pwa_event_id
+           AND e.year = hr.pwa_year
+           AND e.source = hr.source
+        JOIN ATHLETE_SOURCE_IDS asi
+            ON asi.source = hr.source AND asi.source_id = hr.athlete_id
+        JOIN ATHLETES a
+            ON a.id = asi.athlete_id
+        JOIN PWA_IWT_HEAT_PROGRESSION hp
+            ON hp.heat_id = hr.heat_id AND hp.source = hr.source
+        WHERE e.id = %s
+          AND hr.result_total IS NOT NULL
+          AND EXISTS (
+              SELECT 1 FROM PWA_IWT_FREESTYLE_HEAT_SCORES f
+              WHERE f.pwa_event_id = hr.pwa_event_id
+                AND f.heat_id = hr.heat_id
+          )
+        GROUP BY asi.athlete_id, a.primary_name, a.nationality, a.country_code, hp.elimination_name
+        ORDER BY points DESC
+    """
+    return sql, (event_id,)
+
+
+def build_fantasy_session_pick_pct_query(
+    event_id: int, discipline: str = "freestyle"
+) -> tuple[str, tuple]:
+    """Per-athlete % picked (ownership) for a Session event + discipline.
+
+    Mirrors the fantasy backend's ``compute_session_pick_stats``: confirmed picks
+    only, keyed on the same ``event_id`` (``PWA_IWT_EVENTS.id``). Each row carries
+    the event-wide ``total_entries`` (distinct confirmed entrants) so the caller
+    can compute the percentage without a second round-trip. ``athlete_id`` is a
+    VARCHAR in ``FANTASY_SESSION_PICKS`` — coerce to int on the Python side to
+    match the numeric ids the points query returns.
+
+    Returns:
+        (sql, params) tuple ready for db.run_query().
+    """
+    sql = """
+        SELECT athlete_id,
+               COUNT(DISTINCT user_id) AS pick_count,
+               (SELECT COUNT(DISTINCT user_id)
+                  FROM FANTASY_SESSION_PICKS
+                 WHERE event_id = %s AND discipline = %s AND confirmed = TRUE
+               ) AS total_entries
+        FROM FANTASY_SESSION_PICKS
+        WHERE event_id = %s AND discipline = %s AND confirmed = TRUE
+        GROUP BY athlete_id
+    """
+    return sql, (event_id, discipline, event_id, discipline)

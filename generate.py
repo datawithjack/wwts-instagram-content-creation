@@ -15,9 +15,9 @@ from pipeline.api import fetch_head_to_head, fetch_site_stats, fetch_athlete_eve
 from pipeline.captions import build_caption
 from pipeline.db import run_query
 from pipeline.helpers import nationality_to_iso, clean_event_name, heat_label_from_id, short_round_name, full_round_name
-from pipeline.queries import build_top10_query, build_canary_kings_query, build_athlete_rise_query, build_wave_count_query
+from pipeline.queries import build_top10_query, build_canary_kings_query, build_athlete_rise_query, build_wave_count_query, build_fantasy_mvp_points_query, build_fantasy_session_pick_pct_query
 from pipeline.templates import render_template, get_dummy_data
-from pipeline.renderer import render_to_png, render_to_video, render_carousel, render_h2h_carousel, render_rp_carousel, render_analysis_carousel, render_athlete_rise_carousel, render_picks_carousel, render_wave_count_carousel
+from pipeline.renderer import render_to_png, render_to_video, render_carousel, render_h2h_carousel, render_rp_carousel, render_analysis_carousel, render_athlete_rise_carousel, render_picks_carousel, render_wave_count_carousel, render_fuerte_fantasy_mvps_carousel
 
 
 def fetch_live_data(template_name: str, args) -> dict:
@@ -263,6 +263,31 @@ def fetch_live_data(template_name: str, args) -> dict:
         from pipeline.picks_carousel import load_picks_data
         return load_picks_data(args.picks_data)
 
+    if template_name == "fuerte_fantasy_mvps":
+        from pipeline.fuerte_fantasy_mvps import assemble_mvp_data
+        # Fuerteventura 2026 freestyle Session is app/DB event 123 (multi-discipline).
+        event_id = args.event or 123
+        points_sql, points_params = build_fantasy_mvp_points_query(event_id)
+        pct_sql, pct_params = build_fantasy_session_pick_pct_query(event_id, "freestyle")
+        points_rows = run_query(points_sql, points_params)
+        pct_rows = run_query(pct_sql, pct_params)
+        # Event metadata for the cover/eyebrows.
+        event_meta = {"location": "Fuerteventura", "year": 2026}
+        event_row = run_query(
+            "SELECT event_name, start_date FROM PWA_IWT_EVENTS WHERE id = %s LIMIT 1",
+            (event_id,),
+        )
+        if event_row:
+            ev = event_row[0]
+            event_meta["name"] = clean_event_name(ev.get("event_name", ""))
+            start = ev.get("start_date")
+            if isinstance(start, str):
+                from datetime import date as dt_date
+                start = dt_date.fromisoformat(start)
+            if start:
+                event_meta["year"] = start.year
+        return assemble_mvp_data(points_rows, pct_rows, event_meta)
+
     print(f"Live data not implemented for template: {template_name}")
     sys.exit(1)
 
@@ -278,7 +303,7 @@ def main():
     parser.add_argument(
         "--template",
         required=True,
-        choices=["head_to_head", "head_to_head_jump", "h2h_carousel", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "fantasy_league_announce", "event_picks"],
+        choices=["head_to_head", "head_to_head_jump", "h2h_carousel", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "fantasy_league_announce", "freestyle_scores_live", "slalom_scores_live", "event_picks", "fuerte_fantasy_mvps"],
     )
     parser.add_argument("--athlete1", type=int, help="Athlete 1 unified ID")
     parser.add_argument("--athlete2", type=int, help="Athlete 2 unified ID")
@@ -329,7 +354,7 @@ def main():
     dpr = template_config.get("dpr", 2)
 
     # Get data
-    if args.dry_run or template_name in ("coming_soon_carousel", "about_carousel"):
+    if args.dry_run or template_name in ("coming_soon_carousel", "about_carousel", "freestyle_scores_live", "slalom_scores_live"):
         # --mode perfect-10s overrides the dummy lookup for top_10_carousel
         if template_name in ("top_10", "top_10_carousel") and getattr(args, "mode", None) == "perfect-10s":
             data = get_dummy_data("perfect_10s")
@@ -348,7 +373,7 @@ def main():
     if getattr(args, "rider_of_day", False):
         data["rider_of_day"] = True
 
-    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "h2h_carousel", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "event_picks")
+    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "h2h_carousel", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "event_picks", "fuerte_fantasy_mvps")
 
     # Carousel preview: open all slides in browser tabs
     if is_carousel and args.preview:
@@ -372,6 +397,9 @@ def main():
         elif template_name == "event_picks":
             from pipeline.picks_carousel import build_slides as build_picks_slides
             slides = build_picks_slides(data)
+        elif template_name == "fuerte_fantasy_mvps":
+            from pipeline.fuerte_fantasy_mvps import build_slides as build_mvp_slides
+            slides = build_mvp_slides(data)
         else:
             from pipeline.carousel import build_slides
             slides = build_slides(data)
@@ -451,6 +479,12 @@ def main():
             result_paths = render_picks_carousel(
                 data, carousel_dir,
                 base_name=f"event_picks_{timestamp}",
+                width=width, height=height, dpr=dpr,
+            )
+        elif template_name == "fuerte_fantasy_mvps":
+            result_paths = render_fuerte_fantasy_mvps_carousel(
+                data, carousel_dir,
+                base_name=f"fuerte_fantasy_mvps_{timestamp}",
                 width=width, height=height, dpr=dpr,
             )
         else:

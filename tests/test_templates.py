@@ -202,3 +202,67 @@ class TestGetDummyData:
 # NOTE: The single-page rider_profile.html template was removed when the
 # rider profile became a carousel (slide_rp_* templates). Its render tests
 # were deleted; carousel rendering is covered in test_rp_carousel.py.
+
+
+class TestFreestyleScoresLive:
+    def setup_method(self):
+        self.data = get_dummy_data("freestyle_scores_live")
+        self.html = render_template("freestyle_scores_live", self.data)
+
+    def test_dummy_data_has_required_fields(self):
+        for field in ("eyebrow", "headline_lines", "sub_lines", "cta", "url"):
+            assert field in self.data, f"Missing field: {field}"
+
+    def test_headline_announces_scores_live(self):
+        joined = " ".join(self.data["headline_lines"]).upper()
+        assert "SCORES" in joined
+        assert "LIVE" in joined
+
+    def test_renders_headline_text(self):
+        assert "SCORES" in self.html
+        assert "LIVE" in self.html
+
+    def test_names_fuerteventura(self):
+        blob = " ".join(self.data["sub_lines"]) + self.data["eyebrow"]
+        assert "Fuerteventura" in blob
+
+    def test_no_em_dashes_in_copy(self):
+        blob = " ".join(self.data["sub_lines"]) + self.data["cta"]
+        assert "—" not in blob
+
+    def test_promotes_slalom_x_deadline(self):
+        blob = (" ".join(self.data["sub_lines"]) + self.data["cta"]).lower()
+        assert "slalom x" in blob
+        assert "1 day" in blob
+
+
+class TestSlalomScoresLive:
+    def setup_method(self):
+        self.data = get_dummy_data("slalom_scores_live")
+        self.html = render_template("slalom_scores_live", self.data)
+
+    def test_dummy_data_has_required_fields(self):
+        for field in ("eyebrow", "headline_lines", "sub_lines", "cta", "url"):
+            assert field in self.data, f"Missing field: {field}"
+
+    def test_headline_announces_scores_live(self):
+        joined = " ".join(self.data["headline_lines"]).upper()
+        assert "SCORES" in joined
+        assert "LIVE" in joined
+
+    def test_renders_headline_text(self):
+        assert "SCORES" in self.html
+        assert "LIVE" in self.html
+
+    def test_names_slalom_x_at_fuerteventura(self):
+        blob = " ".join(self.data["sub_lines"]) + self.data["eyebrow"]
+        assert "Fuerteventura" in blob
+        assert "Slalom X" in blob
+
+    def test_promotes_tenerife_picks(self):
+        blob = " ".join(self.data["sub_lines"]).lower()
+        assert "tenerife" in blob
+
+    def test_no_em_dashes_in_copy(self):
+        blob = " ".join(self.data["sub_lines"]) + self.data["cta"]
+        assert "—" not in blob

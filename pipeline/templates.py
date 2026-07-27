@@ -158,6 +158,9 @@ def render_template(template_name: str, data: dict) -> str:
     # Map variant names to their base template file
     template_file_map = {
         "site_stats_reel": "site_stats.html",
+        # Freestyle scores-live reuses the generic fantasy scores-live layout.
+        "freestyle_scores_live": "fantasy_scores_live.html",
+        "slalom_scores_live": "fantasy_scores_live.html",
     }
     # Carousel slide templates live under carousel/ subdirectory
     if template_name.startswith("carousel/"):
@@ -355,6 +358,30 @@ def get_dummy_data(template_name: str) -> dict:
             "scores_count": 43515,
             "events_count": 58,
         }
+    if template_name == "freestyle_scores_live":
+        return {
+            "eyebrow": "WINDSURF FANTASY LEAGUE",
+            "headline_lines": ["SCORES", "ARE LIVE!"],
+            "sub_lines": [
+                "The Fuerteventura freestyle results are in.",
+                "How did your picks do?!",
+                "Plus: just 1 day left to get your Slalom X team in.",
+            ],
+            "cta": "CHECK YOUR SCORE · LINK IN BIO",
+            "url": "windsurfworldtourstats.com",
+        }
+    if template_name == "slalom_scores_live":
+        return {
+            "eyebrow": "WINDSURF FANTASY LEAGUE",
+            "headline_lines": ["SCORES", "ARE LIVE!"],
+            "sub_lines": [
+                "The Fuerteventura Slalom X results are in.",
+                "How did your picks do?!",
+                "Next up: Tenerife picks are open now.",
+            ],
+            "cta": "CHECK YOUR SCORE · LINK IN BIO",
+            "url": "windsurfworldtourstats.com",
+        }
     if template_name == "fantasy_league_announce":
         return {
             "eyebrow": "BETA ACCESS",
@@ -449,6 +476,44 @@ def get_dummy_data(template_name: str) -> dict:
                 {"rank": 3, "score": 7.20, "round": "Quarter"},
                 {"rank": 4, "score": 6.90, "round": "Semi"},
                 {"rank": 5, "score": 6.50, "round": "Round 3"},
+            ],
+        }
+    if template_name == "fuerte_fantasy_mvps":
+        def _mvp(rank, athlete, country, athlete_id, single, double, pct):
+            return {
+                "rank": rank, "athlete": athlete, "country": country,
+                "athlete_id": athlete_id, "single_pts": single, "double_pts": double,
+                "total_pts": round(single + double, 2), "pct_picked": pct,
+            }
+        return {
+            "event": {
+                "name": "Fuerteventura World Cup",
+                "location": "Fuerteventura",
+                "year": 2026,
+            },
+            "men": [
+                _mvp(1, "Yentel Caers", "be", 301, 58.7, 41.2, 64),
+                _mvp(2, "Sam Esteve", "fr", 302, 52.4, 38.9, 47),
+                _mvp(3, "Lennart Neubauer", "de", 303, 49.1, 33.6, 55),
+                _mvp(4, "Amado Vrieswijk", "aw", 304, 46.8, 28.4, 38),
+                _mvp(5, "Adam Sims", "gb", 305, 43.2, 24.1, 22),
+                _mvp(6, "Steven van Broeckhoven", "be", 306, 39.5, 21.7, 19),
+                _mvp(7, "Loïck Spicher", "ch", 307, 36.9, 18.3, 14),
+                _mvp(8, "Adrien Bosson", "fr", 308, 34.1, 15.8, 11),
+                _mvp(9, "Youp Schmit", "aw", 309, 31.7, 12.4, 9),
+                _mvp(10, "Tomek Janiak", "pl", 310, 28.3, 9.6, 6),
+            ],
+            "women": [
+                _mvp(1, "Sarah-Quita Offringa", "aw", 5, 51.2, 34.8, 71),
+                _mvp(2, "Lina Erpenstein", "de", 16, 44.6, 29.3, 52),
+                _mvp(3, "Maaike Huvermann", "be", 321, 40.1, 25.7, 44),
+                _mvp(4, "Arrianne Aukes", "nl", 322, 36.8, 21.2, 33),
+                _mvp(5, "Jamie Howard", "gb", 323, 33.4, 18.6, 25),
+                _mvp(6, "Manon Loran", "fr", 324, 30.2, 15.1, 18),
+                _mvp(7, "Nofar Edri", "il", 325, 27.5, 12.8, 14),
+                _mvp(8, "Alexia Kiefer Quintana", "es", 326, 24.9, 10.3, 10),
+                _mvp(9, "Bruna Martinelli", "br", 327, 22.1, 8.4, 7),
+                _mvp(10, "Pauline Katz", "de", 328, 19.6, 6.2, 5),
             ],
         }
     raise ValueError(f"No dummy data for template: {template_name}")

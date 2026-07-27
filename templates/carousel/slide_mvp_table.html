@@ -1,0 +1,156 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        padding: 48px 48px 56px;
+    }
+
+    /* ── Header ── */
+    .mvp-eyebrow {
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgba(255, 255, 255, 0.30);
+        margin-bottom: 4px;
+    }
+
+    .mvp-title {
+        font-family: var(--font-display);
+        font-size: 76px;
+        letter-spacing: 0.02em;
+        line-height: 1;
+        color: var(--color-text-primary);
+        margin-bottom: 6px;
+    }
+
+    .mvp-title .accent {
+        color: var(--color-discipline);
+    }
+
+    .mvp-subtitle {
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 500;
+        color: var(--color-text-muted);
+        letter-spacing: 0.04em;
+        margin-bottom: 24px;
+    }
+
+    /* ── Table ── */
+    .mvp-row {
+        display: flex;
+        align-items: center;
+        padding: 0 18px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .mvp-row.head {
+        border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+        padding-bottom: 12px;
+        padding-top: 4px;
+    }
+
+    .mvp-row.head span {
+        font-family: var(--font-body);
+        font-size: 20px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--color-text-label);
+    }
+
+    .mvp-body .mvp-row:nth-child(odd) { background: rgba(30, 41, 59, 0.3); }
+    .mvp-body .mvp-row:nth-child(even) { background: rgba(30, 41, 59, 0.1); }
+    .mvp-body .mvp-row { height: 96px; }
+
+    .mvp-row.rank-1 { background: rgba(45, 212, 191, 0.10) !important; }
+
+    .col-rank {
+        width: 52px; flex-shrink: 0;
+        font-family: var(--font-body); font-size: 34px; font-weight: 700;
+        color: var(--color-text-muted);
+    }
+
+    .mvp-row.rank-1 .col-rank { color: var(--color-discipline); }
+
+    .col-flag { width: 52px; flex-shrink: 0; }
+    .col-flag img {
+        width: 40px; height: 30px; object-fit: cover;
+        border-radius: 2px; vertical-align: middle;
+    }
+
+    .col-athlete {
+        flex: 1;
+        font-family: var(--font-body); font-size: 34px; font-weight: 500;
+        color: var(--color-text-primary);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        padding-right: 12px;
+    }
+
+    .col-num {
+        width: 108px; flex-shrink: 0; text-align: center;
+        font-family: var(--font-body); font-size: 32px; font-weight: 600;
+        color: var(--color-text-muted);
+    }
+
+    .col-total {
+        width: 118px; flex-shrink: 0; text-align: center;
+        font-family: var(--font-body); font-size: 38px; font-weight: 900;
+        color: var(--color-text-primary);
+    }
+
+    .col-picked {
+        width: 118px; flex-shrink: 0; text-align: center;
+        font-family: var(--font-body); font-size: 32px; font-weight: 700;
+        color: var(--color-discipline);
+    }
+
+    .table-footnote {
+        font-family: var(--font-body);
+        font-size: 20px; font-weight: 400; font-style: italic;
+        color: var(--color-text-muted);
+        letter-spacing: 0.03em;
+        margin-top: 22px; text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    {% if event.location %}
+    <div class="mvp-eyebrow">{{ event.location }} {{ event.year | default('') }} &middot; Freestyle Fantasy</div>
+    {% endif %}
+    <div class="mvp-title">{{ sex_label }}<span class="accent">'S MVPS</span></div>
+    <div class="mvp-subtitle">Top 10 fantasy point scorers</div>
+
+    <div class="mvp-table">
+        <div class="mvp-row head">
+            <span class="col-rank">#</span>
+            <span class="col-flag"></span>
+            <span class="col-athlete">Athlete</span>
+            <span class="col-num">Single</span>
+            <span class="col-num">Double</span>
+            <span class="col-total">Total</span>
+            <span class="col-picked">Picked</span>
+        </div>
+        <div class="mvp-body">
+        {% for row in rows %}
+            <div class="mvp-row{% if row.rank == 1 %} rank-1{% endif %}">
+                <div class="col-rank">{{ row.rank }}</div>
+                <div class="col-flag">{% if row.country %}<img src="https://flagcdn.com/w40/{{ row.country | lower }}.png" alt="{{ row.country }}">{% endif %}</div>
+                <div class="col-athlete">{{ row.athlete }}</div>
+                <div class="col-num">{{ "%.1f" | format(row.single_pts) }}</div>
+                <div class="col-num">{{ "%.1f" | format(row.double_pts) }}</div>
+                <div class="col-total">{{ "%.1f" | format(row.total_pts) }}</div>
+                <div class="col-picked">{{ row.pct_picked }}%</div>
+            </div>
+        {% endfor %}
+        </div>
+    </div>
+
+    <div class="table-footnote">Points = total heat scores across the event &middot; Picked = % of players who had them</div>
+</div>
+{% endblock %}
