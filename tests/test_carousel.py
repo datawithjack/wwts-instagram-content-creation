@@ -649,3 +649,58 @@ class TestFinalsDayTemplateRendering:
         html = render_template("carousel/slide_cover", slides[0])
         assert "DAY 2" in html
         assert "FINALS DAY" not in html
+
+
+# ── So Far (--so-far flag) ─────────────────────────────────────────────────
+
+
+class TestBuildSlidesSoFarTop10:
+    def setup_method(self):
+        data = get_dummy_data("top_10_carousel_waves")
+        data["so_far"] = True
+        self.slides = build_slides(data)
+
+    def test_so_far_passed_to_all_slides(self):
+        for slide in self.slides:
+            assert slide["so_far"] is True
+
+    def test_so_far_enables_round_labels(self):
+        # Mid-event posts need round context, same as daily posts.
+        for slide in self.slides:
+            assert slide["show_round"] is True
+
+    def test_without_so_far_defaults_false(self):
+        data = get_dummy_data("top_10_carousel_waves")
+        slides = build_slides(data)
+        for slide in slides:
+            assert slide["so_far"] is False
+
+
+class TestSoFarTemplateRendering:
+    def setup_method(self):
+        data = get_dummy_data("top_10_carousel_waves")
+        data["so_far"] = True
+        self.slides = build_slides(data)
+
+    def test_cover_renders_so_far(self):
+        html = render_template("carousel/slide_cover", self.slides[0])
+        assert "SO FAR" in html
+
+    def test_table_eyebrow_renders_so_far(self):
+        html = render_template("carousel/slide_table", self.slides[2])
+        assert "SO FAR" in html
+
+    def test_so_far_takes_precedence_over_day_number(self):
+        data = get_dummy_data("top_10_carousel_waves")
+        data["day"] = 2
+        data["so_far"] = True
+        slides = build_slides(data)
+        html = render_template("carousel/slide_cover", slides[0])
+        assert "SO FAR" in html
+        assert "DAY 2" not in html
+
+    def test_without_so_far_omits_label(self):
+        data = get_dummy_data("top_10_carousel_waves")
+        slides = build_slides(data)
+        html = render_template("carousel/slide_cover", slides[0])
+        assert "SO FAR" not in html

@@ -69,6 +69,15 @@ def _caption_top_10(data: dict, site_url: str) -> str:
             f"Full stats \u2192 {site_url}"
         )
 
+    if data.get("so_far"):
+        event_name = data.get("event_name", "")
+        return (
+            f"\U0001f3c4 The {event_name} is well underway.\n\n"
+            f"Here are the highest {gender.lower()} {metric.lower().rstrip('s')} scores so far.\n\n"
+            f"Who has been your standout rider? \U0001f447\n\n"
+            f"Full leaderboard → {site_url}"
+        )
+
     if day or data.get("finals_day"):
         event_name = data.get("event_name", "")
         day_label = "Finals Day" if data.get("finals_day") else f"Day {day}"

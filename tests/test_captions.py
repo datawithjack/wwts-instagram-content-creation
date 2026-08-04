@@ -237,6 +237,41 @@ class TestTop10DailyCaption:
         assert "today" not in caption.lower()
 
 
+class TestTop10SoFarCaption:
+    def test_mentions_event_underway(self, top10_data, config):
+        top10_data["so_far"] = True
+        top10_data["event_name"] = "Tenerife Grand Slam"
+        caption = build_caption("top_10_carousel", top10_data, config)
+        assert "Tenerife Grand Slam" in caption
+        assert "underway" in caption.lower()
+
+    def test_says_so_far(self, top10_data, config):
+        top10_data["so_far"] = True
+        top10_data["event_name"] = "Tenerife Grand Slam"
+        caption = build_caption("top_10_carousel", top10_data, config)
+        assert "so far" in caption.lower()
+
+    def test_asks_standout_question(self, top10_data, config):
+        top10_data["so_far"] = True
+        top10_data["event_name"] = "Tenerife Grand Slam"
+        caption = build_caption("top_10_carousel", top10_data, config)
+        assert "standout" in caption.lower()
+        assert "?" in caption
+
+    def test_no_em_dashes(self, top10_data, config):
+        top10_data["so_far"] = True
+        top10_data["event_name"] = "Tenerife Grand Slam"
+        caption = build_caption("top_10_carousel", top10_data, config)
+        assert "—" not in caption
+
+    def test_so_far_takes_precedence_over_day(self, top10_data, config):
+        top10_data["so_far"] = True
+        top10_data["day"] = 2
+        top10_data["event_name"] = "Tenerife Grand Slam"
+        caption = build_caption("top_10_carousel", top10_data, config)
+        assert "Day 2" not in caption
+
+
 # ── Site Stats caption ──────────────────────────────────────────
 
 

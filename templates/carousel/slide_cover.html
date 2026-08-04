@@ -121,8 +121,8 @@
         <span class="line">{{ title_gender | upper }}</span>
         <span class="line">TOP 10</span>
         <span class="line metric">{{ title_metric | upper }}</span>
-        {% if day or finals_day %}
-        <span class="line day">{% if finals_day %}FINALS DAY{% else %}DAY {{ day }}{% endif %}</span>
+        {% if day or finals_day or so_far %}
+        <span class="line day">{% if so_far %}SO FAR{% elif finals_day %}FINALS DAY{% else %}DAY {{ day }}{% endif %}</span>
         {% endif %}
     </div>
     {% if not is_per_event and not day %}

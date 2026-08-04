@@ -316,6 +316,7 @@ def main():
     parser.add_argument("--year", type=int, help="Year filter for top 10")
     parser.add_argument("--day", type=int, help="Day number for daily top 10 label (e.g. 1, 2, 3)")
     parser.add_argument("--finals-day", action="store_true", help="Label as Finals Day instead of Day N")
+    parser.add_argument("--so-far", action="store_true", help="Label as 'So Far' for a mid-event top 10 (instead of Day N)")
     parser.add_argument("--rounds", help="Comma-separated round names to filter (e.g. 'Final,R5 B-Final')")
     parser.add_argument("--counting-only", action="store_true", help="Top 10: only scores that counted toward the heat total (default now includes non-counting)")
     parser.add_argument("--mode", help="Variant mode for a template (e.g. 'perfect-10s' for the all-time perfect-10 wave carousel)")
@@ -368,6 +369,8 @@ def main():
         data["day"] = args.day
     if getattr(args, "finals_day", False):
         data["finals_day"] = True
+    if getattr(args, "so_far", False):
+        data["so_far"] = True
 
     # Thread --rider-of-day into rider profile data (mid-comp, no placement)
     if getattr(args, "rider_of_day", False):

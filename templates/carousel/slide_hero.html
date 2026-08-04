@@ -160,7 +160,7 @@
 {% block carousel_content %}
 <div class="container">
     {% if is_per_event and event_name %}
-    <div class="event-eyebrow">{{ event_name }}{% if day or finals_day %} &middot; {% if finals_day %}FINALS DAY{% else %}DAY {{ day }}{% endif %}{% endif %}</div>
+    <div class="event-eyebrow">{{ event_name }}{% if day or finals_day or so_far %} &middot; {% if so_far %}SO FAR{% elif finals_day %}FINALS DAY{% else %}DAY {{ day }}{% endif %}{% endif %}</div>
     {% endif %}
     <div class="rank-badge">BEST {{ title_metric | upper | replace("WAVES", "WAVE") | replace("JUMPS", "JUMP") }} SCORE{% if tie_count >= 2 %}S{% endif %}</div>
 
