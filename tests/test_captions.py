@@ -237,6 +237,41 @@ class TestTop10DailyCaption:
         assert "today" not in caption.lower()
 
 
+class TestTop10SoFarCaption:
+    def test_mentions_event_underway(self, top10_data, config):
+        top10_data["so_far"] = True
+        top10_data["event_name"] = "Tenerife Grand Slam"
+        caption = build_caption("top_10_carousel", top10_data, config)
+        assert "Tenerife Grand Slam" in caption
+        assert "underway" in caption.lower()
+
+    def test_says_so_far(self, top10_data, config):
+        top10_data["so_far"] = True
+        top10_data["event_name"] = "Tenerife Grand Slam"
+        caption = build_caption("top_10_carousel", top10_data, config)
+        assert "so far" in caption.lower()
+
+    def test_asks_standout_question(self, top10_data, config):
+        top10_data["so_far"] = True
+        top10_data["event_name"] = "Tenerife Grand Slam"
+        caption = build_caption("top_10_carousel", top10_data, config)
+        assert "standout" in caption.lower()
+        assert "?" in caption
+
+    def test_no_em_dashes(self, top10_data, config):
+        top10_data["so_far"] = True
+        top10_data["event_name"] = "Tenerife Grand Slam"
+        caption = build_caption("top_10_carousel", top10_data, config)
+        assert "—" not in caption
+
+    def test_so_far_takes_precedence_over_day(self, top10_data, config):
+        top10_data["so_far"] = True
+        top10_data["day"] = 2
+        top10_data["event_name"] = "Tenerife Grand Slam"
+        caption = build_caption("top_10_carousel", top10_data, config)
+        assert "Day 2" not in caption
+
+
 # ── Site Stats caption ──────────────────────────────────────────
 
 
@@ -426,3 +461,75 @@ class TestCaptionOverride:
         )
         assert caption.startswith("Custom caption here")
         assert "#windsurf" in caption
+
+
+# ── Slalom Fantasy MVPs ─────────────────────────────────────────
+
+
+class TestSlalomMvpsCaption:
+    @pytest.fixture
+    def data(self):
+        return {
+            "event": {"location": "Fuerteventura", "year": 2026},
+            "men": [
+                {"rank": 1, "athlete": "Matteo Iachino", "wins": 5,
+                 "total_pts": 360.0, "pct_picked": 20},
+                {"rank": 2, "athlete": "Pierre Mortefon", "wins": 4,
+                 "total_pts": 334.0, "pct_picked": 45},
+            ],
+            "women": [
+                {"rank": 1, "athlete": "Femke van der Veen", "wins": 1,
+                 "total_pts": 240.0, "pct_picked": 10, "elims": 15,
+                 "non_finishes": []},
+                {"rank": 2, "athlete": "Justine Lemeteyer", "wins": 8,
+                 "total_pts": 227.0, "pct_picked": 55, "elims": 15,
+                 "non_finishes": ["DNS", "DNF"]},
+            ],
+        }
+
+    def test_names_both_fleet_leaders(self, data, config):
+        caption = build_caption("slalom_mvps", data, config)
+        assert "Matteo Iachino" in caption
+        assert "Femke van der Veen" in caption
+
+    def test_quotes_the_leaders_points(self, data, config):
+        caption = build_caption("slalom_mvps", data, config)
+        assert "360" in caption
+
+    def test_flags_a_low_owned_top_scorer(self, data, config):
+        # The best hook in the data: the men's MVP was on only 20% of teams.
+        caption = build_caption("slalom_mvps", data, config)
+        assert "20%" in caption
+
+    def test_calls_out_a_win_leader_who_did_not_top_the_board(self, data, config):
+        # Justine won 8 of the 15 eliminations and still finished second.
+        caption = build_caption("slalom_mvps", data, config)
+        assert "Justine Lemeteyer" in caption
+        assert "8 of the 15" in caption
+
+    def test_blames_the_non_finishes_for_the_missed_mvp(self, data, config):
+        # "won 8 and still finished 2nd" begs the question; answer it in the copy.
+        caption = build_caption("slalom_mvps", data, config)
+        assert "DNS" in caption and "DNF" in caption
+
+    def test_omits_the_non_finish_line_for_a_clean_record(self, data, config):
+        data["women"][1]["non_finishes"] = []
+        caption = build_caption("slalom_mvps", data, config)
+        assert "DNS" not in caption
+        assert "Justine Lemeteyer" in caption
+
+    def test_promotes_tenerife_picks(self, data, config):
+        assert "tenerife" in build_caption("slalom_mvps", data, config).lower()
+
+    def test_no_em_dashes(self, data, config):
+        assert "\u2014" not in build_caption("slalom_mvps", data, config)
+
+    def test_ends_with_hashtags(self, data, config):
+        caption = build_caption("slalom_mvps", data, config)
+        assert caption.rstrip().split("\n")[-1].lstrip().startswith("#")
+
+    def test_survives_an_empty_womens_fleet(self, data, config):
+        data["women"] = []
+        caption = build_caption("slalom_mvps", data, config)
+        assert "Matteo Iachino" in caption
+        assert "None" not in caption

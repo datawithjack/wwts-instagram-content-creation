@@ -17,7 +17,7 @@ from pipeline.db import run_query
 from pipeline.helpers import nationality_to_iso, clean_event_name, heat_label_from_id, short_round_name, full_round_name
 from pipeline.queries import build_top10_query, build_canary_kings_query, build_athlete_rise_query, build_wave_count_query, build_fantasy_mvp_points_query, build_fantasy_session_pick_pct_query
 from pipeline.templates import render_template, get_dummy_data
-from pipeline.renderer import render_to_png, render_to_video, render_carousel, render_h2h_carousel, render_rp_carousel, render_analysis_carousel, render_athlete_rise_carousel, render_picks_carousel, render_wave_count_carousel, render_fuerte_fantasy_mvps_carousel
+from pipeline.renderer import render_to_png, render_to_video, render_carousel, render_h2h_carousel, render_rp_carousel, render_analysis_carousel, render_athlete_rise_carousel, render_picks_carousel, render_wave_count_carousel, render_fuerte_fantasy_mvps_carousel, render_slalom_mvps_carousel
 
 
 def fetch_live_data(template_name: str, args) -> dict:
@@ -288,6 +288,79 @@ def fetch_live_data(template_name: str, args) -> dict:
                 event_meta["year"] = start.year
         return assemble_mvp_data(points_rows, pct_rows, event_meta)
 
+    if template_name == "slalom_mvps":
+        from pipeline.slalom_mvps import assemble_slalom_mvp_data, verify_against_app_scores
+        from pipeline.queries import (
+            build_slalom_mvp_heats_query,
+            build_slalom_mvp_classify_query,
+            build_slalom_elimination_view_query,
+        )
+        # Fuerteventura 2026 is app/DB event 123 (multi-discipline: freestyle +
+        # Slalom X). Picks are stored under discipline 'slalom_x'.
+        event_id = args.event or 123
+        heats_sql, heats_params = build_slalom_mvp_heats_query(event_id)
+        classify_sql, classify_params = build_slalom_mvp_classify_query(event_id)
+        elim_sql, elim_params = build_slalom_elimination_view_query(event_id)
+        pct_sql, pct_params = build_fantasy_session_pick_pct_query(event_id, "slalom_x")
+
+        heat_rows = run_query(heats_sql, heats_params)
+        classify_rows = run_query(classify_sql, classify_params)
+        elim_rows = run_query(elim_sql, elim_params)
+        pct_rows = run_query(pct_sql, pct_params)
+
+        event_meta = {"location": "Fuerteventura", "year": 2026}
+        event_row = run_query(
+            "SELECT event_name, start_date FROM PWA_IWT_EVENTS WHERE id = %s LIMIT 1",
+            (event_id,),
+        )
+        if event_row:
+            ev = event_row[0]
+            event_meta["name"] = clean_event_name(ev.get("event_name", ""))
+            start = ev.get("start_date")
+            if isinstance(start, str):
+                from datetime import date as dt_date
+                start = dt_date.fromisoformat(start)
+            if start:
+                event_meta["year"] = start.year
+
+        data = assemble_slalom_mvp_data(
+            heat_rows, classify_rows, elim_rows, pct_rows, event_meta
+        )
+
+        # The scoring rules here are a port of the app's engine (see
+        # pipeline/slalom_mvps.py). Cross-check every athlete the app itself
+        # scored: a post that disagreed with the leaderboard players can see
+        # would be worse than no post, so fail loudly rather than render.
+        breakdown_rows = run_query(
+            "SELECT breakdown_json FROM FANTASY_SESSION_SCORES "
+            "WHERE event_id = %s AND discipline = %s",
+            (event_id, "slalom_x"),
+        )
+        problems = verify_against_app_scores(data, breakdown_rows)
+        if problems:
+            print("Computed points disagree with the app's own fantasy scores:")
+            for p in problems:
+                print(f"  - {p}")
+            sys.exit(1)
+        ranked = [r for f in ("men", "women") for r in data.get(f, [])]
+        # Only athletes somebody picked appear in the app's stored breakdowns, so
+        # report what was actually verified rather than implying full coverage.
+        import json as _json
+        scored_ids = set()
+        for _row in breakdown_rows or []:
+            try:
+                for _slot in _json.loads(_row["breakdown_json"]).get("slots", []):
+                    scored_ids.add(int(_slot["athlete_id"]))
+            except (ValueError, TypeError, KeyError):
+                continue
+        verified = sum(1 for r in ranked if r["athlete_id"] in scored_ids)
+        print(
+            f"Scoring cross-checked against the app: {verified}/{len(ranked)} "
+            f"ranked athletes matched exactly "
+            f"({len(ranked) - verified} unpicked, so the app never scored them)."
+        )
+        return data
+
     print(f"Live data not implemented for template: {template_name}")
     sys.exit(1)
 
@@ -303,7 +376,7 @@ def main():
     parser.add_argument(
         "--template",
         required=True,
-        choices=["head_to_head", "head_to_head_jump", "h2h_carousel", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "fantasy_league_announce", "freestyle_scores_live", "slalom_scores_live", "event_picks", "fuerte_fantasy_mvps"],
+        choices=["head_to_head", "head_to_head_jump", "h2h_carousel", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "fantasy_league_announce", "freestyle_scores_live", "slalom_scores_live", "event_picks", "fuerte_fantasy_mvps", "slalom_mvps"],
     )
     parser.add_argument("--athlete1", type=int, help="Athlete 1 unified ID")
     parser.add_argument("--athlete2", type=int, help="Athlete 2 unified ID")
@@ -316,6 +389,7 @@ def main():
     parser.add_argument("--year", type=int, help="Year filter for top 10")
     parser.add_argument("--day", type=int, help="Day number for daily top 10 label (e.g. 1, 2, 3)")
     parser.add_argument("--finals-day", action="store_true", help="Label as Finals Day instead of Day N")
+    parser.add_argument("--so-far", action="store_true", help="Label as 'So Far' for a mid-event top 10 (instead of Day N)")
     parser.add_argument("--rounds", help="Comma-separated round names to filter (e.g. 'Final,R5 B-Final')")
     parser.add_argument("--counting-only", action="store_true", help="Top 10: only scores that counted toward the heat total (default now includes non-counting)")
     parser.add_argument("--mode", help="Variant mode for a template (e.g. 'perfect-10s' for the all-time perfect-10 wave carousel)")
@@ -368,12 +442,14 @@ def main():
         data["day"] = args.day
     if getattr(args, "finals_day", False):
         data["finals_day"] = True
+    if getattr(args, "so_far", False):
+        data["so_far"] = True
 
     # Thread --rider-of-day into rider profile data (mid-comp, no placement)
     if getattr(args, "rider_of_day", False):
         data["rider_of_day"] = True
 
-    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "h2h_carousel", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "event_picks", "fuerte_fantasy_mvps")
+    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "h2h_carousel", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "event_picks", "fuerte_fantasy_mvps", "slalom_mvps")
 
     # Carousel preview: open all slides in browser tabs
     if is_carousel and args.preview:
@@ -400,6 +476,9 @@ def main():
         elif template_name == "fuerte_fantasy_mvps":
             from pipeline.fuerte_fantasy_mvps import build_slides as build_mvp_slides
             slides = build_mvp_slides(data)
+        elif template_name == "slalom_mvps":
+            from pipeline.slalom_mvps import build_slides as build_slalom_mvp_slides
+            slides = build_slalom_mvp_slides(data)
         else:
             from pipeline.carousel import build_slides
             slides = build_slides(data)
@@ -479,6 +558,12 @@ def main():
             result_paths = render_picks_carousel(
                 data, carousel_dir,
                 base_name=f"event_picks_{timestamp}",
+                width=width, height=height, dpr=dpr,
+            )
+        elif template_name == "slalom_mvps":
+            result_paths = render_slalom_mvps_carousel(
+                data, carousel_dir,
+                base_name=f"slalom_mvps_{timestamp}",
                 width=width, height=height, dpr=dpr,
             )
         elif template_name == "fuerte_fantasy_mvps":
