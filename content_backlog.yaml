@@ -495,6 +495,21 @@ posts:
     scheduled_date: "2026-11-06T11:30:00"
     notes: Jane Seman (AUS) — 1st, Chile 2025 (event 133); custom cover sail KA-191, no headshot (thumb → API photo)
 
+  - id: tenerife2026-wave-fantasy-scores-live
+    template: wave_scores_live
+    category: seasonal
+    scheduled_date: "2026-08-07T10:59:00"
+    published: true
+    published_at: "2026-08-07T10:59:27"
+    notes: >
+      Fantasy League "scores are live" post for the Tenerife wave event
+      (API event 124, completed 2026-08-07). Published manually via
+      `--publish now`, not by the poller, hence published: true on entry so the
+      poll-backlog Action leaves it alone. Media ID 18111084848068304. An earlier
+      publish (17994363714007510) was deleted the same day because of a bug on
+      the site, then re-posted unchanged. Copy-only variant of
+      fantasy_scores_live, no params.
+
   # ── DRAFT (no scheduled_date — poller ignores until scheduled) ──
   - id: fiji2026-wave-count
     template: wave_count

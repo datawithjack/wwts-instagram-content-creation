@@ -444,6 +444,42 @@ class TestSlalomScoresLiveCaption:
         assert caption.rstrip().split("\n")[-1].lstrip().startswith("#")
 
 
+# ── Tenerife wave scores live announcement ──────────
+
+
+class TestWaveScoresLiveCaption:
+    def test_announces_scores_are_live(self, config):
+        caption = build_caption("wave_scores_live", {}, config)
+        assert "live" in caption.lower()
+        assert "score" in caption.lower()
+
+    def test_names_tenerife(self, config):
+        caption = build_caption("wave_scores_live", {}, config)
+        assert "Tenerife" in caption
+
+    def test_mentions_wave(self, config):
+        caption = build_caption("wave_scores_live", {}, config)
+        assert "wave" in caption.lower()
+
+    def test_promotes_season_standings(self, config):
+        caption = build_caption("wave_scores_live", {}, config).lower()
+        assert "standings" in caption
+        assert "2026" in caption
+
+    def test_has_engagement_prompt(self, config):
+        caption = build_caption("wave_scores_live", {}, config)
+        assert "?" in caption or "\U0001f447" in caption
+
+    def test_no_em_dashes(self, config):
+        # House rule: no em dashes in post/caption copy.
+        caption = build_caption("wave_scores_live", {}, config)
+        assert "\u2014" not in caption
+
+    def test_ends_with_hashtags(self, config):
+        caption = build_caption("wave_scores_live", {}, config)
+        assert caption.rstrip().split("\n")[-1].lstrip().startswith("#")
+
+
 # ── Fallback / Override ─────────────────────────────────────────
 
 

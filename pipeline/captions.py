@@ -32,6 +32,7 @@ def build_caption(
             "event_picks": _caption_event_picks,
             "freestyle_scores_live": _caption_freestyle_scores_live,
             "slalom_scores_live": _caption_slalom_scores_live,
+            "wave_scores_live": _caption_wave_scores_live,
             "fuerte_fantasy_mvps": _caption_fantasy_mvps,
         }
         builder = builders.get(template_name, _caption_default)
@@ -244,6 +245,17 @@ def _caption_slalom_scores_live(data: dict, site_url: str) -> str:
         f"\U0001f449 Check your score: link in bio ({site_url})\n\n"
         "\U0001f30a Next up: Tenerife picks are open now, so get your team in "
         "before the wave action starts."
+    )
+
+
+def _caption_wave_scores_live(data: dict, site_url: str) -> str:
+    return (
+        "\U0001f6a8 Windsurf Fantasy League scores are LIVE! \U0001f6a8\n\n"
+        "The wave results are in from Tenerife. See how your picks "
+        "stacked up and where you land on the leaderboard.\n\n"
+        "How did you do?! \U0001f447\n\n"
+        f"\U0001f449 Check your score: link in bio ({site_url})\n\n"
+        "\U0001f3c6 Check where you sit in the 2026 season standings."
     )
 
 

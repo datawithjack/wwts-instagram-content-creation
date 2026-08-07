@@ -161,6 +161,7 @@ def render_template(template_name: str, data: dict) -> str:
         # Freestyle scores-live reuses the generic fantasy scores-live layout.
         "freestyle_scores_live": "fantasy_scores_live.html",
         "slalom_scores_live": "fantasy_scores_live.html",
+        "wave_scores_live": "fantasy_scores_live.html",
     }
     # Carousel slide templates live under carousel/ subdirectory
     if template_name.startswith("carousel/"):
@@ -378,6 +379,18 @@ def get_dummy_data(template_name: str) -> dict:
                 "The Fuerteventura Slalom X results are in.",
                 "How did your picks do?!",
                 "Next up: Tenerife picks are open now.",
+            ],
+            "cta": "CHECK YOUR SCORE · LINK IN BIO",
+            "url": "windsurfworldtourstats.com",
+        }
+    if template_name == "wave_scores_live":
+        return {
+            "eyebrow": "WINDSURF FANTASY LEAGUE",
+            "headline_lines": ["SCORES", "ARE LIVE!"],
+            "sub_lines": [
+                "The Tenerife wave results are in.",
+                "How did your picks do?!",
+                "See where you sit in the 2026 standings.",
             ],
             "cta": "CHECK YOUR SCORE · LINK IN BIO",
             "url": "windsurfworldtourstats.com",

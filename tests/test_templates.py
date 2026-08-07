@@ -266,3 +266,36 @@ class TestSlalomScoresLive:
     def test_no_em_dashes_in_copy(self):
         blob = " ".join(self.data["sub_lines"]) + self.data["cta"]
         assert "—" not in blob
+
+
+class TestWaveScoresLive:
+    def setup_method(self):
+        self.data = get_dummy_data("wave_scores_live")
+        self.html = render_template("wave_scores_live", self.data)
+
+    def test_dummy_data_has_required_fields(self):
+        for field in ("eyebrow", "headline_lines", "sub_lines", "cta", "url"):
+            assert field in self.data, f"Missing field: {field}"
+
+    def test_headline_announces_scores_live(self):
+        joined = " ".join(self.data["headline_lines"]).upper()
+        assert "SCORES" in joined
+        assert "LIVE" in joined
+
+    def test_renders_headline_text(self):
+        assert "SCORES" in self.html
+        assert "LIVE" in self.html
+
+    def test_names_tenerife_wave(self):
+        blob = " ".join(self.data["sub_lines"]) + self.data["eyebrow"]
+        assert "Tenerife" in blob
+        assert "wave" in blob.lower()
+
+    def test_promotes_season_standings(self):
+        blob = " ".join(self.data["sub_lines"]).lower()
+        assert "standings" in blob
+        assert "2026" in blob
+
+    def test_no_em_dashes_in_copy(self):
+        blob = " ".join(self.data["sub_lines"]) + self.data["cta"]
+        assert "\u2014" not in blob
