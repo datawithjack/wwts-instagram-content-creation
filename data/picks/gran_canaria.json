@@ -1,0 +1,55 @@
+{
+  "event": {
+    "name": "Gran Canaria World Cup",
+    "venue": "Pozo Izquierdo",
+    "dates": "4-12 Jul 2026",
+    "stars": 5,
+    "tour": "WWT",
+    "category": "Men's",
+    "mode": "picks",
+    "cover_sub": "My top 4 men to make the final in Pozo Izquierdo. Powerful side-shore winds, big jumps and world-class wave riding at one of the most iconic venues on tour.",
+    "photo_credit": "📸 @jcwindsurf | @pwaworldtour"
+  },
+  "picks": [
+    {
+      "rank": 4,
+      "label": null,
+      "name": "Philip Koster",
+      "sail": null,
+      "nation": "Germany",
+      "brand": null,
+      "photo": "assets/picks/philip_koster.jpg",
+      "why": "Rumours of a minor injury, but you can {{never rule out Philip in Pozo}}."
+    },
+    {
+      "rank": 3,
+      "label": null,
+      "name": "Marc Pare",
+      "sail": null,
+      "nation": "Spain",
+      "brand": null,
+      "photo": "assets/picks/marc_pare.jpg",
+      "why": "The 2025 world champion looks on fire in the training diaries, and a strong result here would {{equal his best Gran Canaria finish}}."
+    },
+    {
+      "rank": 2,
+      "label": null,
+      "name": "Marcilio Browne",
+      "sail": null,
+      "nation": "Brazil",
+      "brand": null,
+      "photo": "assets/picks/marcilio_browne.jpg",
+      "why": "Mr Consistent. After a good result at the Maui Pro, he'll be chasing another here to {{reclaim that world title}}."
+    },
+    {
+      "rank": 1,
+      "label": "Pick to Win",
+      "name": "Marino Gil",
+      "sail": null,
+      "nation": "Spain",
+      "brand": null,
+      "photo": "assets/picks/marino_gil.jpg",
+      "why": "The Pozo local and 2024 champion is looking on fire and {{hungry for the top spot}} after 2025."
+    }
+  ]
+}

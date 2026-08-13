@@ -1,0 +1,55 @@
+{
+  "event": {
+    "name": "Gran Canaria World Cup",
+    "venue": "Pozo Izquierdo",
+    "dates": "4-12 Jul 2026",
+    "stars": 5,
+    "tour": "WWT",
+    "category": "Women's",
+    "mode": "picks",
+    "cover_sub": "My top 4 women to make the final in Pozo Izquierdo. Powerful side-shore winds, big jumps and world-class wave riding at one of the most iconic venues on tour.",
+    "photo_credit": "📸 @jcwindsurf | @pwaworldtour"
+  },
+  "picks": [
+    {
+      "rank": 4,
+      "label": null,
+      "name": "Lina Erpenstein",
+      "sail": null,
+      "nation": "Germany",
+      "brand": null,
+      "photo": "assets/picks/lina_erpenstein.jpg",
+      "why": "Missed Pozo last year through injury, but she'll be hungry to get {{back into the top 4}}."
+    },
+    {
+      "rank": 3,
+      "label": null,
+      "name": "Sol Degrieck",
+      "sail": null,
+      "nation": "Belgium",
+      "brand": null,
+      "photo": "assets/picks/sol_degrieck.jpg",
+      "why": "One of the youngest in the fleet was on full send mode in Pozo last year with some amazing wave rides, and we're backing her to {{go one better}} here."
+    },
+    {
+      "rank": 2,
+      "label": null,
+      "name": "Sarah-Quita Offringa",
+      "sail": null,
+      "nation": "Aruba",
+      "brand": null,
+      "photo": "assets/picks/sarah_quita.jpg",
+      "why": "We don't need a reason to include Sarah-Quita in our picks, other than {{it's Sarah-Quita}}."
+    },
+    {
+      "rank": 1,
+      "label": "Pick to Win",
+      "name": "Daida Moreno",
+      "sail": null,
+      "nation": "Spain",
+      "brand": null,
+      "photo": "assets/picks/daida_moreno.jpg",
+      "why": "The {{Queen of Pozo}}. Enough said."
+    }
+  ]
+}
