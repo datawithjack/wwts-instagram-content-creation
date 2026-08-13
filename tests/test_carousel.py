@@ -488,6 +488,38 @@ class TestGetDummyDataCarousel:
         for entry in data["entries"]:
             assert "trick_type" in entry
 
+    def test_top_10_carousel_entries_have_modifier(self):
+        data = get_dummy_data("top_10_carousel")
+        for entry in data["entries"]:
+            assert "modifier" in entry
+
+
+class TestModifierColumn:
+    def _slides(self, modifier="1-Foot"):
+        scores = [10.00, 9.50, 9.00, 8.50, 8.00, 7.50, 7.00, 6.50, 6.00, 5.50]
+        entries = _make_entries(scores, trick_type="B", modifier=modifier)
+        return build_slides(_make_data(entries))
+
+    def test_modifier_merged_into_type_column(self):
+        # Modifier lives inside the single TYPE column, not a separate MOD col.
+        table = self._slides()[2]
+        html = render_template("carousel/slide_table", table)
+        assert ">MOD<" not in html
+        assert ">TYPE<" in html
+
+    def test_table_renders_modifier_label_under_type(self):
+        table = self._slides()[2]
+        html = render_template("carousel/slide_table", table)
+        assert 'class="type-mod"' in html
+        assert "1 Foot" in html
+
+    def test_blank_modifier_renders_no_subline(self):
+        # Double Forwards with no modifier must not print "None" or a sub-line.
+        table = self._slides(modifier="")[2]
+        html = render_template("carousel/slide_table", table)
+        assert "None" not in html
+        assert 'class="type-mod"' not in html
+
     def test_top_10_carousel_has_event_metadata(self):
         data = get_dummy_data("top_10_carousel")
         assert "event_stars" in data

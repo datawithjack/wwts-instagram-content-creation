@@ -1,0 +1,514 @@
+{% extends "base.html" %}
+
+{# Tour-availability infographic reel — animated 1080x1920 page recorded to MP4 by
+   Playwright (render_to_video). Illustrates the one-pick-per-season rule: athletes
+   spent at Gran Canaria are unavailable at Tenerife. Styling mirrors the live
+   fantasy app (frontend src/components/fantasy/picks): surface-2 cards, tour-400
+   accent, Bebas Neue headers, AthleteCard layout. Data: pipeline/tour_availability.py. #}
+
+{% set AVA_COLORS = ['#0891b2', '#0d9488', '#2563eb', '#4f46e5', '#9333ea', '#db2777', '#d97706', '#059669', '#e11d48', '#0284c7'] %}
+
+{% macro athlete_card(a, idx, status_text, state) -%}
+<div class="athlete {{ state }}" data-used="{{ 'yes' if a.used else 'no' }}" data-sex="{{ a.sex }}">
+    <div class="ava-wrap">
+        <div class="avatar" style="background: {{ AVA_COLORS[idx % 10] }};">
+            {%- if a.photo %}<img class="avatar-img" src="{{ a.photo }}" alt="">{% else %}{{ a.name.split()[0][0] | upper }}{% endif -%}
+        </div>
+        {% if a.country %}<img class="flag" src="https://flagcdn.com/w40/{{ a.country | lower }}.png" alt="{{ a.country }}">{% endif %}
+        <div class="check">✓</div>
+    </div>
+    <div class="a-name">{{ a.name }}</div>
+    <div class="badge-row"><span class="status">{{ status_text }}</span></div>
+</div>
+{%- endmacro %}
+
+{% block head %}
+<style>
+    :root {
+        /* Site palette (frontend index.css @theme) */
+        --tour-400: #22d3ee;
+        --session-400: #2dd4bf;
+        --captain-400: #facc15;
+        --slate-100: #f1f5f9;
+        --slate-400: #94a3b8;
+        --slate-500: #64748b;
+        --slate-600: #475569;
+        --surface-bg: rgba(30, 41, 59, 0.55);
+        --surface-border: rgba(51, 65, 85, 0.6);
+    }
+
+    .container { width: 100%; height: 100%; position: relative; }
+
+    .screen {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 0 72px;
+        text-align: center;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+    }
+    .screen.visible { opacity: 1; }
+    .screen.event { justify-content: flex-start; padding-top: 60px; }
+
+    .kicker {
+        font-family: var(--font-body);
+        font-size: 30px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.28em;
+        color: var(--tour-400);
+        margin-bottom: 24px;
+    }
+
+    /* ── Hook ── */
+    .hook-title {
+        font-family: var(--font-display);
+        font-size: 210px;
+        line-height: 0.9;
+        letter-spacing: 0.03em;
+        color: var(--color-text-primary);
+        text-transform: uppercase;
+        white-space: pre-line;
+    }
+    .hook-sub {
+        font-family: var(--font-body);
+        font-size: 46px;
+        font-weight: 400;
+        line-height: 1.42;
+        color: var(--slate-400);
+        margin-top: 44px;
+        max-width: 840px;
+    }
+
+    /* ── Event header (mirrors app H1 recipe) ── */
+    .event-eyebrow {
+        font-family: var(--font-body);
+        font-size: 28px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        color: var(--slate-500);
+        margin-bottom: 12px;
+    }
+    .event-name {
+        font-family: var(--font-display);
+        font-size: 100px;
+        line-height: 0.96;
+        letter-spacing: 0.04em;
+        color: var(--color-text-primary);
+        text-transform: uppercase;
+    }
+    .event-year { color: var(--tour-400); }
+
+    /* ── Roster grid (app AthleteCardGrid) ── */
+    .roster {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 18px;
+        margin-top: 36px;
+        width: 100%;
+        max-width: 936px;
+    }
+
+    /* ── Athlete card (app AthleteCard, scaled for reel) ── */
+    .athlete {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 16px 16px 14px;
+        border-radius: 18px;
+        background: var(--surface-bg);
+        -webkit-backdrop-filter: blur(4px);
+        backdrop-filter: blur(4px);
+        border: 1px solid var(--surface-border);
+        opacity: 0;
+        transform: translateY(24px);
+        transition: opacity 0.4s ease, transform 0.4s ease, filter 0.5s ease, border-color 0.4s ease;
+    }
+    .athlete.in { opacity: 1; transform: none; }
+
+    .ava-wrap { position: relative; display: inline-flex; }
+    .avatar {
+        width: 112px;
+        height: 112px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 60px;
+        color: #fff;
+        border: 2px solid rgba(255, 255, 255, 0.14);
+        overflow: hidden;
+    }
+    .avatar-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: top center;
+    }
+    .flag {
+        position: absolute;
+        bottom: 2px;
+        right: 2px;
+        width: 38px;
+        height: auto;
+        border-radius: 4px;
+        outline: 2px solid rgba(15, 23, 42, 0.7);
+    }
+    .check {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: var(--tour-400);
+        color: #07121a;
+        font-size: 30px;
+        line-height: 44px;
+        text-align: center;
+        font-weight: 700;
+        opacity: 0;
+        transform: scale(0.5);
+        transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .a-name {
+        font-family: var(--font-body);
+        font-size: 34px;
+        font-weight: 600;
+        line-height: 1.12;
+        color: var(--slate-100);
+        margin-top: 16px;
+        min-height: 62px;
+        display: flex;
+        align-items: center;
+        text-align: center;
+    }
+    .a-meta {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 500;
+        color: var(--slate-400);
+        font-variant-numeric: tabular-nums;
+        margin-top: 2px;
+    }
+    .a-meta .sep { color: var(--slate-600); }
+    .a-meta .pct { color: var(--slate-500); }
+    .a-meta .fin.p1 { color: #ca8a04; }
+    .a-meta .fin.p2 { color: #e2e8f0; }
+    .a-meta .fin.p3 { color: #b45309; }
+
+    .badge-row { margin-top: 10px; min-height: 26px; }
+    .status {
+        font-family: var(--font-body);
+        font-size: 20px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        padding: 4px 14px;
+        border-radius: 999px;
+        opacity: 0;
+        transform: scale(0.6);
+        transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .status.show { opacity: 1; transform: scale(1); }
+
+    /* GC: a pick is spent → tour ring + check + PICKED */
+    .athlete.picked { border-color: var(--tour-400); transform: scale(1.02); }
+    .athlete.picked .check { opacity: 1; transform: scale(1); }
+    .athlete.picked .status { background: var(--tour-400); color: #07121a; opacity: 1; transform: scale(1); }
+    .athlete[data-sex="F"].picked { border-color: var(--session-400); }
+    .athlete[data-sex="F"].picked .check { background: var(--session-400); }
+    .athlete[data-sex="F"].picked .status { background: var(--session-400); }
+
+    /* Tenerife: spent athletes greyed/unavailable, others available */
+    .athlete.unavailable { filter: grayscale(1); opacity: 0.4; }
+    .athlete.unavailable .a-name { text-decoration: line-through; }
+    .athlete.unavailable .status { background: rgba(100, 116, 139, 0.25); color: #cbd5e1; opacity: 1; transform: none; }
+    .athlete.available { border-color: rgba(34, 211, 238, 0.45); }
+    .athlete.available .status { background: rgba(34, 211, 238, 0.16); color: var(--tour-400); opacity: 1; transform: none; }
+
+    .caption {
+        font-family: var(--font-body);
+        font-size: 36px;
+        font-weight: 500;
+        line-height: 1.3;
+        color: var(--color-text-primary);
+        margin-top: 30px;
+        max-width: 860px;
+    }
+    .caption .hi { color: var(--tour-400); font-weight: 700; }
+
+    /* ── Brand intro (THE TOUR, pronounced) ── */
+    .intro-eyebrow {
+        font-family: var(--font-body);
+        font-size: 36px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.34em;
+        color: var(--tour-400);
+        margin-bottom: 30px;
+    }
+    .intro-title {
+        font-family: var(--font-display);
+        font-size: 300px;
+        line-height: 0.86;
+        letter-spacing: 0.04em;
+        color: var(--color-text-primary);
+        text-transform: uppercase;
+    }
+    .intro-title .accent { color: var(--tour-400); }
+    .intro-sub {
+        font-family: var(--font-body);
+        font-size: 46px;
+        font-weight: 400;
+        line-height: 1.4;
+        color: var(--slate-400);
+        margin-top: 44px;
+        max-width: 860px;
+    }
+
+    /* ── Captain exception ── */
+    .cap-kicker { color: var(--captain-400); }
+    .cap-title {
+        font-family: var(--font-display);
+        font-size: 132px;
+        line-height: 0.96;
+        letter-spacing: 0.03em;
+        color: var(--color-text-primary);
+        text-transform: uppercase;
+    }
+    .cap-row { display: flex; gap: 56px; margin-top: 64px; justify-content: center; }
+    .athlete.captain { width: 320px; border-color: rgba(250, 204, 21, 0.5); }
+    .cap-badge {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--captain-400);
+        color: #1a1500;
+        font-family: var(--font-display);
+        font-size: 40px;
+        line-height: 58px;
+        text-align: center;
+    }
+    .athlete.captain .status {
+        background: rgba(250, 204, 21, 0.18);
+        color: var(--captain-400);
+        opacity: 1;
+        transform: none;
+    }
+    .cap-text {
+        font-family: var(--font-body);
+        font-size: 44px;
+        font-weight: 500;
+        line-height: 1.34;
+        color: var(--color-text-primary);
+        margin-top: 60px;
+        max-width: 900px;
+    }
+    .cap-text .hi { color: var(--captain-400); font-weight: 700; }
+
+    /* ── CTA ── */
+    .brand-title {
+        font-family: var(--font-display);
+        font-size: 160px;
+        line-height: 0.94;
+        letter-spacing: 0.04em;
+        color: var(--tour-400);
+        text-transform: uppercase;
+    }
+    .brand-sub {
+        font-family: var(--font-body);
+        font-size: 44px;
+        font-weight: 400;
+        color: var(--color-text-primary);
+        margin-top: 32px;
+        max-width: 840px;
+        line-height: 1.35;
+    }
+    .brand-handle {
+        font-family: var(--font-body);
+        font-size: 38px;
+        font-weight: 600;
+        color: var(--slate-400);
+        letter-spacing: 0.04em;
+        margin-top: 52px;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+    }
+    .brand-handle.visible { opacity: 1; }
+
+    .watermark {
+        position: absolute;
+        bottom: 36px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-family: var(--font-body);
+        font-size: 22px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.22);
+        letter-spacing: 0.06em;
+        z-index: 10;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <!-- 1. Brand intro -->
+    <div class="screen" id="screen-intro">
+        <div class="intro-eyebrow">{{ intro_eyebrow }}</div>
+        <div class="intro-title">THE <span class="accent">TOUR</span></div>
+        <div class="intro-sub">{{ intro_sub }}</div>
+    </div>
+
+    <!-- 2. Hook / rule -->
+    <div class="screen" id="screen-hook">
+        <div class="kicker">{{ hook_kicker }}</div>
+        <div class="hook-title">{{ hook_title }}</div>
+        <div class="hook-sub">{{ hook_sub }}</div>
+    </div>
+
+    <!-- 2. Gran Canaria — spend 5 picks -->
+    <div class="screen event" id="screen-event1">
+        <div class="event-eyebrow">{{ event1.label }} · The Tour</div>
+        <div class="event-name">{{ event1.name }} <span class="event-year">{{ event1.year }}</span></div>
+        <div class="roster" id="roster-1">
+            {% for a in roster %}
+            {{ athlete_card(a, loop.index0, 'Picked', '') }}
+            {% endfor %}
+        </div>
+        <div class="caption">{{ event1_caption }}</div>
+    </div>
+
+    <!-- 3. Tenerife — who's left -->
+    <div class="screen event" id="screen-event2">
+        <div class="event-eyebrow">{{ event2.label }} · The Tour</div>
+        <div class="event-name">{{ event2.name }} <span class="event-year">{{ event2.year }}</span></div>
+        <div class="roster" id="roster-2">
+            {% for a in roster %}
+            {{ athlete_card(a, loop.index0, 'Unavailable' if a.used else 'Available', 'unavailable' if a.used else 'available') }}
+            {% endfor %}
+        </div>
+        <div class="caption">{{ event2_caption }}</div>
+    </div>
+
+    <!-- 5. Captain exception -->
+    <div class="screen" id="screen-captain">
+        <div class="kicker cap-kicker">{{ captain_kicker }}</div>
+        <div class="cap-title">{{ captain_title }}</div>
+        <div class="cap-row" id="cap-row">
+            {% for c in captains %}
+            <div class="athlete captain" data-sex="{{ c.sex }}">
+                <div class="ava-wrap">
+                    <div class="avatar" style="background: {{ AVA_COLORS[loop.index0 % 10] }};">
+                        {%- if c.photo %}<img class="avatar-img" src="{{ c.photo }}" alt="">{% else %}{{ c.name.split()[0][0] | upper }}{% endif -%}
+                    </div>
+                    {% if c.country %}<img class="flag" src="https://flagcdn.com/w40/{{ c.country | lower }}.png" alt="{{ c.country }}">{% endif %}
+                    <div class="cap-badge">C</div>
+                </div>
+                <div class="a-name">{{ c.name }}</div>
+                <div class="badge-row"><span class="status">Pick ×2</span></div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="cap-text">{{ captain_text }}</div>
+    </div>
+
+    <!-- 6. CTA -->
+    <div class="screen" id="screen-brand">
+        <div class="brand-title">{{ cta_headline }}</div>
+        <div class="brand-sub">{{ cta_subtitle }}</div>
+        <div class="brand-handle" id="brand-handle">{{ handle }} · {{ url }}</div>
+    </div>
+
+    <div class="watermark">{{ url }}</div>
+</div>
+
+<script>
+    const FADE = 500;
+    function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+    async function staggerIn(container, step) {
+        for (const card of container.querySelectorAll('.athlete')) {
+            card.classList.add('in');
+            await wait(step);
+        }
+    }
+
+    async function showHold(id, ms) {
+        const el = document.getElementById(id);
+        el.classList.add('visible');
+        await wait(FADE + ms);
+        el.classList.remove('visible');
+        await wait(FADE);
+    }
+
+    async function runAnimation() {
+        // 1. Brand intro
+        await showHold('screen-intro', 2200);
+
+        // 2. Hook / rule
+        await showHold('screen-hook', 2400);
+
+        // 3. Gran Canaria — cards build in, then the 5 picks get stamped PICKED
+        const e1 = document.getElementById('screen-event1');
+        e1.classList.add('visible');
+        await wait(FADE);
+        await staggerIn(document.getElementById('roster-1'), 110);
+        await wait(500);
+        for (const card of e1.querySelectorAll('.athlete[data-used="yes"]')) {
+            card.classList.add('picked');
+            await wait(440);
+        }
+        await wait(2000);
+        e1.classList.remove('visible');
+        await wait(FADE);
+
+        // 4. Tenerife — used greyed out, the rest available
+        const e2 = document.getElementById('screen-event2');
+        e2.classList.add('visible');
+        await wait(FADE);
+        await staggerIn(document.getElementById('roster-2'), 110);
+        await wait(2800);
+        e2.classList.remove('visible');
+        await wait(FADE);
+
+        // 5. Captain exception
+        const cap = document.getElementById('screen-captain');
+        cap.classList.add('visible');
+        await wait(FADE);
+        await staggerIn(document.getElementById('cap-row'), 280);
+        await wait(2600);
+        cap.classList.remove('visible');
+        await wait(FADE);
+
+        // 6. CTA
+        const brand = document.getElementById('screen-brand');
+        const handle = document.getElementById('brand-handle');
+        brand.classList.add('visible');
+        await wait(800);
+        handle.classList.add('visible');
+        await wait(2200);
+
+        document.body.dataset.animationComplete = 'true';
+    }
+
+    document.fonts.ready.then(() => { setTimeout(runAnimation, 300); });
+</script>
+{% endblock %}

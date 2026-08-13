@@ -45,7 +45,7 @@
                 {% endif %}
             </div>
             {% if is_per_event and show_trick_type %}
-            <div class="col-type">{{ row.trick_type | trick_type_label }}</div>
+            <div class="col-type">{{ row.trick_type | trick_type_label }}{% if row.modifier %}<span class="type-mod">{{ row.modifier | modifier_label }}</span>{% endif %}</div>
             {% elif not is_per_event %}
             <div class="col-event">{{ row.event }}</div>
             {% endif %}

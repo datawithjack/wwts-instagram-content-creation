@@ -23,6 +23,22 @@ templates:
     width: 1080
     height: 1920
     dpr: 2
+  tour_rules_reel:
+    width: 1080
+    height: 1920
+    dpr: 2
+  tour_availability_reel:
+    width: 1080
+    height: 1920
+    dpr: 2
+  session_vs_tour_reel:
+    width: 1080
+    height: 1920
+    dpr: 2
+  how_to_pick_reel:
+    width: 1080
+    height: 1920
+    dpr: 2
   stat_of_the_day:
     width: 1080
     height: 1080

@@ -40,6 +40,18 @@
 # Data: per-finalist event stats (best/avg wave, best heat, final avg) — already
 # available via the /events/{id}/athletes/{id}/stats path used by rider_profile.
 # TODO: new single-page template + data builder; decide which metrics to show.
+#
+# ── POST IDEA: playing with the pros ───────────────────────────
+# A fantasy-league piece around pros playing along: show which riders the actual
+# windsurf pros picked for their fantasy teams (or run a "you vs the pros" angle).
+# Hook: see how your picks stack up against the people who do this for a living.
+# TODO: scope the angle + data source (do we have pro entrants' picks?), pick a
+# format (reel vs carousel), then build.
+#
+# ── POST IDEA: windfluencers ───────────────────────────────────
+# Feature/collab series spotlighting windsurf influencers ("windfluencers") — e.g.
+# their fantasy picks, a takeover, or a who-to-follow roundup to grow reach.
+# TODO: shortlist windfluencers, decide collab vs editorial, pick a format, build.
 
 posts:
   # ── Tonight's test batch (March 19) ──────────────────────────

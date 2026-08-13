@@ -203,8 +203,8 @@ def build_top10_query(
 
     where = " AND ".join(where_clauses)
 
-    # Include trick type in select for jump queries
-    type_col = "s.type AS trick_type," if score_type == "Jump" else ""
+    # Include trick type + modifier in select for jump queries
+    type_col = "s.type AS trick_type, s.modifier AS modifier," if score_type == "Jump" else ""
 
     sql = f"""
         SELECT

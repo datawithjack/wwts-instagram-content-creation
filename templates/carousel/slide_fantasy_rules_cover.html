@@ -1,0 +1,69 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 60px 48px 64px;
+    }
+
+    .eyebrow {
+        margin-bottom: 28px;
+        font-size: 36px;
+        letter-spacing: 0.16em;
+    }
+
+    .cover-title {
+        font-family: var(--font-display);
+        font-size: 300px;
+        letter-spacing: 0.03em;
+        line-height: 0.92;
+        color: var(--color-text-primary);
+        margin-bottom: 32px;
+        white-space: nowrap;
+    }
+
+    .divider {
+        margin: 0 auto 32px;
+    }
+
+    .cover-subtitle {
+        font-family: var(--font-body);
+        font-size: 34px;
+        font-weight: 500;
+        color: var(--color-text-muted);
+        letter-spacing: 0.02em;
+        line-height: 1.4;
+        max-width: 760px;
+    }
+
+    .swipe-hint {
+        position: absolute;
+        bottom: 40px;
+        right: 64px;
+        text-align: right;
+        font-family: var(--font-body);
+        font-size: 18px;
+        color: rgba(255,255,255,0.25);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+
+    .swipe-hint .arrow {
+        color: var(--color-discipline);
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="eyebrow">{{ eyebrow }}</div>
+    <div class="cover-title" data-autofit>{{ title | upper }}</div>
+    <div class="divider"></div>
+    <div class="cover-subtitle">{{ subtitle }}</div>
+    <div class="swipe-hint">Swipe <span class="arrow">→</span></div>
+</div>
+{% include "carousel/_autofit.html" %}
+{% endblock %}

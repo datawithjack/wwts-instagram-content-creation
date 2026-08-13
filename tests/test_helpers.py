@@ -13,7 +13,28 @@ from pipeline.helpers import (
     country_flag,
     short_round_name,
     full_round_name,
+    modifier_label,
 )
+
+
+class TestModifierLabel:
+    def test_one_foot(self):
+        assert modifier_label("1-Foot") == "1 Foot"
+
+    def test_one_hand(self):
+        assert modifier_label("1-Hand") == "1 Hand"
+
+    def test_tweaked_unchanged(self):
+        assert modifier_label("Tweaked") == "Tweaked"
+
+    def test_empty_string(self):
+        assert modifier_label("") == ""
+
+    def test_none(self):
+        assert modifier_label(None) == ""
+
+    def test_strips_whitespace(self):
+        assert modifier_label("  1-Foot  ") == "1 Foot"
 
 
 class TestShortRoundName:

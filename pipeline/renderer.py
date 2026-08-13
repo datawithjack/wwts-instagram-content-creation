@@ -338,7 +338,10 @@ def render_to_video(
             raise RuntimeError("Playwright did not produce a video file")
 
         recorded = os.path.join(video_dir, videos[0])
-        # Convert webm to mp4 if ffmpeg available, otherwise copy as-is
+        # Convert webm to mp4 if ffmpeg available, otherwise copy as-is.
+        # Kept minimal/standard: a 2x-supersample + rescale pipeline correlated
+        # with Instagram showing the reel contained (not full-screen), so we encode
+        # the recording straight through (it is already width x height at dpr=1).
         if output_path.endswith(".mp4") and shutil.which("ffmpeg"):
             import subprocess
             subprocess.run(

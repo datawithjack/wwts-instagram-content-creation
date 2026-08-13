@@ -1,0 +1,365 @@
+{% extends "base.html" %}
+
+{# Session-vs-Tour product infographic reel — animated 1080x1920 page recorded to
+   MP4 by Playwright (render_to_video). Spotlights each fantasy mode then a
+   head-to-head. Site palette: Tour = tour-400 cyan, Session = session-400 teal.
+   Data: pipeline/fantasy_modes.py. #}
+
+{% block head %}
+<style>
+    /* base.html defaults body to 1350px (feed size); this reel renders at 1920,
+       so force full reel height or content sits in the top 1350 and the rest is
+       dead space. */
+    html, body { height: 1920px; }
+
+    :root {
+        --tour-400: #22d3ee;
+        --session-400: #2dd4bf;
+        --slate-100: #f1f5f9;
+        --slate-400: #94a3b8;
+        --slate-500: #64748b;
+        --slate-600: #475569;
+        --surface-bg: rgba(30, 41, 59, 0.55);
+        --surface-border: rgba(51, 65, 85, 0.6);
+    }
+
+    .container { width: 100%; height: 100%; position: relative; }
+
+    /* Bottom padding reserves Instagram's reel UI zone (caption + action
+       buttons cover the lower ~third), so content centres in the visible
+       upper area and never reads as empty / hidden. */
+    .screen {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 84px 220px;
+        text-align: center;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+    }
+    .screen.visible { opacity: 1; }
+
+    .eyebrow {
+        font-family: var(--font-body);
+        font-size: 32px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3em;
+        margin-bottom: 26px;
+        color: var(--slate-400);
+    }
+    /* Spotlight eyebrows kept dim white (the mode colour lives in the title). */
+    .eyebrow.tour { color: var(--slate-400); }
+    .eyebrow.session { color: var(--slate-400); }
+
+    /* ── Hook ── */
+    .hook-eyebrow {
+        font-family: var(--font-body);
+        font-size: 34px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.32em;
+        color: var(--slate-400);
+        margin-bottom: 60px;
+    }
+    .vs-name {
+        font-family: var(--font-display);
+        font-size: 170px;
+        line-height: 0.92;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+    }
+    .vs-name.tour { color: var(--tour-400); }
+    .vs-name.session { color: var(--session-400); }
+    .vs-mid {
+        font-family: var(--font-display);
+        font-size: 72px;
+        color: var(--slate-500);
+        margin: 18px 0;
+        text-transform: lowercase;
+        letter-spacing: 0.05em;
+    }
+    .hook-sub {
+        font-family: var(--font-body);
+        font-size: 46px;
+        font-weight: 400;
+        color: var(--slate-400);
+        margin-top: 60px;
+    }
+
+    /* ── Mode spotlight ── */
+    .mode-title {
+        font-family: var(--font-display);
+        font-size: 156px;
+        line-height: 0.92;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: var(--color-text-primary);
+    }
+    .mode-title.tour { color: var(--tour-400); }
+    .mode-title.session { color: var(--session-400); }
+
+    .bullet-list {
+        display: flex;
+        flex-direction: column;
+        gap: 26px;
+        margin-top: 52px;
+        max-width: 880px;
+        width: 100%;
+    }
+    .bullet {
+        display: flex;
+        align-items: flex-start;
+        gap: 26px;
+        font-family: var(--font-body);
+        font-size: 43px;
+        font-weight: 500;
+        line-height: 1.26;
+        color: var(--color-text-primary);
+        text-align: left;
+    }
+    .bullet::before {
+        content: '';
+        flex: none;
+        width: 20px;
+        height: 20px;
+        margin-top: 18px;
+        border-radius: 50%;
+    }
+    .bullet-list.tour .bullet::before { background: var(--tour-400); }
+    .bullet-list.session .bullet::before { background: var(--session-400); }
+
+    /* ── Head-to-head table ── */
+    .h2h-title {
+        font-family: var(--font-display);
+        font-size: 96px;
+        line-height: 0.96;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: var(--color-text-primary);
+        margin-bottom: 48px;
+    }
+    .vs-table {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        width: 100%;
+        max-width: 940px;
+    }
+    .vs-row {
+        display: grid;
+        grid-template-columns: 1.05fr 1fr 1fr;
+        align-items: stretch;
+        gap: 14px;
+    }
+    .vs-row.stagger { opacity: 0; transform: translateY(24px); transition: opacity 0.4s ease, transform 0.4s ease; }
+    .vs-row.stagger.in { opacity: 1; transform: none; }
+
+    .vs-c-label {
+        display: flex;
+        align-items: center;
+        font-family: var(--font-body);
+        font-size: 30px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--slate-400);
+        text-align: left;
+        padding: 0 8px;
+    }
+    /* Value cells: plain text, no fill. */
+    .vs-cell {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 22px 18px;
+        font-family: var(--font-body);
+        font-size: 36px;
+        font-weight: 600;
+        line-height: 1.15;
+        color: var(--slate-100);
+        text-align: center;
+    }
+
+    /* Header cells only: solid accent buttons (fantasy event-card style), dark text. */
+    .vs-head .vs-cell {
+        font-family: var(--font-display);
+        font-size: 48px;
+        font-weight: 400;
+        letter-spacing: 0.03em;
+        color: #0f172a;
+        border-radius: 10px;
+    }
+    .vs-head .vs-cell.tour { background: var(--tour-400); }
+    .vs-head .vs-cell.session { background: var(--session-400); }
+
+    /* Subtle row dividers to keep the columns legible without pills. */
+    .vs-row:not(.vs-head) { border-bottom: 1px solid rgba(51, 65, 85, 0.4); }
+
+    /* ── Stagger primitive ── */
+    .stagger { opacity: 0; transform: translateY(24px); transition: opacity 0.4s ease, transform 0.4s ease; }
+    .stagger.in { opacity: 1; transform: none; }
+
+    /* ── CTA ── */
+    .brand-title {
+        font-family: var(--font-display);
+        font-size: 132px;
+        line-height: 0.94;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        max-width: 900px;
+    }
+    .brand-sub {
+        font-family: var(--font-body);
+        font-size: 50px;
+        font-weight: 600;
+        color: var(--tour-400);
+        margin-top: 36px;
+    }
+    .brand-handle {
+        font-family: var(--font-body);
+        font-size: 38px;
+        font-weight: 600;
+        color: var(--slate-400);
+        letter-spacing: 0.04em;
+        margin-top: 52px;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+    }
+    .brand-handle.visible { opacity: 1; }
+
+    .watermark {
+        position: absolute;
+        bottom: 36px;
+        left: 0; right: 0;
+        text-align: center;
+        font-family: var(--font-body);
+        font-size: 22px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.22);
+        letter-spacing: 0.06em;
+        z-index: 10;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <!-- 1. Hook -->
+    <div class="screen" id="screen-hook">
+        <div class="hook-eyebrow">{{ hook_eyebrow }}</div>
+        <div class="vs-name tour">{{ tour.name }}</div>
+        <div class="vs-mid">vs</div>
+        <div class="vs-name session">{{ session.name }}</div>
+        <div class="hook-sub">{{ hook_sub }}</div>
+    </div>
+
+    <!-- 2. The Tour spotlight -->
+    <div class="screen" id="screen-tour">
+        <div class="eyebrow tour">{{ tour.eyebrow }}</div>
+        <div class="mode-title tour">{{ tour.name }}</div>
+        <div class="bullet-list tour">
+            {% for p in tour.points %}
+            <div class="bullet stagger">{{ p }}</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- 3. The Session spotlight -->
+    <div class="screen" id="screen-session">
+        <div class="eyebrow session">{{ session.eyebrow }}</div>
+        <div class="mode-title session">{{ session.name }}</div>
+        <div class="bullet-list session">
+            {% for p in session.points %}
+            <div class="bullet stagger">{{ p }}</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- 4. Head-to-head -->
+    <div class="screen" id="screen-h2h">
+        <div class="h2h-title">Feature comparison</div>
+        <div class="vs-table">
+            <div class="vs-row vs-head">
+                <div class="vs-c-label"></div>
+                <div class="vs-cell tour">{{ tour.name }}</div>
+                <div class="vs-cell session">{{ session.name }}</div>
+            </div>
+            {% for r in comparison %}
+            <div class="vs-row stagger">
+                <div class="vs-c-label">{{ r.label }}</div>
+                <div class="vs-cell tour">{{ r.tour }}</div>
+                <div class="vs-cell session">{{ r.session }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- 5. CTA -->
+    <div class="screen" id="screen-brand">
+        <div class="brand-title">{{ cta_headline }}</div>
+        <div class="brand-sub">{{ cta_subtitle }}</div>
+        <div class="brand-handle" id="brand-handle">{{ handle }} · {{ url }}</div>
+    </div>
+</div>
+
+<script>
+    const FADE = 500;
+    function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+    async function staggerIn(selector, step) {
+        for (const el of document.querySelectorAll(selector)) {
+            el.classList.add('in');
+            await wait(step);
+        }
+    }
+
+    async function showSpotlight(screenId, bulletSel) {
+        const el = document.getElementById(screenId);
+        el.classList.add('visible');
+        await wait(FADE);
+        await staggerIn(bulletSel, 300);
+        await wait(2200);
+        el.classList.remove('visible');
+        await wait(FADE);
+    }
+
+    async function runAnimation() {
+        // 1. Hook
+        const hook = document.getElementById('screen-hook');
+        hook.classList.add('visible');
+        await wait(FADE + 2400);
+        hook.classList.remove('visible');
+        await wait(FADE);
+
+        // 2 + 3. Mode spotlights
+        await showSpotlight('screen-tour', '#screen-tour .bullet');
+        await showSpotlight('screen-session', '#screen-session .bullet');
+
+        // 4. Head-to-head
+        const h2h = document.getElementById('screen-h2h');
+        h2h.classList.add('visible');
+        await wait(FADE);
+        await staggerIn('#screen-h2h .vs-row.stagger', 280);
+        await wait(2800);
+        h2h.classList.remove('visible');
+        await wait(FADE);
+
+        // 5. CTA
+        const brand = document.getElementById('screen-brand');
+        const handle = document.getElementById('brand-handle');
+        brand.classList.add('visible');
+        await wait(800);
+        handle.classList.add('visible');
+        await wait(2200);
+
+        document.body.dataset.animationComplete = 'true';
+    }
+
+    document.fonts.ready.then(() => { setTimeout(runAnimation, 300); });
+</script>
+{% endblock %}

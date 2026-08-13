@@ -22,6 +22,10 @@ from pipeline.renderer import render_to_png, render_to_video, render_carousel, r
 
 def fetch_live_data(template_name: str, args) -> dict:
     """Fetch live data from API or DB based on template type."""
+    if template_name == "tour_availability_reel":
+        from pipeline.tour_availability import build_tour_availability_live
+        return build_tour_availability_live()
+
     if template_name in ("head_to_head", "head_to_head_jump", "h2h_carousel"):
         if not all([args.event, args.athlete1, args.athlete2, args.division]):
             print("H2H requires: --event, --athlete1, --athlete2, --division")
@@ -75,8 +79,11 @@ def fetch_live_data(template_name: str, args) -> dict:
             print("Top 10 requires: --score-type (Wave or Jump)")
             sys.exit(1)
 
-        # Use API for per-event top 10; fall back to DB if API 404s
-        if args.event:
+        # Use API for per-event top 10; fall back to DB if API 404s.
+        # Jumps skip the API and go straight to the DB — only the DB carries
+        # the trick modifier (1-Foot, 1-Hand, Tweaked). For per-event jumps
+        # --event is therefore the DB pwa_event_id, not the API event id.
+        if args.event and args.score_type != "Jump":
             try:
                 return fetch_event_top_scores(
                     event_id=args.event,
@@ -119,6 +126,7 @@ def fetch_live_data(template_name: str, args) -> dict:
             }
             if is_jump:
                 entry["trick_type"] = r.get("trick_type", "")
+                entry["modifier"] = r.get("modifier", "") or ""
             entries.append(entry)
 
         data = {
@@ -533,7 +541,7 @@ def main():
     parser.add_argument(
         "--template",
         required=True,
-        choices=["head_to_head", "head_to_head_jump", "h2h_carousel", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "fantasy_league_announce", "freestyle_scores_live", "slalom_scores_live", "wave_scores_live", "event_picks", "fuerte_fantasy_mvps", "slalom_mvps", "finals_preview", "commentator_brief"],
+        choices=["head_to_head", "head_to_head_jump", "h2h_carousel", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "fantasy_league_announce", "fantasy_rules", "tour_rules_reel", "tour_availability_reel", "session_vs_tour_reel", "how_to_pick_reel", "freestyle_scores_live", "slalom_scores_live", "wave_scores_live", "event_picks", "fuerte_fantasy_mvps", "slalom_mvps", "finals_preview", "commentator_brief"],
     )
     parser.add_argument("--athlete1", type=int, help="Athlete 1 unified ID")
     parser.add_argument("--athlete2", type=int, help="Athlete 2 unified ID")
@@ -589,7 +597,7 @@ def main():
     dpr = template_config.get("dpr", 2)
 
     # Get data
-    if args.dry_run or template_name in ("coming_soon_carousel", "about_carousel", "freestyle_scores_live", "slalom_scores_live", "wave_scores_live"):
+    if args.dry_run or template_name in ("coming_soon_carousel", "about_carousel", "freestyle_scores_live", "slalom_scores_live", "wave_scores_live", "fantasy_rules", "tour_rules_reel", "session_vs_tour_reel", "how_to_pick_reel"):
         # --mode perfect-10s overrides the dummy lookup for top_10_carousel
         if template_name in ("top_10", "top_10_carousel") and getattr(args, "mode", None) == "perfect-10s":
             data = get_dummy_data("perfect_10s")
@@ -610,11 +618,11 @@ def main():
     if getattr(args, "rider_of_day", False):
         data["rider_of_day"] = True
 
-    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "h2h_carousel", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "event_picks", "fuerte_fantasy_mvps", "slalom_mvps", "finals_preview", "commentator_brief")
+    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "fantasy_rules", "h2h_carousel", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "event_picks", "fuerte_fantasy_mvps", "slalom_mvps", "finals_preview", "commentator_brief")
 
     # Carousel preview: open all slides in browser tabs
     if is_carousel and args.preview:
-        if template_name in ("coming_soon_carousel", "about_carousel"):
+        if template_name in ("coming_soon_carousel", "about_carousel", "fantasy_rules"):
             slides = data["slides"]
         elif template_name == "h2h_carousel":
             from pipeline.h2h_carousel import build_slides as build_h2h_slides
@@ -684,7 +692,7 @@ def main():
 
     if is_carousel:
         carousel_dir = os.path.join(output_dir, "png")
-        if template_name in ("coming_soon_carousel", "about_carousel"):
+        if template_name in ("coming_soon_carousel", "about_carousel", "fantasy_rules"):
             slides = data["slides"]
             result_paths = []
             os.makedirs(carousel_dir, exist_ok=True)

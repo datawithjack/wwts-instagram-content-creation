@@ -96,6 +96,18 @@ class TestBuildTop10Query:
         sql, params = build_top10_query(score_type="Wave", include_non_counting=True)
         assert "Wave" in params
 
+    def test_jump_query_selects_modifier(self):
+        # Jump rows carry a modifier (e.g. 1-Foot, 1-Hand, Tweaked) so the
+        # carousel can show it in its own column.
+        sql, _ = build_top10_query(score_type="Jump")
+        assert "s.modifier" in sql.lower()
+        assert "as modifier" in sql.lower()
+
+    def test_wave_query_omits_modifier(self):
+        # Modifier only applies to trick/jump scores.
+        sql, _ = build_top10_query(score_type="Wave")
+        assert "modifier" not in sql.lower()
+
     def test_selects_counting_flag(self):
         # Rows must carry the counting flag so the carousel can dim
         # non-counting scores even when include_non_counting is on.
