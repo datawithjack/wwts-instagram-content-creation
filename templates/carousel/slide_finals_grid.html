@@ -1,0 +1,297 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        padding: 44px 44px 52px;
+    }
+
+    /* ── Header ── */
+    .finals-eyebrow {
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgba(255, 255, 255, 0.30);
+        margin-bottom: 4px;
+    }
+
+    .finals-title {
+        font-family: var(--font-display);
+        font-size: 88px;
+        letter-spacing: 0.02em;
+        line-height: 1;
+        color: var(--color-text-primary);
+        margin-bottom: 6px;
+    }
+
+    .finals-title .line {
+        display: block;
+        white-space: nowrap;
+    }
+
+    /* Kicker line sits above the heat name: smaller and dimmed so the heat
+       is the one thing the eye lands on. */
+    .finals-title .kicker {
+        font-size: 44px;
+        line-height: 1.1;
+        letter-spacing: 0.06em;
+        color: rgba(255, 255, 255, 0.32);
+    }
+
+    .finals-title .accent {
+        color: var(--color-discipline);
+    }
+
+    .finals-subtitle {
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        color: var(--color-text-muted);
+        margin-bottom: 22px;
+    }
+
+    /* ── 2x2 grid ── */
+    .finals-grid {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        gap: 20px;
+    }
+
+    /* Full-bleed photo cell: name and numbers sit on the image, no panel. */
+    .rider {
+        position: relative;
+        border-radius: 12px;
+        overflow: hidden;
+        background: rgba(10, 14, 26, 0.6);
+    }
+
+    .rider-photo {
+        position: absolute;
+        inset: 0;
+    }
+
+    .rider-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center 22%;
+        display: block;
+    }
+
+    /* Scrim has to win against busy photo backgrounds (sponsor banners,
+       bright caps), so it starts higher and lands almost opaque. */
+    .rider-photo::after {
+        content: '';
+        position: absolute;
+        left: 0; right: 0; bottom: 0;
+        height: 88%;
+        background: linear-gradient(
+            to bottom,
+            rgba(10, 14, 26, 0) 0%,
+            rgba(10, 14, 26, 0.45) 32%,
+            rgba(10, 14, 26, 0.82) 58%,
+            rgba(10, 14, 26, 0.98) 100%
+        );
+    }
+
+    .rider-photo .placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 96px;
+        color: rgba(255, 255, 255, 0.18);
+    }
+
+    .rider-info {
+        position: absolute;
+        left: 22px;
+        right: 22px;
+        bottom: 20px;
+        z-index: 2;
+    }
+
+    /* Flag rides with the forename so the surname, forename and route line
+       all share one left edge. Inline with the surname it indented the
+       biggest element on the card and left the column ragged. */
+    .rider-first {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-family: var(--font-body);
+        font-size: 19px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        color: rgba(255, 255, 255, 0.70);
+        margin-bottom: 3px;
+        white-space: nowrap;
+    }
+
+    .rider-first img {
+        width: 26px;
+        height: 19px;
+        object-fit: cover;
+        border-radius: 2px;
+        flex-shrink: 0;
+    }
+
+    .rider-last {
+        font-family: var(--font-display);
+        font-size: 46px;
+        letter-spacing: 0.02em;
+        line-height: 1;
+        color: var(--color-text-primary);
+        white-space: nowrap;
+        margin-bottom: 16px;
+    }
+
+    /* Surname size steps down by length (set in the builder) so multi-word
+       names like VAN DER EYKEN stay inside the card. */
+    .rider-last.long { font-size: 38px; }
+
+    .rider-last.xlong {
+        font-size: 32px;
+        white-space: normal;
+        line-height: 0.95;
+    }
+
+    .rider-route {
+        font-family: var(--font-body);
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        color: rgba(255, 255, 255, 0.55);
+        margin-top: 6px;
+    }
+
+    /* ── One row: best heat, avg wave, avg jump ── */
+    .stat-row {
+        display: flex;
+        gap: 12px;
+        padding-top: 14px;
+        border-top: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .stat {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .stat-label {
+        font-family: var(--font-body);
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: rgba(255, 255, 255, 0.60);
+        white-space: nowrap;
+        margin-bottom: 1px;
+    }
+
+    .stat-value {
+        font-family: var(--font-body);
+        font-size: 32px;
+        font-weight: 700;
+        line-height: 1.05;
+        color: var(--color-text-primary);
+    }
+
+    /* Bars scale every number against the carousel-wide max for that stat,
+       so all twelve are comparable, not just the three highlighted ones. */
+    .stat-bar {
+        height: 3px;
+        margin-top: 4px;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.12);
+        overflow: hidden;
+    }
+
+    .stat-bar span {
+        display: block;
+        height: 100%;
+        border-radius: 2px;
+        background: var(--color-text-muted);
+    }
+
+    .stat-bar.is-leader span { background: var(--color-discipline); }
+
+    /* Leading number in the division gets the accent */
+    .is-leader { color: var(--color-discipline); }
+
+    /* Instagram's compression eats the shared 16px/20% footer. Scoped
+       override so the attribution survives export. */
+    .carousel-footer {
+        font-size: 22px;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.45);
+    }
+
+    .finals-footnote {
+        font-family: var(--font-body);
+        font-size: 19px;
+        font-weight: 400;
+        font-style: italic;
+        letter-spacing: 0.03em;
+        color: var(--color-text-muted);
+        text-align: center;
+        margin-top: 18px;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="finals-eyebrow">
+        {{ event_name }}{% if event_year %} {{ event_year }}{% endif %}
+        {%- if event_tier %} &middot; {{ '★' * event_tier }}{% endif %}
+    </div>
+    <div class="finals-title">
+        {%- for line in title_lines | default([]) %}<span class="line kicker">{{ line }}</span>{% endfor %}
+        {# Title stays all white here — the accent is reserved for the leading
+           number in each stat, so it means one thing on this slide. #}
+        <span class="line">{% if title_lead %}{{ title_lead }} {% endif %}{{ title_accent | default(division_label) }}</span>
+    </div>
+    <div class="finals-subtitle">{{ subtitle | default('How the four finalists got here') }}</div>
+
+    <div class="finals-grid">
+        {% for a in athletes %}
+        <div class="rider">
+            <div class="rider-photo">
+                {% if a.photo_url %}
+                <img src="{{ a.photo_url }}" alt="{{ a.name }}">
+                {% else %}
+                <div class="placeholder">{{ a.first_name[:1] }}{{ a.last_name[:1] }}</div>
+                {% endif %}
+            </div>
+            <div class="rider-info">
+                <div class="rider-first">
+                    {% if a.country %}<img src="https://flagcdn.com/w40/{{ a.country | lower }}.png" alt="{{ a.country }}">{% endif %}
+                    <span>{{ a.first_name }}</span>
+                </div>
+                <div class="rider-last {{ a.name_class }}">{{ a.last_name or a.first_name }}</div>
+                {% if a.route %}<div class="rider-route">{{ a.route }}</div>{% endif %}
+                <div class="stat-row">
+                    {% for s in [a.hero] + a.stats %}
+                    <div class="stat">
+                        <div class="stat-label">{{ s.label }}</div>
+                        <div class="stat-value{% if s.is_leader %} is-leader{% endif %}">{{ s.value }}</div>
+                        <div class="stat-bar{% if s.is_leader %} is-leader{% endif %}"><span style="width: {{ s.bar_pct }}%"></span></div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if source_note %}<div class="finals-footnote">{{ source_note }}</div>{% endif %}
+</div>
+{% include "carousel/_autofit.html" %}
+{% endblock %}

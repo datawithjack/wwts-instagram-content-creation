@@ -1,0 +1,346 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container { padding: 40px 40px 44px; }
+
+    /* ── Header ── */
+    .brief-eyebrow {
+        font-family: var(--font-body);
+        font-size: 28px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgba(255, 255, 255, 0.30);
+        margin-bottom: 4px;
+    }
+
+    .brief-title {
+        font-family: var(--font-display);
+        font-size: 92px;
+        letter-spacing: 0.02em;
+        line-height: 1;
+        color: var(--color-text-primary);
+    }
+
+    .brief-draw {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        font-family: var(--font-body);
+        font-size: 26px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        color: rgba(255, 255, 255, 0.60);
+        margin-top: 8px;
+        margin-bottom: 18px;
+    }
+
+    .brief-draw .strongest {
+        font-family: var(--font-body);
+        font-size: 22px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #0E1927;
+        background: var(--color-discipline);
+        border-radius: 5px;
+        padding: 4px 12px;
+    }
+
+    /* ── 2x2 grid of rider cards ── */
+    .brief-grid {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        gap: 18px;
+    }
+
+    /* Name then numbers, both anchored to the top of the card, so the
+       stat rows line up across all four riders and can be read across.
+       "Event so far" hangs below at whatever length it happens to be. */
+    .rider {
+        position: relative;
+        border-radius: 12px;
+        overflow: hidden;
+        background: rgba(10, 14, 26, 0.6);
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+    }
+
+    .rider-photo { position: absolute; inset: 0; }
+
+    .rider-photo img {
+        width: 100%; height: 100%;
+        object-fit: cover;
+        object-position: center 18%;
+        display: block;
+    }
+
+    /* The numbers are the sheet, so the photo sits well back: a flat veil
+       plus scrims that reach most of the way up the card. */
+    .rider-photo::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: rgba(10, 14, 26, 0.45);
+        z-index: 1;
+    }
+
+    .rider-photo .top-scrim {
+        position: absolute;
+        left: 0; right: 0; top: 0;
+        height: 34%;
+        z-index: 1;
+        background: linear-gradient(
+            to top,
+            rgba(10, 14, 26, 0) 0%,
+            rgba(10, 14, 26, 0.85) 70%,
+            rgba(10, 14, 26, 0.97) 100%
+        );
+    }
+
+    .rider-photo::after {
+        content: '';
+        position: absolute;
+        left: 0; right: 0; bottom: 0;
+        height: 100%;
+        z-index: 1;
+        background: linear-gradient(
+            to bottom,
+            rgba(10, 14, 26, 0) 0%,
+            rgba(10, 14, 26, 0.80) 22%,
+            rgba(10, 14, 26, 0.96) 46%,
+            rgba(10, 14, 26, 1) 100%
+        );
+    }
+
+    .rider-photo .placeholder {
+        width: 100%; height: 100%;
+        display: flex; align-items: center; justify-content: center;
+        font-family: var(--font-display);
+        font-size: 96px;
+        color: rgba(255, 255, 255, 0.18);
+    }
+
+    .rider-head { position: relative; z-index: 2; padding: 20px 22px 0; }
+    .rider-body { position: relative; z-index: 2; padding: 18px 22px 22px; }
+
+    /* ── Name block ── */
+    .rider-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        color: rgba(255, 255, 255, 0.72);
+        margin-bottom: 3px;
+        white-space: nowrap;
+    }
+
+    .rider-meta img {
+        width: 34px; height: 25px;
+        object-fit: cover; border-radius: 2px; flex-shrink: 0;
+    }
+
+    .rider-meta .sail { color: rgba(255, 255, 255, 0.45); }
+
+    /* Long forename + sail would otherwise push the WR badge off the card. */
+    .rider-meta.tight { font-size: 19px; gap: 8px; }
+    .rider-meta.tight img { width: 29px; height: 21px; }
+    .rider-meta.tight .rank { font-size: 40px; }
+
+    .rider-meta .rank {
+        margin-left: auto;
+        font-family: var(--font-display);
+        font-size: 48px;
+        line-height: 0.9;
+        letter-spacing: 0.02em;
+        color: var(--color-discipline);
+    }
+
+    .rider-last {
+        font-family: var(--font-display);
+        font-size: 58px;
+        letter-spacing: 0.02em;
+        line-height: 1;
+        color: var(--color-text-primary);
+        white-space: nowrap;
+    }
+
+    .rider-last.long { font-size: 48px; }
+    .rider-last.xlong { font-size: 39px; white-space: normal; line-height: 0.95; }
+
+    .rider-route {
+        font-family: var(--font-body);
+        font-size: 21px;
+        font-weight: 600;
+        letter-spacing: 0.09em;
+        color: rgba(255, 255, 255, 0.55);
+        padding-bottom: 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+        margin-bottom: 18px;
+    }
+
+    /* ── Stats: heat row, then wave and jump paired on one line so best
+       and average for each sit side by side ── */
+    .stat-grid {
+        display: grid;
+        gap: 38px 12px;
+    }
+
+    .stat-grid.heat {
+        grid-template-columns: repeat(3, 1fr);
+        margin-bottom: 38px;
+    }
+
+    /* Wave and jump get a row each: best and average side by side, wide
+       enough for the numbers to be read at arm's length on a phone. */
+    .stat-grid.pair {
+        grid-template-columns: repeat(2, 1fr);
+        margin-bottom: 38px;
+    }
+
+    .stat-grid.pair:last-of-type { margin-bottom: 34px; }
+
+    .stat-label {
+        font-family: var(--font-body);
+        font-size: 19px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: rgba(255, 255, 255, 0.55);
+        white-space: nowrap;
+    }
+
+    .stat-value {
+        font-family: var(--font-body);
+        font-size: 46px;
+        font-weight: 700;
+        line-height: 1.1;
+        color: var(--color-text-primary);
+    }
+
+    .stat-value.is-leader { color: var(--color-discipline); }
+
+    .stat-note {
+        font-family: var(--font-body);
+        font-size: 18px;
+        font-weight: 500;
+        letter-spacing: 0.02em;
+        color: rgba(255, 255, 255, 0.50);
+        white-space: nowrap;
+        margin-top: 1px;
+    }
+
+    /* ── Heat-by-heat run ── */
+    .history-label {
+        font-family: var(--font-body);
+        font-size: 18px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.09em;
+        color: rgba(255, 255, 255, 0.38);
+        margin-bottom: 8px;
+    }
+
+    .history-line {
+        font-family: var(--font-body);
+        font-size: 25px;
+        font-weight: 500;
+        line-height: 1.45;
+        color: rgba(255, 255, 255, 0.80);
+        white-space: nowrap;
+    }
+
+    .brief-footer {
+        display: flex;
+        justify-content: space-between;
+        font-family: var(--font-body);
+        font-size: 22px;
+        font-weight: 500;
+        letter-spacing: 0.03em;
+        color: rgba(255, 255, 255, 0.42);
+        margin-top: 16px;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="brief-eyebrow">
+        {{ event_name }}{% if event_year %} {{ event_year }}{% endif %}
+        {%- if event_tier %} &middot; {{ '★' * event_tier }}{% endif %}
+    </div>
+    <div class="brief-title">{{ title }}</div>
+    {% if draw_note or is_strongest %}
+    <div class="brief-draw">
+        {% if draw_note %}<span>{{ draw_note }}</span>{% endif %}
+        {% if is_strongest %}<span class="strongest">Strongest heat of the round</span>{% endif %}
+    </div>
+    {% endif %}
+
+    <div class="brief-grid">
+        {% for r in riders %}
+        <div class="rider">
+            <div class="rider-photo">
+                {% if r.photo_url %}
+                <img src="{{ r.photo_url }}" alt="{{ r.name }}">
+                {% else %}
+                <div class="placeholder">{{ r.first_name[:1] }}{{ r.last_name[:1] }}</div>
+                {% endif %}
+                <div class="top-scrim"></div>
+            </div>
+            <div class="rider-head">
+                <div class="rider-meta {{ r.meta_class }}">
+                    {% if r.country %}<img src="https://flagcdn.com/w40/{{ r.country | lower }}.png" alt="{{ r.country }}">{% endif %}
+                    <span>{{ r.first_name }}</span>
+                    {% if r.sail_number %}<span class="sail">{{ r.sail_number }}</span>{% endif %}
+                    {% if r.rank_label %}<span class="rank">{{ r.rank_label }}</span>{% endif %}
+                </div>
+                <div class="rider-last {{ r.name_class }}">{{ r.last_name or r.first_name }}</div>
+            </div>
+            <div class="rider-body">
+                {% if r.route %}<div class="rider-route">{{ r.route }}</div>{% endif %}
+
+                {# First three are the heat stats; the rest are wave then jump,
+                   best and average adjacent. #}
+                <div class="stat-grid heat">
+                    {% for s in r.stats[:3] %}
+                    <div class="stat">
+                        <div class="stat-label">{{ s.label }}</div>
+                        <div class="stat-value{% if s.is_leader %} is-leader{% endif %}">{{ s.value }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% for group in [r.stats[3:5], r.stats[5:]] %}
+                <div class="stat-grid pair">
+                    {% for s in group %}
+                    <div class="stat">
+                        <div class="stat-label">{{ s.label }}</div>
+                        <div class="stat-value{% if s.is_leader %} is-leader{% endif %}">{{ s.value }}</div>
+                        {% if s.note %}<div class="stat-note">{{ s.note }}</div>{% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+
+                {% if r.history %}
+                <div class="history-label">Event so far</div>
+                {% for line in r.history %}<div class="history-line">{{ line }}</div>{% endfor %}
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="brief-footer">
+        <span>windsurfworldtourstats.com</span>
+        {% if generated_at %}<span>Generated {{ generated_at }}</span>{% endif %}
+    </div>
+</div>
+{% endblock %}

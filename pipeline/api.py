@@ -77,6 +77,141 @@ def fetch_head_to_head(
     return data
 
 
+def fetch_finalist_stats(event_id: int, athlete_ids: list, division: str, detailed: bool = False) -> list:
+    """Fetch event-so-far aggregates for a list of finalists, in the given order.
+
+    Uses the head-to-head endpoint rather than the per-athlete stats endpoint:
+    H2H is the only one that returns counting averages, and it keeps working
+    mid-competition. It compares two riders per call, so the finalists are
+    fetched in pairs. An odd finalist is paired with the first rider again and
+    only their own side of the response is read.
+    """
+    ids = list(athlete_ids)
+    results = {}
+
+    for i in range(0, len(ids), 2):
+        first = ids[i]
+        second = ids[i + 1] if i + 1 < len(ids) else ids[0]
+
+        resp = requests.get(
+            f"{API_BASE_URL}/events/{event_id}/head-to-head",
+            params={
+                "athlete1_id": first,
+                "athlete2_id": second,
+                "division": division,
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        raw = resp.json()
+
+        for side, athlete_id in (("athlete1", first), ("athlete2", second)):
+            if athlete_id in results:
+                continue
+            results[athlete_id] = _finalist_entry(raw[side], athlete_id, detailed)
+
+    return [results[aid] for aid in ids if aid in results]
+
+
+def fetch_heat_routes(event_id: int, division: str) -> dict:
+    """Map each athlete to their most recent sailed heat at this event.
+
+    Returns ``{athlete_id: {"round": ..., "place": ..., "advanced": ...}}``.
+
+    This is how a rider reached the heat they are about to sail. Rounds that
+    have not run yet come back from the API with empty athlete lists (the
+    draw is not published through this endpoint), so they contribute nothing
+    and the latest round a rider appears in is their last outing.
+    """
+    resp = requests.get(
+        f"{API_BASE_URL}/events/{event_id}/heats",
+        params={"sex": division},
+        timeout=30,
+    )
+    resp.raise_for_status()
+    raw = resp.json()
+
+    routes = {}
+    latest = {}
+    for round_ in raw.get("rounds", []):
+        order = round_.get("round_order") or 0
+        for heat in round_.get("heats", []):
+            for athlete in heat.get("athletes", []):
+                aid = athlete.get("athlete_id")
+                if aid is None or order < latest.get(aid, -1):
+                    continue
+                latest[aid] = order
+                routes[aid] = {
+                    "round": round_.get("round_name", ""),
+                    "round_order": order,
+                    "place": athlete.get("place"),
+                    "advanced": athlete.get("advanced"),
+                }
+
+    return routes
+
+
+def _finalist_entry(side: dict, athlete_id: int, detailed: bool = False) -> dict:
+    """Flatten one side of an H2H response into a finalist entry.
+
+    The lean form is what the carousel shows. ``detailed`` adds the fields a
+    commentator wants but which mislead in a 2x2 grid: heat wins and average
+    heat score both scale with how many heats a rider has sailed, so on a
+    graphic they read as a ranking. Read aloud with context, they are useful.
+    """
+    entry = {
+        "athlete_id": athlete_id,
+        "name": side.get("name", ""),
+        "nationality": side.get("nationality", ""),
+        "photo_url": side.get("profile_image", "") or "",
+        "best_heat": side.get("heat_scores_best"),
+        "avg_wave": side.get("waves_avg_counting"),
+        "avg_jump": side.get("jumps_avg_counting"),
+    }
+    if detailed:
+        entry.update({
+            "heat_wins": side.get("heat_wins"),
+            "avg_heat": side.get("heat_scores_avg"),
+            "best_wave": side.get("waves_best"),
+            "best_jump": side.get("jumps_best"),
+        })
+    return entry
+
+
+def fetch_heat_history(event_id: int, division: str) -> dict:
+    """Every sailed heat per athlete, oldest round first.
+
+    Returns ``{athlete_id: [{"round", "heat", "place", "total", "advanced"}]}``.
+    A commentator reads this as the rider's event so far, heat by heat.
+    """
+    resp = requests.get(
+        f"{API_BASE_URL}/events/{event_id}/heats",
+        params={"sex": division},
+        timeout=30,
+    )
+    resp.raise_for_status()
+    raw = resp.json()
+
+    history = {}
+    for round_ in sorted(raw.get("rounds", []), key=lambda r: r.get("round_order") or 0):
+        for heat in sorted(round_.get("heats", []), key=lambda h: h.get("heat_order") or 0):
+            for athlete in heat.get("athletes", []):
+                aid = athlete.get("athlete_id")
+                if aid is None:
+                    continue
+                history.setdefault(aid, []).append({
+                    "round": round_.get("round_name", ""),
+                    "heat": heat.get("heat_number", ""),
+                    "place": athlete.get("place"),
+                    "total": athlete.get("result_total"),
+                    "advanced": athlete.get("advanced"),
+                    # Individual rides, which carry the jump move names.
+                    "scores": athlete.get("scores") or [],
+                })
+
+    return history
+
+
 def fetch_athlete_event_stats(event_id: int, athlete_id: int, division: str) -> dict:
     """Fetch single athlete's stats at an event and flatten into template data."""
     url = f"{API_BASE_URL}/events/{event_id}/athletes/{athlete_id}/stats"

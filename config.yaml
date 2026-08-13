@@ -51,6 +51,14 @@ templates:
     width: 1080
     height: 1350
     dpr: 2
+  finals_preview:
+    width: 1080
+    height: 1350
+    dpr: 2
+  commentator_brief:
+    width: 1080
+    height: 1920
+    dpr: 2
 
 hashtags:
   # Single brand hashtag set used for every post (2026-06-18 decision).

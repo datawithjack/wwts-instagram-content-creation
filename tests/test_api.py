@@ -9,6 +9,9 @@ from pipeline.api import (
     fetch_event,
     fetch_athlete_event_stats,
     fetch_event_top_scores,
+    fetch_finalist_stats,
+    fetch_heat_routes,
+    fetch_heat_history,
 )
 
 
@@ -429,3 +432,239 @@ class TestFetchEventTopScores:
 
         assert result["show_trick_type"] is True
         assert result["entries"][0]["trick_type"] == "F"
+
+
+def _mock_finalist_pair(id1, id2, **overrides):
+    """H2H response shaped for two finalists (only aggregate fields matter)."""
+    def side(aid):
+        return {
+            "athlete_id": aid,
+            "name": f"Athlete {aid}",
+            "nationality": "Spain",
+            "place": 0,
+            "profile_image": f"https://example.com/{aid}.jpg",
+            "heat_scores_best": 20.0 + aid,
+            "heat_scores_avg": 15.0 + aid,
+            "jumps_best": 9.0,
+            "jumps_avg_counting": 7.0 + aid,
+            "waves_best": 6.0,
+            "waves_avg_counting": 4.0 + aid,
+            "heat_wins": 1,
+        }
+
+    data = {
+        "event_id": 124,
+        "event_name": "2026 Tenerife Grand Slam *****",
+        "division": "Men",
+        "athlete1": side(id1),
+        "athlete2": side(id2),
+        "comparison": {},
+    }
+    data.update(overrides)
+    return MagicMock(status_code=200, json=lambda: data)
+
+
+class TestFetchFinalistStats:
+    @patch("pipeline.api.requests.get")
+    def test_four_finalists_need_two_calls(self, mock_get):
+        mock_get.side_effect = [_mock_finalist_pair(1, 2), _mock_finalist_pair(3, 4)]
+
+        result = fetch_finalist_stats(event_id=124, athlete_ids=[1, 2, 3, 4], division="Men")
+
+        assert mock_get.call_count == 2
+        assert [a["athlete_id"] for a in result] == [1, 2, 3, 4]
+
+    @patch("pipeline.api.requests.get")
+    def test_calls_head_to_head_endpoint_with_division(self, mock_get):
+        mock_get.side_effect = [_mock_finalist_pair(1, 2), _mock_finalist_pair(3, 4)]
+
+        fetch_finalist_stats(event_id=124, athlete_ids=[1, 2, 3, 4], division="Men")
+
+        first = mock_get.call_args_list[0]
+        assert "/events/124/head-to-head" in first[0][0]
+        assert first[1]["params"] == {"athlete1_id": 1, "athlete2_id": 2, "division": "Men"}
+
+    @patch("pipeline.api.requests.get")
+    def test_maps_aggregate_fields(self, mock_get):
+        mock_get.side_effect = [_mock_finalist_pair(1, 2)]
+
+        result = fetch_finalist_stats(event_id=124, athlete_ids=[1, 2], division="Men")
+
+        assert result[0] == {
+            "athlete_id": 1,
+            "name": "Athlete 1",
+            "nationality": "Spain",
+            "photo_url": "https://example.com/1.jpg",
+            "best_heat": 21.0,
+            "avg_wave": 5.0,
+            "avg_jump": 8.0,
+        }
+
+    @patch("pipeline.api.requests.get")
+    def test_odd_count_pairs_last_with_first(self, mock_get):
+        # The endpoint only compares two riders, so an odd finalist is paired
+        # with the first one again and only its own side is read.
+        mock_get.side_effect = [_mock_finalist_pair(1, 2), _mock_finalist_pair(3, 1)]
+
+        result = fetch_finalist_stats(event_id=124, athlete_ids=[1, 2, 3], division="Men")
+
+        assert [a["athlete_id"] for a in result] == [1, 2, 3]
+        second = mock_get.call_args_list[1]
+        assert second[1]["params"]["athlete1_id"] == 3
+        assert second[1]["params"]["athlete2_id"] == 1
+
+    @patch("pipeline.api.requests.get")
+    def test_single_finalist(self, mock_get):
+        mock_get.side_effect = [_mock_finalist_pair(1, 1)]
+
+        result = fetch_finalist_stats(event_id=124, athlete_ids=[1], division="Women")
+
+        assert [a["athlete_id"] for a in result] == [1]
+
+    @patch("pipeline.api.requests.get")
+    def test_wave_only_event_has_no_jump_average(self, mock_get):
+        pair = _mock_finalist_pair(1, 2)
+        raw = pair.json()
+        raw["athlete1"]["jumps_avg_counting"] = None
+        raw["athlete2"]["jumps_avg_counting"] = None
+        pair.json = lambda: raw
+        mock_get.side_effect = [pair]
+
+        result = fetch_finalist_stats(event_id=124, athlete_ids=[1, 2], division="Men")
+
+        assert result[0]["avg_jump"] is None
+
+    @patch("pipeline.api.requests.get")
+    def test_empty_id_list_makes_no_calls(self, mock_get):
+        result = fetch_finalist_stats(event_id=124, athlete_ids=[], division="Men")
+
+        assert result == []
+        assert mock_get.call_count == 0
+
+    @patch("pipeline.api.requests.get")
+    def test_raises_on_http_error(self, mock_get):
+        mock_resp = MagicMock(status_code=404)
+        mock_resp.raise_for_status.side_effect = Exception("404 Not Found")
+        mock_get.return_value = mock_resp
+
+        with pytest.raises(Exception):
+            fetch_finalist_stats(event_id=999, athlete_ids=[1, 2], division="Men")
+
+
+def _mock_heats_response():
+    """Rounds in API order, including an unsailed round with no athletes."""
+    return MagicMock(status_code=200, json=lambda: {
+        "event_id": 124,
+        "sex": "Men",
+        "rounds": [
+            {"round_name": "Seeding R1", "round_order": 1, "heats": [
+                {"heat_id": "h1", "heat_number": "1", "heat_order": 1, "athletes": [
+                    {"athlete_id": 97, "athlete_name": "Marc", "place": 1, "advanced": True, "advancement_type": "winners"},
+                    {"athlete_id": 50, "athlete_name": "Arthur", "place": 2, "advanced": False, "advancement_type": None},
+                ]},
+            ]},
+            {"round_name": "Elimination R3", "round_order": 3, "heats": [
+                {"heat_id": "h2", "heat_number": "1", "heat_order": 1, "athletes": [
+                    {"athlete_id": 50, "athlete_name": "Arthur", "place": 2, "advanced": True, "advancement_type": "winners"},
+                    {"athlete_id": 21, "athlete_name": "Anton", "place": 4, "advanced": False, "advancement_type": None},
+                ]},
+            ]},
+            {"round_name": "Quarters R4", "round_order": 4, "heats": [
+                {"heat_id": "h3", "heat_number": "1", "heat_order": 1, "athletes": []},
+            ]},
+        ],
+    })
+
+
+class TestFetchHeatRoutes:
+    @patch("pipeline.api.requests.get")
+    def test_returns_last_sailed_heat_per_athlete(self, mock_get):
+        mock_get.return_value = _mock_heats_response()
+
+        routes = fetch_heat_routes(event_id=124, division="Men")
+
+        # Arthur sailed twice — the later round wins
+        assert routes[50] == {"round": "Elimination R3", "round_order": 3, "place": 2, "advanced": True}
+        assert routes[97] == {"round": "Seeding R1", "round_order": 1, "place": 1, "advanced": True}
+
+    @patch("pipeline.api.requests.get")
+    def test_includes_eliminated_athletes(self, mock_get):
+        mock_get.return_value = _mock_heats_response()
+
+        routes = fetch_heat_routes(event_id=124, division="Men")
+
+        assert routes[21]["advanced"] is False
+
+    @patch("pipeline.api.requests.get")
+    def test_unsailed_rounds_contribute_nothing(self, mock_get):
+        mock_get.return_value = _mock_heats_response()
+
+        routes = fetch_heat_routes(event_id=124, division="Men")
+
+        assert all(r["round"] != "Quarters R4" for r in routes.values())
+
+    @patch("pipeline.api.requests.get")
+    def test_calls_heats_endpoint_with_division(self, mock_get):
+        mock_get.return_value = _mock_heats_response()
+
+        fetch_heat_routes(event_id=124, division="Women")
+
+        assert "/events/124/heats" in mock_get.call_args[0][0]
+        assert mock_get.call_args[1]["params"] == {"sex": "Women"}
+
+    @patch("pipeline.api.requests.get")
+    def test_returns_empty_when_event_has_no_heat_data(self, mock_get):
+        mock_get.return_value = MagicMock(status_code=200, json=lambda: {"rounds": []})
+
+        assert fetch_heat_routes(event_id=124, division="Men") == {}
+
+
+class TestFinalistStatsFullDetail:
+    @patch("pipeline.api.requests.get")
+    def test_includes_the_fields_a_commentator_needs(self, mock_get):
+        mock_get.side_effect = [_mock_finalist_pair(1, 2)]
+
+        result = fetch_finalist_stats(event_id=124, athlete_ids=[1, 2], division="Men", detailed=True)
+
+        assert result[0]["heat_wins"] == 1
+        assert result[0]["avg_heat"] == 16.0
+        assert result[0]["best_wave"] == 6.0
+        assert result[0]["best_jump"] == 9.0
+
+    @patch("pipeline.api.requests.get")
+    def test_default_stays_lean(self, mock_get):
+        mock_get.side_effect = [_mock_finalist_pair(1, 2)]
+
+        result = fetch_finalist_stats(event_id=124, athlete_ids=[1, 2], division="Men")
+
+        assert "heat_wins" not in result[0]
+
+
+class TestFetchHeatHistory:
+    @patch("pipeline.api.requests.get")
+    def test_returns_every_sailed_heat_in_order(self, mock_get):
+        mock_get.return_value = _mock_heats_response()
+
+        history = fetch_heat_history(event_id=124, division="Men")
+
+        assert [h["round"] for h in history[50]] == ["Seeding R1", "Elimination R3"]
+        assert history[50][0]["place"] == 2
+
+    @patch("pipeline.api.requests.get")
+    def test_carries_score_and_advancement(self, mock_get):
+        raw = _mock_heats_response().json()
+        raw["rounds"][0]["heats"][0]["athletes"][0]["result_total"] = 18.4
+        mock_get.return_value = MagicMock(status_code=200, json=lambda: raw)
+
+        history = fetch_heat_history(event_id=124, division="Men")
+
+        assert history[97][0]["total"] == 18.4
+        assert history[97][0]["advanced"] is True
+
+    @patch("pipeline.api.requests.get")
+    def test_counts_only_sailed_heats(self, mock_get):
+        mock_get.return_value = _mock_heats_response()
+
+        history = fetch_heat_history(event_id=124, division="Men")
+
+        assert len(history[97]) == 1

@@ -246,3 +246,51 @@ def country_code_to_iso2(code: str) -> str:
     if len(code) == 2:
         return code.lower()
     return ISO3_TO_ISO2.get(code, "")
+
+
+# Sail-number prefix -> ISO2. Windsurf sails carry a national code (the modern
+# three-letter IOC-style code, or a legacy single/double letter on older sails).
+# This is the last-resort country source for the many athletes whose ATHLETES row
+# has every country column NULL — an upstream data gap. Extend as new prefixes
+# appear; an unknown prefix resolves to "" (a blank flag cell) rather than a wrong
+# flag.
+SAIL_PREFIX_TO_ISO2 = {
+    # Legacy single/double letter codes (pre-ISO sails)
+    "F": "fr", "I": "it", "G": "de", "E": "es", "K": "gb", "H": "nl",
+    "S": "se", "N": "no", "D": "dk", "Z": "ch", "OE": "at", "KA": "au",
+    "US": "us", "PZ": "pl", "CZ": "cz",
+    # Europe
+    "FRA": "fr", "ITA": "it", "GER": "de", "ESP": "es", "GBR": "gb",
+    "NED": "nl", "SUI": "ch", "AUT": "at", "BEL": "be", "POL": "pl",
+    "POR": "pt", "DEN": "dk", "SWE": "se", "NOR": "no", "FIN": "fi",
+    "GRE": "gr", "CRO": "hr", "SLO": "si", "CZE": "cz", "SVK": "sk",
+    "HUN": "hu", "IRL": "ie", "EST": "ee", "LAT": "lv", "LTU": "lt",
+    "BUL": "bg", "ROU": "ro", "UKR": "ua", "RUS": "ru", "TUR": "tr",
+    "ISL": "is", "LUX": "lu", "MON": "mc", "CYP": "cy", "MLT": "mt",
+    # Americas
+    "USA": "us", "CAN": "ca", "BRA": "br", "ARG": "ar", "CHI": "cl",
+    "PER": "pe", "MEX": "mx", "VEN": "ve",
+    # Caribbean / overseas territories — common in slalom
+    "ARU": "aw", "NB": "bq", "BON": "bq", "CUR": "cw", "AHO": "cw",
+    "GPE": "gp", "MTQ": "mq", "REU": "re", "NCL": "nc", "PYF": "pf",
+    "TAH": "pf", "ISV": "vi", "PUR": "pr", "DOM": "do",
+    # Africa / Asia / Oceania
+    "RSA": "za", "EGY": "eg", "MAR": "ma", "TUN": "tn", "ALG": "dz",
+    "ISR": "il", "JPN": "jp", "KOR": "kr", "CHN": "cn", "HKG": "hk",
+    "THA": "th", "SIN": "sg", "MAS": "my", "INA": "id", "IND": "in",
+    "AUS": "au", "NZL": "nz",
+}
+
+
+def sail_prefix_to_iso2(sail_number: str) -> str:
+    """ISO2 country code from a sail number's national prefix, or "".
+
+    ``"NED-69"`` -> ``"nl"``, ``"F-14"`` -> ``"fr"``. Case- and whitespace-
+    insensitive; a sail with no separator ("FRA") is treated as the prefix. An
+    unknown prefix returns "" so the caller renders a blank flag rather than a
+    wrong one.
+    """
+    if not sail_number:
+        return ""
+    prefix = str(sail_number).strip().upper().split("-")[0].strip()
+    return SAIL_PREFIX_TO_ISO2.get(prefix, "")

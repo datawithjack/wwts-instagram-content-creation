@@ -1,0 +1,97 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 60px 48px 64px;
+    }
+
+    /* ── Event block (matches slide_cover.html) ── */
+    .event-year {
+        font-family: var(--font-display);
+        font-size: 64px;
+        letter-spacing: 0.06em;
+        color: var(--color-text-primary);
+        margin-bottom: 8px;
+    }
+
+    .event-name {
+        font-family: var(--font-display);
+        font-size: 104px;
+        letter-spacing: 0.04em;
+        line-height: 1.05;
+        color: var(--color-text-primary);
+        margin-bottom: 12px;
+    }
+
+    .event-meta {
+        font-family: var(--font-body);
+        font-size: 30px;
+        font-weight: 500;
+        color: var(--color-text-muted);
+        letter-spacing: 0.06em;
+        margin-bottom: 64px;
+    }
+
+    .event-meta .stars {
+        color: var(--color-gold);
+        letter-spacing: 0.02em;
+    }
+
+    /* ── Hero title: white, one accented word ── */
+    .cover-title {
+        font-family: var(--font-display);
+        font-size: 200px;
+        letter-spacing: 0.03em;
+        line-height: 0.95;
+        color: var(--color-text-primary);
+        margin-bottom: 24px;
+    }
+
+    .cover-title .line {
+        display: block;
+        white-space: nowrap;
+    }
+
+    .cover-title .metric {
+        color: var(--color-discipline);
+    }
+
+    .cover-subtitle {
+        font-family: var(--font-body);
+        font-size: 28px;
+        font-weight: 400;
+        color: var(--color-text-muted);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    {% if event_year %}<div class="event-year">{{ event_year }}</div>{% endif %}
+    <div class="event-name">{{ event_name | upper }}</div>
+    <div class="event-meta">
+        {%- if event_country %}{{ event_country }}{% endif %}
+        {%- if event_date_start and event_date_end %}
+            {% if event_country %}&middot;{% endif %}
+            {{ event_date_start.strftime('%b %d') if event_date_start.strftime is defined else event_date_start }}
+            &ndash;
+            {{ event_date_end.strftime('%b %d') if event_date_end.strftime is defined else event_date_end }}
+        {%- endif %}
+        {%- if event_tier %} &middot; <span class="stars">{{ '★' * event_tier }}</span>{% endif %}
+    </div>
+
+    <div class="cover-title" data-autofit>
+        {% for line in title_lines %}<span class="line">{{ line }}</span>{% endfor %}
+        <span class="line metric">{{ title_accent }}</span>
+    </div>
+
+    {% if subtitle %}<div class="cover-subtitle">{{ subtitle }}</div>{% endif %}
+</div>
+{% include "carousel/_autofit.html" %}
+{% endblock %}

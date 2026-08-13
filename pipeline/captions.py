@@ -28,6 +28,7 @@ def build_caption(
             "rider_profile": _caption_rider_profile,
             "canary_kings": _caption_canary_kings,
             "wave_count": _caption_wave_count,
+            "finals_preview": _caption_finals_preview,
             "athlete_rise": _caption_athlete_rise,
             "event_picks": _caption_event_picks,
             "freestyle_scores_live": _caption_freestyle_scores_live,
@@ -186,6 +187,60 @@ def _caption_wave_count(data: dict, site_url: str) -> str:
         f"Pure wave count — not who won, but who put in the work. "
         f"{queen} and {king} caught the most waves in Fiji.\n\n"
         f"(More heats means more waves — swipe for the per-heat numbers too.)\n\n"
+        f"Full stats → {site_url}"
+    )
+
+
+def _caption_finals_preview(data: dict, site_url: str) -> str:
+    meta = data.get("event_meta") or {}
+    event = meta.get("event_name", "the final")
+    year = meta.get("year", "")
+    where = f"{event} {year}".strip()
+
+    if data.get("heats") is not None:
+        return _caption_finals_heats(data, where, site_url)
+
+    def _top(rows):
+        scored = [r for r in rows or [] if (r.get("best_heat") or 0) > 0]
+        if not scored:
+            return None
+        best = max(scored, key=lambda r: r["best_heat"])
+        return f"{best['name']} ({best['best_heat']:.2f})"
+
+    top_man = _top(data.get("men"))
+    top_woman = _top(data.get("women"))
+
+    lead_ins = []
+    if top_man:
+        lead_ins.append(f"Best heat score of the men's finalists: {top_man}.")
+    if top_woman:
+        lead_ins.append(f"Best of the women's: {top_woman}.")
+    leaders = " ".join(lead_ins)
+
+    return (
+        f"\U0001f3c1 Finals day at {where}.\n\n"
+        f"Four men and four women left. Here is the road to the final: "
+        f"best heat score, average counting wave and average counting jump "
+        f"from the event so far.\n\n"
+        f"{leaders}\n\n"
+        f"Who are you backing? Drop your pick below.\n\n"
+        f"Full stats → {site_url}"
+    )
+
+
+def _caption_finals_heats(data: dict, where: str, site_url: str) -> str:
+    heats = data.get("heats") or []
+    riders = sum(len(h.get("athletes") or []) for h in heats)
+    division = (data.get("division_label") or "").replace("'S", "").lower()
+    who = f"{riders} {division}" if division else str(riders)
+    round_name = (heats[0].get("label", "").rsplit(" ", 1)[0].lower() if heats else "heats") or "heats"
+
+    return (
+        f"\U0001f3c1 {round_name.title()}s at {where}.\n\n"
+        f"{who} riders left, {len(heats)} heats. Swipe for every draw and how "
+        f"each rider got here: best heat score, average counting wave and "
+        f"average counting jump from the event so far.\n\n"
+        f"Who is making the final?\n\n"
         f"Full stats → {site_url}"
     )
 

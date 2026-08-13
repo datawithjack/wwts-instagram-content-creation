@@ -423,6 +423,41 @@ def get_dummy_data(template_name: str) -> dict:
                 {"athlete": "Lina Erpenstein", "nationality": "Germany", "athlete_id": 16, "wins": 1, "gc_wins": 0, "tf_wins": 1, "photo_url": "https://www.liveheats.com/images/4d2e15d9-b0ab-461e-9b3f-e2f65e4dc541.webp"},
             ],
         }
+    if template_name == "finals_preview":
+        def _finalist(athlete_id, name, nationality, best_heat, avg_wave, avg_jump):
+            return {
+                "athlete_id": athlete_id,
+                "name": name,
+                "nationality": nationality,
+                "photo_url": "",
+                "best_heat": best_heat,
+                "avg_wave": avg_wave,
+                "avg_jump": avg_jump,
+            }
+
+        return {
+            "event_meta": {
+                "event_name": "Tenerife Grand Slam",
+                "year": 2026,
+                "country": "ESP",
+                "stars": 5,
+                "event_id": 124,
+                "start_date": date(2026, 7, 31),
+                "end_date": date(2026, 8, 9),
+            },
+            "men": [
+                _finalist(97, "Marc Paré Rico", "Spain", 20.01, 5.82, 8.38),
+                _finalist(49, "Philip Köster", "Germany", 16.48, 4.32, 7.85),
+                _finalist(68, "Marcilio Browne", "Brazil", 16.40, 4.48, 7.45),
+                _finalist(56, "Víctor Fernández", "Spain", 19.59, 4.90, 7.10),
+            ],
+            "women": [
+                _finalist(17, "María Morales Navarro", "Spain", 19.46, 3.90, 5.10),
+                _finalist(12, "Alexia Kiefer Quintana", "Spain", 17.12, 3.55, 4.80),
+                _finalist(5, "Sarah-Quita Offringa", "Aruba", 14.37, 3.10, 4.00),
+                _finalist(11, "Justyna Sniady", "Poland", 15.70, 3.42, 4.35),
+            ],
+        }
     if template_name == "wave_count":
         return {
             "event_meta": {"location": "CLOUDBREAK", "event_name": "FIJI Surf Pro - Cloudbreak", "year": 2026, "event_id": 490099, "country": "FJ", "start_date": date(2026, 6, 6), "end_date": date(2026, 6, 14), "stars": 4},
