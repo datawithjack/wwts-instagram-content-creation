@@ -48,7 +48,7 @@
 
 {% block carousel_content %}
 <div class="container">
-    <div class="eyebrow">Fantasy &middot; Freestyle</div>
+    <div class="eyebrow">Fantasy &middot; {{ discipline_label | default('Freestyle') }}</div>
 
     <div class="cover-title" data-autofit>
         FANTASY<br>

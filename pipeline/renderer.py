@@ -219,6 +219,33 @@ def render_fuerte_fantasy_mvps_carousel(
     return paths
 
 
+def render_slalom_mvps_carousel(
+    data: dict,
+    output_dir: str,
+    base_name: str = "slalom_mvps",
+    width: int = 1080,
+    height: int = 1350,
+    dpr: int = 2,
+) -> list[str]:
+    """Render the slalom Session Fantasy MVPs carousel into slide PNGs.
+
+    Shares the mvp_* slide templates with the freestyle carousel; only the slide
+    builder differs (different columns, and the women's slide is optional).
+
+    Returns list of PNG file paths.
+    """
+    from pipeline.slalom_mvps import build_slides as build_slalom_mvp_slides
+    slides = build_slalom_mvp_slides(data)
+    os.makedirs(output_dir, exist_ok=True)
+    paths = []
+    for i, slide in enumerate(slides, 1):
+        html = render_template(f"carousel/slide_{slide['type']}", slide)
+        output_path = os.path.join(output_dir, f"{base_name}_{i}.png")
+        render_to_png(html, output_path, width=width, height=height, dpr=dpr)
+        paths.append(output_path)
+    return paths
+
+
 def render_athlete_rise_carousel(
     data: dict,
     output_dir: str,

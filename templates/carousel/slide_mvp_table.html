@@ -121,7 +121,7 @@
 {% block carousel_content %}
 <div class="container">
     {% if event.location %}
-    <div class="mvp-eyebrow">{{ event.location }} {{ event.year | default('') }} &middot; Freestyle Fantasy</div>
+    <div class="mvp-eyebrow">{{ event.location }} {{ event.year | default('') }} &middot; {{ discipline_label | default('Freestyle') }} Fantasy</div>
     {% endif %}
     <div class="mvp-title">{{ sex_label }}<span class="accent">'S MVPS</span></div>
     <div class="mvp-subtitle">Top 10 fantasy point scorers</div>
@@ -131,9 +131,14 @@
             <span class="col-rank">#</span>
             <span class="col-flag"></span>
             <span class="col-athlete">Athlete</span>
-            <span class="col-num">Single</span>
-            <span class="col-num">Double</span>
-            <span class="col-total">Total</span>
+            <span class="col-num">{{ col_1_label | default('Single') }}</span>
+            {# An explicitly empty col_2_label hides the column (slalom shows
+               Wins / Total / Picked); freestyle leaves it undefined and keeps
+               its default. #}
+            {% if col_2_label is not defined or col_2_label %}
+            <span class="col-num">{{ col_2_label | default('Double') }}</span>
+            {% endif %}
+            <span class="col-total">{{ col_3_label | default('Total') }}</span>
             <span class="col-picked">Picked</span>
         </div>
         <div class="mvp-body">
@@ -142,15 +147,17 @@
                 <div class="col-rank">{{ row.rank }}</div>
                 <div class="col-flag">{% if row.country %}<img src="https://flagcdn.com/w40/{{ row.country | lower }}.png" alt="{{ row.country }}">{% endif %}</div>
                 <div class="col-athlete">{{ row.athlete }}</div>
-                <div class="col-num">{{ "%.1f" | format(row.single_pts) }}</div>
-                <div class="col-num">{{ "%.1f" | format(row.double_pts) }}</div>
-                <div class="col-total">{{ "%.1f" | format(row.total_pts) }}</div>
+                <div class="col-num">{% if row.col_1 is defined %}{{ row.col_1 }}{% else %}{{ "%.1f" | format(row.single_pts) }}{% endif %}</div>
+                {% if col_2_label is not defined or col_2_label %}
+                <div class="col-num">{% if row.col_2 is defined %}{{ row.col_2 }}{% else %}{{ "%.1f" | format(row.double_pts) }}{% endif %}</div>
+                {% endif %}
+                <div class="col-total">{% if row.col_3 is defined %}{{ row.col_3 }}{% else %}{{ "%.1f" | format(row.total_pts) }}{% endif %}</div>
                 <div class="col-picked">{{ row.pct_picked }}%</div>
             </div>
         {% endfor %}
         </div>
     </div>
 
-    <div class="table-footnote">Points = total heat scores across the event &middot; Picked = % of players who had them</div>
+    <div class="table-footnote">{{ footnote | default('Points = total heat scores across the event &middot; Picked = % of players who had them') }}</div>
 </div>
 {% endblock %}

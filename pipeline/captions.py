@@ -35,6 +35,7 @@ def build_caption(
             "slalom_scores_live": _caption_slalom_scores_live,
             "wave_scores_live": _caption_wave_scores_live,
             "fuerte_fantasy_mvps": _caption_fantasy_mvps,
+            "slalom_mvps": _caption_slalom_mvps,
         }
         builder = builders.get(template_name, _caption_default)
         body = builder(data, site_url)
@@ -168,6 +169,75 @@ def _caption_fantasy_mvps(data: dict, site_url: str) -> str:
         f"the end of July. Link in bio.\n\n"
         f"Full stats → {site_url}"
     )
+
+
+def _join_codes(codes: list) -> str:
+    """"A DNS and a DNF" from ["DNS", "DNF"]; "A DNF" from one code."""
+    labelled = [f"a {c}" for c in codes]
+    if len(labelled) == 1:
+        joined = labelled[0]
+    else:
+        joined = ", ".join(labelled[:-1]) + f" and {labelled[-1]}"
+    return joined[0].upper() + joined[1:]
+
+
+def _caption_slalom_mvps(data: dict, site_url: str) -> str:
+    """Caption for the slalom Fantasy MVPs carousel.
+
+    Built from the board itself so the hooks are always true of the event being
+    posted: the leader's points, how few (or many) players owned them, and a win
+    leader who did not top the board.
+    """
+    men = data.get("men", [])
+    women = data.get("women", [])
+    event = data.get("event", {})
+    location = event.get("location", "Fuerteventura")
+
+    parts = [f"\U0001f3c6 The Fantasy MVPs of the {location} Slalom X."]
+
+    if men:
+        lead = men[0]
+        line = (
+            f"{lead['athlete']} scored more fantasy points than anyone in the "
+            f"men's fleet, {lead['total_pts']:.0f} across the event"
+        )
+        # A top scorer few people owned is the sharpest fantasy hook there is.
+        if lead.get("pct_picked", 0) <= 33:
+            line += f", and he was on only {lead['pct_picked']}% of teams"
+        elif lead.get("pct_picked", 0) >= 66:
+            line += f", and {lead['pct_picked']}% of players had him"
+        parts.append(line + ".")
+
+    if women:
+        lead = women[0]
+        parts.append(
+            f"{lead['athlete']} topped the women's board with "
+            f"{lead['total_pts']:.0f}."
+        )
+        # Most eliminations won but not the most points. That begs an obvious
+        # question, so the copy answers it: in slalom a non-finish scores 0 or
+        # -1 against a possible 20, which no number of wins repays.
+        win_leader = max(women, key=lambda r: r.get("wins", 0))
+        if win_leader.get("wins", 0) > lead.get("wins", 0):
+            elims = win_leader.get("elims")
+            scope = f" of the {elims}" if elims else ""
+            line = (
+                f"{win_leader['athlete']} won {win_leader['wins']}{scope} "
+                f"eliminations."
+            )
+            blanks = win_leader.get("non_finishes") or []
+            if blanks:
+                line += f" {_join_codes(blanks)} cost her the MVP spot."
+            else:
+                line += f" She still finished {ordinal(win_leader['rank'])}."
+            parts.append(line)
+
+    parts.append(
+        "Swipe for both top 10s, plus how the points work.\n\n"
+        "Next up: Tenerife picks are open now. Link in bio."
+    )
+    parts.append(f"Full stats → {site_url}")
+    return "\n\n".join(parts)
 
 
 def _caption_wave_count(data: dict, site_url: str) -> str:

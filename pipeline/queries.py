@@ -396,3 +396,98 @@ def build_fantasy_session_pick_pct_query(
         GROUP BY athlete_id
     """
     return sql, (event_id, discipline, event_id, discipline)
+
+
+# A slalom heat_id is ``{ladder}_r{round}_h{name}``. This MySQL REGEXP isolates
+# slalom heats and excludes wave/freestyle heats (which use a ``{n}_{round}{a/b}``
+# format with no ``_r..._h``). Mirrors SLALOM_HEAT_REGEX in the app's
+# slalom_session_db_scoring engine, verified 100% on prod.
+SLALOM_HEAT_REGEX = r"_r[0-9]+_h"
+
+
+def build_slalom_mvp_heats_query(event_id: int) -> tuple[str, tuple]:
+    """Per-heat finish places for EVERY slalom competitor at an event.
+
+    Slalom has no judged scores — the finish place is the result — so the MVP
+    board is built from places (see pipeline/slalom_mvps.py for the curve). One
+    row per (athlete, heat) carrying the place and the PWA result code
+    (PMS/DNF/RAF/DNS), which maps to a flat penalty.
+
+    Deliberately NOT restricted to picked athletes: the app's own engine only
+    scores picks, but an MVP board that omitted an unpicked rider who outscored
+    the field would be wrong.
+
+    Args:
+        event_id: App/DB event id (``PWA_IWT_EVENTS.id``).
+
+    Returns:
+        (sql, params) tuple ready for db.run_query().
+    """
+    sql = """
+        SELECT asi.athlete_id AS athlete_id,
+               a.primary_name AS athlete,
+               a.nationality  AS country,
+               a.country_code AS country_code,
+               a.pwa_sail_number AS sail_number,
+               hr.heat_id,
+               hr.place,
+               hr.result_code
+        FROM PWA_IWT_HEAT_RESULTS hr
+        JOIN PWA_IWT_EVENTS e
+            ON hr.pwa_event_id = e.event_id
+           AND hr.pwa_year     = e.year
+           AND hr.source       = e.source
+        JOIN ATHLETE_SOURCE_IDS asi
+            ON hr.athlete_id = asi.source_id
+           AND hr.source     = asi.source
+        JOIN ATHLETES a
+            ON a.id = asi.athlete_id
+        WHERE e.id = %s AND hr.heat_id REGEXP %s
+    """
+    return sql, (event_id, SLALOM_HEAT_REGEX)
+
+
+def build_slalom_mvp_classify_query(event_id: int) -> tuple[str, tuple]:
+    """Every slalom heat at an event with each member's OVERALL elimination place.
+
+    Feeds ``final_multipliers_for_event``, which uses it to tell a ladder's
+    championship final (scores x2) from its consolation final (x1). Covers ALL
+    heats, not just picked athletes', so a ladder's finals are still identified
+    when a pick was knocked out early.
+
+    Returns:
+        (sql, params) tuple ready for db.run_query().
+    """
+    sql = """
+        SELECT hr.heat_id, ser.place AS overall_place
+        FROM PWA_IWT_HEAT_RESULTS hr
+        JOIN PWA_IWT_EVENTS e
+            ON hr.pwa_event_id = e.event_id
+           AND hr.pwa_year     = e.year
+           AND hr.source       = e.source
+        LEFT JOIN PWA_IWT_SLALOM_ELIMINATION_RESULTS ser
+            ON ser.ladder_id  = SUBSTRING_INDEX(hr.heat_id, '_r', 1)
+           AND ser.athlete_id = hr.athlete_id
+           AND ser.source     = hr.source
+        WHERE e.id = %s AND hr.heat_id REGEXP %s
+    """
+    return sql, (event_id, SLALOM_HEAT_REGEX)
+
+
+def build_slalom_elimination_view_query(event_id: int) -> tuple[str, tuple]:
+    """Per-(athlete, elimination) overall placings for an event.
+
+    Supplies two things the heat rows can't: the fleet (parsed from
+    ``elimination_name``, e.g. "Men's Slalom X - Elimination 1") and the win
+    count — ``place = 1`` is a TRUE elimination win, distinct from winning the
+    consolation final.
+
+    Returns:
+        (sql, params) tuple ready for db.run_query().
+    """
+    sql = """
+        SELECT athlete_id, ladder_id, elimination_no, elimination_name, place
+        FROM SLALOM_ELIMINATION_VIEW
+        WHERE event_id = %s
+    """
+    return sql, (event_id,)

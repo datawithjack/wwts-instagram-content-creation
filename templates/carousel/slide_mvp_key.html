@@ -1,0 +1,203 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    /* base_carousel's .container supplies no padding or alignment, so this
+       slide has to set its own: centre the block vertically and horizontally. */
+    .container {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 96px 72px;
+        gap: 0;
+    }
+
+    .key-eyebrow {
+        font-family: var(--font-body);
+        font-size: 26px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--color-discipline);
+        margin-bottom: 18px;
+    }
+
+    .key-title {
+        font-family: var(--font-display);
+        font-size: 128px;
+        line-height: 0.9;
+        letter-spacing: -0.01em;
+        color: #FFFFFF;
+        margin-bottom: 12px;
+    }
+
+    .key-subtitle {
+        font-family: var(--font-body);
+        font-size: 26px;
+        font-weight: 500;
+        color: var(--color-text-muted);
+        margin-bottom: 56px;
+    }
+
+    /* The rules read as a key, so the text stays left-aligned inside a block
+       that is itself centred on the slide. */
+    .key-list {
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+        width: 100%;
+        max-width: 780px;
+        margin: 0 auto;
+        text-align: left;
+    }
+
+    .key-rule {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding-left: 24px;
+        border-left: 4px solid var(--color-discipline);
+    }
+
+    .key-rule .label {
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--color-discipline);
+    }
+
+    .key-rule .text {
+        font-family: var(--font-body);
+        font-size: 34px;
+        font-weight: 500;
+        line-height: 1.25;
+        color: #FFFFFF;
+    }
+
+    /* Worked example: a real run from this event, round by round. */
+    .example {
+        width: 100%;
+        max-width: 780px;
+        margin: 56px auto 0;
+        text-align: left;
+    }
+
+    .example-head {
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--color-discipline);
+        margin-bottom: 14px;
+    }
+
+    .example-athlete {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        font-family: var(--font-display);
+        font-size: 52px;
+        line-height: 1;
+        color: #FFFFFF;
+        margin-bottom: 22px;
+    }
+
+    .example-athlete img {
+        width: 44px;
+        height: 30px;
+        object-fit: cover;
+        border-radius: 3px;
+    }
+
+    .example-athlete .elim {
+        font-family: var(--font-body);
+        font-size: 26px;
+        font-weight: 500;
+        color: var(--color-text-muted);
+    }
+
+    /* A grid, not space-between: with flex the middle column drifts with the
+       label width, so the placings never line up under each other. */
+    .example-step {
+        display: grid;
+        grid-template-columns: 1fr 110px 150px;
+        align-items: baseline;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+        font-family: var(--font-body);
+        font-size: 30px;
+        color: #FFFFFF;
+    }
+
+    .example-step .round { font-weight: 600; }
+
+    .example-step .detail {
+        color: var(--color-text-muted);
+        text-align: right;
+    }
+
+    .example-step .pts {
+        font-weight: 700;
+        text-align: right;
+    }
+
+    /* Same track sizes so the total lands under the points column. */
+    .example-total {
+        display: grid;
+        grid-template-columns: 1fr 110px 150px;
+        align-items: baseline;
+        padding-top: 16px;
+        font-family: var(--font-body);
+        font-size: 34px;
+        font-weight: 700;
+        color: var(--color-discipline);
+    }
+
+    .example-total .value {
+        grid-column: 3;
+        text-align: right;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="key-eyebrow">{{ discipline_label | default('Freestyle') }} Fantasy</div>
+    <div class="key-title">HOW THE<br>POINTS WORK</div>
+    <div class="key-subtitle">{{ event.location | default('Fuerteventura') }} {{ event.year | default('') }}</div>
+
+    <div class="key-list">
+        {% for rule in rules %}
+        <div class="key-rule">
+            <div class="label">{{ rule.label }}</div>
+            <div class="text">{{ rule.text }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if example %}
+    <div class="example">
+        <div class="example-head">For example</div>
+        <div class="example-athlete">
+            {% if example.country %}<img src="https://flagcdn.com/w40/{{ example.country | lower }}.png" alt="{{ example.country }}">{% endif %}
+            {{ example.athlete }}
+            {% if example.elimination %}<span class="elim">{{ example.elimination }}</span>{% endif %}
+        </div>
+        {% for step in example.steps %}
+        <div class="example-step">
+            <span class="round">{{ step.label }}</span>
+            <span class="detail">{{ step.detail }}</span>
+            <span class="pts">{{ "%g" | format(step.points) }} pts</span>
+        </div>
+        {% endfor %}
+        <div class="example-total">
+            <span>Elimination total</span>
+            <span class="value">{{ "%g" | format(example.total) }} pts</span>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

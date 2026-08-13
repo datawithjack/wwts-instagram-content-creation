@@ -526,6 +526,39 @@ def get_dummy_data(template_name: str) -> dict:
                 {"rank": 5, "score": 6.50, "round": "Round 3"},
             ],
         }
+    if template_name == "slalom_mvps":
+        def _smvp(rank, athlete, country, athlete_id, wins, best, avg, total, pct):
+            return {
+                "rank": rank, "athlete": athlete, "country": country,
+                "athlete_id": athlete_id, "wins": wins, "best_pts": best,
+                "avg_pts": avg, "total_pts": total, "pct_picked": pct,
+                "col_1": str(wins), "col_2": f"{best:.1f}", "col_3": f"{avg:.1f}",
+            }
+        return {
+            "event": {"location": "Fuerteventura", "year": 2026, "name": "Fuerteventura Slalom X"},
+            "men": [
+                _smvp(1, "Matteo Iachino", "it", 401, 5, 34.0, 17.8, 196.0, 64),
+                _smvp(2, "Pierre Mortefon", "fr", 402, 2, 30.0, 14.2, 156.0, 47),
+                _smvp(3, "Enrico Marotti", "hr", 403, 1, 28.0, 12.6, 138.0, 38),
+                _smvp(4, "Nicolas Goyard", "fr", 404, 1, 26.0, 11.4, 125.0, 55),
+                _smvp(5, "Amado Vrieswijk", "aw", 405, 1, 24.0, 10.5, 115.0, 42),
+                _smvp(6, "Cedric Bordes", "fr", 406, 0, 22.0, 9.3, 102.0, 19),
+                _smvp(7, "Antoine Albeau", "fr", 407, 0, 20.0, 8.4, 92.0, 31),
+                _smvp(8, "Jordy Vonk", "nl", 408, 0, 18.0, 7.5, 82.0, 14),
+                _smvp(9, "Julien Quentel", "fr", 409, 0, 16.0, 6.4, 70.0, 11),
+                _smvp(10, "Bastian Kordel", "de", 410, 0, 14.0, 5.6, 62.0, 8),
+            ],
+            "women": [
+                _smvp(1, "Marion Mortefon", "fr", 451, 8, 30.0, 18.4, 276.0, 71),
+                _smvp(2, "Lena Erdil", "tr", 452, 4, 28.0, 15.2, 228.0, 58),
+                _smvp(3, "Delphine Cousin", "fr", 453, 2, 26.0, 13.1, 196.0, 49),
+                _smvp(4, "Sarah-Quita Offringa", "aw", 454, 1, 24.0, 11.7, 175.0, 62),
+                _smvp(5, "Esther de Vries", "nl", 455, 0, 20.0, 9.8, 147.0, 27),
+                _smvp(6, "Manon Pianazza", "fr", 456, 0, 18.0, 8.3, 124.0, 21),
+                _smvp(7, "Maelle Guilbaud", "fr", 457, 0, 16.0, 7.1, 106.0, 16),
+                _smvp(8, "Jenna Gibson", "gb", 458, 0, 14.0, 6.2, 93.0, 12),
+            ],
+        }
     if template_name == "fuerte_fantasy_mvps":
         def _mvp(rank, athlete, country, athlete_id, single, double, pct):
             return {
