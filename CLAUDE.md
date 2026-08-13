@@ -55,6 +55,16 @@ python generate.py --template canary_kings --preview
 python generate.py --template athlete_rise --dry-run --preview
 python generate.py --template athlete_rise --athlete1 48 --location "Gran Canaria" --sex Men --preview
 
+# Finals preview — "road to the final" 2x2 grids (API, works mid-event)
+# --event takes the API id (Tenerife 2026 = 124, not DB 391); IDs in draw order
+python generate.py --template finals_preview --dry-run --preview
+python generate.py --template finals_preview --event 124 --men 97,49,68,56 --women 17,12,5,11 --preview
+
+# Round mode: cover + one 2x2 slide per drawn heat ("Quarter Final 1 — How they got here")
+# The draw is NOT in the API (pending heats come back with empty athlete lists), so pass it via --heats
+python generate.py --template finals_preview --event 124 --division Men \
+  --heats "46,69,68,205|135,64,49,61|50,75,65,52|56,98,97,48" --preview
+
 # Preview in browser (no PNG render)
 python generate.py --template head_to_head --dry-run --preview
 
@@ -72,6 +82,7 @@ python generate.py --template site_stats --dry-run --publish now --caption "Cust
 - `rider_profile.html` — Single athlete performance at an event (carousel: cover → hero → stats → waves → CTA)
 - `canary_kings` — Analysis carousel: Kings & Queens of the Canaries (cover → men bars → women bars → CTA, 4 slides)
 - `athlete_rise` — Athlete rise carousel: year-over-year progression at a location (cover → dual chart → explanation, 3+ slides)
+- `finals_preview` — "Road to the final" carousel, 2 slides (men's final, women's final). Each slide is a 2x2 grid of the four finalists: headshot, name, best heat (hero), avg counting wave, avg counting jump. Posted the night before finals day. Heat wins and avg heat score are deliberately excluded: both are distorted by the draw mid-event (a seeded rider has one heat, so their average equals their best).
 
 ## Template Layout Rules
 - HTML template layouts are manually tuned by the user. Do NOT modify template HTML/CSS layout unless explicitly asked.
