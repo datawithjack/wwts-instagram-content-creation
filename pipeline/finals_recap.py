@@ -30,7 +30,7 @@ no landscape shot the same slide keeps its hero footprint and sizes a headshot
 inside it, rather than stretching a face crop to full bleed.
 """
 
-from pipeline.commentator_brief import _best_jump_move, _history_line, _meta_class
+from pipeline.commentator_brief import _best_jump_move, _history_line
 from pipeline.finals_preview import (
     ACCENT_COLOR,
     NO_VALUE,
@@ -187,9 +187,7 @@ def _rider_slides(riders: list, common: dict, event_label: str = "") -> list:
             "first_name": first_name,
             "last_name": last_name,
             "name_class": _name_class(last_name),
-            "country": nationality_to_iso(rider.get("nationality", "")),
             "sail_number": sail_number,
-            "meta_class": _meta_class(first_name, sail_number),
             "photo_mode": "action" if action_url else "portrait",
             # Landscape sources crop hard to 4:5. Where the rider sits in the
             # frame varies per shot, so the crop anchor is per photo.
