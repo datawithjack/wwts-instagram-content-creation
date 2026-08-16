@@ -59,7 +59,7 @@ class TestSlideStructure:
     def test_builds_six_slides_in_order(self):
         slides = build_slides(_data())
         assert [s["type"] for s in slides] == [
-            "finals_cover",
+            "recap_cover",
             "recap_rider",
             "recap_rider",
             "recap_rider",
@@ -117,17 +117,19 @@ class TestRiderSlide:
     def test_expanded_stats_are_present(self):
         winner = _rider_slides(build_slides(_data()))[-1]
         labels = [s["label"] for s in winner["stats"]]
-        for expected in ("FINAL SCORE", "BEST HEAT", "BEST WAVE", "BEST JUMP",
+        for expected in ("BEST HEAT", "BEST WAVE", "BEST JUMP",
                          "AVG WAVE", "AVG JUMP"):
             assert expected in labels
 
-    def test_final_score_leads_the_stat_strip(self):
-        """Not a hero number any more: it sits with the other stats at the
-        foot of the slide, first in the strip."""
+    def test_no_final_score_on_the_rider_card(self):
+        """The card is one rider's event; the final is the summary card's job.
+        Mixing them needed a footnote explaining that one cell meant something
+        different from the rest, which is the structure being wrong. The final
+        result is still on the card: it is the placing."""
         winner = _rider_slides(build_slides(_data()))[-1]
         assert "hero" not in winner
-        assert winner["stats"][0]["label"] == "FINAL SCORE"
-        assert winner["stats"][0]["value"] == "36.63"
+        assert "FINAL SCORE" not in [s["label"] for s in winner["stats"]]
+        assert winner["place_label"] == "1ST"
 
     def test_missing_stat_renders_a_dash_not_a_crash(self):
         riders = _riders()
@@ -138,11 +140,12 @@ class TestRiderSlide:
         values = {s["label"]: s["value"] for s in winner["stats"]}
         assert values["BEST JUMP"] == "-"
 
-    def test_missing_final_total_renders_a_dash(self):
-        riders = _riders()
-        riders[0]["final_total"] = None
-        winner = _rider_slides(build_slides(_data(riders=riders)))[-1]
-        assert winner["stats"][0]["value"] == "-"
+    def test_stat_strip_is_all_event_wide(self):
+        winner = _rider_slides(build_slides(_data()))[-1]
+        assert [s["label"] for s in winner["stats"]] == [
+            "BEST HEAT", "AVG HEAT", "HEATS WON",
+            "BEST WAVE", "AVG WAVE", "BEST JUMP", "AVG JUMP",
+        ]
 
     def test_no_qualifying_route_on_a_recap(self):
         """The preview shows how a rider reached the final because it has not
@@ -348,16 +351,16 @@ class TestCommentaryStats:
         jump = next(s for s in winner["stats"] if s["label"] == "BEST JUMP")
         assert jump.get("note") == "Pushloop Forward"
 
-    def test_sail_number_and_world_rank_reach_the_slide(self):
-        winner = self._winner(sail_number="E-334", world_rank=2)
-        assert winner["sail_number"] == "E-334"
-        assert winner["rank_label"] == "WR #2"
-
-    def test_missing_world_rank_leaves_no_badge(self):
-        """World rank comes from the DB, so it is absent without the tunnel."""
+    def test_sail_number_reaches_the_slide(self):
         winner = self._winner(sail_number="E-334")
-        assert winner["rank_label"] == ""
         assert winner["sail_number"] == "E-334"
+
+    def test_world_rank_is_not_shown(self):
+        """Dropped from the recap: a rider's standing across the season says
+        nothing about the event just sailed, and it was the only field needing
+        the DB tunnel."""
+        winner = self._winner(sail_number="E-334", world_rank=2)
+        assert "rank_label" not in winner
 
     def test_history_lines_are_carried(self):
         winner = self._winner(history=[
@@ -502,3 +505,63 @@ class TestHeroFocus:
         riders[0]["action_url"] = "file:///photos/events/124/97.jpg"
         winner = _rider_slides(build_slides(_data(riders=riders)))[-1]
         assert winner["photo_focus"] == "center 35%"
+
+
+class TestCoverHeroGrid:
+    """The cover previews the countdown with the four riders' own shots."""
+
+    def _cover(self, riders=None):
+        return build_slides(_data(riders=riders))[0]
+
+    def test_cover_carries_a_photo_per_rider(self):
+        riders = _riders()
+        for r in riders:
+            r["action_url"] = f"file:///photos/events/124/{r['athlete_id']}.jpg"
+        cover = self._cover(riders)
+        assert len(cover["hero_photos"]) == 4
+
+    def test_photos_run_first_to_fourth(self):
+        riders = _riders()
+        for r in riders:
+            r["action_url"] = f"file:///photos/events/124/{r['athlete_id']}.jpg"
+        cover = self._cover(riders)
+        assert [p["place"] for p in cover["hero_photos"]] == [1, 2, 3, 4]
+
+    def test_each_photo_keeps_its_own_focal_point(self):
+        riders = _riders()
+        riders[0]["action_url"] = "file:///photos/events/124/97.jpg"
+        riders[0]["hero_focus"] = "9% 58%"
+        cover = self._cover(riders)
+        assert cover["hero_photos"][0]["focus"] == "9% 58%"
+
+    def test_riders_without_an_action_shot_are_skipped(self):
+        """A half-filled grid is worse than none, so only real hero shots
+        count towards it."""
+        riders = _riders()
+        riders[0]["action_url"] = "file:///photos/events/124/97.jpg"
+        cover = self._cover(riders)
+        assert len(cover["hero_photos"]) == 1
+
+    def test_no_photos_leaves_the_plain_cover(self):
+        cover = self._cover()
+        assert cover["hero_photos"] == []
+
+    def test_cover_still_carries_its_title(self):
+        cover = self._cover()
+        assert cover["title_accent"] == "THE STATS"
+
+
+class TestEventLabelOnRiderCards:
+    """A reposted card leaves the carousel behind, so it names its own event."""
+
+    def test_scope_label_names_the_event(self):
+        winner = _rider_slides(build_slides(_data()))[-1]
+        assert winner["source_note"] == "AT TENERIFE GRAND SLAM 2026"
+
+    def test_every_rider_card_carries_it(self):
+        for slide in _rider_slides(build_slides(_data())):
+            assert slide["source_note"] == "AT TENERIFE GRAND SLAM 2026"
+
+    def test_falls_back_when_the_event_is_unnamed(self):
+        slides = _rider_slides(build_slides(_data(event_meta={})))
+        assert slides[-1]["source_note"] == "At this event"

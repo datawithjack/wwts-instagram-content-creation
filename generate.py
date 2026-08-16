@@ -307,20 +307,6 @@ def fetch_live_data(template_name: str, args) -> dict:
         except Exception as exc:
             print(f"Sail numbers unavailable ({exc}); continuing without them.")
 
-        # World rankings live in the DB, so they need the SSH tunnel. Without
-        # it the carousel still builds, just with no rank badge.
-        try:
-            placeholders = ",".join(["%s"] * len(ids))
-            for row in run_query(
-                f"SELECT athlete_id, `rank` FROM WWT_WORLD_RANKINGS "
-                f"WHERE athlete_id IN ({placeholders})",
-                tuple(ids),
-            ):
-                if row["athlete_id"] in by_id:
-                    by_id[row["athlete_id"]]["world_rank"] = row["rank"]
-        except Exception as exc:
-            print(f"World rankings unavailable ({exc}); continuing without them.")
-
         event = fetch_event(args.event)
         from datetime import date as dt_date
         event_meta = {

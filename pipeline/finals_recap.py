@@ -15,8 +15,13 @@ carry the shape of each rider's ladder, so they are worth showing but are not
 the same kind of number, and pooling the two would invite reading one rider's
 event average against another's final score.
 
-Second, the qualifying route is dropped. ``finals_preview`` shows how a rider
-reached the final because the final has not been sailed; here the ladder is
+Second, the rider cards carry no final score and no qualifying route. The card
+is one rider's event; the final is the summary card's job. Putting a single
+final-score cell among seven event stats needed a footnote explaining that one
+cell meant something different from the rest, which is a sign the structure is
+wrong rather than the label. The final result is still on the card, as the
+placing. The route goes for a related reason: ``finals_preview`` shows how a
+rider reached the final because it has not been sailed, but here the ladder is
 history and the result is the story.
 
 Third, the countdown only pays off if the last slide is the strongest, which
@@ -37,9 +42,7 @@ from pipeline.finals_preview import (
 from pipeline.helpers import nationality_to_iso, ordinal
 from pipeline.templates import resolve_thumb_url
 
-COMPARE_NOTE = "Final scores are from the one heat all four sailed together"
-
-RIDER_NOTE = "Final score from the final, everything else from this event"
+RIDER_NOTE = "At this event"
 
 FINAL_GROUP = "IN THE FINAL"
 
@@ -87,8 +90,10 @@ def build_slides(data: dict) -> list[dict]:
         "event_date_end": meta.get("end_date", ""),
     }
 
-    slides = [_cover(division, common)]
-    slides.extend(_rider_slides(riders, common))
+    event_label = _event_label(meta)
+
+    slides = [_cover(division, riders, common)]
+    slides.extend(_rider_slides(riders, common, event_label))
     slides.append(_compare_slide(riders, common))
 
     for i, slide in enumerate(slides, 1):
@@ -98,20 +103,47 @@ def build_slides(data: dict) -> list[dict]:
     return slides
 
 
-def _cover(division: str, common: dict) -> dict:
-    """Cover slide. Reuses the finals cover so the two templates read as a set."""
+def _event_label(meta: dict) -> str:
+    """"TENERIFE GRAND SLAM 2026" -- the event, for a rider sharing the slide.
+
+    A rider reposting their own card takes it out of the carousel, away from
+    the cover that names the event, so the card has to carry that itself.
+    """
+    name = (meta.get("event_name") or "").strip()
+    year = meta.get("year") or ""
+    return f"{name} {year}".strip().upper()
+
+
+def _cover(division: str, riders: list, common: dict) -> dict:
+    """Cover slide, backed by a grid of the four riders' own hero shots.
+
+    Only riders with a real landscape shot count towards the grid: a headshot
+    dropped into a quarter of a full-bleed background reads as a mistake, and
+    a half-filled grid is worse than none. With nothing to show the template
+    falls back to the plain cover.
+    """
+    hero_photos = [
+        {
+            "place": r.get("place"),
+            "url": r.get("action_url"),
+            "focus": r.get("hero_focus") or DEFAULT_FOCUS,
+        }
+        for r in riders
+        if r.get("action_url")
+    ]
     # Three short lines, the same shape finals_preview uses ("MEN'S / ROAD TO
     # THE / FINAL"). One long line renders at a different size to every other
     # cover in the set, which is what breaks the family resemblance.
     return {
-        "type": "finals_cover",
+        "type": "recap_cover",
         "title_lines": [line for line in (f"{division}'S" if division else "", "FINALISTS") if line],
         "title_accent": "THE STATS",
+        "hero_photos": hero_photos,
         **common,
     }
 
 
-def _rider_slides(riders: list, common: dict) -> list:
+def _rider_slides(riders: list, common: dict, event_label: str = "") -> list:
     """One slide per rider, counting down so the winner lands last."""
     show_jumps = _division_has_jumps(riders)
 
@@ -132,10 +164,8 @@ def _rider_slides(riders: list, common: dict) -> list:
         athlete_id = rider.get("athlete_id")
         history = rider.get("history") or []
         sail_number = rider.get("sail_number") or ""
-        rank = rider.get("world_rank")
 
-        stats = [_recap_stat("FINAL SCORE", rider.get("final_total"),
-                             leaders["final_total"], bar_max["final_total"], "score", 0)]
+        stats = []
         for label, key, fmt in STAT_FIELDS:
             if not show_jumps and key in JUMP_FIELDS:
                 continue
@@ -160,7 +190,6 @@ def _rider_slides(riders: list, common: dict) -> list:
             "country": nationality_to_iso(rider.get("nationality", "")),
             "sail_number": sail_number,
             "meta_class": _meta_class(first_name, sail_number),
-            "rank_label": f"WR #{int(rank)}" if rank else "",
             "photo_mode": "action" if action_url else "portrait",
             # Landscape sources crop hard to 4:5. Where the rider sits in the
             # frame varies per shot, so the crop anchor is per photo.
@@ -168,7 +197,7 @@ def _rider_slides(riders: list, common: dict) -> list:
             "photo_url": action_url or resolve_thumb_url(athlete_id, rider.get("photo_url") or ""),
             "stats": stats,
             "history": [_history_line(h) for h in history],
-            "source_note": RIDER_NOTE,
+            "source_note": f"AT {event_label}" if event_label else RIDER_NOTE,
             **common,
         })
 
@@ -250,7 +279,6 @@ def _compare_slide(riders: list, common: dict) -> dict:
         "title_lead": "THE FINALISTS",
         "title_accent": "COMPARED",
         "subtitle": "Every rider, every score",
-        "source_note": COMPARE_NOTE,
         "riders": [
             {
                 "athlete_id": r.get("athlete_id"),
