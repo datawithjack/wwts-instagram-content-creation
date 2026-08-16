@@ -54,6 +54,30 @@
 # TODO: shortlist windfluencers, decide collab vs editorial, pick a format, build.
 
 posts:
+  - id: tenerife2026-finals-recap-men
+    template: finals_recap
+    params:
+      event: 124
+      division: Men
+    category: seasonal
+    scheduled_date: "2026-08-17T08:00:00"
+    caption: |-
+      🌊 Already a week since the Tenerife Grand Slam wrapped. What an event.
+
+      Congratulations to Marc Paré Rico, back-to-back in Tenerife, and to the rest of the finalists. Four heats, four wins.
+
+      Here is how the four of them lined up across the whole event.
+
+      Full stats → windsurfworldtourstats.com
+
+      📸 @jcwindsurf | @rafasoulart | @pwaworldtour
+    notes: >
+      Men's finals recap for Tenerife Grand Slam 2026 (API event 124). Pairs
+      with tenerife2026-finals-recap-women, published 2026-08-16. scheduled_date
+      is UTC: 08:00Z is 10:00 CEST. Caption carries no hashtags because
+      build_caption appends the config set to an override rather than replacing
+      it, which posts them twice. Hero shots are Tenerife 2025 by @rafasoulart,
+      except Neubauer which is Gran Canaria 2025 by Carter/PWA.
   - id: tenerife2026-finals-recap-women
     template: finals_recap
     params:
