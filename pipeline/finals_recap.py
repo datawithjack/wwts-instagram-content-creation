@@ -45,6 +45,8 @@ FINAL_GROUP = "IN THE FINAL"
 
 EVENT_GROUP = "AT THIS EVENT"
 
+DEFAULT_FOCUS = "center 35%"
+
 # The commentator brief's full set. Avg heat and heats won are the two the
 # preview deliberately withholds, because mid-event the draw decides them: a
 # seeded rider has sailed once, so their average is their best and their win
@@ -160,6 +162,9 @@ def _rider_slides(riders: list, common: dict) -> list:
             "meta_class": _meta_class(first_name, sail_number),
             "rank_label": f"WR #{int(rank)}" if rank else "",
             "photo_mode": "action" if action_url else "portrait",
+            # Landscape sources crop hard to 4:5. Where the rider sits in the
+            # frame varies per shot, so the crop anchor is per photo.
+            "photo_focus": rider.get("hero_focus") or DEFAULT_FOCUS,
             "photo_url": action_url or resolve_thumb_url(athlete_id, rider.get("photo_url") or ""),
             "stats": stats,
             "history": [_history_line(h) for h in history],
