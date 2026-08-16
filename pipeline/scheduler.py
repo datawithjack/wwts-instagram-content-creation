@@ -18,6 +18,18 @@ from pipeline.templates import render_template
 CAROUSEL_TEMPLATES = {
     "top_10_carousel", "h2h_carousel", "rider_profile",
     "canary_kings", "athlete_rise", "about_carousel", "coming_soon_carousel",
+    "finals_recap",
+}
+
+
+# generate.fetch_live_data reads these off an argparse Namespace. Defaulted to
+# None so a backlog entry only has to carry the params its own template needs.
+_CLI_ARG_DEFAULTS = {
+    "event": None, "athlete1": None, "athlete2": None, "division": None,
+    "score_type": None, "sex": None, "year": None, "location": None,
+    "rounds": None, "counting_only": False, "mode": None, "day": None,
+    "men": None, "women": None, "heats": None, "round_label": None,
+    "so_far": False, "rider_of_day": False, "template": None,
 }
 
 
@@ -56,7 +68,13 @@ def filter_posts(
 
 def parse_scheduled_date(date_str: str) -> datetime:
     """Parse a scheduled_date string to a timezone-aware datetime (UTC)."""
-    dt = datetime.fromisoformat(date_str)
+    # YAML parses an unquoted ISO date straight into a datetime. Every entry
+    # in the backlog happens to be quoted, but an unquoted one used to raise
+    # TypeError here and take the entire poll down, not just its own post.
+    if isinstance(date_str, datetime):
+        dt = date_str
+    else:
+        dt = datetime.fromisoformat(date_str)
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt
@@ -343,7 +361,17 @@ def resolve_post_data(post: dict) -> dict:
         from pipeline.templates import get_dummy_data
         return get_dummy_data(template)
 
-    raise ValueError(f"Unknown template: {template}")
+    # Anything not special-cased above is delegated to the CLI's own fetch
+    # rather than getting a second copy of its logic here. The two had already
+    # drifted: every template added since this function was written raised
+    # "Unknown template" from the backlog while working fine from the command
+    # line. Delegating means a new template is schedulable the day it lands.
+    import argparse
+
+    import generate
+
+    args = argparse.Namespace(**{**_CLI_ARG_DEFAULTS, **params})
+    return generate.fetch_live_data(template, args)
 
 
 def _render_carousel_slides(
@@ -383,6 +411,13 @@ def _render_carousel_slides(
         return render_athlete_rise_carousel(
             data, output_dir,
             base_name=f"athlete_rise_{timestamp}",
+            width=width, height=height, dpr=dpr,
+        )
+    if template_name == "finals_recap":
+        from pipeline.renderer import render_finals_recap_carousel
+        return render_finals_recap_carousel(
+            data, output_dir,
+            base_name=f"finals_recap_{timestamp}",
             width=width, height=height, dpr=dpr,
         )
     # Generic carousel (about, coming_soon)

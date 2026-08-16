@@ -54,6 +54,33 @@
 # TODO: shortlist windfluencers, decide collab vs editorial, pick a format, build.
 
 posts:
+  - id: tenerife2026-finals-recap-women
+    template: finals_recap
+    params:
+      event: 124
+      division: Women
+    category: seasonal
+    scheduled_date: "2026-08-16T14:00:00"
+    caption: |-
+      🌊 Already a week since the Tenerife Grand Slam wrapped. What an event.
+
+      Congratulations to Sarah-Quita Offringa, back-to-back in Tenerife, and to the rest of the finalists.
+
+      Here is how the four of them lined up across the whole event.
+
+      Full stats → windsurfworldtourstats.com
+
+      📸 @rafasoulart | @pwaworldtour
+
+      #windsurf #pwaworldtour #wwt
+    notes: >
+      Women's finals recap for Tenerife Grand Slam 2026 (API event 124).
+      Published via the backlog rather than --publish now because this machine
+      cannot reach the R2 storage endpoint (TCP timeout to 172.64.190.1; Meta
+      token verified healthy, so it is a routing problem, not credentials).
+      Hero shots are Tenerife 2025 by @rafasoulart; Kiefer Quintana uses her
+      headshot full-bleed because the available action shots carry out-of-date
+      sponsors. scheduled_date is in the past so the next poll picks it up.
   # ── Tonight's test batch (March 19) ──────────────────────────
   - id: gc2025-mens-waves-top10
     template: top_10_carousel
