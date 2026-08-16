@@ -756,3 +756,65 @@ class TestRunPoll:
 
         mock_run.assert_not_called()
         assert results == []
+
+
+class TestResolvePostDataDelegation:
+    """Templates the scheduler does not special-case fall through to the CLI's
+    own fetch, instead of raising "Unknown template" from the backlog while
+    working fine from the command line."""
+
+    def test_unknown_template_delegates_to_generate(self):
+        with patch("generate.fetch_live_data") as fetch:
+            fetch.return_value = {"riders": []}
+            out = resolve_post_data({
+                "template": "finals_recap",
+                "params": {"event": 124, "division": "Women"},
+            })
+        assert out == {"riders": []}
+        template, args = fetch.call_args[0]
+        assert template == "finals_recap"
+        assert args.event == 124
+        assert args.division == "Women"
+
+    def test_params_it_does_not_carry_default_to_none(self):
+        """A backlog entry should only need the params its own template uses."""
+        with patch("generate.fetch_live_data") as fetch:
+            fetch.return_value = {}
+            resolve_post_data({
+                "template": "finals_recap",
+                "params": {"event": 124, "division": "Men"},
+            })
+        args = fetch.call_args[0][1]
+        assert args.athlete1 is None
+        assert args.score_type is None
+        assert args.year is None
+
+    def test_special_cased_templates_still_take_the_direct_path(self):
+        with patch("generate.fetch_live_data") as fetch, \
+             patch("pipeline.scheduler.fetch_site_stats") as site:
+            site.return_value = {"stats": []}
+            resolve_post_data({"template": "site_stats", "params": {}})
+        fetch.assert_not_called()
+        site.assert_called_once()
+
+
+class TestParseScheduledDateTolerance:
+    def test_accepts_a_datetime_from_unquoted_yaml(self):
+        """An unquoted ISO date in YAML arrives as a datetime, not a string.
+        This used to raise TypeError and abort the whole poll."""
+        from pipeline.scheduler import parse_scheduled_date
+        out = parse_scheduled_date(datetime(2026, 8, 16, 14, 0))
+        assert out.year == 2026 and out.month == 8 and out.day == 16
+
+    def test_still_accepts_the_quoted_string_form(self):
+        from pipeline.scheduler import parse_scheduled_date
+        out = parse_scheduled_date("2026-08-16T14:00:00")
+        assert out.year == 2026 and out.hour == 14
+
+    def test_one_bad_date_does_not_hide_due_posts(self):
+        posts = [
+            {"id": "unquoted", "scheduled_date": datetime(2026, 1, 1)},
+            {"id": "quoted", "scheduled_date": "2026-01-01T00:00:00"},
+        ]
+        due = filter_posts_due(posts, datetime(2026, 8, 16, 14, 0, tzinfo=timezone.utc))
+        assert {p["id"] for p in due} == {"unquoted", "quoted"}
