@@ -122,11 +122,14 @@
     }
 
     /* ── Hero title: white, one accented line ── */
+    /* Bigger and tighter, matching the other covers: mvp is 300/-0.03em,
+       analysis 380/-0.04em, wavecount 190/-0.02em. This one was the outlier
+       at +0.03em, which read loose beside them. */
     .cover-title {
         font-family: var(--font-display);
-        font-size: 200px;
-        letter-spacing: 0.03em;
-        line-height: 0.95;
+        font-size: 244px;
+        letter-spacing: -0.02em;
+        line-height: 0.9;
         color: var(--color-text-primary);
         text-shadow: 0 4px 40px rgba(10, 14, 26, 0.85);
     }
@@ -136,7 +139,12 @@
         white-space: nowrap;
     }
 
+    /* The accent line is the qualifier, not the subject: "MEN'S FINALISTS"
+       is what the carousel is about, "THE STATS" says what kind. Sizing it
+       down puts the emphasis where the meaning is. */
     .cover-title .metric {
+        display: block;
+        font-size: 0.72em;
         color: var(--color-discipline);
     }
 

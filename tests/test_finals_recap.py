@@ -55,8 +55,12 @@ def _rider_slides(slides):
     return [s for s in slides if s["type"] == "recap_rider"]
 
 
+def _compare_slide(slides):
+    return next(s for s in slides if s["type"] == "recap_compare")
+
+
 class TestSlideStructure:
-    def test_builds_six_slides_in_order(self):
+    def test_builds_seven_slides_in_order(self):
         slides = build_slides(_data())
         assert [s["type"] for s in slides] == [
             "recap_cover",
@@ -65,6 +69,7 @@ class TestSlideStructure:
             "recap_rider",
             "recap_rider",
             "recap_compare",
+            "cta",
         ]
 
     def test_riders_run_fourth_to_first(self):
@@ -86,8 +91,8 @@ class TestSlideStructure:
 
     def test_slide_numbering_covers_whole_carousel(self):
         slides = build_slides(_data())
-        assert [s["slide_number"] for s in slides] == [1, 2, 3, 4, 5, 6]
-        assert all(s["total_slides"] == 6 for s in slides)
+        assert [s["slide_number"] for s in slides] == [1, 2, 3, 4, 5, 6, 7]
+        assert all(s["total_slides"] == 7 for s in slides)
 
     def test_cover_names_the_division(self):
         slides = build_slides(_data(division="Women"))
@@ -190,23 +195,23 @@ class TestPhotoFallback:
 
 class TestComparisonCard:
     def test_has_one_row_per_stat(self):
-        compare = build_slides(_data())[-1]
+        compare = _compare_slide(build_slides(_data()))
         labels = [row["label"] for row in compare["rows"]]
         assert "FINAL SCORE" in labels
         assert "BEST WAVE" in labels
         assert "BEST JUMP" in labels
 
     def test_every_row_covers_all_four_riders(self):
-        compare = build_slides(_data())[-1]
+        compare = _compare_slide(build_slides(_data()))
         for row in compare["rows"]:
             assert len(row["cells"]) == 4
 
     def test_riders_are_listed_first_to_fourth(self):
-        compare = build_slides(_data())[-1]
+        compare = _compare_slide(build_slides(_data()))
         assert [r["place"] for r in compare["riders"]] == [1, 2, 3, 4]
 
     def test_leader_is_marked_per_row(self):
-        compare = build_slides(_data())[-1]
+        compare = _compare_slide(build_slides(_data()))
         final_row = next(r for r in compare["rows"] if r["label"] == "FINAL SCORE")
         leaders = [v["is_leader"] for v in final_row["cells"]]
         assert leaders == [True, False, False, False]
@@ -215,7 +220,7 @@ class TestComparisonCard:
         riders = _riders()
         riders[0]["final_total"] = 30.0
         riders[1]["final_total"] = 30.0
-        compare = build_slides(_data(riders=riders))[-1]
+        compare = _compare_slide(build_slides(_data(riders=riders)))
         final_row = next(r for r in compare["rows"] if r["label"] == "FINAL SCORE")
         assert sum(1 for v in final_row["cells"] if v["is_leader"]) == 2
 
@@ -225,7 +230,7 @@ class TestComparisonCard:
         riders = _riders()
         riders[0]["final_total"] = 36.63
         riders[0]["best_heat"] = 99.0  # event-wide, must not be used here
-        compare = build_slides(_data(riders=riders))[-1]
+        compare = _compare_slide(build_slides(_data(riders=riders)))
         final_row = next(r for r in compare["rows"] if r["label"] == "FINAL SCORE")
         assert final_row["cells"][0]["value"] == "36.63"
 
@@ -233,7 +238,7 @@ class TestComparisonCard:
         riders = _riders()
         riders[0]["final_waves"] = [9.25, 6.0]
         riders[0]["best_wave"] = 10.0  # event-wide
-        compare = build_slides(_data(riders=riders))[-1]
+        compare = _compare_slide(build_slides(_data(riders=riders)))
         wave_row = next(r for r in compare["rows"] if r["label"] == "BEST WAVE")
         assert wave_row["cells"][0]["value"] == "9.25"
 
@@ -243,7 +248,7 @@ class TestComparisonCard:
         riders = _riders()
         for r in riders:
             r["final_jumps"] = []
-        rows = build_slides(_data(riders=riders))[-1]["rows"]
+        rows = _compare_slide(build_slides(_data(riders=riders)))["rows"]
         final_labels = [r["label"] for r in rows if r["group"] == "IN THE FINAL"]
         event_labels = [r["label"] for r in rows if r["group"] == "AT THIS EVENT"]
         assert "BEST JUMP" not in final_labels
@@ -258,14 +263,13 @@ class TestJumpsHandling:
             r["avg_jump"] = 0
             r["best_jump"] = None
         slides = build_slides(_data(riders=riders))
-        compare = slides[-1]
+        compare = _compare_slide(slides)
         assert "BEST JUMP" not in [row["label"] for row in compare["rows"]]
         for slide in _rider_slides(slides):
             assert "AVG JUMP" not in [s["label"] for s in slide["stats"]]
 
     def test_jumps_kept_when_the_division_has_them(self):
-        slides = build_slides(_data())
-        compare = slides[-1]
+        compare = _compare_slide(build_slides(_data()))
         assert "BEST JUMP" in [row["label"] for row in compare["rows"]]
 
 
@@ -274,7 +278,7 @@ class TestEdgeCases:
         riders = _riders()[:3]
         slides = build_slides(_data(riders=riders))
         assert len(_rider_slides(slides)) == 3
-        assert slides[-1]["type"] == "recap_compare"
+        assert _compare_slide(slides)["type"] == "recap_compare"
 
     def test_no_riders_returns_no_carousel(self):
         assert build_slides(_data(riders=[])) == []
@@ -387,14 +391,14 @@ class TestHeroPhoto:
         assert winner["photo_url"]
 
     def test_comparison_card_keeps_headshots(self):
-        compare = build_slides(_data())[-1]
+        compare = _compare_slide(build_slides(_data()))
         for rider in compare["riders"]:
             assert "photo_url" in rider
 
 
 class TestSummaryTitle:
     def test_summary_titled_the_finalists_compared(self):
-        card = build_slides(_data())[-1]
+        card = _compare_slide(build_slides(_data()))
         assert card["title_lead"] == "THE FINALISTS"
         assert card["title_accent"] == "COMPARED"
 
@@ -403,7 +407,7 @@ class TestSummarySheetFullStats:
     """The summary sheet carries every stat, grouped by what it measures."""
 
     def _rows(self, riders=None):
-        return build_slides(_data(riders=riders))[-1]["rows"]
+        return _compare_slide(build_slides(_data(riders=riders)))["rows"]
 
     def test_every_stat_appears(self):
         labels = [r["label"] for r in self._rows()]
@@ -468,7 +472,7 @@ class TestJumpMoveOnSummary:
     def test_final_best_jump_names_the_move(self):
         riders = _riders()
         riders[0]["final_best_jump_move"] = "Double Forward"
-        rows = build_slides(_data(riders=riders))[-1]["rows"]
+        rows = _compare_slide(build_slides(_data(riders=riders)))["rows"]
         jump = next(r for r in rows if r["label"] == "BEST JUMP" and r["group"] == "IN THE FINAL")
         assert jump["cells"][0]["note"] == "Double Forward"
 
@@ -477,17 +481,17 @@ class TestJumpMoveOnSummary:
         riders[0]["history"] = [
             {"scores": [{"type": "PF", "move_type": "Pushloop Forward", "score": 9.5}]},
         ]
-        rows = build_slides(_data(riders=riders))[-1]["rows"]
+        rows = _compare_slide(build_slides(_data(riders=riders)))["rows"]
         jump = next(r for r in rows if r["label"] == "BEST JUMP" and r["group"] == "AT THIS EVENT")
         assert jump["cells"][0]["note"] == "Pushloop Forward"
 
     def test_non_jump_rows_carry_no_note(self):
-        rows = build_slides(_data())[-1]["rows"]
+        rows = _compare_slide(build_slides(_data()))["rows"]
         score_row = next(r for r in rows if r["label"] == "FINAL SCORE")
         assert all(c["note"] == "" for c in score_row["cells"])
 
     def test_unknown_move_leaves_the_note_empty(self):
-        rows = build_slides(_data())[-1]["rows"]
+        rows = _compare_slide(build_slides(_data()))["rows"]
         jump = next(r for r in rows if r["label"] == "BEST JUMP" and r["group"] == "IN THE FINAL")
         assert jump["cells"][0]["note"] == ""
 
@@ -597,3 +601,17 @@ class TestIdentityBlock:
 
     def test_no_meta_class_now_the_row_cannot_overflow(self):
         assert "meta_class" not in self._slides()[-1]
+
+
+class TestClosingCta:
+    def test_carousel_closes_on_the_shared_cta(self):
+        """Same closing slide the other carousels use, rather than a bespoke
+        one, so the sign-off is identical wherever a reader lands."""
+        assert build_slides(_data())[-1]["type"] == "cta"
+
+    def test_cta_hides_the_footer(self):
+        """It carries the URL itself; the watermark would repeat it."""
+        assert build_slides(_data())[-1]["hide_footer"] is True
+
+    def test_cta_still_carries_event_meta(self):
+        assert build_slides(_data())[-1]["event_name"] == "Tenerife Grand Slam"

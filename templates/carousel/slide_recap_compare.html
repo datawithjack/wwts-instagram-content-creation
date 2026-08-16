@@ -28,12 +28,15 @@
 
     .compare-title .accent { color: var(--color-discipline); }
 
+    /* Same treatment as the rider cards' event label, so the two read as one
+       element across the carousel rather than two different captions. */
     .compare-subtitle {
         font-family: var(--font-body);
         font-size: 22px;
-        font-weight: 500;
-        letter-spacing: 0.04em;
-        color: var(--color-text-muted);
+        font-weight: 600;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.52);
         margin-bottom: 22px;
     }
 
@@ -102,7 +105,16 @@
         margin-bottom: 3px;
     }
 
-    .rider-head.winner .place { color: var(--color-discipline); }
+    /* medal - matches the rider cards' podium treatment. Text rather than a
+       filled chip: at 78px thumb width a solid block would outweigh the
+       headshot it labels. */
+    .rider-heads .rider-head .place { color: rgba(255, 255, 255, 0.32); }
+    .rider-heads .rider-head.place-1 .place { color: var(--color-rank-1st); }
+    .rider-heads .rider-head.place-2 .place { color: var(--color-rank-2nd); }
+    .rider-heads .rider-head.place-3 .place { color: var(--color-rank-3rd); }
+    .rider-heads .rider-head.place-1 .thumb { border-color: var(--color-rank-1st); }
+    .rider-heads .rider-head.place-2 .thumb { border-color: var(--color-rank-2nd); }
+    .rider-heads .rider-head.place-3 .thumb { border-color: var(--color-rank-3rd); }
 
     .rider-head .surname {
         font-family: var(--font-body);
@@ -199,7 +211,7 @@
 
     <div class="rider-heads">
         {% for rider in riders %}
-        <div class="rider-head {% if rider.place == 1 %}winner{% endif %}">
+        <div class="rider-head place-{{ rider.place }} ">
             <div class="thumb">
                 {% if rider.photo_url %}
                 <img src="{{ rider.photo_url }}" alt="{{ rider.name }}">
@@ -234,5 +246,5 @@
     </div>
 </div>
 
-{% if source_note %}<div class="source-note">{{ source_note }}</div>{% endif %}
+{% if counting_note %}<div class="source-note">{{ counting_note }}</div>{% endif %}
 {% endblock %}
