@@ -448,14 +448,20 @@ def fetch_final_heat(event_id: int, division: str, round_name: str = "Final") ->
         riders = []
         for athlete in heats[0].get("athletes") or []:
             waves, jumps = [], []
+            best_jump, best_jump_move = 0.0, ""
             for score in athlete.get("scores") or []:
                 value = score.get("score")
                 if value is None:
                     continue
                 if (score.get("type") or "").strip().lower() == "wave":
                     waves.append(float(value))
-                else:
-                    jumps.append(float(value))
+                    continue
+                jumps.append(float(value))
+                # The move name is half the story of a jump score, so the
+                # best one's move is carried alongside the number.
+                if float(value) > best_jump:
+                    best_jump = float(value)
+                    best_jump_move = score.get("move_type") or score.get("type") or ""
 
             riders.append({
                 "athlete_id": athlete.get("athlete_id"),
@@ -465,6 +471,7 @@ def fetch_final_heat(event_id: int, division: str, round_name: str = "Final") ->
                 "final_total": athlete.get("result_total"),
                 "final_waves": sorted(waves, reverse=True),
                 "final_jumps": sorted(jumps, reverse=True),
+                "final_best_jump_move": best_jump_move,
             })
 
         riders.sort(key=lambda r: r.get("place") or 99)

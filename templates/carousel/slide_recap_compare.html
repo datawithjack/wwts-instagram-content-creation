@@ -1,21 +1,25 @@
 {% extends "carousel/base_carousel.html" %}
 
 {#
-  The closing card: all four riders, one column each, compared across the
-  scores from the final itself. Riders read left to right 1st to 4th, so the
-  column order matches the result the reader has just been counted through.
+  The closing card: all four riders, one column each, across every stat.
+  Riders read left to right 1st to 4th, matching the result the reader has
+  just been counted through.
+
+  Rows arrive pre-grouped ("IN THE FINAL", then "AT THIS EVENT") and a header
+  is emitted whenever the group changes. The split matters: the final's scores
+  are one heat with all four riders in it, the event aggregates are not.
 #}
 
 {% block carousel_head %}
 <style>
     .container {
-        padding: 52px 44px 64px;
+        padding: 44px 40px 58px;
     }
 
     /* ── Header ── */
     .compare-title {
         font-family: var(--font-display);
-        font-size: 84px;
+        font-size: 72px;
         letter-spacing: 0.02em;
         line-height: 1;
         color: var(--color-text-primary);
@@ -26,19 +30,33 @@
 
     .compare-subtitle {
         font-family: var(--font-body);
-        font-size: 24px;
+        font-size: 22px;
         font-weight: 500;
         letter-spacing: 0.04em;
         color: var(--color-text-muted);
-        margin-bottom: 34px;
+        margin-bottom: 22px;
     }
+
+    /* Scope header. Two groups on one card, so each says what it measures:
+       the final's own scores are like-for-like, the event aggregates are not. */
+    .group-head {
+        font-family: var(--font-body);
+        font-size: 17px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--color-discipline);
+        padding: 10px 0 4px 4px;
+    }
+
+    .group-head:not(:first-child) { padding-top: 16px; }
 
     /* ── Rider column heads ── */
     .rider-heads {
         display: flex;
-        gap: 12px;
-        padding-left: 190px;
-        margin-bottom: 18px;
+        gap: 10px;
+        padding-left: 168px;
+        margin-bottom: 6px;
     }
 
     .rider-head {
@@ -47,9 +65,9 @@
     }
 
     .rider-head .thumb {
-        width: 96px;
-        height: 96px;
-        margin: 0 auto 10px;
+        width: 78px;
+        height: 78px;
+        margin: 0 auto 8px;
         border-radius: 12px;
         overflow: hidden;
         border: 2px solid rgba(255, 255, 255, 0.18);
@@ -101,25 +119,29 @@
     .compare-rows {
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 4px;
         flex: 1;
     }
 
+    /* Rows share out the leftover height instead of bunching at the top, so
+       the card fills the frame whatever the row count (8 rows for a wave-only
+       division, 10 with jumps). */
     .compare-row {
         display: flex;
         align-items: center;
-        gap: 12px;
-        background: rgba(30, 41, 59, 0.32);
-        border: 1px solid rgba(255, 255, 255, 0.07);
-        border-radius: 10px;
-        padding: 18px 16px;
+        gap: 10px;
+        flex: 1;
+        min-height: 0;
+        background: rgba(30, 41, 59, 0.30);
+        border-radius: 8px;
+        padding: 6px 14px;
     }
 
     .compare-row .row-label {
-        width: 174px;
+        width: 154px;
         flex-shrink: 0;
         font-family: var(--font-body);
-        font-size: 21px;
+        font-size: 18px;
         font-weight: 700;
         letter-spacing: 0.08em;
         text-transform: uppercase;
@@ -133,17 +155,27 @@
 
     .compare-row .cell .value {
         font-family: var(--font-display);
-        font-size: 58px;
+        font-size: 38px;
         line-height: 1;
         color: rgba(255, 255, 255, 0.82);
     }
 
     .compare-row .cell.leader .value { color: var(--color-discipline); }
 
+    .compare-row .cell .move {
+        font-family: var(--font-body);
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        line-height: 1.15;
+        color: rgba(255, 255, 255, 0.42);
+        margin-top: 2px;
+    }
+
     .compare-row .cell .bar {
-        margin: 8px auto 0;
-        width: 74%;
-        height: 4px;
+        margin: 5px auto 0;
+        width: 70%;
+        height: 3px;
         border-radius: 2px;
         background: rgba(255, 255, 255, 0.10);
         overflow: hidden;
@@ -182,12 +214,18 @@
     </div>
 
     <div class="compare-rows">
+        {% set ns = namespace(group='') %}
         {% for row in rows %}
+        {% if row.group != ns.group %}
+        {% set ns.group = row.group %}
+        <div class="group-head">{{ row.group }}</div>
+        {% endif %}
         <div class="compare-row">
             <div class="row-label">{{ row.label }}</div>
             {% for cell in row.cells %}
             <div class="cell {% if cell.is_leader %}leader{% endif %}">
                 <div class="value">{{ cell.value }}</div>
+                {% if cell.note %}<div class="move">{{ cell.note }}</div>{% endif %}
                 <div class="bar"><span class="fill" style="width: {{ cell.bar_pct }}%"></span></div>
             </div>
             {% endfor %}
