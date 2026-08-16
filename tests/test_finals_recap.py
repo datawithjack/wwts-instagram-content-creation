@@ -110,9 +110,11 @@ class TestRiderSlide:
         assert winner["first_name"] == "MARC"
         assert winner["last_name"] == "PARE RICO"
 
-    def test_country_is_iso(self):
+    def test_no_flag_data_on_the_card(self):
+        """Nationality is already in the sail number prefix (E-334, GRE-734),
+        and pale-striped flags bled into the photo behind them."""
         winner = _rider_slides(build_slides(_data()))[-1]
-        assert winner["country"] == "es"
+        assert "country" not in winner
 
     def test_expanded_stats_are_present(self):
         winner = _rider_slides(build_slides(_data()))[-1]
@@ -565,3 +567,33 @@ class TestEventLabelOnRiderCards:
     def test_falls_back_when_the_event_is_unnamed(self):
         slides = _rider_slides(build_slides(_data(event_meta={})))
         assert slides[-1]["source_note"] == "At this event"
+
+
+class TestIdentityBlock:
+    """Rank reads as a rank, and the surname's left edge is locked."""
+
+    def _slides(self):
+        return _rider_slides(build_slides(_data()))
+
+    def test_rank_is_its_own_field_not_part_of_the_name(self):
+        winner = self._slides()[-1]
+        assert winner["place_label"] == "1ST"
+        assert "1ST" not in winner["last_name"]
+        assert "1ST" not in winner["first_name"]
+
+    def test_every_rank_from_first_to_fourth_is_present(self):
+        assert [s["place_label"] for s in self._slides()] == ["4TH", "3RD", "2ND", "1ST"]
+
+    def test_rank_labels_are_a_uniform_length(self):
+        """The chip is padded, not fixed-width, so the labels must all be the
+        same character count for the chip to stay visually consistent."""
+        assert {len(s["place_label"]) for s in self._slides()} == {3}
+
+    def test_sail_number_survives_the_flag_removal(self):
+        riders = _riders()
+        riders[0]["sail_number"] = "E-334"
+        winner = _rider_slides(build_slides(_data(riders=riders)))[-1]
+        assert winner["sail_number"] == "E-334"
+
+    def test_no_meta_class_now_the_row_cannot_overflow(self):
+        assert "meta_class" not in self._slides()[-1]

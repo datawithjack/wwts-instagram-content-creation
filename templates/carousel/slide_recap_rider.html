@@ -105,52 +105,42 @@
         z-index: 1;
     }
 
-    /* ── Event badge over the hero shot ── */
-    /* ── Identity row (flag + sail number) ── */
+    /* ── Meta row: rank chip + sail number ──
+       The rank used to share a baseline with the surname, separated only by
+       colour, so it read as one string ("1ST PARE") and its variable width
+       shifted the surname's left edge between cards. On its own line as a
+       chip, the rank is unmistakably a rank and the surname starts at the
+       block's padding on every card, so the name locks while swiping.
+
+       No flag: nationality is already in the sail number prefix (E-334,
+       GRE-734), and pale-striped flags bled into the photo behind them. */
     .rider-meta {
         display: flex;
         align-items: center;
-        gap: 14px;
-        margin-bottom: 10px;
+        gap: 23px;
+        margin-bottom: 31px;
     }
 
-    .rider-meta .flag {
-        width: 54px;
-        height: 36px;
-        object-fit: cover;
-        border-radius: 4px;
-        display: block;
+    /* Padding, not a fixed width, so 1ST and 4TH both sit correctly. */
+    .rank-chip {
+        font-family: var(--font-display);
+        font-size: 38px;
+        line-height: 1;
+        letter-spacing: 0.1em;
+        color: #00D4FF;
+        background: rgba(0, 212, 255, 0.14);
+        border-radius: 10px;
+        padding: 8px 23px 3px;
+        white-space: nowrap;
     }
 
     .rider-meta .sail {
         font-family: var(--font-body);
-        font-size: 26px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        color: rgba(255, 255, 255, 0.55);
+        font-size: 31px;
+        font-weight: 500;
+        letter-spacing: 0.14em;
+        color: #95A5B8;
     }
-
-    .rider-meta.tight .sail { font-size: 22px; }
-
-    /* ── Name row: placing reads on the same line as the name ── */
-    .name-row {
-        display: flex;
-        align-items: flex-end;
-        gap: 24px;
-        margin-bottom: 24px;
-    }
-
-    .place-badge {
-        flex-shrink: 0;
-        font-family: var(--font-display);
-        font-size: 104px;
-        line-height: 1;
-        padding-bottom: 6px;
-        letter-spacing: -0.01em;
-        color: rgba(255, 255, 255, 0.34);
-    }
-
-    .place-badge.winner { color: var(--color-discipline); }
 
     /* ── Lower content block ── */
     .rider-block {
@@ -161,21 +151,23 @@
 
     .rider-name {
         font-family: var(--font-display);
-        line-height: 0.92;
         color: var(--color-text-primary);
         min-width: 0;
+        margin-bottom: 24px;
     }
 
     .rider-name .first {
         display: block;
         font-size: 62px;
-        letter-spacing: 0.04em;
+        line-height: 1;
+        letter-spacing: 0.06em;
         color: rgba(255, 255, 255, 0.62);
     }
 
     .rider-name .last {
         display: block;
         font-size: 118px;
+        line-height: 0.92;
         letter-spacing: 0.01em;
     }
 
@@ -280,17 +272,14 @@
     {% endif %}
 
     <div class="rider-block">
-        <div class="rider-meta {{ meta_class }}">
-            {% if country %}<img class="flag" src="https://flagcdn.com/w80/{{ country | lower }}.png" alt="{{ country }}">{% endif %}
+        <div class="rider-meta">
+            <span class="rank-chip">{{ place_label }}</span>
             {% if sail_number %}<span class="sail">{{ sail_number }}</span>{% endif %}
         </div>
 
-        <div class="name-row">
-            <div class="place-badge {% if is_winner %}winner{% endif %}">{{ place_label }}</div>
-            <div class="rider-name {{ name_class }}">
-                <span class="first">{{ first_name }}</span>
-                {% if last_name %}<span class="last">{{ last_name }}</span>{% endif %}
-            </div>
+        <div class="rider-name {{ name_class }}">
+            <span class="first">{{ first_name }}</span>
+            {% if last_name %}<span class="last">{{ last_name }}</span>{% endif %}
         </div>
 
         <div class="stat-note">{{ source_note }}</div>
