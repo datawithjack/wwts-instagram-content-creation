@@ -11,13 +11,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from pipeline.api import fetch_head_to_head, fetch_site_stats, fetch_athlete_event_stats, fetch_event_top_scores, fetch_finalist_stats, fetch_heat_routes, fetch_heat_history, fetch_event
+from pipeline.api import fetch_head_to_head, fetch_site_stats, fetch_athlete_event_stats, fetch_event_top_scores, fetch_finalist_stats, fetch_heat_routes, fetch_heat_history, fetch_event, fetch_final_heat
 from pipeline.captions import build_caption
 from pipeline.db import run_query
 from pipeline.helpers import nationality_to_iso, clean_event_name, heat_label_from_id, short_round_name, full_round_name
 from pipeline.queries import build_top10_query, build_canary_kings_query, build_athlete_rise_query, build_wave_count_query, build_fantasy_mvp_points_query, build_fantasy_session_pick_pct_query
-from pipeline.templates import render_template, get_dummy_data
-from pipeline.renderer import render_to_png, render_to_video, render_carousel, render_h2h_carousel, render_rp_carousel, render_analysis_carousel, render_athlete_rise_carousel, render_picks_carousel, render_wave_count_carousel, render_fuerte_fantasy_mvps_carousel, render_slalom_mvps_carousel, render_finals_preview_carousel
+from pipeline.templates import render_template, get_dummy_data, resolve_action_url
+from pipeline.renderer import render_to_png, render_to_video, render_carousel, render_h2h_carousel, render_rp_carousel, render_analysis_carousel, render_athlete_rise_carousel, render_picks_carousel, render_wave_count_carousel, render_fuerte_fantasy_mvps_carousel, render_slalom_mvps_carousel, render_finals_preview_carousel, render_finals_recap_carousel
 
 
 def fetch_live_data(template_name: str, args) -> dict:
@@ -243,6 +243,57 @@ def fetch_live_data(template_name: str, args) -> dict:
             "women": fetch_finalist_stats(args.event, women_ids, "Women") if women_ids else [],
             "event_meta": event_meta,
         }
+
+    if template_name == "finals_recap":
+        if not args.event or not args.division:
+            print("Finals recap requires: --event (API id) and --division (Men or Women)")
+            sys.exit(1)
+
+        final = fetch_final_heat(args.event, args.division)
+        riders = final["riders"]
+        if not riders:
+            print(f"No final found for event {args.event} ({args.division}). "
+                  "The recap only works once the final has sailed.")
+            sys.exit(1)
+
+        # Event-wide aggregates for the individual rider slides. The final's
+        # own scores already came back with the heat.
+        ids = [r["athlete_id"] for r in riders]
+        aggregates = {
+            a["athlete_id"]: a
+            for a in fetch_finalist_stats(args.event, ids, args.division, detailed=True)
+        }
+
+        # Route excludes the final itself -- otherwise every rider's route
+        # would read "FINAL", the heat the reader has just been shown.
+        routes = fetch_heat_routes(args.event, args.division, before_round=final["round_order"])
+
+        for rider in riders:
+            agg = aggregates.get(rider["athlete_id"], {})
+            for key in ("nationality", "best_heat", "best_wave", "best_jump",
+                        "avg_wave", "avg_jump", "heat_wins", "avg_heat"):
+                if agg.get(key) is not None:
+                    rider[key] = agg[key]
+            route = routes.get(rider["athlete_id"]) or {}
+            rider["route_round"] = route.get("round")
+            rider["route_place"] = route.get("place")
+            rider["action_url"] = resolve_action_url(rider["athlete_id"], args.event, "")
+
+        event = fetch_event(args.event)
+        from datetime import date as dt_date
+        event_meta = {
+            "event_name": clean_event_name(event.get("event_name", "")),
+            "year": event.get("year", ""),
+            "country": event.get("country_code", ""),
+            "stars": event.get("stars", 0),
+            "event_id": args.event,
+        }
+        for api_key in ("start_date", "end_date"):
+            raw_date = event.get(api_key)
+            if raw_date:
+                event_meta[api_key] = dt_date.fromisoformat(str(raw_date))
+
+        return {"riders": riders, "division": args.division, "event_meta": event_meta}
 
     if template_name == "commentator_brief":
         heat_groups = [
@@ -541,7 +592,7 @@ def main():
     parser.add_argument(
         "--template",
         required=True,
-        choices=["head_to_head", "head_to_head_jump", "h2h_carousel", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "fantasy_league_announce", "fantasy_rules", "tour_rules_reel", "tour_availability_reel", "session_vs_tour_reel", "how_to_pick_reel", "freestyle_scores_live", "slalom_scores_live", "wave_scores_live", "event_picks", "fuerte_fantasy_mvps", "slalom_mvps", "finals_preview", "commentator_brief"],
+        choices=["head_to_head", "head_to_head_jump", "h2h_carousel", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "fantasy_league_announce", "fantasy_rules", "tour_rules_reel", "tour_availability_reel", "session_vs_tour_reel", "how_to_pick_reel", "freestyle_scores_live", "slalom_scores_live", "wave_scores_live", "event_picks", "fuerte_fantasy_mvps", "slalom_mvps", "finals_preview", "finals_recap", "commentator_brief"],
     )
     parser.add_argument("--athlete1", type=int, help="Athlete 1 unified ID")
     parser.add_argument("--athlete2", type=int, help="Athlete 2 unified ID")
@@ -618,7 +669,7 @@ def main():
     if getattr(args, "rider_of_day", False):
         data["rider_of_day"] = True
 
-    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "fantasy_rules", "h2h_carousel", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "event_picks", "fuerte_fantasy_mvps", "slalom_mvps", "finals_preview", "commentator_brief")
+    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "fantasy_rules", "h2h_carousel", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "event_picks", "fuerte_fantasy_mvps", "slalom_mvps", "finals_preview", "finals_recap", "commentator_brief")
 
     # Carousel preview: open all slides in browser tabs
     if is_carousel and args.preview:
@@ -648,6 +699,9 @@ def main():
         elif template_name == "slalom_mvps":
             from pipeline.slalom_mvps import build_slides as build_slalom_mvp_slides
             slides = build_slalom_mvp_slides(data)
+        elif template_name == "finals_recap":
+            from pipeline.finals_recap import build_slides as build_recap_slides
+            slides = build_recap_slides(data)
         elif template_name == "finals_preview":
             from pipeline.finals_preview import build_slides as build_finals_slides
             slides = build_finals_slides(data)
@@ -763,6 +817,12 @@ def main():
                 out_path = os.path.join(brief_dir, f"{_slug(page['title'])}.png")
                 render_to_png(page_html, out_path, width=width, height=height, dpr=dpr)
                 result_paths.append(out_path)
+        elif template_name == "finals_recap":
+            result_paths = render_finals_recap_carousel(
+                data, carousel_dir,
+                base_name=f"finals_recap_{timestamp}",
+                width=width, height=height, dpr=dpr,
+            )
         elif template_name == "finals_preview":
             result_paths = render_finals_preview_carousel(
                 data, carousel_dir,

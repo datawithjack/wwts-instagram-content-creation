@@ -29,6 +29,7 @@ def build_caption(
             "canary_kings": _caption_canary_kings,
             "wave_count": _caption_wave_count,
             "finals_preview": _caption_finals_preview,
+            "finals_recap": _caption_finals_recap,
             "athlete_rise": _caption_athlete_rise,
             "event_picks": _caption_event_picks,
             "freestyle_scores_live": _caption_freestyle_scores_live,
@@ -260,6 +261,35 @@ def _caption_wave_count(data: dict, site_url: str) -> str:
         f"Pure wave count — not who won, but who put in the work. "
         f"{queen} and {king} caught the most waves in Fiji.\n\n"
         f"(More heats means more waves — swipe for the per-heat numbers too.)\n\n"
+        f"Full stats → {site_url}"
+    )
+
+
+def _caption_finals_recap(data: dict, site_url: str) -> str:
+    """Recap caption. Leads on the winner: by posting time the result is public.
+
+    No em dashes in post copy (house style), so the score sits in its own
+    sentence rather than being tacked on with a dash.
+    """
+    meta = data.get("event_meta") or {}
+    where = f"{meta.get('event_name', '')} {meta.get('year', '')}".strip()
+    division = (data.get("division") or "").lower()
+    riders = data.get("riders") or []
+
+    winner = next((r for r in riders if r.get("place") == 1), None)
+    name = (winner or {}).get("name", "")
+    total = (winner or {}).get("final_total")
+
+    heading = f"\U0001f30a How the {where} {division}'s final unfolded."
+    if name and total:
+        heading += f"\n\n{name} took it with {float(total):.2f}."
+    elif name:
+        heading += f"\n\n{name} took it."
+
+    return (
+        f"{heading}\n\n"
+        "Swipe from 4th up to 1st, then see all four compared across the "
+        "scores from the final itself.\n\n"
         f"Full stats → {site_url}"
     )
 

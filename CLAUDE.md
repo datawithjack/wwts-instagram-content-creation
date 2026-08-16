@@ -60,6 +60,12 @@ python generate.py --template athlete_rise --athlete1 48 --location "Gran Canari
 python generate.py --template finals_preview --dry-run --preview
 python generate.py --template finals_preview --event 124 --men 97,49,68,56 --women 17,12,5,11 --preview
 
+# Finals recap — "how the final unfolded", 4th to 1st + a comparison card
+# Post-event only: needs the final to have sailed. Draw is read from the API, no --heats.
+python generate.py --template finals_recap --dry-run --preview
+python generate.py --template finals_recap --event 124 --division Men --preview
+python generate.py --template finals_recap --event 124 --division Women --preview
+
 # Round mode: cover + one 2x2 slide per drawn heat ("Quarter Final 1 — How they got here")
 # The draw is NOT in the API (pending heats come back with empty athlete lists), so pass it via --heats
 python generate.py --template finals_preview --event 124 --division Men \
@@ -82,6 +88,7 @@ python generate.py --template site_stats --dry-run --publish now --caption "Cust
 - `rider_profile.html` — Single athlete performance at an event (carousel: cover → hero → stats → waves → CTA)
 - `canary_kings` — Analysis carousel: Kings & Queens of the Canaries (cover → men bars → women bars → CTA, 4 slides)
 - `athlete_rise` — Athlete rise carousel: year-over-year progression at a location (cover → dual chart → explanation, 3+ slides)
+- `finals_recap` — "How the final unfolded" carousel, 6 slides: cover → 4th → 3rd → 2nd → 1st → comparison card. The post-event companion to `finals_preview`, run once the final has sailed. Per-rider slides carry a full-bleed action shot (falling back to a framed portrait when no action photo exists) plus that rider's event-wide numbers. The comparison card deliberately uses **the final heat's own scores**, not event aggregates: after the event a rider's average still carries the shape of their ladder, and the final is the one heat all four sailed together.
 - `finals_preview` — "Road to the final" carousel, 2 slides (men's final, women's final). Each slide is a 2x2 grid of the four finalists: headshot, name, best heat (hero), avg counting wave, avg counting jump. Posted the night before finals day. Heat wins and avg heat score are deliberately excluded: both are distorted by the draw mid-event (a seeded rider has one heat, so their average equals their best).
 
 ## Template Layout Rules

@@ -187,7 +187,9 @@ def _compare_row(label: str, riders: list, getter) -> dict:
     best = max(raw_values, default=0.0)
     return {
         "label": label,
-        "values": [
+        # Named "cells", not "values": Jinja resolves row.values to dict.values
+        # (the built-in method) before it ever looks for the key.
+        "cells": [
             {
                 "value": f"{v:.2f}" if v > 0 else NO_VALUE,
                 "raw": v,

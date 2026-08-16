@@ -1,0 +1,200 @@
+{% extends "carousel/base_carousel.html" %}
+
+{#
+  The closing card: all four riders, one column each, compared across the
+  scores from the final itself. Riders read left to right 1st to 4th, so the
+  column order matches the result the reader has just been counted through.
+#}
+
+{% block carousel_head %}
+<style>
+    .container {
+        padding: 52px 44px 64px;
+    }
+
+    /* ── Header ── */
+    .compare-title {
+        font-family: var(--font-display);
+        font-size: 84px;
+        letter-spacing: 0.02em;
+        line-height: 1;
+        color: var(--color-text-primary);
+        margin-bottom: 6px;
+    }
+
+    .compare-title .accent { color: var(--color-discipline); }
+
+    .compare-subtitle {
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        color: var(--color-text-muted);
+        margin-bottom: 34px;
+    }
+
+    /* ── Rider column heads ── */
+    .rider-heads {
+        display: flex;
+        gap: 12px;
+        padding-left: 190px;
+        margin-bottom: 18px;
+    }
+
+    .rider-head {
+        flex: 1;
+        text-align: center;
+    }
+
+    .rider-head .thumb {
+        width: 96px;
+        height: 96px;
+        margin: 0 auto 10px;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 2px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .rider-head.winner .thumb { border-color: var(--color-discipline); }
+
+    .rider-head .thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .rider-head .thumb .photo-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 40px;
+        color: rgba(255, 255, 255, 0.30);
+        background: rgba(20, 30, 50, 0.8);
+    }
+
+    .rider-head .place {
+        font-family: var(--font-display);
+        font-size: 30px;
+        line-height: 1;
+        color: rgba(255, 255, 255, 0.38);
+        margin-bottom: 3px;
+    }
+
+    .rider-head.winner .place { color: var(--color-discipline); }
+
+    .rider-head .surname {
+        font-family: var(--font-body);
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--color-text-primary);
+        line-height: 1.15;
+        word-break: break-word;
+    }
+
+    /* ── Stat rows ── */
+    .compare-rows {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        flex: 1;
+    }
+
+    .compare-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: rgba(30, 41, 59, 0.32);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 10px;
+        padding: 18px 16px;
+    }
+
+    .compare-row .row-label {
+        width: 174px;
+        flex-shrink: 0;
+        font-family: var(--font-body);
+        font-size: 21px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.44);
+    }
+
+    .compare-row .cell {
+        flex: 1;
+        text-align: center;
+    }
+
+    .compare-row .cell .value {
+        font-family: var(--font-display);
+        font-size: 58px;
+        line-height: 1;
+        color: rgba(255, 255, 255, 0.82);
+    }
+
+    .compare-row .cell.leader .value { color: var(--color-discipline); }
+
+    .compare-row .cell .bar {
+        margin: 8px auto 0;
+        width: 74%;
+        height: 4px;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.10);
+        overflow: hidden;
+    }
+
+    .compare-row .cell .bar .fill {
+        display: block;
+        height: 100%;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.28);
+    }
+
+    .compare-row .cell.leader .bar .fill { background: var(--color-discipline); }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="compare-title">{{ title_lead }} <span class="accent">{{ title_accent }}</span></div>
+    <div class="compare-subtitle">{{ subtitle }}</div>
+
+    <div class="rider-heads">
+        {% for rider in riders %}
+        <div class="rider-head {% if rider.place == 1 %}winner{% endif %}">
+            <div class="thumb">
+                {% if rider.photo_url %}
+                <img src="{{ rider.photo_url }}" alt="{{ rider.name }}">
+                {% else %}
+                <div class="photo-placeholder">{{ rider.last_name[:1] }}</div>
+                {% endif %}
+            </div>
+            <div class="place">{{ rider.place_label }}</div>
+            <div class="surname">{{ rider.last_name }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="compare-rows">
+        {% for row in rows %}
+        <div class="compare-row">
+            <div class="row-label">{{ row.label }}</div>
+            {% for cell in row.cells %}
+            <div class="cell {% if cell.is_leader %}leader{% endif %}">
+                <div class="value">{{ cell.value }}</div>
+                <div class="bar"><span class="fill" style="width: {{ cell.bar_pct }}%"></span></div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% if source_note %}<div class="source-note">{{ source_note }}</div>{% endif %}
+{% endblock %}

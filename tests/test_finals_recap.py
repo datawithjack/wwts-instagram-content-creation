@@ -188,7 +188,7 @@ class TestComparisonCard:
     def test_every_row_covers_all_four_riders(self):
         compare = build_slides(_data())[-1]
         for row in compare["rows"]:
-            assert len(row["values"]) == 4
+            assert len(row["cells"]) == 4
 
     def test_riders_are_listed_first_to_fourth(self):
         compare = build_slides(_data())[-1]
@@ -197,7 +197,7 @@ class TestComparisonCard:
     def test_leader_is_marked_per_row(self):
         compare = build_slides(_data())[-1]
         final_row = next(r for r in compare["rows"] if r["label"] == "FINAL SCORE")
-        leaders = [v["is_leader"] for v in final_row["values"]]
+        leaders = [v["is_leader"] for v in final_row["cells"]]
         assert leaders == [True, False, False, False]
 
     def test_ties_mark_every_tied_rider(self):
@@ -206,7 +206,7 @@ class TestComparisonCard:
         riders[1]["final_total"] = 30.0
         compare = build_slides(_data(riders=riders))[-1]
         final_row = next(r for r in compare["rows"] if r["label"] == "FINAL SCORE")
-        assert sum(1 for v in final_row["values"] if v["is_leader"]) == 2
+        assert sum(1 for v in final_row["cells"] if v["is_leader"]) == 2
 
     def test_comparison_uses_the_finals_own_numbers(self):
         """Event-wide averages are not like-for-like once the event is over;
@@ -216,7 +216,7 @@ class TestComparisonCard:
         riders[0]["best_heat"] = 99.0  # event-wide, must not be used here
         compare = build_slides(_data(riders=riders))[-1]
         final_row = next(r for r in compare["rows"] if r["label"] == "FINAL SCORE")
-        assert final_row["values"][0]["value"] == "36.63"
+        assert final_row["cells"][0]["value"] == "36.63"
 
     def test_best_wave_comes_from_the_final_heat(self):
         riders = _riders()
@@ -224,7 +224,7 @@ class TestComparisonCard:
         riders[0]["best_wave"] = 10.0  # event-wide
         compare = build_slides(_data(riders=riders))[-1]
         wave_row = next(r for r in compare["rows"] if r["label"] == "BEST WAVE")
-        assert wave_row["values"][0]["value"] == "9.25"
+        assert wave_row["cells"][0]["value"] == "9.25"
 
     def test_missing_values_render_as_dashes(self):
         riders = _riders()

@@ -366,3 +366,27 @@ def render_to_video(
         shutil.rmtree(video_dir, ignore_errors=True)
 
     return output_path
+
+
+def render_finals_recap_carousel(
+    data: dict,
+    output_dir: str,
+    base_name: str = "finals_recap",
+    width: int = 1080,
+    height: int = 1350,
+    dpr: int = 2,
+) -> list[str]:
+    """Render the finals recap carousel: cover, 4th->1st, comparison card.
+
+    Returns list of PNG file paths.
+    """
+    from pipeline.finals_recap import build_slides
+    slides = build_slides(data)
+    os.makedirs(output_dir, exist_ok=True)
+    paths = []
+    for i, slide in enumerate(slides, 1):
+        html = render_template(f"carousel/slide_{slide['type']}", slide)
+        output_path = os.path.join(output_dir, f"{base_name}_{i}.png")
+        render_to_png(html, output_path, width=width, height=height, dpr=dpr)
+        paths.append(output_path)
+    return paths
