@@ -2,7 +2,13 @@
 document.fonts.ready.then(() => {
     // Auto-fit single elements
     document.querySelectorAll('[data-autofit]').forEach(el => {
-        const maxWidth = el.parentElement.offsetWidth;
+        // Content box, not offsetWidth: offsetWidth includes the parent's
+        // padding, so a line that fits 1080px but not the 984px content box
+        // was judged to fit and rendered edge to edge with no margin.
+        const parentStyle = getComputedStyle(el.parentElement);
+        const maxWidth = el.parentElement.clientWidth
+            - parseFloat(parentStyle.paddingLeft)
+            - parseFloat(parentStyle.paddingRight);
         let size = parseInt(getComputedStyle(el).fontSize);
         while (el.scrollWidth > maxWidth && size > 40) {
             size -= 4;

@@ -39,11 +39,13 @@ from pipeline.templates import resolve_thumb_url
 
 COMPARE_NOTE = "Final scores are from the one heat all four sailed together"
 
-RIDER_NOTE = "This rider's event so far"
+RIDER_NOTE = "Final score from the final, everything else from this event"
 
 FINAL_GROUP = "IN THE FINAL"
 
 EVENT_GROUP = "AT THIS EVENT"
+
+DEFAULT_FOCUS = "center 35%"
 
 # The commentator brief's full set. Avg heat and heats won are the two the
 # preview deliberately withholds, because mid-event the draw decides them: a
@@ -98,10 +100,12 @@ def build_slides(data: dict) -> list[dict]:
 
 def _cover(division: str, common: dict) -> dict:
     """Cover slide. Reuses the finals cover so the two templates read as a set."""
-    division_label = f"{division}'S FINALISTS" if division else "THE FINALISTS"
+    # Three short lines, the same shape finals_preview uses ("MEN'S / ROAD TO
+    # THE / FINAL"). One long line renders at a different size to every other
+    # cover in the set, which is what breaks the family resemblance.
     return {
         "type": "finals_cover",
-        "title_lines": [division_label],
+        "title_lines": [line for line in (f"{division}'S" if division else "", "FINALISTS") if line],
         "title_accent": "THE STATS",
         **common,
     }
@@ -116,6 +120,7 @@ def _rider_slides(riders: list, common: dict) -> list:
     bar_max = {key: _leaders(riders, key) for _, key, _ in STAT_FIELDS}
     bar_max["final_total"] = _leaders(riders, "final_total")
     leaders = dict(bar_max)
+    best_win_rate = _best_win_rate(riders)
 
     slides = []
     for rider in reversed(riders):
@@ -129,12 +134,14 @@ def _rider_slides(riders: list, common: dict) -> list:
         sail_number = rider.get("sail_number") or ""
         rank = rider.get("world_rank")
 
-        stats = []
+        stats = [_recap_stat("FINAL SCORE", rider.get("final_total"),
+                             leaders["final_total"], bar_max["final_total"], "score", 0)]
         for label, key, fmt in STAT_FIELDS:
             if not show_jumps and key in JUMP_FIELDS:
                 continue
+            best = best_win_rate if fmt == "fraction" else leaders.get(key)
             stats.append(
-                _recap_stat(label, rider.get(key), leaders.get(key), bar_max.get(key),
+                _recap_stat(label, rider.get(key), best, bar_max.get(key),
                             fmt, len(history))
             )
         _attach_jump_move(stats, _best_jump_move(history))
@@ -155,10 +162,10 @@ def _rider_slides(riders: list, common: dict) -> list:
             "meta_class": _meta_class(first_name, sail_number),
             "rank_label": f"WR #{int(rank)}" if rank else "",
             "photo_mode": "action" if action_url else "portrait",
+            # Landscape sources crop hard to 4:5. Where the rider sits in the
+            # frame varies per shot, so the crop anchor is per photo.
+            "photo_focus": rider.get("hero_focus") or DEFAULT_FOCUS,
             "photo_url": action_url or resolve_thumb_url(athlete_id, rider.get("photo_url") or ""),
-            "hero": _stat(
-                "FINAL SCORE", rider.get("final_total"), leaders["final_total"], bar_max["final_total"]
-            ),
             "stats": stats,
             "history": [_history_line(h) for h in history],
             "source_note": RIDER_NOTE,
@@ -179,12 +186,15 @@ def _recap_stat(label, value, best, bar_max, fmt: str, heats_sailed: int) -> dic
     if fmt == "fraction":
         raw = _num(value)
         missing = value is None or value == "" or not heats_sailed
+        rate = 0.0 if missing else raw / heats_sailed
         return {
             "label": label,
             "value": NO_VALUE if missing else f"{int(raw)}/{heats_sailed}",
             "raw": raw,
-            "is_leader": False,
-            "bar_pct": 0,
+            # Ranked on rate, not raw wins: the denominators still differ, so
+            # 3/3 is a better return than 4/6 even though it is fewer wins.
+            "is_leader": bool(not missing and rate > 0 and rate >= _num(best)),
+            "bar_pct": round(rate * 100) if rate > 0 else 0,
             "note": "",
         }
 
@@ -237,7 +247,7 @@ def _compare_slide(riders: list, common: dict) -> dict:
 
     return {
         "type": "recap_compare",
-        "title_lead": "THE FINAL",
+        "title_lead": "THE FINALISTS",
         "title_accent": "COMPARED",
         "subtitle": "Every rider, every score",
         "source_note": COMPARE_NOTE,
@@ -273,15 +283,17 @@ def _compare_row(label: str, riders: list, group: str, getter, fmt: str = "score
     raw_values = [_num(getter(r)) for r in riders]
 
     if fmt == "fraction":
+        best_rate = _best_win_rate(riders)
         cells = []
         for rider, raw in zip(riders, raw_values):
             sailed = len(rider.get("history") or [])
             missing = getter(rider) is None or not sailed
+            rate = 0.0 if missing else raw / sailed
             cells.append({
                 "value": NO_VALUE if missing else f"{int(raw)}/{sailed}",
                 "raw": raw,
-                "is_leader": False,
-                "bar_pct": 0,
+                "is_leader": bool(not missing and rate > 0 and rate >= best_rate),
+                "bar_pct": round(rate * 100) if rate > 0 else 0,
                 "note": "",
             })
         return {"label": label, "group": group, "cells": cells}
@@ -303,6 +315,22 @@ def _compare_row(label: str, riders: list, group: str, getter, fmt: str = "score
             for rider, v in zip(riders, raw_values)
         ],
     }
+
+
+def _best_win_rate(riders: list) -> float:
+    """Highest wins-per-heat-sailed in the division, 0 if nobody has sailed.
+
+    Rate rather than raw wins, because riders reach the final by different
+    routes and so sail different numbers of heats. Mid-event that gap makes
+    the comparison worthless (a seeded rider is 1/1); across a completed
+    ladder it is small enough that the rate is a fair ranking.
+    """
+    rates = [
+        _num(r.get("heat_wins")) / len(r.get("history") or [])
+        for r in riders
+        if r.get("history") and r.get("heat_wins") is not None
+    ]
+    return max(rates, default=0.0)
 
 
 def _best(scores) -> float:

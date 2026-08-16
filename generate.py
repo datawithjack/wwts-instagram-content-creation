@@ -16,7 +16,7 @@ from pipeline.captions import build_caption
 from pipeline.db import run_query
 from pipeline.helpers import nationality_to_iso, clean_event_name, heat_label_from_id, short_round_name, full_round_name
 from pipeline.queries import build_top10_query, build_canary_kings_query, build_athlete_rise_query, build_wave_count_query, build_fantasy_mvp_points_query, build_fantasy_session_pick_pct_query
-from pipeline.templates import render_template, get_dummy_data, resolve_action_url, resolve_hero_url
+from pipeline.templates import render_template, get_dummy_data, resolve_action_url, resolve_hero_url, resolve_hero_focus, resolve_photo_credit
 from pipeline.renderer import render_to_png, render_to_video, render_carousel, render_h2h_carousel, render_rp_carousel, render_analysis_carousel, render_athlete_rise_carousel, render_picks_carousel, render_wave_count_carousel, render_fuerte_fantasy_mvps_carousel, render_slalom_mvps_carousel, render_finals_preview_carousel, render_finals_recap_carousel
 
 
@@ -278,6 +278,11 @@ def fetch_live_data(template_name: str, args) -> dict:
             rider["route_round"] = route.get("round")
             rider["route_place"] = route.get("place")
             rider["action_url"] = resolve_hero_url(rider["athlete_id"], args.event)
+            rider["hero_focus"] = resolve_hero_focus(rider["athlete_id"], args.event)
+            rider["photo_credit"] = (
+                resolve_photo_credit(rider["athlete_id"], args.event)
+                if rider["action_url"] else ""
+            )
 
         # Heat-by-heat history drives heats-sailed (the denominator on HEATS
         # WON) and names the move behind each rider's best jump.
@@ -330,7 +335,13 @@ def fetch_live_data(template_name: str, args) -> dict:
             if raw_date:
                 event_meta[api_key] = dt_date.fromisoformat(str(raw_date))
 
-        return {"riders": riders, "division": args.division, "event_meta": event_meta}
+        # Credits follow the countdown order (4th shown first), so the
+        # lead image's photographer is named first in the caption.
+        credits = [r.get("photo_credit") for r in sorted(
+            riders, key=lambda r: -(r.get("place") or 0)) if r.get("photo_credit")]
+
+        return {"riders": riders, "division": args.division,
+                "event_meta": event_meta, "photo_credits": credits}
 
     if template_name == "commentator_brief":
         heat_groups = [

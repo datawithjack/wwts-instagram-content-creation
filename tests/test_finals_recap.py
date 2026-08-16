@@ -117,13 +117,17 @@ class TestRiderSlide:
     def test_expanded_stats_are_present(self):
         winner = _rider_slides(build_slides(_data()))[-1]
         labels = [s["label"] for s in winner["stats"]]
-        for expected in ("BEST HEAT", "BEST WAVE", "BEST JUMP", "AVG WAVE", "AVG JUMP"):
+        for expected in ("FINAL SCORE", "BEST HEAT", "BEST WAVE", "BEST JUMP",
+                         "AVG WAVE", "AVG JUMP"):
             assert expected in labels
 
-    def test_final_score_is_the_hero(self):
+    def test_final_score_leads_the_stat_strip(self):
+        """Not a hero number any more: it sits with the other stats at the
+        foot of the slide, first in the strip."""
         winner = _rider_slides(build_slides(_data()))[-1]
-        assert winner["hero"]["label"] == "FINAL SCORE"
-        assert winner["hero"]["value"] == "36.63"
+        assert "hero" not in winner
+        assert winner["stats"][0]["label"] == "FINAL SCORE"
+        assert winner["stats"][0]["value"] == "36.63"
 
     def test_missing_stat_renders_a_dash_not_a_crash(self):
         riders = _riders()
@@ -138,7 +142,7 @@ class TestRiderSlide:
         riders = _riders()
         riders[0]["final_total"] = None
         winner = _rider_slides(build_slides(_data(riders=riders)))[-1]
-        assert winner["hero"]["value"] == "-"
+        assert winner["stats"][0]["value"] == "-"
 
     def test_no_qualifying_route_on_a_recap(self):
         """The preview shows how a rider reached the final because it has not
@@ -304,17 +308,32 @@ class TestCommentaryStats:
         values = {s["label"]: s["value"] for s in winner["stats"]}
         assert values["HEATS WON"] == "3/5"
 
-    def test_heats_won_is_never_highlighted(self):
-        """Denominators differ per rider, so the values are not comparable."""
+    def test_heats_won_highlights_the_best_rate_not_the_biggest_count(self):
+        """Post-event every rider has sailed a full ladder, so wins are worth
+        comparing. The denominators still differ, so the leader is decided on
+        rate: 3/3 beats 4/6."""
         slides = _rider_slides(build_slides(_data(riders=[
-            _rider(97, "Marc Pare Rico", 1, heat_wins=5, history=[{}] * 5),
-            _rider(49, "Philip Koster", 2, heat_wins=1, history=[{}] * 1),
-            _rider(48, "Marino Gil Gherardi", 3, heat_wins=2, history=[{}] * 4),
+            _rider(97, "Marc Pare Rico", 1, heat_wins=3, history=[{}] * 3),
+            _rider(49, "Philip Koster", 2, heat_wins=4, history=[{}] * 6),
+            _rider(48, "Marino Gil Gherardi", 3, heat_wins=1, history=[{}] * 5),
             _rider(75, "Lennart Neubauer", 4, heat_wins=0, history=[{}] * 3),
         ])))
+        leaders = {}
         for slide in slides:
             won = next(s for s in slide["stats"] if s["label"] == "HEATS WON")
-            assert won["is_leader"] is False
+            leaders[slide["place"]] = won["is_leader"]
+        assert leaders[1] is True    # 3/3
+        assert leaders[2] is False   # 4/6, more wins, worse rate
+        assert leaders[3] is False
+        assert leaders[4] is False
+
+    def test_heats_won_with_no_heats_never_leads(self):
+        slides = _rider_slides(build_slides(_data(riders=[
+            _rider(97, "Marc Pare Rico", 1, heat_wins=None, history=[]),
+            _rider(49, "Philip Koster", 2, heat_wins=2, history=[{}] * 4),
+        ])))
+        won = next(s for s in slides[-1]["stats"] if s["label"] == "HEATS WON")
+        assert won["is_leader"] is False
 
     def test_heats_won_dashes_when_no_history(self):
         winner = self._winner(heat_wins=3, history=[])
@@ -368,6 +387,13 @@ class TestHeroPhoto:
             assert "photo_url" in rider
 
 
+class TestSummaryTitle:
+    def test_summary_titled_the_finalists_compared(self):
+        card = build_slides(_data())[-1]
+        assert card["title_lead"] == "THE FINALISTS"
+        assert card["title_accent"] == "COMPARED"
+
+
 class TestSummarySheetFullStats:
     """The summary sheet carries every stat, grouped by what it measures."""
 
@@ -410,7 +436,7 @@ class TestSummarySheetFullStats:
         assert heat["group"] == "AT THIS EVENT"
         assert heat["cells"][0]["value"] == "40.00"
 
-    def test_heats_won_is_a_fraction_and_unhighlighted(self):
+    def test_heats_won_is_a_fraction_and_leads_on_rate(self):
         riders = _riders()
         for i, r in enumerate(riders):
             r["heat_wins"] = 4 - i
@@ -418,7 +444,7 @@ class TestSummarySheetFullStats:
         rows = self._rows(riders)
         won = next(r for r in rows if r["label"] == "HEATS WON")
         assert won["cells"][0]["value"] == "4/4"
-        assert all(c["is_leader"] is False for c in won["cells"])
+        assert [c["is_leader"] for c in won["cells"]] == [True, False, False, False]
 
     def test_wave_only_division_drops_every_jump_row(self):
         riders = _riders()
@@ -459,3 +485,20 @@ class TestJumpMoveOnSummary:
         rows = build_slides(_data())[-1]["rows"]
         jump = next(r for r in rows if r["label"] == "BEST JUMP" and r["group"] == "IN THE FINAL")
         assert jump["cells"][0]["note"] == ""
+
+
+class TestHeroFocus:
+    """Landscape shots crop hard to 4:5, so each needs its own focal point."""
+
+    def test_focus_reaches_the_slide(self):
+        riders = _riders()
+        riders[0]["action_url"] = "file:///photos/events/124/97.jpg"
+        riders[0]["hero_focus"] = "22% 60%"
+        winner = _rider_slides(build_slides(_data(riders=riders)))[-1]
+        assert winner["photo_focus"] == "22% 60%"
+
+    def test_falls_back_to_a_sane_default(self):
+        riders = _riders()
+        riders[0]["action_url"] = "file:///photos/events/124/97.jpg"
+        winner = _rider_slides(build_slides(_data(riders=riders)))[-1]
+        assert winner["photo_focus"] == "center 35%"
