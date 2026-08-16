@@ -569,3 +569,37 @@ class TestSlalomMvpsCaption:
         caption = build_caption("slalom_mvps", data, config)
         assert "Matteo Iachino" in caption
         assert "None" not in caption
+
+
+class TestFinalsRecapCaption:
+    """Sourced photos must always carry a credit."""
+
+    def _data(self, credits=None):
+        d = {
+            "division": "Men",
+            "event_meta": {"event_name": "Tenerife Grand Slam", "year": 2026},
+            "riders": [{"place": 1, "name": "Marc Pare Rico", "final_total": 36.63}],
+        }
+        if credits is not None:
+            d["photo_credits"] = credits
+        return d
+
+    def test_credits_are_appended(self):
+        from pipeline.captions import build_caption
+        caption = build_caption("finals_recap", self._data(["Rafa Soulart"]), {})
+        assert "Rafa Soulart" in caption
+
+    def test_multiple_credits_are_listed_once_each(self):
+        from pipeline.captions import build_caption
+        caption = build_caption(
+            "finals_recap",
+            self._data(["Rafa Soulart", "@jcwindsurf | @pwaworldtour"]),
+            {},
+        )
+        assert caption.count("Rafa Soulart") == 1
+        assert "@jcwindsurf" in caption
+
+    def test_no_credit_line_when_there_are_no_sourced_photos(self):
+        from pipeline.captions import build_caption
+        caption = build_caption("finals_recap", self._data(), {})
+        assert "\U0001f4f8" not in caption

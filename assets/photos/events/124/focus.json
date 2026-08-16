@@ -1,0 +1,7 @@
+{
+  "_comment": "object-position per athlete for the 1080x1350 hero crop. Landscape sources lose about half their width, so each shot needs its own anchor. Tune the percentages and re-render; no code change needed.",
+  "97": "9% 58%",
+  "49": "45% 46%",
+  "48": "47% 54%",
+  "75": "42% 40%"
+}

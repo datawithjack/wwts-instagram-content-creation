@@ -485,3 +485,20 @@ class TestJumpMoveOnSummary:
         rows = build_slides(_data())[-1]["rows"]
         jump = next(r for r in rows if r["label"] == "BEST JUMP" and r["group"] == "IN THE FINAL")
         assert jump["cells"][0]["note"] == ""
+
+
+class TestHeroFocus:
+    """Landscape shots crop hard to 4:5, so each needs its own focal point."""
+
+    def test_focus_reaches_the_slide(self):
+        riders = _riders()
+        riders[0]["action_url"] = "file:///photos/events/124/97.jpg"
+        riders[0]["hero_focus"] = "22% 60%"
+        winner = _rider_slides(build_slides(_data(riders=riders)))[-1]
+        assert winner["photo_focus"] == "22% 60%"
+
+    def test_falls_back_to_a_sane_default(self):
+        riders = _riders()
+        riders[0]["action_url"] = "file:///photos/events/124/97.jpg"
+        winner = _rider_slides(build_slides(_data(riders=riders)))[-1]
+        assert winner["photo_focus"] == "center 35%"

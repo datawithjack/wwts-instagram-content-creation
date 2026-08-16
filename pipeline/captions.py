@@ -286,12 +286,23 @@ def _caption_finals_recap(data: dict, site_url: str) -> str:
     elif name:
         heading += f"\n\n{name} took it."
 
-    return (
+    body = (
         f"{heading}\n\n"
         "Swipe from 4th up to 1st, then see all four compared across the "
         "scores from the final itself.\n\n"
         f"Full stats → {site_url}"
     )
+
+    # Sourced photos always carry a credit. Deduped in slide order rather than
+    # sorted, so the photographer of the lead image is named first.
+    credits = []
+    for credit in data.get("photo_credits") or []:
+        if credit and credit not in credits:
+            credits.append(credit)
+    if credits:
+        body += "\n\n📸 " + " | ".join(credits)
+
+    return body
 
 
 def _caption_finals_preview(data: dict, site_url: str) -> str:

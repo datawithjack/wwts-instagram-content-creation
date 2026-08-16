@@ -1,5 +1,6 @@
 """Jinja2 template population and rendering."""
 import os
+import json
 from datetime import date
 
 from jinja2 import Environment, FileSystemLoader
@@ -114,6 +115,47 @@ def resolve_hero_url(athlete_id, event_id) -> str:
         if event_photo:
             return event_photo
     return _subfolder_photo(athlete_id, "h2h") or _local_photo(athlete_id)
+
+
+def resolve_hero_focus(athlete_id, event_id, default: str = "center 35%") -> str:
+    """CSS object-position for a rider's hero shot, from a per-event map.
+
+    Reads ``assets/photos/events/{event_id}/focus.json``, e.g.
+    ``{"97": "22% 60%"}``. A landscape action shot loses about half its width
+    when it is cropped to 1080x1350, and where the rider sits in the frame
+    changes with every photo, so a single global anchor cannot work. The file
+    is plain JSON so a crop can be nudged without touching code or re-cutting
+    the image.
+    """
+    if not athlete_id or not event_id:
+        return default
+    path = os.path.join(PHOTOS_DIR, "events", str(event_id), "focus.json")
+    if not os.path.exists(path):
+        return default
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh).get(str(athlete_id)) or default
+    except (ValueError, OSError):
+        return default
+
+
+def resolve_photo_credit(athlete_id, event_id) -> str:
+    """Photographer credit for a rider's hero shot, or "".
+
+    Reads ``assets/photos/events/{event_id}/credits.json``. Kept beside the
+    photos rather than in the caption code because the credit belongs to the
+    image, and the same rider carries a different one at the next event.
+    """
+    if not athlete_id or not event_id:
+        return ""
+    path = os.path.join(PHOTOS_DIR, "events", str(event_id), "credits.json")
+    if not os.path.exists(path):
+        return ""
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh).get(str(athlete_id)) or ""
+    except (ValueError, OSError):
+        return ""
 
 
 def resolve_thumb_url(athlete_id, current_url: str) -> str:
