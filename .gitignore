@@ -1,7 +1,7 @@
 .env
 __pycache__/
 *.pyc
-output/
+output/**
 assets/photos/original/
 .pytest_cache/
 node_modules/
@@ -15,7 +15,8 @@ tmp/
 # Render output, previews and scratch experiments (all regenerable)
 .playwright-mcp/
 /*.png
-claude_500_error
-preview_*.py
-preview_*.html
-publish_cover_test.py
+/claude_500_error
+/preview_*.py
+/preview_*.html
+/publish_*.py
+/demo.md
