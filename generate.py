@@ -16,7 +16,7 @@ from pipeline.captions import build_caption
 from pipeline.db import run_query
 from pipeline.helpers import nationality_to_iso, clean_event_name, heat_label_from_id, short_round_name, full_round_name
 from pipeline.queries import build_top10_query, build_canary_kings_query, build_athlete_rise_query, build_wave_count_query, build_fantasy_mvp_points_query, build_fantasy_session_pick_pct_query
-from pipeline.templates import render_template, get_dummy_data, resolve_action_url
+from pipeline.templates import render_template, get_dummy_data, resolve_action_url, resolve_hero_url
 from pipeline.renderer import render_to_png, render_to_video, render_carousel, render_h2h_carousel, render_rp_carousel, render_analysis_carousel, render_athlete_rise_carousel, render_picks_carousel, render_wave_count_carousel, render_fuerte_fantasy_mvps_carousel, render_slalom_mvps_carousel, render_finals_preview_carousel, render_finals_recap_carousel
 
 
@@ -277,7 +277,44 @@ def fetch_live_data(template_name: str, args) -> dict:
             route = routes.get(rider["athlete_id"]) or {}
             rider["route_round"] = route.get("round")
             rider["route_place"] = route.get("place")
-            rider["action_url"] = resolve_action_url(rider["athlete_id"], args.event, "")
+            rider["action_url"] = resolve_hero_url(rider["athlete_id"], args.event)
+
+        # Heat-by-heat history drives heats-sailed (the denominator on HEATS
+        # WON) and names the move behind each rider's best jump.
+        history = fetch_heat_history(args.event, args.division)
+        by_id = {r["athlete_id"]: r for r in riders}
+        for aid, entries in history.items():
+            if aid in by_id:
+                by_id[aid]["history"] = entries
+
+        # Sail numbers come off the event athlete list (used on the water).
+        try:
+            import requests as _requests
+            from pipeline.api import API_BASE_URL
+            resp = _requests.get(
+                f"{API_BASE_URL}/events/{args.event}/athletes",
+                params={"sex": args.division}, timeout=30,
+            )
+            if resp.ok:
+                for a in resp.json().get("athletes", []):
+                    if a["athlete_id"] in by_id:
+                        by_id[a["athlete_id"]]["sail_number"] = a.get("sail_number", "")
+        except Exception as exc:
+            print(f"Sail numbers unavailable ({exc}); continuing without them.")
+
+        # World rankings live in the DB, so they need the SSH tunnel. Without
+        # it the carousel still builds, just with no rank badge.
+        try:
+            placeholders = ",".join(["%s"] * len(ids))
+            for row in run_query(
+                f"SELECT athlete_id, `rank` FROM WWT_WORLD_RANKINGS "
+                f"WHERE athlete_id IN ({placeholders})",
+                tuple(ids),
+            ):
+                if row["athlete_id"] in by_id:
+                    by_id[row["athlete_id"]]["world_rank"] = row["rank"]
+        except Exception as exc:
+            print(f"World rankings unavailable ({exc}); continuing without them.")
 
         event = fetch_event(args.event)
         from datetime import date as dt_date

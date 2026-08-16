@@ -94,6 +94,28 @@ def resolve_action_url(athlete_id, event_id, current_url: str) -> str:
     return _local_photo(athlete_id) or current_url
 
 
+def resolve_hero_url(athlete_id, event_id) -> str:
+    """Resolve a large landscape/action shot for a hero slide, or "".
+
+    Chain: ``events/{event_id}/{id}`` → ``h2h/{id}`` → legacy flat ``{id}``.
+
+    Wider than ``resolve_action_url`` by one step: the ``h2h/`` folder holds
+    landscape hero shots cropped for exactly this job, and there is no reason a
+    recap should ignore them just because they were sourced for a head-to-head.
+
+    Deliberately never falls back to a headshot or an API url. A hero frame is
+    landscape and full-bleed; a face crop stretched into it looks broken. The
+    caller gets "" and renders its own portrait fallback instead.
+    """
+    if not athlete_id:
+        return ""
+    if event_id:
+        event_photo = _subfolder_photo(athlete_id, "events", event_id)
+        if event_photo:
+            return event_photo
+    return _subfolder_photo(athlete_id, "h2h") or _local_photo(athlete_id)
+
+
 def resolve_thumb_url(athlete_id, current_url: str) -> str:
     """Resolve the small square thumbnail (headshot) for data slides.
 
@@ -448,7 +470,18 @@ def get_dummy_data(template_name: str) -> dict:
         }
     if template_name == "finals_recap":
         def _recap(athlete_id, name, nationality, place, total, waves, jumps,
-                   best_heat, avg_wave, avg_jump):
+                   best_heat, avg_wave, avg_jump, sail, rank, avg_heat,
+                   heat_wins, heats_sailed, jump_move):
+            # One history entry per heat sailed. Only the best jump's move
+            # name is read off it, so the rest is the shape, not the detail.
+            history = [
+                {"round": f"Round {i + 1}", "heat": i + 1, "total": best_heat, "place": 1}
+                for i in range(heats_sailed)
+            ]
+            if history and jumps:
+                history[-1]["scores"] = [
+                    {"type": "J", "move_type": jump_move, "score": max(jumps)},
+                ]
             return {
                 "athlete_id": athlete_id,
                 "name": name,
@@ -463,6 +496,11 @@ def get_dummy_data(template_name: str) -> dict:
                 "best_jump": max(jumps) if jumps else None,
                 "avg_wave": avg_wave,
                 "avg_jump": avg_jump,
+                "avg_heat": avg_heat,
+                "heat_wins": heat_wins,
+                "sail_number": sail,
+                "world_rank": rank,
+                "history": history,
             }
 
         # The real Tenerife 2026 men's final, so the dummy carousel shows the
@@ -480,13 +518,17 @@ def get_dummy_data(template_name: str) -> dict:
             },
             "riders": [
                 _recap(97, "Marc Pare Rico", "Spain", 1, 36.63,
-                       [8.75, 7.88, 7.62], [10.0, 10.0, 5.12], 36.63, 7.49, 8.66),
+                       [8.75, 7.88, 7.62], [10.0, 10.0, 5.12], 36.63, 7.49, 8.66,
+                       "E-334", 2, 30.12, 4, 5, "Pushloop Forward"),
                 _recap(49, "Philip Koster", "Germany", 2, 30.28,
-                       [8.12, 7.38, 6.75], [8.95, 5.83, 0.5], 35.0, 6.8, 8.53),
+                       [8.12, 7.38, 6.75], [8.95, 5.83, 0.5], 35.0, 6.8, 8.53,
+                       "G-81", 1, 28.40, 3, 4, "Double Forward"),
                 _recap(48, "Marino Gil Gherardi", "Spain", 3, 27.68,
-                       [6.62, 4.25, 3.88], [9.43, 7.38, 3.0], 28.84, 5.31, 8.14),
+                       [6.62, 4.25, 3.88], [9.43, 7.38, 3.0], 28.84, 5.31, 8.14,
+                       "E-11", 9, 24.06, 2, 4, "Backloop"),
                 _recap(75, "Lennart Neubauer", "Greece", 4, 9.62,
-                       [4.0, 3.12, 2.62], [2.0, 0.5, 0.5], 27.87, 5.17, 5.98),
+                       [4.0, 3.12, 2.62], [2.0, 0.5, 0.5], 27.87, 5.17, 5.98,
+                       "GR-1", 6, 21.55, 1, 3, "Pushloop"),
             ],
         }
     if template_name == "finals_preview":

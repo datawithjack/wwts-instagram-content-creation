@@ -3,10 +3,12 @@
 {#
   One finalist in the recap countdown. Two photo modes:
 
-  action  — a full-bleed event action shot (assets/photos/events/{event_id}/{id})
-  portrait — no action shot exists, so a framed headshot sits on the plain
-             background instead. A face crop must never be stretched to
-             1080x1350, which is what a single shared layout would force.
+  action   — a full-bleed hero shot (events/{event_id}/{id}, then h2h/{id},
+             then the flat {id} photo)
+  portrait — nothing landscape resolved, so the best available headshot sits
+             large in the same hero footprint under the same gradient. A face
+             crop must never be stretched to 1080x1350, which is what a single
+             shared layout would force.
 #}
 
 {% block carousel_head %}
@@ -46,39 +48,96 @@
         z-index: 1;
     }
 
-    /* ── Framed portrait fallback ── */
-    .portrait-frame {
+    /* ── Portrait fallback ──
+       Same hero footprint and the same gradient as the action shot, so the
+       slide reads as one design either way. The photo is a face crop, so it
+       is sized and centred rather than stretched edge to edge: blown up to
+       1080x1350 a headshot looks broken, which is the whole reason this mode
+       exists as its own layout. */
+    .portrait-hero {
         position: absolute;
-        top: 150px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 420px;
-        height: 420px;
-        border-radius: 24px;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 760px;
+        z-index: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         overflow: hidden;
-        border: 3px solid var(--color-discipline);
-        box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
-        z-index: 1;
+        background: radial-gradient(
+            ellipse at 50% 38%,
+            rgba(38, 62, 92, 0.95) 0%,
+            rgba(14, 25, 39, 1) 70%
+        );
     }
 
-    .portrait-frame img {
-        width: 100%;
-        height: 100%;
+    .portrait-hero img {
+        width: 620px;
+        height: 620px;
         object-fit: cover;
-        display: block;
+        border-radius: 20px;
+        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
     }
 
-    .portrait-frame .photo-placeholder {
-        width: 100%;
-        height: 100%;
+    .portrait-hero .photo-placeholder {
+        width: 620px;
+        height: 620px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-family: var(--font-display);
-        font-size: 120px;
-        color: rgba(255, 255, 255, 0.25);
+        font-size: 200px;
+        color: rgba(255, 255, 255, 0.20);
         background: rgba(20, 30, 50, 0.8);
+        border-radius: 20px;
     }
+
+    .portrait-hero::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(
+            to bottom,
+            rgba(10, 14, 26, 0.00) 0%,
+            rgba(10, 14, 26, 0.10) 55%,
+            rgba(10, 14, 26, 0.70) 82%,
+            rgba(10, 14, 26, 1.00) 100%
+        );
+        z-index: 1;
+    }
+
+    /* ── Identity row (sail number + world rank) ── */
+    .rider-meta {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 10px;
+    }
+
+    .rider-meta .flag { font-size: 42px; line-height: 1; }
+
+    .rider-meta .sail {
+        font-family: var(--font-body);
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        color: rgba(255, 255, 255, 0.55);
+    }
+
+    .rider-meta .rank {
+        font-family: var(--font-body);
+        font-size: 21px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        color: var(--color-bg);
+        background: var(--color-discipline);
+        border-radius: 5px;
+        padding: 4px 11px;
+    }
+
+    .rider-meta.tight .sail { font-size: 22px; }
+    .rider-meta.tight .rank { font-size: 18px; }
 
     /* ── Place badge ── */
     .place-badge {
@@ -201,13 +260,16 @@
         margin-bottom: 14px;
     }
 
+    /* Seven stats will not sit on one row at this width, so they wrap 4 + 3.
+       A grid keeps the columns aligned across both rows; flex-wrap would let
+       the second row stretch to fill and break the vertical rhythm. */
     .stat-grid {
-        display: flex;
-        gap: 14px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
     }
 
     .stat-cell {
-        flex: 1;
         background: rgba(255, 255, 255, 0.06);
         border: 1px solid rgba(255, 255, 255, 0.10);
         border-radius: 10px;
@@ -216,7 +278,7 @@
 
     .stat-cell .stat-label {
         font-family: var(--font-body);
-        font-size: 17px;
+        font-size: 16px;
         font-weight: 700;
         letter-spacing: 0.07em;
         text-transform: uppercase;
@@ -227,12 +289,23 @@
 
     .stat-cell .stat-value {
         font-family: var(--font-display);
-        font-size: 50px;
+        font-size: 44px;
         line-height: 1;
         color: var(--color-text-primary);
     }
 
     .stat-cell .stat-value.leader { color: var(--color-discipline); }
+
+    /* Move name under the best jump, e.g. "Pushloop Forward". */
+    .stat-cell .stat-move {
+        font-family: var(--font-body);
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        color: rgba(255, 255, 255, 0.42);
+        margin-top: 3px;
+        line-height: 1.2;
+    }
 
     .stat-cell .stat-bar {
         margin-top: 8px;
@@ -256,7 +329,7 @@
     {% if photo_mode == 'action' and photo_url %}
     <div class="photo-bg"><img src="{{ photo_url }}" alt="{{ name }}"></div>
     {% else %}
-    <div class="portrait-frame">
+    <div class="portrait-hero">
         {% if photo_url %}
         <img src="{{ photo_url }}" alt="{{ name }}">
         {% else %}
@@ -270,7 +343,11 @@
     </div>
 
     <div class="rider-block">
-        {% if country %}<div class="rider-flag">{{ country | country_flag }}</div>{% endif %}
+        <div class="rider-meta {{ meta_class }}">
+            {% if country %}<span class="flag">{{ country | country_flag }}</span>{% endif %}
+            {% if sail_number %}<span class="sail">{{ sail_number }}</span>{% endif %}
+            {% if rank_label %}<span class="rank">{{ rank_label }}</span>{% endif %}
+        </div>
 
         <div class="rider-name {{ name_class }}">
             <span class="first">{{ first_name }}</span>
@@ -290,6 +367,7 @@
             <div class="stat-cell">
                 <div class="stat-label">{{ stat.label }}</div>
                 <div class="stat-value {% if stat.is_leader %}leader{% endif %}">{{ stat.value }}</div>
+                {% if stat.note %}<div class="stat-move">{{ stat.note }}</div>{% endif %}
                 <div class="stat-bar"><span class="fill" style="width: {{ stat.bar_pct }}%"></span></div>
             </div>
             {% endfor %}
