@@ -1,0 +1,2573 @@
+{
+  "source": "heatscoringpro",
+  "endpoint": "https://pwa.heatscoringpro.com/api/trpc/move.getAll",
+  "fetched_at": "2026-08-16T17:28:02.931699+00:00",
+  "as_at": "2026-08-16",
+  "note": "Dictionary is slow-moving but not static: deletedAt exists upstream, placeholder rows get renamed, and difficulty can be recalibrated. Treat as the dictionary as at this date.",
+  "categories": {
+    "FREESTYLE": {
+      "count": 196,
+      "placeholders": [
+        "NEW",
+        "NEW-H2",
+        "NEW-H3",
+        "NEW2"
+      ],
+      "moves": [
+        {
+          "id": "q60u1bi8jar55p9utpsydn2r",
+          "name": "Air Flaka",
+          "slug": "FKA",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 5.1,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "htxs19r36vz78n0a6zkvwtuu",
+          "name": "The Killer",
+          "slug": "MTCU",
+          "category": "FREESTYLE",
+          "familyId": "krpiqljph7s1fd8decsvtgcg",
+          "difficulty": 7.7,
+          "deletedAt": null,
+          "family": {
+            "id": "krpiqljph7s1fd8decsvtgcg",
+            "name": "DP"
+          }
+        },
+        {
+          "id": "bl4nzfz3tujj7opyynkvi32l",
+          "name": "Shove it Forward",
+          "slug": "SIFL",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 6.9,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "to9f38d5yqz8auhz7v29is05",
+          "name": "Mellouet (Flaka Bob)",
+          "slug": "FKBB",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 6.3,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "fz6abmny88m9zowg6ott999j",
+          "name": "Flaka Clock",
+          "slug": "FKCLK",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 6.2,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "nl4iihwnuol73iqqykhegh9c",
+          "name": "Flaka Culo",
+          "slug": "FKCU",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 6.8,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "uozhj2s4kbq1eacluwplpull",
+          "name": "New Move high 2",
+          "slug": "NEW-H2",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 10,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "c5a9nfxm5iym3p94kydrpkvw",
+          "name": "New Move high 3",
+          "slug": "NEW-H3",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 10,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "eued25oby7ual7me67r612c3",
+          "name": "New Move medium 2",
+          "slug": "NEW-M2",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "kjyzeq9bpzagv7cc36qym3bo",
+          "name": "New Move medium 3",
+          "slug": "NEW-M3",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "y5p3e11s6xkfs6svs3764vtl",
+          "name": "New Move low 2",
+          "slug": "NEW-L2",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 6,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "o9e0t68cp0b2ibxdprdsphah",
+          "name": "New Move low 3",
+          "slug": "NEW-L3",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 6.3,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "b1mt3p94av2ppqimpibdctbw",
+          "name": "Clew First Ponch",
+          "slug": "CFPO",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 6.5,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "fpn4z8p2ly9pddts38uzgrl1",
+          "name": "Shaka Ponch",
+          "slug": "SKPO",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8.6,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "ztvnk481qoqk8c7cdhkmxzpl",
+          "name": "Eslider Funnel",
+          "slug": "ESFU",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 5.7,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "wd7nc7t7l7r9p325n14vjge2",
+          "name": "Air Bob",
+          "slug": "ABB",
+          "category": "FREESTYLE",
+          "familyId": "krpiqljph7s1fd8decsvtgcg",
+          "difficulty": 6.3,
+          "deletedAt": null,
+          "family": {
+            "id": "krpiqljph7s1fd8decsvtgcg",
+            "name": "DP"
+          }
+        },
+        {
+          "id": "fs83z80toroo7ins61g2j6lq",
+          "name": "Air Bob Culo",
+          "slug": "ABBCU",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8.2,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "hwo0dr1fm3qymvokcvhsm56u",
+          "name": "Air Chachoo",
+          "slug": "AC",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 7.2,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "iqi3of4xl49xbhkej7esw3bm",
+          "name": "Air Funnell",
+          "slug": "AF",
+          "category": "FREESTYLE",
+          "familyId": "krpiqljph7s1fd8decsvtgcg",
+          "difficulty": 6,
+          "deletedAt": null,
+          "family": {
+            "id": "krpiqljph7s1fd8decsvtgcg",
+            "name": "DP"
+          }
+        },
+        {
+          "id": "be5oxft7hc3p0ipmoknm0y98",
+          "name": "Air Funnell Air Funnell",
+          "slug": "AFAF",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8.5,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "bc35ypsez09u5l7x2fjyfof9",
+          "name": "Air Funnell Burner",
+          "slug": "AFB",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8.5,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "d9mk5n9aguj968bs7rf3fnq7",
+          "name": "Air Funnell Funnell",
+          "slug": "AFF",
+          "category": "FREESTYLE",
+          "familyId": "krpiqljph7s1fd8decsvtgcg",
+          "difficulty": 7.2,
+          "deletedAt": null,
+          "family": {
+            "id": "krpiqljph7s1fd8decsvtgcg",
+            "name": "DP"
+          }
+        },
+        {
+          "id": "ak5uo4q9704c5ytrxuxryfek",
+          "name": "Air Matador",
+          "slug": "AMTDR",
+          "category": "FREESTYLE",
+          "familyId": "krpiqljph7s1fd8decsvtgcg",
+          "difficulty": 7.3,
+          "deletedAt": null,
+          "family": {
+            "id": "krpiqljph7s1fd8decsvtgcg",
+            "name": "DP"
+          }
+        },
+        {
+          "id": "ctbdwjiihju48uwkmcn3fa7o",
+          "name": "Air Spock",
+          "slug": "AS",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 7.7,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "g2uri9merrgp9tigvs09st0m",
+          "name": "Amadore (Air Skopu Into Burner)",
+          "slug": "AMDR",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 9.2,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "kem51mpw7kqz4jw3hui6sica",
+          "name": "Back Loop",
+          "slug": "BL",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 7.2,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "h7ty9j3ixmksu8yb8cf46cia",
+          "name": "Back Loop Clew First",
+          "slug": "BLCF",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 6.4,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "er82byj0fkgknmlvfnvsrnhh",
+          "name": "Barracuda",
+          "slug": "BCDA",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 6.9,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "m6b48k0gfu3o89k4bkq5befv",
+          "name": "Bob",
+          "slug": "BB",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 4.4,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "uxllj0fbm2se6q9ohe46s4ax",
+          "name": "Air Bob Bob",
+          "slug": "BBABB",
+          "category": "FREESTYLE",
+          "familyId": "krpiqljph7s1fd8decsvtgcg",
+          "difficulty": 6.8,
+          "deletedAt": null,
+          "family": {
+            "id": "krpiqljph7s1fd8decsvtgcg",
+            "name": "DP"
+          }
+        },
+        {
+          "id": "gfuom8gpgoc99ccpj9epno33",
+          "name": "Bob Bob",
+          "slug": "BBBB",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 5.8,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "i9uhzwng8hh1as2r8ywjbsjl",
+          "name": "Bobby Skipper",
+          "slug": "BSKP",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 6.1,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "wxuhlaa0y7igteiymwooompz",
+          "name": "Body Drag",
+          "slug": "BD",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 2.1,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "qmh4a26o9ctlszrtqsnqby33",
+          "name": "Bongka",
+          "slug": "BGKA",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "pc2d2ln10u2y4azyrypsd00w",
+          "name": "Burner",
+          "slug": "BU",
+          "category": "FREESTYLE",
+          "familyId": "krpiqljph7s1fd8decsvtgcg",
+          "difficulty": 6.3,
+          "deletedAt": null,
+          "family": {
+            "id": "krpiqljph7s1fd8decsvtgcg",
+            "name": "DP"
+          }
+        },
+        {
+          "id": "f8plcttdj8er0wry7iq5l7pv",
+          "name": "Burner Burner",
+          "slug": "BUBU",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8.4,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "et6o34hopbvsn1h1rh1nzx1q",
+          "name": "Burner Funnell",
+          "slug": "BUF",
+          "category": "FREESTYLE",
+          "familyId": "krpiqljph7s1fd8decsvtgcg",
+          "difficulty": 7,
+          "deletedAt": null,
+          "family": {
+            "id": "krpiqljph7s1fd8decsvtgcg",
+            "name": "DP"
+          }
+        },
+        {
+          "id": "g0hb4kk71ci7j24o89sx0j39",
+          "name": "Burner No Handed",
+          "slug": "BU0",
+          "category": "FREESTYLE",
+          "familyId": "krpiqljph7s1fd8decsvtgcg",
+          "difficulty": 7.4,
+          "deletedAt": null,
+          "family": {
+            "id": "krpiqljph7s1fd8decsvtgcg",
+            "name": "DP"
+          }
+        },
+        {
+          "id": "poq05nzisl186xwhz67yu6z2",
+          "name": "Burner No Handed Funnell",
+          "slug": "BU0F",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "x829ycaxpduqgnsg33uxpont",
+          "name": "Chachoo",
+          "slug": "CCH",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 6.7,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "yw65074s2jfz54a5gqspa086",
+          "name": "Cheese Roll",
+          "slug": "CR",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 5.2,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "t6jaditts41708zdo4c0sfs6",
+          "name": "Cheese Roll Into Back Loop",
+          "slug": "CRBL",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 9.4,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "cakzjkt2s2j4ffu7vcupacch",
+          "name": "Clock",
+          "slug": "CLK",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 5.3,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "sspmh0oukc1bhk2a5dzck9xi",
+          "name": "Crazy Pete",
+          "slug": "CP",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 6.7,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "sz4fb4uisdm706k5z6g41sea",
+          "name": "Culo",
+          "slug": "CU",
+          "category": "FREESTYLE",
+          "familyId": "krpiqljph7s1fd8decsvtgcg",
+          "difficulty": 5.9,
+          "deletedAt": null,
+          "family": {
+            "id": "krpiqljph7s1fd8decsvtgcg",
+            "name": "DP"
+          }
+        },
+        {
+          "id": "u8is7wim4efogdbwqogt4stt",
+          "name": "Culo Diablo (in the air)",
+          "slug": "CUDA",
+          "category": "FREESTYLE",
+          "familyId": "krpiqljph7s1fd8decsvtgcg",
+          "difficulty": 7.7,
+          "deletedAt": null,
+          "family": {
+            "id": "krpiqljph7s1fd8decsvtgcg",
+            "name": "DP"
+          }
+        },
+        {
+          "id": "axwo9u4d05jvpv2pq8cwjfo8",
+          "name": "Double Air Culo",
+          "slug": "CU2A",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 9.7,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "yksja116y8djk12f5jzz0425",
+          "name": "Culo Bob",
+          "slug": "CUB",
+          "category": "FREESTYLE",
+          "familyId": "krpiqljph7s1fd8decsvtgcg",
+          "difficulty": 7.2,
+          "deletedAt": null,
+          "family": {
+            "id": "krpiqljph7s1fd8decsvtgcg",
+            "name": "DP"
+          }
+        },
+        {
+          "id": "gy64bz2g3ps0ieect9b98dnn",
+          "name": "Culo Culo",
+          "slug": "CUCU",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8.1,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "cycx5pxq2egqmtcq31u2ma8h",
+          "name": "Diabolik",
+          "slug": "DBLK",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 4.4,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "zjkvytuyp80v0r68te66kcar",
+          "name": "Donkey Kick",
+          "slug": "DK",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 2,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "s68w8gavkyb5746kihwchuqv",
+          "name": "Eslider",
+          "slug": "ES",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 3.4,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "av8f9vtfvz8g46cilr1n0p3g",
+          "name": "Eslider Into Eslider",
+          "slug": "ESD",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 5.5,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "ilhf5ad023h1akijiznub0dw",
+          "name": "Eslider Into Puneta",
+          "slug": "ESP",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 5.7,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "lkzzmnefyt0dnnuycz15vkoz",
+          "name": "Eslider Into Switch Chachoo",
+          "slug": "ESCSH",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 6.1,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "utb35vv32mm46bgnaesja094",
+          "name": "Eslider Semi",
+          "slug": "ESS",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 2.4,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "o7vdqfhzqst5meukyf51yris",
+          "name": "Flaka",
+          "slug": "FK",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 3.2,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "avnhw98q9qku11ltkqztyilg",
+          "name": "Flaka Cana Brava",
+          "slug": "FKCB",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 4.5,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "pll3nstb1t4hmb20rbh1r5ii",
+          "name": "Flaka Clew First",
+          "slug": "FKCF",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 4.7,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "c4cqaxs7jnw59g16a89ltxv7",
+          "name": "Flaka Flaka",
+          "slug": "FKFK",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 4.9,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "jxz0so6yfvp9xniybecwf4tt",
+          "name": "Flaka Ponch",
+          "slug": "FKP",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 7.5,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "ppy8ldj75lxuifmix8evgfsw",
+          "name": "Flaka Shaka",
+          "slug": "FKSH",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 7.2,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "ckex43u14b8sg6nc3qeit5hl",
+          "name": "Flaka Shaka Flaka",
+          "slug": "FKSFK",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 7.7,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "uhfqqcu5cdj1jv7sqi77bhcn",
+          "name": "Flaka Meev",
+          "slug": "FKM",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 5.2,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "xpvp7i4zg37viwqtv69v3bsd",
+          "name": "Flaka No Handed",
+          "slug": "FK0",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 5.7,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "evvpd17ju8rqol87apcyctq6",
+          "name": "Flaka Semi",
+          "slug": "FKS",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 2.3,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "i7tv90f68uvyvi9ud9b7kmiz",
+          "name": "Flaka Switch",
+          "slug": "FKSW",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 4.8,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "kg6cnlp6bzrsd22klzcznqg9",
+          "name": "Flaka Switch Clew First (Voqec)",
+          "slug": "FKSCF",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 5.4,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "yzrweorudlz8tmhab9p64nvq",
+          "name": "Double Forward",
+          "slug": "Fx2",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 9,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "dyva6fmo4da1rz25tyf7o418",
+          "name": "Forward Loop",
+          "slug": "FL",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 4.2,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "pbhfzqapcys9jz6ecvdla36x",
+          "name": "Forward Stalled",
+          "slug": "FST",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 6,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "te5vqfc6mxw7fmnnlxf7cf1g",
+          "name": "Freek",
+          "slug": "FRK",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 7.6,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "l1qpfsxea79me31zhymkln26",
+          "name": "Funnell",
+          "slug": "FU",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 4.3,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "xvp6iy2b1mo9icpruyyypkc7",
+          "name": "Funnell Burner",
+          "slug": "FUBN",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 7.6,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "uyf4g3zlyfb4hwyez6ckoej6",
+          "name": "Air Funnell Burner Funnell",
+          "slug": "FABFU",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8.9,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "og549ytrcgpsifc5cbvspetx",
+          "name": "Air Funnell Air Funnell Funnell",
+          "slug": "FAFAF",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 9,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "pxa79jev4d3qlcvxi1lzkoo7",
+          "name": "Funnell Clock",
+          "slug": "FUCL",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 5.4,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "yar7slz7culq33w8c4apywvn",
+          "name": "Funnell Clock Into Eslider",
+          "slug": "FUCLE",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 7,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "yxjllpjq2638lnw9jv403lrq",
+          "name": "Funnell Funnell",
+          "slug": "FU2",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 5.3,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "xvyx7vxb6ak3t6cyk2ih5vx2",
+          "name": "Funnell Funnell Clock",
+          "slug": "FUFUCL",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 6.2,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "mfoiz39edgbpmwjo139ccxa6",
+          "name": "Half Funnell",
+          "slug": "FUS",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 2.8,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "rp93ktaav67oqd9jj6jdxysh",
+          "name": "Triple Funnell",
+          "slug": "FUx3",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 6.1,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "cntfslhqkx8u0y2glyzze6bb",
+          "name": "Gozzada",
+          "slug": "GZS",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 5,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "cv29tjqwfu78y959ntw0ycrc",
+          "name": "Air Flaka Clew First",
+          "slug": "FKACF",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 6.6,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "gfnryfh061rv70z8zjv00lke",
+          "name": "Gozzada Clock",
+          "slug": "GZCK",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 6,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "rt57u3ivqcpovu5fmymzu6k3",
+          "name": "Gozzada Burner",
+          "slug": "GZBU",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 7.8,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "xejmpvbyr0s2d74ulkcxraua",
+          "name": "Gozzada Funnell",
+          "slug": "GZFU",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 6.3,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "s22einknvdcbhwcqi2b9xeor",
+          "name": "Half Gozzada",
+          "slug": "HGZS",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 2.8,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "eyuh1urb6gi8fhp2hlrhcqza",
+          "name": "Grubby",
+          "slug": "GR",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 3,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "hy4zvk3epn4e9sj5mu4busgw",
+          "name": "Air Grubby",
+          "slug": "GRA",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 6.1,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "ol9y1zm1h7e2cysnw4ww2ocn",
+          "name": "Grubby Grubby",
+          "slug": "GRx2",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 5.8,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "ts9gpjvw6on63xh7959avirg",
+          "name": "Grubby Chacho",
+          "slug": "GRCH",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 7.4,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "zfiwlb1bo640xgl157nrmp0c",
+          "name": "Grubby Flaka",
+          "slug": "GRFK",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 5.9,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "bsxhs97lyqrirobjhq64hl3a",
+          "name": "Grubby Ponch",
+          "slug": "GRP",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 7.6,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "cyeln2qjutztih0qii8nq8n6",
+          "name": "Grubby Spock",
+          "slug": "GRSPK",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 6.3,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "o943mv1ca0rwiipg7p8argj2",
+          "name": "Grubby Pippa",
+          "slug": "GRPP",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 5.2,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "x4xbwum1mhvqaz0ol4kui4vw",
+          "name": "Jump",
+          "slug": "J",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 1.4,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "dqq2oo282253ihylyx82eusd",
+          "name": "Kabikuchi",
+          "slug": "KK",
+          "category": "FREESTYLE",
+          "familyId": "crwnk7ol61pvofz1tgcji0qk",
+          "difficulty": 7.2,
+          "deletedAt": null,
+          "family": {
+            "id": "crwnk7ol61pvofz1tgcji0qk",
+            "name": "UP"
+          }
+        },
+        {
+          "id": "exka0s1wt1pvmgodo19z74wx",
+          "name": "Air kabikuchi",
+          "slug": "KKA",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8.4,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "oz7p3401qfied2tr8u79ynk3",
+          "name": "Kabikuchi Bob",
+          "slug": "KKBB",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 7.8,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "lprgzdzwpkohtjb4zeha6l3e",
+          "name": "Kono",
+          "slug": "KN",
+          "category": "FREESTYLE",
+          "familyId": "crwnk7ol61pvofz1tgcji0qk",
+          "difficulty": 6.2,
+          "deletedAt": null,
+          "family": {
+            "id": "crwnk7ol61pvofz1tgcji0qk",
+            "name": "UP"
+          }
+        },
+        {
+          "id": "ll04rrylphx5amwm6urboqzh",
+          "name": "Lazy Susan",
+          "slug": "LS",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 7,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "c3fpwthklup2arxdc5cepi24",
+          "name": "Lollypop",
+          "slug": "LP",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 3.7,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "g2gxg28hhhsqnobf5bopjxao",
+          "name": "Forward Shaka",
+          "slug": "FSH",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8.6,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "x8cwa18z3658s4btwhzsomqv",
+          "name": "Matador",
+          "slug": "MTDR",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 5.8,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "s31cwkl3wddmcv6bpxjkgo7s",
+          "name": "New Move",
+          "slug": "NEW",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 10,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "lomu91eil24gv4i5yj8bowpd",
+          "name": "Pasko",
+          "slug": "PSK",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 7.6,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "bu8ryrzdzyzo8mufx8dc0th4",
+          "name": "Pippa",
+          "slug": "PP",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 4.4,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "r4cky6tl3g1g8scsgcrwd47n",
+          "name": "Ponch",
+          "slug": "PO",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 5.3,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "xslt54ixzkqaqx5226jnfn3t",
+          "name": "Future",
+          "slug": "PO360",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 6.3,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "d1322ofnfhhoxshs8cvyspri",
+          "name": "Ponch Ponch",
+          "slug": "POPO",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8.8,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "llc64ldy62tj8zk3ttuxcn7l",
+          "name": "Ponch No Handed",
+          "slug": "PO0",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "o43nm9p8ui1abxb0z24zm7w2",
+          "name": "Puneta",
+          "slug": "PU",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 3.3,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "yu4y2frq2tsrwg9t94fl0iz2",
+          "name": "Clew First Puneta",
+          "slug": "PUCF",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 3.4,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "kkhste0i1us2pk4ktwc4tvcl",
+          "name": "Half Clew First Puneta",
+          "slug": "PUCFS",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 2.6,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "leab0d92ryl4zb29yaj76i6k",
+          "name": "Puneta Burner",
+          "slug": "PUBU",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 7.3,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "iq052weunfne3g05b88eyrty",
+          "name": "Puneta Funnell",
+          "slug": "PUx2",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 5,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "ry730vphwff8x7bo8pjifs1z",
+          "name": "Puneta Funnell Clock",
+          "slug": "PUFUC",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 6.2,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "whxgzejfxye4cmwhmy1hpant",
+          "name": "Puneta Switch Kono",
+          "slug": "PUSKO",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 6.5,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "lzcmtevxbqw6o79xbvrhpqzu",
+          "name": "Half Puneta",
+          "slug": "PUS",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 2.4,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "tqhdcjjoir2xbktb3qcp5e05",
+          "name": "Push Loop",
+          "slug": "PL",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 6.9,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "zzk6dpptcrnpgabitn8nnmeq",
+          "name": "Push Loop Forward",
+          "slug": "PLF",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 9.4,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "xnk808yuxilr4i061uq9j9eg",
+          "name": "Push Loop Tweaked",
+          "slug": "PLT",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "l9fi8d9pb13vrhcs8g84s8bk",
+          "name": "Shaka",
+          "slug": "SK",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 5.7,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "n762ig9eiydfi637tf0ewobl",
+          "name": "Shaka Flaka",
+          "slug": "SKFL",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 6.5,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "bfzb380wau7y66ohv1cpiz2w",
+          "name": "Shaka Meev",
+          "slug": "SKM",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 6.4,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "c894xlzfasn31whvxsrqonb8",
+          "name": "Half Shaka",
+          "slug": "SKS",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 3.9,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "is7w1oc45tb6xlrmms6rmvqb",
+          "name": "Shaka Spock",
+          "slug": "SKSP",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 6.1,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "opewsuwz8dg9ws07vn24v6p4",
+          "name": "Switch Shaka (Shaker)",
+          "slug": "SKSW",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 6.9,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "cek7wx0ddbu0v531iylwx39p",
+          "name": "Shifty",
+          "slug": "SH",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8.6,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "v9ke82388p9e6y7p9suec2t8",
+          "name": "Shifty Shaka",
+          "slug": "SHSK",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 9.5,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "t5cwotbyhi2npnhok6o6twjl",
+          "name": "Shove It",
+          "slug": "SI",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 3.5,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "hd54e5hxvxadpmow2zorjpis",
+          "name": "Shove it Flaka",
+          "slug": "SIFK",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 5,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "miqx0eni8jl60zyb1wqfz0qs",
+          "name": "Shove it Spock",
+          "slug": "SISP",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 6.4,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "ud48kb2k3gt5d8newd3pwtr4",
+          "name": "Shove it Vulcan",
+          "slug": "SIVL",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 4,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "jbp4h8fbg34xvxu5p7kkpk31",
+          "name": "Shove it Air Spock",
+          "slug": "SISPA",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8.8,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "kyw5a6fdgk3i9d0i9ql1j9sz",
+          "name": "Shove it Double Spock",
+          "slug": "SISP2",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 7.6,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "l3twdr03pkum4ii355f8k6k5",
+          "name": "Shove it Spock Culo",
+          "slug": "SISPC",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8.4,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "f66we3w2j7jkbfq4o8r19ztp",
+          "name": "Shove it Spock Kono",
+          "slug": "SISPK",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8.3,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "ykq7gtczori85pkdkay736au",
+          "name": "Skopu",
+          "slug": "SKP",
+          "category": "FREESTYLE",
+          "familyId": "crwnk7ol61pvofz1tgcji0qk",
+          "difficulty": 6.6,
+          "deletedAt": null,
+          "family": {
+            "id": "crwnk7ol61pvofz1tgcji0qk",
+            "name": "UP"
+          }
+        },
+        {
+          "id": "ievrosrul4nlzscqrdbf7y03",
+          "name": "Air skopu",
+          "slug": "SKPA",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "c45zcztoe5x5znjh67u39ksa",
+          "name": "Skopu Air Funnell",
+          "slug": "SKPAF",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8.5,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "wrkmnh20jdlxoy2m0vhp4kmm",
+          "name": "Skopu Funnell",
+          "slug": "SKPF",
+          "category": "FREESTYLE",
+          "familyId": "crwnk7ol61pvofz1tgcji0qk",
+          "difficulty": 7.5,
+          "deletedAt": null,
+          "family": {
+            "id": "crwnk7ol61pvofz1tgcji0qk",
+            "name": "UP"
+          }
+        },
+        {
+          "id": "ddsbvl9gy9gb0uswpp8fxc4d",
+          "name": "Spock",
+          "slug": "SPK",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 2.8,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "k5zy4hojnhf53fs6ag67mzxn",
+          "name": "Clew First Spock",
+          "slug": "SPCF",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 3,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "ny9dbdrwop805419gtya2vjc",
+          "name": "Clew First Spock Bob",
+          "slug": "SPCF2",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 5.5,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "y8p4myg20tkac7wjqoyrtufu",
+          "name": "Spock Air Bob",
+          "slug": "SPABB",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 7.8,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "ln1z2ko6f0l1zm1qbdgkourb",
+          "name": "Double Spock",
+          "slug": "SPx2",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 5.6,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "iz977sjlnjzdgpewj6zprzho",
+          "name": "Spock Culo",
+          "slug": "SPCU",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 7.3,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "fojrge3vb3f47da93ze65ii1",
+          "name": "Spock Culo Bob",
+          "slug": "SPCUB",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8.3,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "v018i8e6k3j3m3y1fccl2lli",
+          "name": "Spock Culo Culo",
+          "slug": "SPCUC",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 9.1,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "nj4hc0qe1ze1aas9v2yhs4f2",
+          "name": "Spock Kabikuchi",
+          "slug": "SPKK",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8.4,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "x83dc1htus4l9vcg3phi0q47",
+          "name": "Spock Kono",
+          "slug": "SPKN",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 7.6,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "woufrckmrky4itox050irxpy",
+          "name": "Spock No Handed",
+          "slug": "SP0",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 4.3,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "ilc14jefykkhlbhuoq1wq5iz",
+          "name": "Triple Spock",
+          "slug": "SPx3",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 7,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "dfasi64op1voghpsiutqzxv2",
+          "name": "Sucker",
+          "slug": "SU",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 6.6,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "rycb5lfcrwa1ixh2bv9k7bwu",
+          "name": "Switch Chachoo",
+          "slug": "SCHS",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 4.6,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "z9ra1srecwt7n19bwj90eimm",
+          "name": "Switch Chacho Funnell",
+          "slug": "SCHFU",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 5.3,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "ffha6paqf8t576a2itt4142g",
+          "name": "Switch Chacho Funnell Clock",
+          "slug": "SCHFC",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 7,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "tq3qtz332ei7ei1xktb143m3",
+          "name": "Half Switch Chacho",
+          "slug": "HSCHS",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 2.9,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "hvszwtimzf88w2rqumur18im",
+          "name": "Switch Kono",
+          "slug": "SKO",
+          "category": "FREESTYLE",
+          "familyId": "crwnk7ol61pvofz1tgcji0qk",
+          "difficulty": 5.6,
+          "deletedAt": null,
+          "family": {
+            "id": "crwnk7ol61pvofz1tgcji0qk",
+            "name": "UP"
+          }
+        },
+        {
+          "id": "v1rqpwg4dy3gqdv94phnbdr1",
+          "name": "Half Switch Kono",
+          "slug": "SKOS",
+          "category": "FREESTYLE",
+          "familyId": "crwnk7ol61pvofz1tgcji0qk",
+          "difficulty": 3.5,
+          "deletedAt": null,
+          "family": {
+            "id": "crwnk7ol61pvofz1tgcji0qk",
+            "name": "UP"
+          }
+        },
+        {
+          "id": "ufbprn6eb6jhqv9ey5v2wt1y",
+          "name": "Switch Ponch",
+          "slug": "SPO",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 6.6,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "f5ak7o4u3u88irt31t1u5pqz",
+          "name": "Switch Shove it",
+          "slug": "SSI",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 5.1,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "ysw1504kvevtcqbusdyd649s",
+          "name": "Switch Toad",
+          "slug": "STD",
+          "category": "FREESTYLE",
+          "familyId": "krpiqljph7s1fd8decsvtgcg",
+          "difficulty": 6.1,
+          "deletedAt": null,
+          "family": {
+            "id": "krpiqljph7s1fd8decsvtgcg",
+            "name": "DP"
+          }
+        },
+        {
+          "id": "j1bniij3cafu81shm5vqbp4q",
+          "name": "Table Top",
+          "slug": "TT",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 4.8,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "q6bxlnt0sjadvi8flpcztrm1",
+          "name": "Table Top Forward",
+          "slug": "TTF",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 6.8,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "t2uorneq3lzl8b6mujbocs0k",
+          "name": "Tango",
+          "slug": "TGO",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 6.4,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "g6779dxj2oaqq8oiwoit5ek7",
+          "name": "Tbone (switch loop)",
+          "slug": "TB",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 6,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "j2zrvd1kmxslm15f0oxen2fm",
+          "name": "Toad",
+          "slug": "TD",
+          "category": "FREESTYLE",
+          "familyId": "krpiqljph7s1fd8decsvtgcg",
+          "difficulty": 5.6,
+          "deletedAt": null,
+          "family": {
+            "id": "krpiqljph7s1fd8decsvtgcg",
+            "name": "DP"
+          }
+        },
+        {
+          "id": "n5zo3sd9b4plktdfuowdi4g6",
+          "name": "Toad Diablo (in the air)",
+          "slug": "TDD",
+          "category": "FREESTYLE",
+          "familyId": "krpiqljph7s1fd8decsvtgcg",
+          "difficulty": 7.1,
+          "deletedAt": null,
+          "family": {
+            "id": "krpiqljph7s1fd8decsvtgcg",
+            "name": "DP"
+          }
+        },
+        {
+          "id": "q2v58sp7ja6072uca96vwj6t",
+          "name": "Toad Into Bob",
+          "slug": "TDBO",
+          "category": "FREESTYLE",
+          "familyId": "krpiqljph7s1fd8decsvtgcg",
+          "difficulty": 6.6,
+          "deletedAt": null,
+          "family": {
+            "id": "krpiqljph7s1fd8decsvtgcg",
+            "name": "DP"
+          }
+        },
+        {
+          "id": "aivaob806n903sh3xo7p4wtx",
+          "name": "Tucan",
+          "slug": "TUC",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 6,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "r0ju4ivgz4tu9bvd33l273ik",
+          "name": "Volwater",
+          "slug": "VW",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 9.9,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "uuhmb7ck247ya7q6kbnpi2vz",
+          "name": "Vulcan",
+          "slug": "V",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 2.3,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "ve69kxlly5vptlmje5thsq62",
+          "name": "Vulcan Clew First",
+          "slug": "VCF",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 2.4,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "tdcpq02w5rmnjgmdzdko2gbn",
+          "name": "Willy Skipper",
+          "slug": "WS",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 2.6,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "l6hx54p8bqto69bhys1vdaah",
+          "name": "Willy Skipper 540",
+          "slug": "WS540",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 3.5,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "xi65xo27a1izj87v2ffw82jl",
+          "name": "Clew First Willy Skipper",
+          "slug": "WSCF",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 3.3,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "qyxn9qk5rt3t2082tam3yhvt",
+          "name": "Willy Skipper Combination Clew First",
+          "slug": "WSCCF",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 4.2,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "ku5gvfvzh7s4f6vp047b3osz",
+          "name": "Willy Skipper Other Combinations",
+          "slug": "WSC",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 4.8,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "kl9d83dg3lkgmg2b4pbubp89",
+          "name": "Wymaroo",
+          "slug": "WYM",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 5,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "evww7cjt96jv11okcorzhn1j",
+          "name": "Xoxota",
+          "slug": "XOX",
+          "category": "FREESTYLE",
+          "familyId": "crwnk7ol61pvofz1tgcji0qk",
+          "difficulty": 7.5,
+          "deletedAt": null,
+          "family": {
+            "id": "crwnk7ol61pvofz1tgcji0qk",
+            "name": "UP"
+          }
+        },
+        {
+          "id": "xwl37cbxz29rdnctjtbd81ib",
+          "name": "Air Xoxota",
+          "slug": "XOXA",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8.3,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "ghgcv8l7ytdx1m58os9p42zf",
+          "name": "Crash",
+          "slug": "CRSH",
+          "category": "FREESTYLE",
+          "familyId": "crwnk7ol61pvofz1tgcji0qk",
+          "difficulty": 0,
+          "deletedAt": null,
+          "family": {
+            "id": "crwnk7ol61pvofz1tgcji0qk",
+            "name": "UP"
+          }
+        },
+        {
+          "id": "eg0goug27ppfjhspwaq3p11u",
+          "name": "Half Chacho",
+          "slug": "CCHSM",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 2.8,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "rvchujptvgk5yjbwrywhxvad",
+          "name": "Half Bob",
+          "slug": "BBS",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 2.8,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "a5p2xvhc00zqekvomfopdz39",
+          "name": "Half Kono",
+          "slug": "KNSM",
+          "category": "FREESTYLE",
+          "familyId": "crwnk7ol61pvofz1tgcji0qk",
+          "difficulty": 3.5,
+          "deletedAt": null,
+          "family": {
+            "id": "crwnk7ol61pvofz1tgcji0qk",
+            "name": "UP"
+          }
+        },
+        {
+          "id": "ypcxanstafu92dj3q0hv7156",
+          "name": "Puneta Funnell Funnell",
+          "slug": "PUX3",
+          "category": "FREESTYLE",
+          "familyId": "o7q1w3efhoi9rcrnl9hbev4x",
+          "difficulty": 5.5,
+          "deletedAt": null,
+          "family": {
+            "id": "o7q1w3efhoi9rcrnl9hbev4x",
+            "name": "DS"
+          }
+        },
+        {
+          "id": "coy58jy0e0yqcmxha9gwuhtd",
+          "name": "Air Flaka Flaka",
+          "slug": "FKAF",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 5.5,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "dnvhwt6h995hse8jl529flr1",
+          "name": "Triple Flaka",
+          "slug": "FKX3",
+          "category": "FREESTYLE",
+          "familyId": "oo1yl26r8vf8smvtidjgjq48",
+          "difficulty": 5.5,
+          "deletedAt": null,
+          "family": {
+            "id": "oo1yl26r8vf8smvtidjgjq48",
+            "name": "US"
+          }
+        },
+        {
+          "id": "r5eglyf93tx2uxegtw968qw4",
+          "name": "Triple Air Funnell",
+          "slug": "AFFF",
+          "category": "FREESTYLE",
+          "familyId": "krpiqljph7s1fd8decsvtgcg",
+          "difficulty": 7.2,
+          "deletedAt": null,
+          "family": {
+            "id": "krpiqljph7s1fd8decsvtgcg",
+            "name": "DP"
+          }
+        },
+        {
+          "id": "uqdmerhikym8aq624hvb97gv",
+          "name": "New Move medium 1",
+          "slug": "NEW-M",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "nlwmizaehqwjh6b02txp235q",
+          "name": "New Move low 1",
+          "slug": "NEW-L",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 6,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "o3061yyd6zxlqyh21rysr5a4",
+          "name": "New Move high 1",
+          "slug": "NEW2",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 10,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        },
+        {
+          "id": "land8gtsfxgakz8soo3ge4p4",
+          "name": "Chebongka",
+          "slug": "CRFL",
+          "category": "FREESTYLE",
+          "familyId": "ial1f6l9kb00jimyvaing3ws",
+          "difficulty": 8.3,
+          "deletedAt": null,
+          "family": {
+            "id": "ial1f6l9kb00jimyvaing3ws",
+            "name": "UN"
+          }
+        }
+      ]
+    },
+    "WAVE": {
+      "count": 0,
+      "placeholders": [],
+      "moves": []
+    }
+  }
+}
