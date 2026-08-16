@@ -22,6 +22,7 @@ event with no action shots falls back to a framed portrait rather than
 stretching a tight face crop to full bleed.
 """
 
+from pipeline.commentator_brief import _best_jump_move, _history_line, _meta_class
 from pipeline.finals_preview import (
     ACCENT_COLOR,
     NO_VALUE,
@@ -37,6 +38,22 @@ from pipeline.templates import resolve_thumb_url
 COMPARE_NOTE = "Scores from the final itself, the one heat all four sailed together"
 
 RIDER_NOTE = "This rider's event so far"
+
+# The commentator brief's full set. Avg heat and heats won are the two the
+# preview deliberately withholds, because mid-event the draw decides them: a
+# seeded rider has sailed once, so their average is their best and their win
+# rate is 1/1. A recap runs after the whole ladder, where both are earned.
+STAT_FIELDS = (
+    ("BEST HEAT", "best_heat", "score"),
+    ("AVG HEAT", "avg_heat", "score"),
+    ("HEATS WON", "heat_wins", "fraction"),
+    ("BEST WAVE", "best_wave", "score"),
+    ("AVG WAVE", "avg_wave", "score"),
+    ("BEST JUMP", "best_jump", "score"),
+    ("AVG JUMP", "avg_jump", "score"),
+)
+
+JUMP_FIELDS = ("best_jump", "avg_jump")
 
 
 def build_slides(data: dict) -> list[dict]:
@@ -90,10 +107,8 @@ def _rider_slides(riders: list, common: dict) -> list:
 
     # Bars scale against the whole division, so a bar on the 4th-place slide
     # is directly comparable with the winner's four slides later.
-    bar_max = {
-        key: _leaders(riders, key)
-        for key in ("final_total", "best_heat", "best_wave", "best_jump", "avg_wave", "avg_jump")
-    }
+    bar_max = {key: _leaders(riders, key) for _, key, _ in STAT_FIELDS}
+    bar_max["final_total"] = _leaders(riders, "final_total")
     leaders = dict(bar_max)
 
     slides = []
@@ -101,21 +116,22 @@ def _rider_slides(riders: list, common: dict) -> list:
         place = rider.get("place")
         name = rider.get("name", "")
         parts = name.split(None, 1) if name else [""]
+        first_name = parts[0].upper()
         last_name = parts[1].upper() if len(parts) > 1 else ""
         athlete_id = rider.get("athlete_id")
+        history = rider.get("history") or []
+        sail_number = rider.get("sail_number") or ""
+        rank = rider.get("world_rank")
 
-        stats = [
-            _stat("BEST HEAT", rider.get("best_heat"), leaders["best_heat"], bar_max["best_heat"]),
-            _stat("BEST WAVE", rider.get("best_wave"), leaders["best_wave"], bar_max["best_wave"]),
-            _stat("AVG WAVE", rider.get("avg_wave"), leaders["avg_wave"], bar_max["avg_wave"]),
-        ]
-        if show_jumps:
+        stats = []
+        for label, key, fmt in STAT_FIELDS:
+            if not show_jumps and key in JUMP_FIELDS:
+                continue
             stats.append(
-                _stat("BEST JUMP", rider.get("best_jump"), leaders["best_jump"], bar_max["best_jump"])
+                _recap_stat(label, rider.get(key), leaders.get(key), bar_max.get(key),
+                            fmt, len(history))
             )
-            stats.append(
-                _stat("AVG JUMP", rider.get("avg_jump"), leaders["avg_jump"], bar_max["avg_jump"])
-            )
+        _attach_jump_move(stats, _best_jump_move(history))
 
         action_url = rider.get("action_url") or ""
         slides.append({
@@ -125,10 +141,13 @@ def _rider_slides(riders: list, common: dict) -> list:
             "is_winner": place == 1,
             "athlete_id": athlete_id,
             "name": name,
-            "first_name": parts[0].upper(),
+            "first_name": first_name,
             "last_name": last_name,
             "name_class": _name_class(last_name),
             "country": nationality_to_iso(rider.get("nationality", "")),
+            "sail_number": sail_number,
+            "meta_class": _meta_class(first_name, sail_number),
+            "rank_label": f"WR #{int(rank)}" if rank else "",
             "route": _route(rider.get("route_round"), rider.get("route_place")),
             "photo_mode": "action" if action_url else "portrait",
             "photo_url": action_url or resolve_thumb_url(athlete_id, rider.get("photo_url") or ""),
@@ -136,11 +155,46 @@ def _rider_slides(riders: list, common: dict) -> list:
                 "FINAL SCORE", rider.get("final_total"), leaders["final_total"], bar_max["final_total"]
             ),
             "stats": stats,
+            "history": [_history_line(h) for h in history],
             "source_note": RIDER_NOTE,
             **common,
         })
 
     return slides
+
+
+def _recap_stat(label, value, best, bar_max, fmt: str, heats_sailed: int) -> dict:
+    """One stat cell, scored or as a fraction of heats sailed.
+
+    Wins print as a fraction, never a rate, and are never highlighted: each
+    rider has their own denominator, so 5/5 and 1/1 are not comparable and a
+    highlight would assert a ranking the numbers do not support. Same call the
+    commentator brief makes, and it survives the event ending.
+    """
+    if fmt == "fraction":
+        raw = _num(value)
+        missing = value is None or value == "" or not heats_sailed
+        return {
+            "label": label,
+            "value": NO_VALUE if missing else f"{int(raw)}/{heats_sailed}",
+            "raw": raw,
+            "is_leader": False,
+            "bar_pct": 0,
+            "note": "",
+        }
+
+    cell = _stat(label, value, best, bar_max)
+    cell["note"] = ""
+    return cell
+
+
+def _attach_jump_move(stats: list, move: str) -> None:
+    """Hang the move name off the best-jump cell, when there is one."""
+    if not move:
+        return
+    for stat in stats:
+        if stat["label"] == "BEST JUMP":
+            stat["note"] = move
 
 
 def _compare_slide(riders: list, common: dict) -> dict:

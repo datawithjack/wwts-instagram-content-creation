@@ -269,3 +269,94 @@ class TestEdgeCases:
         riders[0]["name"] = "Marino Ellefson Riemenschneider"
         winner = _rider_slides(build_slides(_data(riders=riders)))[-1]
         assert winner["name_class"] in ("long", "xlong")
+
+
+class TestCommentaryStats:
+    """The fuller stat set carried over from the commentator brief."""
+
+    def _winner(self, **rider_extra):
+        riders = _riders()
+        riders[0].update(rider_extra)
+        return _rider_slides(build_slides(_data(riders=riders)))[-1]
+
+    def test_carries_the_full_seven_stat_set(self):
+        winner = self._winner(history=[{}, {}, {}, {}, {}], heat_wins=3)
+        labels = [s["label"] for s in winner["stats"]]
+        for expected in ("BEST HEAT", "AVG HEAT", "HEATS WON",
+                         "BEST WAVE", "AVG WAVE", "BEST JUMP", "AVG JUMP"):
+            assert expected in labels
+
+    def test_avg_heat_is_shown_post_event(self):
+        """finals_preview hides avg heat because the draw distorts it mid-event.
+        Once the ladder has run in full it is a fair number."""
+        winner = self._winner(avg_heat=24.5)
+        values = {s["label"]: s["value"] for s in winner["stats"]}
+        assert values["AVG HEAT"] == "24.50"
+
+    def test_heats_won_prints_as_a_fraction(self):
+        winner = self._winner(history=[{}, {}, {}, {}, {}], heat_wins=3)
+        values = {s["label"]: s["value"] for s in winner["stats"]}
+        assert values["HEATS WON"] == "3/5"
+
+    def test_heats_won_is_never_highlighted(self):
+        """Denominators differ per rider, so the values are not comparable."""
+        slides = _rider_slides(build_slides(_data(riders=[
+            _rider(97, "Marc Pare Rico", 1, heat_wins=5, history=[{}] * 5),
+            _rider(49, "Philip Koster", 2, heat_wins=1, history=[{}] * 1),
+            _rider(48, "Marino Gil Gherardi", 3, heat_wins=2, history=[{}] * 4),
+            _rider(75, "Lennart Neubauer", 4, heat_wins=0, history=[{}] * 3),
+        ])))
+        for slide in slides:
+            won = next(s for s in slide["stats"] if s["label"] == "HEATS WON")
+            assert won["is_leader"] is False
+
+    def test_heats_won_dashes_when_no_history(self):
+        winner = self._winner(heat_wins=3, history=[])
+        values = {s["label"]: s["value"] for s in winner["stats"]}
+        assert values["HEATS WON"] == "-"
+
+    def test_best_jump_carries_the_move_name(self):
+        winner = self._winner(history=[
+            {"scores": [{"type": "PF", "move_type": "Pushloop Forward", "score": 10.0},
+                        {"type": "Wave", "move_type": "Wave", "score": 8.75}]},
+        ])
+        jump = next(s for s in winner["stats"] if s["label"] == "BEST JUMP")
+        assert jump.get("note") == "Pushloop Forward"
+
+    def test_sail_number_and_world_rank_reach_the_slide(self):
+        winner = self._winner(sail_number="E-334", world_rank=2)
+        assert winner["sail_number"] == "E-334"
+        assert winner["rank_label"] == "WR #2"
+
+    def test_missing_world_rank_leaves_no_badge(self):
+        """World rank comes from the DB, so it is absent without the tunnel."""
+        winner = self._winner(sail_number="E-334")
+        assert winner["rank_label"] == ""
+        assert winner["sail_number"] == "E-334"
+
+    def test_history_lines_are_carried(self):
+        winner = self._winner(history=[
+            {"round": "Semis R5", "heat": 1, "total": 30.5, "place": 1},
+        ])
+        assert winner["history"]
+        assert "Semis R5" in winner["history"][0]
+
+
+class TestHeroPhoto:
+    def test_action_shot_gives_a_full_bleed_hero(self):
+        riders = _riders()
+        riders[0]["action_url"] = "file:///photos/events/124/97.jpg"
+        winner = _rider_slides(build_slides(_data(riders=riders)))[-1]
+        assert winner["photo_mode"] == "action"
+
+    def test_without_one_the_hero_still_renders_large(self):
+        """Same slide, same gradient -- the fallback is a bigger portrait, not
+        a small framed thumbnail."""
+        winner = _rider_slides(build_slides(_data()))[-1]
+        assert winner["photo_mode"] == "portrait"
+        assert winner["photo_url"]
+
+    def test_comparison_card_keeps_headshots(self):
+        compare = build_slides(_data())[-1]
+        for rider in compare["riders"]:
+            assert "photo_url" in rider
