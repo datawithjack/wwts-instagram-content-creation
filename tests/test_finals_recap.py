@@ -137,16 +137,15 @@ class TestRiderSlide:
         winner = _rider_slides(build_slides(_data(riders=riders)))[-1]
         assert winner["hero"]["value"] == "-"
 
-    def test_route_line_when_present(self):
+    def test_no_qualifying_route_on_a_recap(self):
+        """The preview shows how a rider reached the final because it has not
+        been sailed yet. On a recap the ladder is history and the result is
+        the story, so the route line is dropped."""
         riders = _riders()
         riders[0]["route_round"] = "Semis R5"
         riders[0]["route_place"] = 1
         winner = _rider_slides(build_slides(_data(riders=riders)))[-1]
-        assert "SEMIS R5" in winner["route"]
-
-    def test_route_is_blank_when_unknown(self):
-        winner = _rider_slides(build_slides(_data()))[-1]
-        assert winner["route"] == ""
+        assert "route" not in winner
 
 
 class TestPhotoFallback:
@@ -226,13 +225,17 @@ class TestComparisonCard:
         wave_row = next(r for r in compare["rows"] if r["label"] == "BEST WAVE")
         assert wave_row["cells"][0]["value"] == "9.25"
 
-    def test_missing_values_render_as_dashes(self):
+    def test_no_jumps_in_the_final_drops_only_the_final_jump_row(self):
+        """A wave-only final in a jumping event: the final group loses its
+        jump row, but the riders still jumped earlier in the event."""
         riders = _riders()
         for r in riders:
             r["final_jumps"] = []
-        compare = build_slides(_data(riders=riders))[-1]
-        labels = [row["label"] for row in compare["rows"]]
-        assert "BEST JUMP" not in labels
+        rows = build_slides(_data(riders=riders))[-1]["rows"]
+        final_labels = [r["label"] for r in rows if r["group"] == "IN THE FINAL"]
+        event_labels = [r["label"] for r in rows if r["group"] == "AT THIS EVENT"]
+        assert "BEST JUMP" not in final_labels
+        assert "BEST JUMP" in event_labels
 
 
 class TestJumpsHandling:
@@ -360,3 +363,96 @@ class TestHeroPhoto:
         compare = build_slides(_data())[-1]
         for rider in compare["riders"]:
             assert "photo_url" in rider
+
+
+class TestSummarySheetFullStats:
+    """The summary sheet carries every stat, grouped by what it measures."""
+
+    def _rows(self, riders=None):
+        return build_slides(_data(riders=riders))[-1]["rows"]
+
+    def test_every_stat_appears(self):
+        labels = [r["label"] for r in self._rows()]
+        for expected in ("FINAL SCORE", "BEST WAVE", "BEST JUMP", "BEST HEAT",
+                         "AVG HEAT", "HEATS WON", "AVG WAVE", "AVG JUMP"):
+            assert expected in labels
+
+    def test_rows_are_grouped_by_scope(self):
+        """Final-only and event-wide numbers are not like-for-like, so they
+        are labelled as separate groups rather than pooled into one table."""
+        rows = self._rows()
+        groups = {r["group"] for r in rows}
+        assert groups == {"IN THE FINAL", "AT THIS EVENT"}
+
+    def test_final_group_comes_first(self):
+        rows = self._rows()
+        assert rows[0]["group"] == "IN THE FINAL"
+        first_event = next(i for i, r in enumerate(rows) if r["group"] == "AT THIS EVENT")
+        last_final = max(i for i, r in enumerate(rows) if r["group"] == "IN THE FINAL")
+        assert last_final < first_event
+
+    def test_final_group_uses_the_finals_own_scores(self):
+        riders = _riders()
+        riders[0]["final_waves"] = [9.25, 6.0]
+        riders[0]["best_wave"] = 10.0  # event-wide, must not leak in
+        rows = self._rows(riders)
+        wave = next(r for r in rows if r["label"] == "BEST WAVE" and r["group"] == "IN THE FINAL")
+        assert wave["cells"][0]["value"] == "9.25"
+
+    def test_event_group_uses_event_aggregates(self):
+        riders = _riders()
+        riders[0]["best_heat"] = 40.0
+        rows = self._rows(riders)
+        heat = next(r for r in rows if r["label"] == "BEST HEAT")
+        assert heat["group"] == "AT THIS EVENT"
+        assert heat["cells"][0]["value"] == "40.00"
+
+    def test_heats_won_is_a_fraction_and_unhighlighted(self):
+        riders = _riders()
+        for i, r in enumerate(riders):
+            r["heat_wins"] = 4 - i
+            r["history"] = [{}] * 4
+        rows = self._rows(riders)
+        won = next(r for r in rows if r["label"] == "HEATS WON")
+        assert won["cells"][0]["value"] == "4/4"
+        assert all(c["is_leader"] is False for c in won["cells"])
+
+    def test_wave_only_division_drops_every_jump_row(self):
+        riders = _riders()
+        for r in riders:
+            r["final_jumps"] = []
+            r["avg_jump"] = 0
+            r["best_jump"] = None
+        labels = [r["label"] for r in self._rows(riders)]
+        assert "BEST JUMP" not in labels
+        assert "AVG JUMP" not in labels
+
+
+class TestJumpMoveOnSummary:
+    """The move behind a best jump belongs everywhere the score appears."""
+
+    def test_final_best_jump_names_the_move(self):
+        riders = _riders()
+        riders[0]["final_best_jump_move"] = "Double Forward"
+        rows = build_slides(_data(riders=riders))[-1]["rows"]
+        jump = next(r for r in rows if r["label"] == "BEST JUMP" and r["group"] == "IN THE FINAL")
+        assert jump["cells"][0]["note"] == "Double Forward"
+
+    def test_event_best_jump_names_the_move(self):
+        riders = _riders()
+        riders[0]["history"] = [
+            {"scores": [{"type": "PF", "move_type": "Pushloop Forward", "score": 9.5}]},
+        ]
+        rows = build_slides(_data(riders=riders))[-1]["rows"]
+        jump = next(r for r in rows if r["label"] == "BEST JUMP" and r["group"] == "AT THIS EVENT")
+        assert jump["cells"][0]["note"] == "Pushloop Forward"
+
+    def test_non_jump_rows_carry_no_note(self):
+        rows = build_slides(_data())[-1]["rows"]
+        score_row = next(r for r in rows if r["label"] == "FINAL SCORE")
+        assert all(c["note"] == "" for c in score_row["cells"])
+
+    def test_unknown_move_leaves_the_note_empty(self):
+        rows = build_slides(_data())[-1]["rows"]
+        jump = next(r for r in rows if r["label"] == "BEST JUMP" and r["group"] == "IN THE FINAL")
+        assert jump["cells"][0]["note"] == ""

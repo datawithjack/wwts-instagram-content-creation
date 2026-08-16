@@ -6,20 +6,23 @@ numbers incomparable. Once the final has sailed, the result *is* the story,
 so this carousel inverts the premise: a cover, one slide per rider counting
 down to the winner, then a card comparing all four.
 
-Two rules fall out of that inversion.
+Three rules fall out of that inversion.
 
-First, the comparison card uses the final heat's own scores, not event-wide
-aggregates. After the event a rider's average still carries the shape of
-their ladder, so putting event averages side by side would repeat exactly the
-distortion ``finals_preview`` was written to avoid. The final is the one heat
-all four sailed together, in the same conditions, so it is the only
-like-for-like comparison available. Event-wide numbers still appear, but on
-the individual rider slides where they are labelled as that rider's event.
+First, the summary card splits its stats into two labelled groups rather than
+one table. The final's own scores are the only strictly like-for-like numbers
+available: one heat, four riders, the same conditions. Event aggregates still
+carry the shape of each rider's ladder, so they are worth showing but are not
+the same kind of number, and pooling the two would invite reading one rider's
+event average against another's final score.
 
-Second, the countdown only pays off if the last slide is the strongest, which
-makes this template photo-dependent in a way the grid templates are not. An
-event with no action shots falls back to a framed portrait rather than
-stretching a tight face crop to full bleed.
+Second, the qualifying route is dropped. ``finals_preview`` shows how a rider
+reached the final because the final has not been sailed; here the ladder is
+history and the result is the story.
+
+Third, the countdown only pays off if the last slide is the strongest, which
+makes this template photo-dependent in a way the grid templates are not. With
+no landscape shot the same slide keeps its hero footprint and sizes a headshot
+inside it, rather than stretching a face crop to full bleed.
 """
 
 from pipeline.commentator_brief import _best_jump_move, _history_line, _meta_class
@@ -29,15 +32,18 @@ from pipeline.finals_preview import (
     _leaders,
     _name_class,
     _num,
-    _route,
     _stat,
 )
 from pipeline.helpers import nationality_to_iso, ordinal
 from pipeline.templates import resolve_thumb_url
 
-COMPARE_NOTE = "Scores from the final itself, the one heat all four sailed together"
+COMPARE_NOTE = "Final scores are from the one heat all four sailed together"
 
 RIDER_NOTE = "This rider's event so far"
+
+FINAL_GROUP = "IN THE FINAL"
+
+EVENT_GROUP = "AT THIS EVENT"
 
 # The commentator brief's full set. Avg heat and heats won are the two the
 # preview deliberately withholds, because mid-event the draw decides them: a
@@ -148,7 +154,6 @@ def _rider_slides(riders: list, common: dict) -> list:
             "sail_number": sail_number,
             "meta_class": _meta_class(first_name, sail_number),
             "rank_label": f"WR #{int(rank)}" if rank else "",
-            "route": _route(rider.get("route_round"), rider.get("route_place")),
             "photo_mode": "action" if action_url else "portrait",
             "photo_url": action_url or resolve_thumb_url(athlete_id, rider.get("photo_url") or ""),
             "hero": _stat(
@@ -198,14 +203,37 @@ def _attach_jump_move(stats: list, move: str) -> None:
 
 
 def _compare_slide(riders: list, common: dict) -> dict:
-    """All four riders across each stat, from the final heat's own scores."""
-    rows = [_compare_row("FINAL SCORE", riders, lambda r: r.get("final_total"))]
-    rows.append(_compare_row("BEST WAVE", riders, lambda r: _best(r.get("final_waves"))))
+    """All four riders across every stat, grouped by what the stat measures.
 
-    # The jump row is driven by the final itself, not the rider's event: a
-    # wave-only final in a jumping event should not print four dashes.
-    if any(r.get("final_jumps") for r in riders):
-        rows.append(_compare_row("BEST JUMP", riders, lambda r: _best(r.get("final_jumps"))))
+    Two groups, not one table. The final's own scores are the only truly
+    like-for-like numbers (one heat, four riders, same conditions); the event
+    aggregates carry the shape of each rider's ladder. Both are worth showing,
+    but pooling them into one undifferentiated list would invite reading a
+    rider's event average against another's final score as if they were the
+    same kind of number.
+    """
+    show_jumps = _division_has_jumps(riders)
+    has_final_jumps = any(r.get("final_jumps") for r in riders)
+
+    rows = [
+        _compare_row("FINAL SCORE", riders, FINAL_GROUP, lambda r: r.get("final_total")),
+        _compare_row("BEST WAVE", riders, FINAL_GROUP, lambda r: _best(r.get("final_waves"))),
+    ]
+    if has_final_jumps:
+        rows.append(_compare_row(
+            "BEST JUMP", riders, FINAL_GROUP,
+            lambda r: _best(r.get("final_jumps")),
+            # The move is half the story of a jump score, so it travels with
+            # the number onto the summary as well as the rider slide.
+            note=lambda r: r.get("final_best_jump_move") or "",
+        ))
+
+    for label, key, fmt in STAT_FIELDS:
+        if not show_jumps and key in JUMP_FIELDS:
+            continue
+        note = (lambda r: _best_jump_move(r.get("history") or "")) if key == "best_jump" else None
+        rows.append(_compare_row(label, riders, EVENT_GROUP,
+                                 lambda r, k=key: r.get(k), fmt=fmt, note=note))
 
     return {
         "type": "recap_compare",
@@ -231,16 +259,37 @@ def _compare_slide(riders: list, common: dict) -> dict:
     }
 
 
-def _compare_row(label: str, riders: list, getter) -> dict:
+def _compare_row(label: str, riders: list, group: str, getter, fmt: str = "score",
+                 note=None) -> dict:
     """One stat across all four riders, with every leader flagged.
 
     Ties mark both riders rather than picking the first: two riders on the
     same score in the final genuinely shared that stat.
+
+    Heats won is a fraction over each rider's own heats sailed and is never
+    highlighted, for the same reason it is not on the rider slides: the
+    denominators differ, so the values do not rank against each other.
     """
     raw_values = [_num(getter(r)) for r in riders]
+
+    if fmt == "fraction":
+        cells = []
+        for rider, raw in zip(riders, raw_values):
+            sailed = len(rider.get("history") or [])
+            missing = getter(rider) is None or not sailed
+            cells.append({
+                "value": NO_VALUE if missing else f"{int(raw)}/{sailed}",
+                "raw": raw,
+                "is_leader": False,
+                "bar_pct": 0,
+                "note": "",
+            })
+        return {"label": label, "group": group, "cells": cells}
+
     best = max(raw_values, default=0.0)
     return {
         "label": label,
+        "group": group,
         # Named "cells", not "values": Jinja resolves row.values to dict.values
         # (the built-in method) before it ever looks for the key.
         "cells": [
@@ -249,8 +298,9 @@ def _compare_row(label: str, riders: list, getter) -> dict:
                 "raw": v,
                 "is_leader": v > 0 and v >= best,
                 "bar_pct": round(v / best * 100) if v > 0 and best > 0 else 0,
+                "note": (note(rider) if note and v > 0 else "") or "",
             }
-            for v in raw_values
+            for rider, v in zip(riders, raw_values)
         ],
     }
 
