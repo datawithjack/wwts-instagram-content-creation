@@ -98,11 +98,11 @@ def build_slides(data: dict) -> list[dict]:
 
 def _cover(division: str, common: dict) -> dict:
     """Cover slide. Reuses the finals cover so the two templates read as a set."""
-    division_label = f"{division}'S" if division else ""
+    division_label = f"{division}'S FINALISTS" if division else "THE FINALISTS"
     return {
         "type": "finals_cover",
-        "title_lines": [line for line in (division_label, "HOW THE FINAL") if line],
-        "title_accent": "UNFOLDED",
+        "title_lines": [division_label],
+        "title_accent": "THE STATS",
         **common,
     }
 

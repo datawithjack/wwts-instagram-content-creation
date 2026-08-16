@@ -91,7 +91,10 @@ class TestSlideStructure:
 
     def test_cover_names_the_division(self):
         slides = build_slides(_data(division="Women"))
-        assert "WOMEN'S" in " ".join(slides[0]["title_lines"])
+        assert "WOMEN'S FINALISTS" in " ".join(slides[0]["title_lines"])
+
+    def test_cover_accent_line_is_the_stats(self):
+        assert build_slides(_data())[0]["title_accent"] == "THE STATS"
 
     def test_event_meta_reaches_every_slide(self):
         slides = build_slides(_data())
