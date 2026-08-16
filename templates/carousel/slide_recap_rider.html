@@ -121,26 +121,35 @@
         margin-bottom: 31px;
     }
 
-    /* Padding, not a fixed width, so 1ST and 4TH both sit correctly. */
-    .rank-chip {
+    /* Rank chip. The fill carries the placing, using the medal tokens in
+       base.html that were defined for this and never wired up. Padding, never
+       a fixed width, so 1ST and 4TH both sit correctly.
+
+       Off the podium is hollow rather than a fourth filled grey: silver is
+       itself a pale grey, so a filled 4th collided with 2nd and blurred the
+       one distinction that matters most. */
+    .rank {
         font-family: var(--font-display);
         font-size: 38px;
         line-height: 1;
         letter-spacing: 0.1em;
-        color: #00D4FF;
-        background: rgba(0, 212, 255, 0.14);
-        border-radius: 10px;
-        padding: 8px 23px 3px;
         white-space: nowrap;
+        color: var(--color-bg);
+        border-radius: 2px;
+        padding: 9px 22px 5px;
     }
 
-    .rider-meta .sail {
-        font-family: var(--font-body);
-        font-size: 31px;
-        font-weight: 500;
-        letter-spacing: 0.14em;
+    .rank.place-1 { background: var(--color-rank-1st); }
+    .rank.place-2 { background: var(--color-rank-2nd); }
+    .rank.place-3 { background: var(--color-rank-3rd); }
+
+    .rank.place-4 {
+        background: transparent;
+        border: 1px solid rgba(149, 165, 184, 0.65);
         color: #95A5B8;
+        padding: 8px 21px 4px;
     }
+
 
     /* ── Lower content block ── */
     .rider-block {
@@ -160,6 +169,7 @@
         display: block;
         font-size: 62px;
         line-height: 1;
+        padding-top: 7px;
         letter-spacing: 0.06em;
         color: rgba(255, 255, 255, 0.62);
     }
@@ -168,6 +178,7 @@
         display: block;
         font-size: 118px;
         line-height: 0.92;
+        padding-top: 12px;
         letter-spacing: 0.01em;
     }
 
@@ -196,12 +207,29 @@
     .stat-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        gap: 12px;
+        column-gap: 12px;
+        row-gap: 22px;
+    }
+
+    /* Starts the score-level row, so the heat stats keep the row above to
+       themselves however many cells they take. */
+    .stat-cell.row-break { grid-column-start: 1; }
+
+    .counting-note {
+        font-family: var(--font-body);
+        font-size: 17px;
+        font-weight: 400;
+        font-style: italic;
+        letter-spacing: 0.03em;
+        color: rgba(255, 255, 255, 0.34);
+        margin-top: 16px;
     }
 
     /* No boxes. The stats sit directly on the slide, separated by a hairline
        rule instead of a card, so the photo stays the only framed element. */
     .stat-cell {
+        display: flex;
+        flex-direction: column;
         padding: 10px 4px 0 0;
         border-top: 1px solid rgba(255, 255, 255, 0.13);
     }
@@ -233,12 +261,13 @@
         font-weight: 600;
         letter-spacing: 0.03em;
         color: rgba(255, 255, 255, 0.42);
-        margin-top: 3px;
+        margin-top: 4px;
+        margin-bottom: 12px;
         line-height: 1.2;
     }
 
     .stat-cell .stat-bar {
-        margin-top: 8px;
+        margin-top: auto;
         height: 4px;
         border-radius: 2px;
         background: rgba(255, 255, 255, 0.12);
@@ -273,7 +302,7 @@
 
     <div class="rider-block">
         <div class="rider-meta">
-            <span class="rank-chip">{{ place_label }}</span>
+            <span class="rank place-{{ place }}">{{ place_label }}</span>
             {% if sail_number %}<span class="sail">{{ sail_number }}</span>{% endif %}
         </div>
 
@@ -285,7 +314,7 @@
         <div class="stat-note">{{ source_note }}</div>
         <div class="stat-grid">
             {% for stat in stats %}
-            <div class="stat-cell">
+            <div class="stat-cell{% if stat.row_break %} row-break{% endif %}">
                 <div class="stat-label">{{ stat.label }}</div>
                 <div class="stat-value {% if stat.is_leader %}leader{% endif %}">{{ stat.value }}</div>
                 {% if stat.note %}<div class="stat-move">{{ stat.note }}</div>{% endif %}
@@ -293,6 +322,8 @@
             </div>
             {% endfor %}
         </div>
+
+        {% if counting_note %}<div class="counting-note">{{ counting_note }}</div>{% endif %}
     </div>
 </div>
 {% endblock %}

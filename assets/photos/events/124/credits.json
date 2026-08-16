@@ -1,7 +1,10 @@
 {
-  "_comment": "Photo credit per athlete, appended to the caption. Distinct values only, in slide order. Handles need confirming before publishing.",
-  "97": "Rafa Soulart",
-  "49": "Rafa Soulart",
-  "48": "Rafa Soulart",
-  "75": "@jcwindsurf | @pwaworldtour"
+  "_comment": "Photographer per athlete, appended to the caption deduped in countdown order. Agency handle (@pwaworldtour) is added per-post, not here, so it is not repeated once per photographer.",
+  "97": "@rafasoulart",
+  "49": "@rafasoulart",
+  "48": "@rafasoulart",
+  "75": "@jcwindsurf",
+  "5": "@rafasoulart",
+  "16": "@rafasoulart",
+  "11": "@rafasoulart"
 }

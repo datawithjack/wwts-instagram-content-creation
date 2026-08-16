@@ -44,6 +44,12 @@ from pipeline.templates import resolve_thumb_url
 
 RIDER_NOTE = "At this event"
 
+# Scoped to the averages on purpose: avg_wave and avg_jump come from the API's
+# counting aggregates, but best_wave and best_jump are the highest scored,
+# counting or not. Saying "counting scores only" of the whole strip would be
+# wrong.
+COUNTING_NOTE = "Wave and jump averages use counting scores only"
+
 FINAL_GROUP = "IN THE FINAL"
 
 EVENT_GROUP = "AT THIS EVENT"
@@ -65,6 +71,11 @@ STAT_FIELDS = (
 )
 
 JUMP_FIELDS = ("best_jump", "avg_jump")
+
+# The strip breaks into two groups: heat-level stats, then the score-level ones.
+# Best wave starts the second row, so waves and jumps read together rather than
+# best wave hanging off the end of the heat row.
+SCORE_ROW_START = "best_wave"
 
 
 def build_slides(data: dict) -> list[dict]:
@@ -94,7 +105,11 @@ def build_slides(data: dict) -> list[dict]:
 
     slides = [_cover(division, riders, common)]
     slides.extend(_rider_slides(riders, common, event_label))
-    slides.append(_compare_slide(riders, common))
+    slides.append(_compare_slide(riders, common, event_label))
+
+    # The shared CTA the other carousels close on. hide_footer because the
+    # slide carries the URL itself, so the watermark would say it twice.
+    slides.append({"type": "cta", "hide_footer": True, **common})
 
     for i, slide in enumerate(slides, 1):
         slide["slide_number"] = i
@@ -170,10 +185,10 @@ def _rider_slides(riders: list, common: dict, event_label: str = "") -> list:
             if not show_jumps and key in JUMP_FIELDS:
                 continue
             best = best_win_rate if fmt == "fraction" else leaders.get(key)
-            stats.append(
-                _recap_stat(label, rider.get(key), best, bar_max.get(key),
-                            fmt, len(history))
-            )
+            cell = _recap_stat(label, rider.get(key), best, bar_max.get(key),
+                               fmt, len(history))
+            cell["row_break"] = key == SCORE_ROW_START
+            stats.append(cell)
         _attach_jump_move(stats, _best_jump_move(history))
 
         action_url = rider.get("action_url") or ""
@@ -196,6 +211,8 @@ def _rider_slides(riders: list, common: dict, event_label: str = "") -> list:
             "stats": stats,
             "history": [_history_line(h) for h in history],
             "source_note": f"AT {event_label}" if event_label else RIDER_NOTE,
+            "counting_note": COUNTING_NOTE if show_jumps else
+                             "Wave averages use counting scores only",
             **common,
         })
 
@@ -239,7 +256,7 @@ def _attach_jump_move(stats: list, move: str) -> None:
             stat["note"] = move
 
 
-def _compare_slide(riders: list, common: dict) -> dict:
+def _compare_slide(riders: list, common: dict, event_label: str = "") -> dict:
     """All four riders across every stat, grouped by what the stat measures.
 
     Two groups, not one table. The final's own scores are the only truly
@@ -276,7 +293,9 @@ def _compare_slide(riders: list, common: dict) -> dict:
         "type": "recap_compare",
         "title_lead": "THE FINALISTS",
         "title_accent": "COMPARED",
-        "subtitle": "Every rider, every score",
+        "subtitle": event_label,
+        "counting_note": COUNTING_NOTE if show_jumps else
+                         "Wave averages use counting scores only",
         "riders": [
             {
                 "athlete_id": r.get("athlete_id"),
