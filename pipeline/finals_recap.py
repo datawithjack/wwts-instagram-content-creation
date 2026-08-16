@@ -15,8 +15,13 @@ carry the shape of each rider's ladder, so they are worth showing but are not
 the same kind of number, and pooling the two would invite reading one rider's
 event average against another's final score.
 
-Second, the qualifying route is dropped. ``finals_preview`` shows how a rider
-reached the final because the final has not been sailed; here the ladder is
+Second, the rider cards carry no final score and no qualifying route. The card
+is one rider's event; the final is the summary card's job. Putting a single
+final-score cell among seven event stats needed a footnote explaining that one
+cell meant something different from the rest, which is a sign the structure is
+wrong rather than the label. The final result is still on the card, as the
+placing. The route goes for a related reason: ``finals_preview`` shows how a
+rider reached the final because it has not been sailed, but here the ladder is
 history and the result is the story.
 
 Third, the countdown only pays off if the last slide is the strongest, which
@@ -39,7 +44,7 @@ from pipeline.templates import resolve_thumb_url
 
 COMPARE_NOTE = "Final scores are from the one heat all four sailed together"
 
-RIDER_NOTE = "Final score from the final, everything else from this event"
+RIDER_NOTE = "At this event"
 
 FINAL_GROUP = "IN THE FINAL"
 
@@ -132,10 +137,8 @@ def _rider_slides(riders: list, common: dict) -> list:
         athlete_id = rider.get("athlete_id")
         history = rider.get("history") or []
         sail_number = rider.get("sail_number") or ""
-        rank = rider.get("world_rank")
 
-        stats = [_recap_stat("FINAL SCORE", rider.get("final_total"),
-                             leaders["final_total"], bar_max["final_total"], "score", 0)]
+        stats = []
         for label, key, fmt in STAT_FIELDS:
             if not show_jumps and key in JUMP_FIELDS:
                 continue
@@ -160,7 +163,6 @@ def _rider_slides(riders: list, common: dict) -> list:
             "country": nationality_to_iso(rider.get("nationality", "")),
             "sail_number": sail_number,
             "meta_class": _meta_class(first_name, sail_number),
-            "rank_label": f"WR #{int(rank)}" if rank else "",
             "photo_mode": "action" if action_url else "portrait",
             # Landscape sources crop hard to 4:5. Where the rider sits in the
             # frame varies per shot, so the crop anchor is per photo.

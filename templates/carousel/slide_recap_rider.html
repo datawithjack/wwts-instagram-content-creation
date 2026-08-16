@@ -105,7 +105,7 @@
         z-index: 1;
     }
 
-    /* ── Identity row (sail number + world rank) ── */
+    /* ── Identity row (flag + sail number) ── */
     .rider-meta {
         display: flex;
         align-items: center;
@@ -129,19 +129,7 @@
         color: rgba(255, 255, 255, 0.55);
     }
 
-    .rider-meta .rank {
-        font-family: var(--font-body);
-        font-size: 21px;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        color: var(--color-bg);
-        background: var(--color-discipline);
-        border-radius: 5px;
-        padding: 4px 11px;
-    }
-
     .rider-meta.tight .sail { font-size: 22px; }
-    .rider-meta.tight .rank { font-size: 18px; }
 
     /* ── Name row: placing reads on the same line as the name ── */
     .name-row {
@@ -193,15 +181,17 @@
     .rider-name.long .last { font-size: 92px; }
     .rider-name.xlong .last { font-size: 72px; line-height: 0.98; }
 
-    /* ── Event stat strip ── */
+    /* ── Event stat strip ──
+       The scope label matches the summary card's group headers, so "AT THIS
+       EVENT" reads the same on both slides. */
     .stat-note {
         font-family: var(--font-body);
-        font-size: 20px;
-        font-weight: 600;
-        letter-spacing: 0.1em;
+        font-size: 17px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: rgba(255, 255, 255, 0.28);
-        margin-bottom: 14px;
+        color: var(--color-discipline);
+        margin-bottom: 12px;
     }
 
     /* Seven stats will not sit on one row at this width, so they wrap 4 + 3.
@@ -289,7 +279,6 @@
         <div class="rider-meta {{ meta_class }}">
             {% if country %}<img class="flag" src="https://flagcdn.com/w80/{{ country | lower }}.png" alt="{{ country }}">{% endif %}
             {% if sail_number %}<span class="sail">{{ sail_number }}</span>{% endif %}
-            {% if rank_label %}<span class="rank">{{ rank_label }}</span>{% endif %}
         </div>
 
         <div class="name-row">
