@@ -446,6 +446,49 @@ def get_dummy_data(template_name: str) -> dict:
                 {"athlete": "Lina Erpenstein", "nationality": "Germany", "athlete_id": 16, "wins": 1, "gc_wins": 0, "tf_wins": 1, "photo_url": "https://www.liveheats.com/images/4d2e15d9-b0ab-461e-9b3f-e2f65e4dc541.webp"},
             ],
         }
+    if template_name == "finals_recap":
+        def _recap(athlete_id, name, nationality, place, total, waves, jumps,
+                   best_heat, avg_wave, avg_jump):
+            return {
+                "athlete_id": athlete_id,
+                "name": name,
+                "nationality": nationality,
+                "photo_url": "",
+                "place": place,
+                "final_total": total,
+                "final_waves": waves,
+                "final_jumps": jumps,
+                "best_heat": best_heat,
+                "best_wave": max(waves) if waves else None,
+                "best_jump": max(jumps) if jumps else None,
+                "avg_wave": avg_wave,
+                "avg_jump": avg_jump,
+            }
+
+        # The real Tenerife 2026 men's final, so the dummy carousel shows the
+        # shape of an actual result (including Pare Rico's two perfect jumps).
+        return {
+            "division": "Men",
+            "event_meta": {
+                "event_name": "Tenerife Grand Slam",
+                "year": 2026,
+                "country": "ESP",
+                "stars": 5,
+                "event_id": 124,
+                "start_date": date(2026, 7, 31),
+                "end_date": date(2026, 8, 9),
+            },
+            "riders": [
+                _recap(97, "Marc Pare Rico", "Spain", 1, 36.63,
+                       [8.75, 7.88, 7.62], [10.0, 10.0, 5.12], 36.63, 7.49, 8.66),
+                _recap(49, "Philip Koster", "Germany", 2, 30.28,
+                       [8.12, 7.38, 6.75], [8.95, 5.83, 0.5], 35.0, 6.8, 8.53),
+                _recap(48, "Marino Gil Gherardi", "Spain", 3, 27.68,
+                       [6.62, 4.25, 3.88], [9.43, 7.38, 3.0], 28.84, 5.31, 8.14),
+                _recap(75, "Lennart Neubauer", "Greece", 4, 9.62,
+                       [4.0, 3.12, 2.62], [2.0, 0.5, 0.5], 27.87, 5.17, 5.98),
+            ],
+        }
     if template_name == "finals_preview":
         def _finalist(athlete_id, name, nationality, best_heat, avg_wave, avg_jump):
             return {

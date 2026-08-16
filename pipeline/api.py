@@ -113,7 +113,7 @@ def fetch_finalist_stats(event_id: int, athlete_ids: list, division: str, detail
     return [results[aid] for aid in ids if aid in results]
 
 
-def fetch_heat_routes(event_id: int, division: str) -> dict:
+def fetch_heat_routes(event_id: int, division: str, before_round: int = None) -> dict:
     """Map each athlete to their most recent sailed heat at this event.
 
     Returns ``{athlete_id: {"round": ..., "place": ..., "advanced": ...}}``.
@@ -122,6 +122,10 @@ def fetch_heat_routes(event_id: int, division: str) -> dict:
     have not run yet come back from the API with empty athlete lists (the
     draw is not published through this endpoint), so they contribute nothing
     and the latest round a rider appears in is their last outing.
+
+    ``before_round`` ignores that round and everything after it. A recap runs
+    once the final has sailed, so without it every finalist's route would read
+    "FINAL" -- the heat the viewer just watched, not how they got there.
     """
     resp = requests.get(
         f"{API_BASE_URL}/events/{event_id}/heats",
@@ -135,6 +139,8 @@ def fetch_heat_routes(event_id: int, division: str) -> dict:
     latest = {}
     for round_ in raw.get("rounds", []):
         order = round_.get("round_order") or 0
+        if before_round is not None and order >= before_round:
+            continue
         for heat in round_.get("heats", []):
             for athlete in heat.get("athletes", []):
                 aid = athlete.get("athlete_id")
@@ -405,3 +411,63 @@ def fetch_site_stats() -> dict:
         )
 
     return result
+
+
+def fetch_final_heat(event_id: int, division: str, round_name: str = "Final") -> dict:
+    """Fetch the final heat itself: who placed where, and every score in it.
+
+    Returns ``{"round_order": int, "riders": [...]}`` with riders in finishing
+    order. Each rider carries ``place``, ``final_total`` and the heat's own
+    scores split into ``final_waves`` / ``final_jumps``.
+
+    This is the one heat all four riders sailed together, which is what makes
+    it the only like-for-like comparison after an event. Event-wide aggregates
+    come from the head-to-head endpoint instead (``fetch_finalist_stats``);
+    this endpoint is the only one carrying per-heat scores.
+
+    Non-counting scores are kept. A rider's highest wave in the final is the
+    highest they scored, whether or not it made their counting total -- the
+    same default the top 10 posts use.
+    """
+    resp = requests.get(
+        f"{API_BASE_URL}/events/{event_id}/heats",
+        params={"sex": division},
+        timeout=30,
+    )
+    resp.raise_for_status()
+    raw = resp.json()
+
+    wanted = (round_name or "").strip().lower()
+    for round_ in raw.get("rounds", []):
+        if (round_.get("round_name") or "").strip().lower() != wanted:
+            continue
+        heats = round_.get("heats") or []
+        if not heats:
+            continue
+
+        riders = []
+        for athlete in heats[0].get("athletes") or []:
+            waves, jumps = [], []
+            for score in athlete.get("scores") or []:
+                value = score.get("score")
+                if value is None:
+                    continue
+                if (score.get("type") or "").strip().lower() == "wave":
+                    waves.append(float(value))
+                else:
+                    jumps.append(float(value))
+
+            riders.append({
+                "athlete_id": athlete.get("athlete_id"),
+                "name": athlete.get("athlete_name", ""),
+                "photo_url": athlete.get("profile_picture_url", "") or "",
+                "place": athlete.get("place"),
+                "final_total": athlete.get("result_total"),
+                "final_waves": sorted(waves, reverse=True),
+                "final_jumps": sorted(jumps, reverse=True),
+            })
+
+        riders.sort(key=lambda r: r.get("place") or 99)
+        return {"round_order": round_.get("round_order") or 0, "riders": riders}
+
+    return {"round_order": 0, "riders": []}
