@@ -56,19 +56,17 @@
        exists as its own layout. */
     .portrait-hero {
         position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 760px;
+        top: 0; left: 0; right: 0; bottom: 0;
         z-index: 0;
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: center;
+        padding-top: 96px;
         overflow: hidden;
         background: radial-gradient(
-            ellipse at 50% 38%,
-            rgba(38, 62, 92, 0.95) 0%,
-            rgba(14, 25, 39, 1) 70%
+            ellipse 70% 42% at 50% 26%,
+            rgba(38, 62, 92, 0.72) 0%,
+            rgba(14, 25, 39, 0) 100%
         );
     }
 
@@ -100,9 +98,10 @@
         background: linear-gradient(
             to bottom,
             rgba(10, 14, 26, 0.00) 0%,
-            rgba(10, 14, 26, 0.10) 55%,
-            rgba(10, 14, 26, 0.70) 82%,
-            rgba(10, 14, 26, 1.00) 100%
+            rgba(10, 14, 26, 0.06) 40%,
+            rgba(10, 14, 26, 0.55) 56%,
+            rgba(10, 14, 26, 0.94) 68%,
+            rgba(10, 14, 26, 1.00) 76%
         );
         z-index: 1;
     }
@@ -145,40 +144,25 @@
     .rider-meta.tight .sail { font-size: 22px; }
     .rider-meta.tight .rank { font-size: 18px; }
 
-    /* ── Place badge ── */
-    .place-badge {
-        position: absolute;
-        top: 48px;
-        left: 48px;
-        z-index: 3;
+    /* ── Name row: placing reads on the same line as the name ── */
+    .name-row {
         display: flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 170px;
-        height: 170px;
-        padding: 0 22px;
-        border-radius: 24px;
-        background: rgba(255, 255, 255, 0.12);
-        border: 2px solid rgba(255, 255, 255, 0.20);
+        align-items: flex-end;
+        gap: 24px;
+        margin-bottom: 24px;
     }
 
-    .place-badge.winner {
-        background: var(--color-discipline);
-        border-color: var(--color-discipline);
-        box-shadow: 0 8px 36px rgba(0, 0, 0, 0.45);
-    }
-
-    .place-badge .place-text {
+    .place-badge {
+        flex-shrink: 0;
         font-family: var(--font-display);
-        font-size: 92px;
+        font-size: 104px;
         line-height: 1;
+        padding-bottom: 6px;
         letter-spacing: -0.01em;
-        color: rgba(255, 255, 255, 0.55);
+        color: rgba(255, 255, 255, 0.34);
     }
 
-    .place-badge.winner .place-text {
-        color: var(--color-bg);
-    }
+    .place-badge.winner { color: var(--color-discipline); }
 
     /* ── Lower content block ── */
     .rider-block {
@@ -191,7 +175,7 @@
         font-family: var(--font-display);
         line-height: 0.92;
         color: var(--color-text-primary);
-        margin-bottom: 26px;
+        min-width: 0;
     }
 
     .rider-name .first {
@@ -209,35 +193,6 @@
 
     .rider-name.long .last { font-size: 92px; }
     .rider-name.xlong .last { font-size: 72px; line-height: 0.98; }
-
-    /* ── Hero stat (the final score) ── */
-    .hero-stat {
-        display: flex;
-        align-items: baseline;
-        gap: 20px;
-        padding-bottom: 26px;
-        margin-bottom: 26px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.14);
-    }
-
-    .hero-stat .hero-label {
-        font-family: var(--font-body);
-        font-size: 24px;
-        font-weight: 700;
-        letter-spacing: 0.11em;
-        text-transform: uppercase;
-        color: rgba(255, 255, 255, 0.42);
-    }
-
-    .hero-stat .hero-value {
-        font-family: var(--font-display);
-        font-size: 116px;
-        line-height: 0.9;
-        letter-spacing: 0.01em;
-        color: var(--color-text-primary);
-    }
-
-    .hero-stat .hero-value.leader { color: var(--color-discipline); }
 
     /* ── Event stat strip ── */
     .stat-note {
@@ -328,10 +283,6 @@
     </div>
     {% endif %}
 
-    <div class="place-badge {% if is_winner %}winner{% endif %}">
-        <span class="place-text">{{ place_label }}</span>
-    </div>
-
     <div class="rider-block">
         <div class="rider-meta {{ meta_class }}">
             {% if country %}<img class="flag" src="https://flagcdn.com/w80/{{ country | lower }}.png" alt="{{ country }}">{% endif %}
@@ -339,14 +290,12 @@
             {% if rank_label %}<span class="rank">{{ rank_label }}</span>{% endif %}
         </div>
 
-        <div class="rider-name {{ name_class }}">
-            <span class="first">{{ first_name }}</span>
-            {% if last_name %}<span class="last">{{ last_name }}</span>{% endif %}
-        </div>
-
-        <div class="hero-stat">
-            <span class="hero-value {% if hero.is_leader %}leader{% endif %}">{{ hero.value }}</span>
-            <span class="hero-label">{{ hero.label }}</span>
+        <div class="name-row">
+            <div class="place-badge {% if is_winner %}winner{% endif %}">{{ place_label }}</div>
+            <div class="rider-name {{ name_class }}">
+                <span class="first">{{ first_name }}</span>
+                {% if last_name %}<span class="last">{{ last_name }}</span>{% endif %}
+            </div>
         </div>
 
         <div class="stat-note">{{ source_note }}</div>
