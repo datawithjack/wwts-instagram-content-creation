@@ -105,6 +105,7 @@
         z-index: 1;
     }
 
+    /* ── Event badge over the hero shot ── */
     /* ── Identity row (flag + sail number) ── */
     .rider-meta {
         display: flex;
@@ -182,15 +183,18 @@
     .rider-name.xlong .last { font-size: 72px; line-height: 0.98; }
 
     /* ── Event stat strip ──
-       The scope label matches the summary card's group headers, so "AT THIS
-       EVENT" reads the same on both slides. */
+       The scope label names the event ("AT TENERIFE GRAND SLAM 2026") rather
+       than saying "at this event": a rider reposting their own card takes it
+       away from the cover, so the card has to identify the event itself.
+       Dimmed white, not accent, so it reads as a caption to the numbers
+       rather than competing with them. */
     .stat-note {
         font-family: var(--font-body);
-        font-size: 17px;
-        font-weight: 700;
-        letter-spacing: 0.14em;
+        font-size: 26px;
+        font-weight: 600;
+        letter-spacing: 0.11em;
         text-transform: uppercase;
-        color: var(--color-discipline);
+        color: rgba(255, 255, 255, 0.52);
         margin-bottom: 12px;
     }
 

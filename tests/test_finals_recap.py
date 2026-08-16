@@ -59,7 +59,7 @@ class TestSlideStructure:
     def test_builds_six_slides_in_order(self):
         slides = build_slides(_data())
         assert [s["type"] for s in slides] == [
-            "finals_cover",
+            "recap_cover",
             "recap_rider",
             "recap_rider",
             "recap_rider",
@@ -505,3 +505,63 @@ class TestHeroFocus:
         riders[0]["action_url"] = "file:///photos/events/124/97.jpg"
         winner = _rider_slides(build_slides(_data(riders=riders)))[-1]
         assert winner["photo_focus"] == "center 35%"
+
+
+class TestCoverHeroGrid:
+    """The cover previews the countdown with the four riders' own shots."""
+
+    def _cover(self, riders=None):
+        return build_slides(_data(riders=riders))[0]
+
+    def test_cover_carries_a_photo_per_rider(self):
+        riders = _riders()
+        for r in riders:
+            r["action_url"] = f"file:///photos/events/124/{r['athlete_id']}.jpg"
+        cover = self._cover(riders)
+        assert len(cover["hero_photos"]) == 4
+
+    def test_photos_run_first_to_fourth(self):
+        riders = _riders()
+        for r in riders:
+            r["action_url"] = f"file:///photos/events/124/{r['athlete_id']}.jpg"
+        cover = self._cover(riders)
+        assert [p["place"] for p in cover["hero_photos"]] == [1, 2, 3, 4]
+
+    def test_each_photo_keeps_its_own_focal_point(self):
+        riders = _riders()
+        riders[0]["action_url"] = "file:///photos/events/124/97.jpg"
+        riders[0]["hero_focus"] = "9% 58%"
+        cover = self._cover(riders)
+        assert cover["hero_photos"][0]["focus"] == "9% 58%"
+
+    def test_riders_without_an_action_shot_are_skipped(self):
+        """A half-filled grid is worse than none, so only real hero shots
+        count towards it."""
+        riders = _riders()
+        riders[0]["action_url"] = "file:///photos/events/124/97.jpg"
+        cover = self._cover(riders)
+        assert len(cover["hero_photos"]) == 1
+
+    def test_no_photos_leaves_the_plain_cover(self):
+        cover = self._cover()
+        assert cover["hero_photos"] == []
+
+    def test_cover_still_carries_its_title(self):
+        cover = self._cover()
+        assert cover["title_accent"] == "THE STATS"
+
+
+class TestEventLabelOnRiderCards:
+    """A reposted card leaves the carousel behind, so it names its own event."""
+
+    def test_scope_label_names_the_event(self):
+        winner = _rider_slides(build_slides(_data()))[-1]
+        assert winner["source_note"] == "AT TENERIFE GRAND SLAM 2026"
+
+    def test_every_rider_card_carries_it(self):
+        for slide in _rider_slides(build_slides(_data())):
+            assert slide["source_note"] == "AT TENERIFE GRAND SLAM 2026"
+
+    def test_falls_back_when_the_event_is_unnamed(self):
+        slides = _rider_slides(build_slides(_data(event_meta={})))
+        assert slides[-1]["source_note"] == "At this event"

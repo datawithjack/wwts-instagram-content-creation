@@ -1,0 +1,192 @@
+{% extends "carousel/base_carousel.html" %}
+
+{#
+  Recap cover. Same event block and title treatment as slide_finals_cover, so
+  the two carousels still read as a set, but backed by a 2x2 grid of the four
+  riders' own hero shots in finishing order.
+
+  The grid previews the countdown that follows. It is heavily scrimmed on
+  purpose: this is a background, and the title has to stay first read. With no
+  hero shots the grid is simply absent and the plain cover shows through.
+#}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: center;
+        justify-content: flex-start;
+        text-align: center;
+        padding: 60px 48px 64px;
+        position: relative;
+    }
+
+    /* ── Hero grid background ── */
+    .hero-grid {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 0;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        gap: 3px;
+    }
+
+    .hero-grid .cell {
+        overflow: hidden;
+        position: relative;
+    }
+
+    .hero-grid .cell img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    /* A single shot fills the frame rather than sitting in one quarter with
+       three empty cells beside it. */
+    .hero-grid.count-1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+    .hero-grid.count-2 { grid-template-rows: 1fr; }
+    .hero-grid.count-3 .cell:first-child { grid-column: span 2; }
+
+    /* Scrim: dark enough that white display type holds over any photo, with
+       the centre pushed hardest because that is where the title sits. */
+    .hero-scrim {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 1;
+        background:
+            radial-gradient(ellipse 70% 46% at 50% 54%,
+                rgba(10, 14, 26, 0.78) 0%,
+                rgba(10, 14, 26, 0.52) 55%,
+                rgba(10, 14, 26, 0.20) 100%),
+            linear-gradient(to bottom,
+                rgba(10, 14, 26, 0.52) 0%,
+                rgba(10, 14, 26, 0.24) 30%,
+                rgba(10, 14, 26, 0.24) 68%,
+                rgba(10, 14, 26, 0.62) 100%);
+    }
+
+    /* Event block sits at the top; the title is centred on the slide itself,
+       not on the space left under the event block. Absolute against .container
+       means top: 50% measures the full 1080x1350 padding box, so the title
+       lands on the exact centre whatever the event block's height. */
+    .cover-body {
+        position: relative;
+        z-index: 2;
+        width: 100%;
+    }
+
+    .title-block {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        transform: translateY(-50%);
+        padding: 0 48px;
+        z-index: 2;
+    }
+
+    /* ── Event block (matches slide_finals_cover.html) ── */
+    .event-year {
+        font-family: var(--font-display);
+        font-size: 64px;
+        letter-spacing: 0.06em;
+        color: var(--color-text-primary);
+        margin-bottom: 8px;
+        text-shadow: 0 3px 24px rgba(10, 14, 26, 0.9);
+    }
+
+    .event-name {
+        font-family: var(--font-display);
+        font-size: 104px;
+        letter-spacing: 0.04em;
+        line-height: 1.05;
+        color: var(--color-text-primary);
+        margin-bottom: 12px;
+        text-shadow: 0 3px 24px rgba(10, 14, 26, 0.9);
+    }
+
+    .event-meta {
+        font-family: var(--font-body);
+        font-size: 30px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.72);
+        letter-spacing: 0.06em;
+        text-shadow: 0 2px 18px rgba(10, 14, 26, 0.95);
+    }
+
+    .event-meta .stars {
+        color: var(--color-gold);
+        letter-spacing: 0.02em;
+    }
+
+    /* ── Hero title: white, one accented line ── */
+    .cover-title {
+        font-family: var(--font-display);
+        font-size: 200px;
+        letter-spacing: 0.03em;
+        line-height: 0.95;
+        color: var(--color-text-primary);
+        text-shadow: 0 4px 40px rgba(10, 14, 26, 0.85);
+    }
+
+    .cover-title .line {
+        display: block;
+        white-space: nowrap;
+    }
+
+    .cover-title .metric {
+        color: var(--color-discipline);
+    }
+
+    .cover-subtitle {
+        font-family: var(--font-body);
+        font-size: 28px;
+        font-weight: 400;
+        color: var(--color-text-muted);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    {% if hero_photos %}
+    <div class="hero-grid count-{{ hero_photos | length }}">
+        {% for photo in hero_photos %}
+        <div class="cell">
+            <img src="{{ photo.url }}" alt="" style="object-position: {{ photo.focus }}">
+        </div>
+        {% endfor %}
+    </div>
+    <div class="hero-scrim"></div>
+    {% endif %}
+
+    <div class="cover-body">
+        {% if event_year %}<div class="event-year">{{ event_year }}</div>{% endif %}
+        <div class="event-name">{{ event_name | upper }}</div>
+        <div class="event-meta">
+            {%- if event_country %}{{ event_country }}{% endif %}
+            {%- if event_date_start and event_date_end %}
+                {% if event_country %}&middot;{% endif %}
+                {{ event_date_start.strftime('%b %d') if event_date_start.strftime is defined else event_date_start }}
+                &ndash;
+                {{ event_date_end.strftime('%b %d') if event_date_end.strftime is defined else event_date_end }}
+            {%- endif %}
+            {%- if event_tier %} &middot; <span class="stars">{{ '★' * event_tier }}</span>{% endif %}
+        </div>
+
+    </div>
+
+    <div class="title-block">
+        <div class="cover-title" data-autofit>
+            {% for line in title_lines %}<span class="line">{{ line }}</span>{% endfor %}
+            <span class="line metric">{{ title_accent }}</span>
+        </div>
+        {% if subtitle %}<div class="cover-subtitle">{{ subtitle }}</div>{% endif %}
+    </div>
+</div>
+{% include "carousel/_autofit.html" %}
+{% endblock %}
