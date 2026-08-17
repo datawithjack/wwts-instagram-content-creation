@@ -84,12 +84,12 @@
         display: flex;
         align-items: center;
         gap: 16px;
-        padding: 14px 0;
+        padding: {% if tie_count >= 6 %}8px{% else %}14px{% endif %} 0;
     }
 
     .athlete-row .flag img {
-        width: 52px;
-        height: 38px;
+        width: {% if tie_count >= 6 %}44px{% else %}52px{% endif %};
+        height: {% if tie_count >= 6 %}32px{% else %}38px{% endif %};
         object-fit: cover;
         border-radius: 2px;
         display: block;
@@ -97,7 +97,7 @@
 
     .athlete-row .name {
         font-family: var(--font-display);
-        font-size: {% if tie_count >= 3 %}60px{% elif tie_count == 2 %}80px{% else %}112px{% endif %};
+        font-size: {% if tie_count >= 6 %}44px{% elif tie_count >= 3 %}60px{% elif tie_count == 2 %}80px{% else %}112px{% endif %};
         letter-spacing: 0.04em;
         line-height: 1;
         flex: 1;

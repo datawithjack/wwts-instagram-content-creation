@@ -1,4 +1,6 @@
 """Tests for Top 10 carousel slide builder and template rendering."""
+import re
+
 import pytest
 
 from pipeline.templates import get_dummy_data, render_template
@@ -736,3 +738,48 @@ class TestSoFarTemplateRendering:
         slides = build_slides(data)
         html = render_template("carousel/slide_cover", slides[0])
         assert "SO FAR" not in html
+
+
+# ── Tied hero rows are grouped by athlete ────────────────────────────────────
+
+class TestTiedHeroSorting:
+    """A large tie (e.g. eight perfect 10s) reads as a jumble when the same
+    rider's scores are scattered down the card. Sort the tied rows by athlete
+    so each rider's entries sit together."""
+
+    def _tied_data(self):
+        names = ["Marino Gil Gherardi", "Marc Pare Rico", "Marc Pare Rico",
+                 "Marc Pare Rico", "Marc Pare Rico", "Marino Gil Gherardi",
+                 "Philip Koster", "Philip Koster"]
+        entries = _make_entries([10.00] * 8 + [9.88, 9.50])
+        for entry, name in zip(entries, names):
+            entry["athlete"] = name
+        return _make_data(entries)
+
+    def test_hero_rows_grouped_by_athlete(self):
+        hero = build_slides(self._tied_data())[1]
+        names = [r["athlete"] for r in hero["rows"]]
+        assert names == sorted(names)
+
+    def test_all_tied_rows_kept(self):
+        hero = build_slides(self._tied_data())[1]
+        assert hero["tie_count"] == 8
+        assert len(hero["rows"]) == 8
+
+    def test_remaining_rows_still_follow_rank_order(self):
+        slides = build_slides(self._tied_data())
+        table = slides[2]
+        assert [r["rank"] for r in table["rows"]] == [9, 10]
+
+    def test_untied_hero_unaffected(self):
+        entries = _make_entries([10.00, 9.50, 9.00, 8.50, 8.00, 7.50, 7.00, 6.50, 6.00, 5.50])
+        hero = build_slides(_make_data(entries))[1]
+        assert hero["tie_count"] == 0
+        assert hero["rows"][0]["athlete"] == "Athlete 1"
+
+    def test_large_tie_uses_smaller_name_size(self):
+        """Eight names at the 3-way-tie size overflow the card: one wraps to two
+        lines and the stack pushes up under the event eyebrow."""
+        html = render_template("carousel/slide_hero", build_slides(self._tied_data())[1])
+        rule = re.search(r"\.athlete-row \.name \{(.*?)\}", html, re.S).group(1)
+        assert "font-size: 44px" in rule
