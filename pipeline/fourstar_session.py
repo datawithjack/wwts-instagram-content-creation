@@ -1,19 +1,23 @@
-"""4-star Session announcement carousel — 6 hardcoded slides.
+"""Wissant Session announcement carousel — 6 hardcoded slides.
 
-Announces that the tour's 4-star wave events now play the Fantasy League in
-Session mode only, and explains the two conditions that gate them: an event
-opens once 20 riders have entered, and pick slots then unlock in stages as more
-riders enter.
+Announces that Wissant Wave Classic, a 4-star wave event, plays the Fantasy
+League in Session mode only, and explains the two conditions that gate it: the
+event opens once 20 riders have entered, and pick slots then unlock in stages as
+more riders enter.
 
-The two events are Wissant Wave Classic (12-20 Sep 2026) and Tiree Wave Classic
-(10-16 Oct 2026). Brazil was the other 2026 4-star but is cancelled, so the post
-names two. Neither is Tour-eligible: the season config carries
-``tour_eligible: false`` on both and ``true`` on every 5-star, which is the
-machine-readable form of "Session only".
+**Scoped to Wissant alone** (12-20 Sep 2026, API id 278). Tiree Wave Classic is
+the other 2026 4-star on the fantasy season and works the same way, but it is
+not confirmed, so it is deliberately left out rather than announced early. Brazil
+was a third 4-star and is cancelled. If Tiree is confirmed later, this is a copy
+change to the event slide plus a second card screenshot, not a new template.
+
+Wissant is not Tour-eligible: the season config carries ``tour_eligible: false``
+on it and ``true`` on every 5-star, which is the machine-readable form of
+"Session only".
 
 Two slides carry real screenshots of the live app rather than drawn mockups,
-because the states they show are perishable — once an event's start list fills,
-the locked view is gone. See pipeline/screen_shots.py, which captured them while
+because the states they show are perishable — once the start list fills, the
+locked view is gone. See pipeline/screen_shots.py, which captured them while
 Wissant sat at 9 riders of the 20 needed.
 
 Slot copy is quoted from the app itself, so the post and the product say the
@@ -29,34 +33,42 @@ import os
 # with the Freestyle and Slalom Session posts.
 SESSION_COLOR = "#2dd4bf"
 
-SCREENSHOTS_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "screenshots"
-)
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SCREENSHOTS_DIR = os.path.join(_REPO_ROOT, "assets", "screenshots")
+LOGOS_DIR = os.path.join(_REPO_ROOT, "assets", "logos")
 
 
-def screenshot_url(name: str) -> str:
-    """file:// URL for a committed screenshot, or "" when it is missing.
+def _file_url(directory: str, name: str) -> str:
+    """file:// URL for a local asset, or "" when it is missing.
 
     Returning "" rather than raising keeps a dry-run preview renderable on a
-    checkout that has not pulled the PNGs: the slide frames an empty image
+    checkout that has not pulled the images: the slide frames an empty image
     instead of blowing up the whole carousel.
     """
-    path = os.path.join(SCREENSHOTS_DIR, name)
+    path = os.path.join(directory, name)
     if not os.path.exists(path):
         return ""
     return "file:///" + os.path.abspath(path).replace(os.sep, "/")
 
 
-# Slide 2 — what actually changed, and for which events.
+def screenshot_url(name: str) -> str:
+    return _file_url(SCREENSHOTS_DIR, name)
+
+
+def logo_url(name: str) -> str:
+    return _file_url(LOGOS_DIR, name)
+
+
+# Slide 2 — what actually changed, for this one event.
 THE_CHANGE = {
     "eyebrow": "WHAT'S NEW",
     "name": "Session Only",
-    "tagline": "Two more events to play, one event at a time.",
+    "tagline": "One more event to play, one event at a time.",
     "points": [
         "Wissant Wave Classic, 12 to 20 September",
-        "Tiree Wave Classic, 10 to 16 October",
-        "The Session only, so no Tour points ride on them",
+        "The Session only, so no Tour points ride on it",
         "Pick a squad, score on every heat they sail",
+        "A standalone leaderboard, just for this event",
     ],
 }
 
@@ -79,8 +91,16 @@ def build_fourstar_session_slides() -> list[dict]:
         {
             "type": "fantasy_rules_cover",
             "eyebrow": "WINDSURF FANTASY LEAGUE",
-            "title": "4-Star Events",
-            "subtitle": "Wissant and Tiree join The Session.",
+            # Not "Wissant": the poster directly above already says it in
+            # letters a foot tall, so repeating it wastes the biggest type on
+            # the slide. The title carries the news instead.
+            "title": "The Session",
+            "subtitle": "Wissant Wave Classic joins in, 12 to 20 September.",
+            # The event's own poster, so the cover is recognisably this event
+            # rather than a generic fantasy announcement.
+            "cover_image": logo_url("wissant-wave-classic.png"),
+            "cover_image_alt": "Wissant Wave Classic 2026 event poster",
+            "cover_image_height": 420,
             "accent_color": SESSION_COLOR,
         },
         {
@@ -92,12 +112,12 @@ def build_fourstar_session_slides() -> list[dict]:
             "accent_color": SESSION_COLOR,
         },
         # The card carries both halves of the first condition in one shot: the
-        # 20 needed, and how far along this event is.
+        # 20 needed, and how far along the event is.
         {
             "type": "screenshot",
             "eyebrow": "CONDITION ONE",
             "title": "20 Riders",
-            "tagline": "An event opens for picks once 20 riders have entered.",
+            "tagline": "The event opens for picks once 20 riders have entered.",
             "image_url": screenshot_url("hub_card_wissant.png"),
             "alt": "Wissant Wave Classic card showing 9 riders entered of the 20 needed",
             "lead": "Wissant is at 9.",
@@ -129,7 +149,7 @@ def build_fourstar_session_slides() -> list[dict]:
             "type": "fantasy_rules_cta",
             "headline": "GET READY",
             "subtitle": "Sign up now and we'll email you the moment Wissant opens.",
-            "deadline": "Wissant entries close 06:00 local, 12 September",
+            "deadline": "Entries close 06:00 local, 12 September",
             "cta_line": "Play free. Link in bio",
             "handle": "@windsurfworldtourstats",
             "accent_color": SESSION_COLOR,

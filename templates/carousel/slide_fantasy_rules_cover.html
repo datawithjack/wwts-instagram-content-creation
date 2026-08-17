@@ -54,12 +54,53 @@
     .swipe-hint .arrow {
         color: var(--color-discipline);
     }
+
+    {% if cover_image %}
+    /* Optional event logo. The whole block is conditional, markup and CSS
+       alike, so a cover without an image renders byte-for-byte as before.
+       Framed rather than dropped straight on: these posters ship with their
+       own light background, which would otherwise read as a bright rectangle
+       stuck to the slide. */
+    .cover-logo {
+        border-radius: 20px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        box-shadow: 0 20px 52px rgba(0, 0, 0, 0.55);
+        margin-bottom: 40px;
+        display: inline-flex;
+        width: fit-content;
+        max-width: 100%;
+    }
+
+    .cover-logo img {
+        display: block;
+        width: auto;
+        max-width: 100%;
+        max-height: {{ cover_image_height | default(400) }}px;
+    }
+
+    /* With a logo above it the title has less room, so it sits smaller and the
+       stack stays centred instead of overflowing the slide. */
+    .cover-title {
+        font-size: 190px;
+        margin-bottom: 24px;
+    }
+
+    .container {
+        padding: 48px 48px 56px;
+    }
+    {% endif %}
 </style>
 {% endblock %}
 
 {% block carousel_content %}
 <div class="container">
     <div class="eyebrow">{{ eyebrow }}</div>
+    {% if cover_image %}
+    <div class="cover-logo">
+        <img src="{{ cover_image }}" alt="{{ cover_image_alt | default('Event logo') }}">
+    </div>
+    {% endif %}
     <div class="cover-title" data-autofit>{{ title | upper }}</div>
     <div class="divider"></div>
     <div class="cover-subtitle">{{ subtitle }}</div>

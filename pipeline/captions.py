@@ -454,12 +454,12 @@ def _caption_fantasy_rules(data: dict, site_url: str) -> str:
 
 def _caption_fourstar_session(data: dict, site_url: str) -> str:
     return (
-        "\u26a1 The 4-star events are joining the Fantasy League.\n\n"
-        "Wissant (12 to 20 Sept) and Tiree (10 to 16 Oct) will run on The "
-        "Session: pick a squad for the one event, score on every heat they "
-        "sail. No Tour points ride on these, so there is nothing to lose.\n\n"
+        "\u26a1 Wissant is joining the Fantasy League.\n\n"
+        "The 4-star at Wissant (12 to 20 Sept) will run on The Session: "
+        "pick a squad for the one event, score on every heat they sail. No "
+        "Tour points ride on it, so there is nothing to lose.\n\n"
         "Two things have to happen first:\n\n"
-        "1\ufe0f\u20e3 An event opens once 20 riders have entered. Wissant is at 9.\n"
+        "1\ufe0f\u20e3 The event opens once 20 riders have entered. Wissant is at 9.\n"
         "2\ufe0f\u20e3 Pick slots then unlock in stages. Two riders in a tier opens "
         "its first slot, four opens the second.\n\n"
         "You will not need to sit refreshing the page. We will email you the "
