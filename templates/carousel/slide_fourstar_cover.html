@@ -1,0 +1,136 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    /* Bottom-anchored, left-aligned, following the event_picks cover: it is the
+       house language for an event-specific announcement, and it puts the news
+       in the biggest type instead of giving that job to a supplied poster. */
+    .container {
+        align-items: flex-start;
+        justify-content: flex-end;
+        text-align: left;
+        padding: 0 72px 130px;
+        gap: 0;
+    }
+
+    {% if logo_url %}
+    /* The poster carries its own light background, so it cannot float on the
+       navy. Framed and set at a supporting size it reads as the event's mark;
+       blown up as the hero it reads as a bright rectangle stuck to the slide.
+       CSS sits behind the same guard as the markup so an event with no poster
+       emits none of it. */
+    .event-logo {
+        position: absolute;
+        top: 96px;
+        right: 72px;
+        width: {{ logo_width | default(300) }}px;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.6);
+    }
+
+    .event-logo img {
+        display: block;
+        width: 100%;
+        height: auto;
+    }
+    {% endif %}
+
+    .cover-eyebrow {
+        font-family: var(--font-body);
+        font-size: 30px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: var(--color-discipline);
+        margin-bottom: 18px;
+    }
+
+    .cover-headline {
+        font-family: var(--font-display);
+        font-size: 210px;
+        letter-spacing: -0.01em;
+        line-height: 0.84;
+        color: var(--color-text-primary);
+        margin-bottom: 26px;
+    }
+
+    .cover-headline .accent {
+        color: var(--color-discipline);
+    }
+
+    .cover-event {
+        font-family: var(--font-display);
+        font-size: 76px;
+        letter-spacing: 0.02em;
+        line-height: 1.0;
+        color: var(--color-text-primary);
+        margin-bottom: 14px;
+    }
+
+    .cover-meta {
+        font-family: var(--font-body);
+        font-size: 28px;
+        font-weight: 500;
+        letter-spacing: 0.05em;
+        color: var(--color-text-muted);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 34px;
+    }
+
+    .cover-meta .stars {
+        color: var(--color-gold);
+        letter-spacing: 0.1em;
+    }
+
+    .meta-sep { color: rgba(255, 255, 255, 0.25); }
+
+    .cover-sub {
+        font-family: var(--font-body);
+        font-size: 32px;
+        font-weight: 400;
+        line-height: 1.4;
+        color: var(--color-text-muted);
+        max-width: 820px;
+    }
+
+    .swipe-hint {
+        position: absolute;
+        bottom: 40px;
+        right: 64px;
+        font-family: var(--font-body);
+        font-size: 18px;
+        color: rgba(255, 255, 255, 0.25);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+
+    .swipe-hint .arrow { color: var(--color-discipline); }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    {% if logo_url %}
+    <div class="event-logo">
+        <img src="{{ logo_url }}" alt="{{ logo_alt | default('Event logo') }}">
+    </div>
+    {% endif %}
+
+    <div class="cover-eyebrow">{{ eyebrow }}</div>
+    <div class="cover-headline">{{ headline_top | upper }}<br><span class="accent">{{ headline_accent | upper }}</span></div>
+    <div class="cover-event">{{ event_name | upper }}</div>
+    <div class="cover-meta">
+        <span>{{ discipline | upper }}</span>
+        <span class="meta-sep">·</span>
+        <span class="stars">{{ "★" * stars }}</span>
+        <span class="meta-sep">·</span>
+        <span>{{ dates | upper }}</span>
+    </div>
+    <div class="cover-sub">{{ subtitle }}</div>
+    <div class="swipe-hint">Swipe <span class="arrow">→</span></div>
+</div>
+{% endblock %}

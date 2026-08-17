@@ -25,7 +25,7 @@ class TestSlideShape:
         assert all(s["total_slides"] == 6 for s in slides)
 
     def test_opens_on_a_cover_and_closes_on_a_cta(self, slides):
-        assert slides[0]["type"] == "fantasy_rules_cover"
+        assert slides[0]["type"] == "fourstar_cover"
         assert slides[-1]["type"] == "fantasy_rules_cta"
 
     def test_every_slide_carries_the_session_colour(self, slides):
@@ -115,24 +115,40 @@ class TestCover:
         """The cover should be recognisably this event, not a generic fantasy
         announcement."""
         cover = slides[0]
-        assert cover["cover_image"].startswith("file:///")
-        path = cover["cover_image"].replace("file:///", "")
-        assert os.path.exists(path)
+        assert cover["logo_url"].startswith("file:///")
+        assert os.path.exists(cover["logo_url"].replace("file:///", ""))
 
     def test_cover_logo_has_alt_text(self, slides):
-        assert slides[0]["cover_image_alt"]
+        assert slides[0]["logo_alt"]
 
-    def test_cover_renders_the_logo(self, slides):
-        html = render_template("carousel/slide_fantasy_rules_cover", slides[0])
-        assert slides[0]["cover_image"] in html
-        assert "cover-logo" in html
+    def test_cover_carries_the_event_meta(self, slides):
+        """The star rating is the whole point of the post, so it belongs on the
+        cover rather than only in the body."""
+        cover = slides[0]
+        assert cover["stars"] == 4
+        assert cover["discipline"] == "Wave"
+        assert "12 to 20 Sept 2026" == cover["dates"]
+        assert cover["event_name"] == "Wissant Wave Classic"
+
+    def test_cover_renders_logo_stars_and_dates(self, slides):
+        html = render_template("carousel/slide_fourstar_cover", slides[0])
+        assert slides[0]["logo_url"] in html
+        assert "\u2605\u2605\u2605\u2605" in html
+        assert "12 TO 20 SEPT 2026" in html
+
+    def test_cover_renders_without_a_logo(self, slides):
+        """The logo is optional, so the template must not break when an event
+        has no poster on the site."""
+        cover = dict(slides[0], logo_url="")
+        html = render_template("carousel/slide_fourstar_cover", cover)
+        assert "event-logo" not in html
 
     def test_missing_logo_yields_empty_string(self):
         assert logo_url("no-such-logo.png") == ""
 
-    def test_covers_without_an_image_are_unchanged(self):
-        """The logo block is additive, so the Freestyle, Slalom and rules
-        covers must render exactly as they did before."""
+    def test_shared_fantasy_rules_cover_is_untouched(self):
+        """This post uses its own cover template, so the shared one the
+        Freestyle, Slalom and rules posts render through stays as it was."""
         from pipeline.fantasy_rules import build_fantasy_rules_slides
 
         html = render_template(

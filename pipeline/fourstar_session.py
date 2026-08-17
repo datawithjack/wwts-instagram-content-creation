@@ -88,19 +88,25 @@ YOU_WILL_KNOW = {
 def build_fourstar_session_slides() -> list[dict]:
     """Build 6 slide dicts: cover, the change, 2 screenshots, notifications, cta."""
     slides = [
+        # Bottom-anchored cover borrowed from event_picks, the house language
+        # for an event-specific announcement. The poster sits as a corner mark
+        # rather than the hero: it is supplied artwork with a loud palette and
+        # a light background it cannot shed, so at hero size it fights the
+        # brand and buries the news under a name it already shouts.
         {
-            "type": "fantasy_rules_cover",
+            "type": "fourstar_cover",
             "eyebrow": "WINDSURF FANTASY LEAGUE",
-            # Not "Wissant": the poster directly above already says it in
-            # letters a foot tall, so repeating it wastes the biggest type on
-            # the slide. The title carries the news instead.
-            "title": "The Session",
-            "subtitle": "Wissant Wave Classic joins in, 12 to 20 September.",
-            # The event's own poster, so the cover is recognisably this event
-            # rather than a generic fantasy announcement.
-            "cover_image": logo_url("wissant-wave-classic.png"),
-            "cover_image_alt": "Wissant Wave Classic 2026 event poster",
-            "cover_image_height": 420,
+            "headline_top": "It's",
+            "headline_accent": "On",
+            "event_name": "Wissant Wave Classic",
+            "discipline": "Wave",
+            "stars": 4,
+            "dates": "12 to 20 Sept 2026",
+            "subtitle": "The 4-star at Wissant joins The Session. Pick a squad "
+                        "for the one event, score on every heat.",
+            "logo_url": logo_url("wissant-wave-classic.png"),
+            "logo_alt": "Wissant Wave Classic 2026 event poster",
+            "logo_width": 300,
             "accent_color": SESSION_COLOR,
         },
         {
