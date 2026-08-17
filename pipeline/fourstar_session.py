@@ -24,8 +24,10 @@ Slot copy is quoted from the app itself, so the post and the product say the
 same thing. Note the rule is not a flat "two riders opens a tier": two opens a
 band's first slot, four opens its second.
 
-Reuses the fantasy_rules_* slide templates so this reads as one series with the
-Freestyle and Slalom Session posts.
+The body slides reuse the fantasy_rules_* templates and the Session teal, so this
+reads as one series with the Freestyle and Slalom Session posts. The cover is its
+own template: an event announcement wants the event's name, stars and dates on it,
+which the shared cover has nowhere to put.
 """
 import os
 
@@ -59,16 +61,25 @@ def logo_url(name: str) -> str:
     return _file_url(LOGOS_DIR, name)
 
 
-# Slide 2 — what actually changed, for this one event.
-THE_CHANGE = {
-    "eyebrow": "WHAT'S NEW",
-    "name": "Session Only",
-    "tagline": "One more event to play, one event at a time.",
+# Slide 2 — the squad shape.
+#
+# This slide used to restate the cover: the event name, the dates, "pick a
+# squad, score on every heat". With the cover carrying all of that it had
+# nothing left to say, so it says the one thing the reader actually needs
+# before slides 3 and 4 make sense: there are eleven slots, five of them
+# women's, which is why a locked women's slot matters.
+#
+# Slot shape verified against the live Wissant picks page and
+# frontend/src/utils/sessionSlotLabels.ts in the app repo.
+THE_SQUAD = {
+    "eyebrow": "YOUR SQUAD",
+    "name": "11 Picks",
+    "tagline": "Six men and five women.",
     "points": [
-        "Wissant Wave Classic, 12 to 20 September",
-        "The Session only, so no Tour points ride on it",
-        "Pick a squad, score on every heat they sail",
-        "A standalone leaderboard, just for this event",
+        "Men: 1 Top 5, 2 from 6-15, 3 wildcards",
+        "Women: 1 Top 5, 2 from 6-15, 2 wildcards",
+        "Every heat your riders sail scores",
+        "No captain, no Tour points, no season to commit to",
     ],
 }
 
@@ -102,8 +113,9 @@ def build_fourstar_session_slides() -> list[dict]:
             "discipline": "Wave",
             "stars": 4,
             "dates": "12 to 20 Sept 2026",
-            "subtitle": "The 4-star at Wissant joins The Session. Pick a squad "
-                        "for the one event, score on every heat.",
+            "subtitle": "The 4-star Wissant Wave Classic joins Windsurf Fantasy "
+                        "League in The Session. Pick a squad for the event, "
+                        "score on every heat.",
             "logo_url": logo_url("wissant-wave-classic.png"),
             "logo_alt": "Wissant Wave Classic 2026 event poster",
             "logo_width": 300,
@@ -111,10 +123,10 @@ def build_fourstar_session_slides() -> list[dict]:
         },
         {
             "type": "fantasy_rules_game",
-            "eyebrow": THE_CHANGE["eyebrow"],
-            "name": THE_CHANGE["name"],
-            "tagline": THE_CHANGE["tagline"],
-            "points": THE_CHANGE["points"],
+            "eyebrow": THE_SQUAD["eyebrow"],
+            "name": THE_SQUAD["name"],
+            "tagline": THE_SQUAD["tagline"],
+            "points": THE_SQUAD["points"],
             "accent_color": SESSION_COLOR,
         },
         # The card carries both halves of the first condition in one shot: the

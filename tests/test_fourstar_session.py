@@ -39,9 +39,27 @@ class TestSlideShape:
 
 
 class TestNarrative:
-    def test_names_wissant_with_dates(self, slides):
-        text = " ".join(slides[1]["points"])
-        assert "Wissant" in text and "12 to 20 September" in text
+    def test_names_wissant_with_dates_on_the_cover(self, slides):
+        """The event name and dates belong to the cover. Slide 2 used to repeat
+        them, which left it with nothing of its own to say."""
+        cover = slides[0]
+        assert cover["event_name"] == "Wissant Wave Classic"
+        assert cover["dates"] == "12 to 20 Sept 2026"
+
+    def test_squad_slide_gives_the_slot_shape(self, slides):
+        """Eleven slots, five of them women's. Without this the locked women's
+        slots on slide 4 have no context."""
+        points = slides[1]["points"]
+        assert "11" in slides[1]["name"]
+        assert points[0].startswith("Men:")
+        assert points[1].startswith("Women:")
+
+    def test_squad_slide_does_not_restate_the_cover(self, slides):
+        """The cover already carries the event, the dates and the pitch. Slide 2
+        repeating them is the failure mode this replaced."""
+        text = " ".join(slides[1]["points"] + [slides[1]["tagline"]])
+        assert "Wissant" not in text
+        assert "September" not in text and "Sept" not in text
 
     def test_does_not_mention_tiree(self, slides):
         """Tiree works the same way but is not confirmed, so it must not be
