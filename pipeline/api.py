@@ -350,9 +350,16 @@ def fetch_event_top_scores(event_id: int, score_type: str, sex: str = None, limi
             "event": event_name,
             "round": r.get("round_name", ""),
             "heat": heat_label_from_id(heat_id) if heat_id else "",
+            # Non-counting rows render dimmed with a footnote. carousel.py reads
+            # a missing key as counting, so an absent flag has to become 1 here
+            # rather than being left out.
+            "counting": int(bool(r.get("counting", True))),
         }
         if is_jump:
             entry["trick_type"] = r.get("move_type", "")
+            # Tweaked / 1-Foot / 1-Hand. `or ""` because the API sends null for
+            # an unmodified jump, and the template tests the value directly.
+            entry["modifier"] = r.get("move_variation") or ""
         entries.append(entry)
 
     # Event metadata for cover slide

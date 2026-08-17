@@ -59,7 +59,7 @@ posts:
     params:
       score_type: Wave
       sex: Women
-      event: 391
+      event: 124
     caption: |-
       🌊 The best women's waves of the Tenerife Grand Slam 2026.
 
@@ -71,20 +71,21 @@ posts:
     category: seasonal
     scheduled_date: "2026-08-18T08:00:00"
     notes: >
-      Top 10 women's wave scores, Tenerife Grand Slam 2026. event is the DB
-      pwa_event_id 391, not the API id 124: the API per-event endpoint 404s for
-      this event so generate.py falls back to the DB. Needs the SSH tunnel up at
-      render time. 08:00Z is 10:00 CEST. Includes non-counting scores (the
-      default since 2026-06-10); none appear in the women's wave top 10. Caption
-      carries no hashtags because build_caption appends the config set to an
-      override rather than replacing it, which posts them twice.
+      Top 10 women's wave scores, Tenerife Grand Slam 2026. event is the API id
+      124, not the DB pwa_event_id 391: per issue #8 the per-event path now runs
+      on /events/{id}/stats, so no SSH tunnel is needed and the poll-backlog
+      Action can publish it unattended. 08:00Z is 10:00 CEST. Includes
+      non-counting scores (the default since 2026-06-10); none appear in the
+      women's wave top 10. Caption carries no hashtags because build_caption
+      appends the config set to an override rather than replacing it, which
+      posts them twice.
 
   - id: tenerife2026-womens-jumps-top10
     template: top_10_carousel
     params:
       score_type: Jump
       sex: Women
-      event: 391
+      event: 124
     caption: |-
       🚀 The best women's jumps of the Tenerife Grand Slam 2026.
 
@@ -96,20 +97,22 @@ posts:
     category: seasonal
     scheduled_date: "2026-08-18T08:00:00"
     notes: >
-      Top 10 women's jump scores, Tenerife Grand Slam 2026. Jumps always go
-      straight to the DB (only the DB carries the trick modifier), so event is
-      the DB pwa_event_id 391. Needs the SSH tunnel up at render time. 08:00Z is
-      10:00 CEST. Two non-counting scores appear in the top 10 (7.38 and 6.50,
-      both Alexia Kiefer Quintana), which is the default behaviour. Scheduled
-      for the same slot as tenerife2026-womens-waves-top10, so the poller will
-      publish both in one cycle.
+      Top 10 women's jump scores, Tenerife Grand Slam 2026. event is the API id
+      124: per issue #8 jumps run on the API too, since /events/{id}/stats
+      returns move_variation for the trick modifier. No SSH tunnel needed.
+      Sarah-Quita Offringa's 7.62 is a Tweaked Push Loop, which is the modifier
+      that switch had to preserve. 08:00Z is 10:00 CEST. Two non-counting scores
+      appear in the top 10 (7.38 and 6.50, both Alexia Kiefer Quintana), which
+      is the default behaviour. Scheduled for the same slot as
+      tenerife2026-womens-waves-top10, so the poller will publish both in one
+      cycle.
 
   - id: tenerife2026-mens-waves-top10
     template: top_10_carousel
     params:
       score_type: Wave
       sex: Men
-      event: 391
+      event: 124
     caption: |-
       🌊 The best men's waves of the Tenerife Grand Slam 2026.
 
@@ -121,19 +124,19 @@ posts:
     category: seasonal
     scheduled_date: "2026-08-19T08:00:00"
     notes: >
-      Top 10 men's wave scores, Tenerife Grand Slam 2026. event is the DB
-      pwa_event_id 391, not the API id 124: the API per-event endpoint 404s for
-      this event so generate.py falls back to the DB. Needs the SSH tunnel up at
-      render time. 08:00Z is 10:00 CEST. No non-counting scores in the top 10.
-      Caption carries no hashtags because build_caption appends the config set
-      to an override rather than replacing it, which posts them twice.
+      Top 10 men's wave scores, Tenerife Grand Slam 2026. event is the API id
+      124, not the DB pwa_event_id 391: per issue #8 the per-event path now runs
+      on /events/{id}/stats, so no SSH tunnel is needed. 08:00Z is 10:00 CEST.
+      No non-counting scores in the top 10. Caption carries no hashtags because
+      build_caption appends the config set to an override rather than replacing
+      it, which posts them twice.
 
   - id: tenerife2026-mens-jumps-top10
     template: top_10_carousel
     params:
       score_type: Jump
       sex: Men
-      event: 391
+      event: 124
     caption: |-
       🚀 Eight perfect 10s. That was the men's jumping at the Tenerife Grand Slam 2026.
 
@@ -145,11 +148,10 @@ posts:
     category: seasonal
     scheduled_date: "2026-08-19T08:00:00"
     notes: >
-      Top 10 men's jump scores, Tenerife Grand Slam 2026. Jumps always go
-      straight to the DB (only the DB carries the trick modifier), so event is
-      the DB pwa_event_id 391. Needs the SSH tunnel up at render time. 08:00Z is
-      10:00 CEST. Eight-way tie on 10.00, so build_slides puts all eight on the
-      hero card and the carousel comes out 4 slides instead of the usual 5.
+      Top 10 men's jump scores, Tenerife Grand Slam 2026. event is the API id
+      124: per issue #8 jumps run on the API too. No SSH tunnel needed. 08:00Z
+      is 10:00 CEST. Eight-way tie on 10.00, so build_slides puts all eight on
+      the hero card and the carousel comes out 4 slides instead of the usual 5.
       Scheduled for the same slot as tenerife2026-mens-waves-top10, so the
       poller will publish both in one cycle.
 

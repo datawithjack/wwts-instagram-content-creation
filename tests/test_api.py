@@ -345,12 +345,12 @@ def _mock_event_stats_response():
         json=lambda: {
             "event_name": "2026 Gran Canaria Wind & Waves Festival",
             "top_wave_scores": [
-                {"athlete_id": 1, "athlete_name": "Marc Pare Rico", "score": 8.83, "round_name": "Final", "heat_number": 1},
-                {"athlete_id": 2, "athlete_name": "Takara Ishii", "score": 8.50, "round_name": "Semi Final", "heat_number": 3},
+                {"athlete_id": 1, "athlete_name": "Marc Pare Rico", "score": 8.83, "round_name": "Final", "heat_number": 1, "counting": True},
+                {"athlete_id": 2, "athlete_name": "Takara Ishii", "score": 8.50, "round_name": "Semi Final", "heat_number": 3, "counting": False},
             ],
             "top_jump_scores": [
-                {"athlete_id": 1, "athlete_name": "Marc Pare Rico", "score": 9.10, "round_name": "Final", "heat_number": 1, "move_type": "F"},
-                {"athlete_id": 3, "athlete_name": "Antoine Martin", "score": 8.90, "round_name": "Semi Final", "heat_number": 2, "move_type": "P"},
+                {"athlete_id": 1, "athlete_name": "Marc Pare Rico", "score": 9.10, "round_name": "Final", "heat_number": 1, "move_type": "F", "move_variation": "Tweaked", "counting": True},
+                {"athlete_id": 3, "athlete_name": "Antoine Martin", "score": 8.90, "round_name": "Semi Final", "heat_number": 2, "move_type": "P", "move_variation": None, "counting": False},
             ],
         },
     )
@@ -419,6 +419,67 @@ class TestFetchEventTopScores:
         assert result["entries"][0]["score"] == 8.83
         assert result["entries"][0]["round"] == "Final"
         assert result["show_trick_type"] is False
+
+    @patch("pipeline.api.requests.get")
+    def test_jump_entries_carry_the_move_variation(self, mock_get):
+        """The modifier (Tweaked, 1-Foot, 1-Hand) is a real distinction between
+        two jumps of the same type — without it a Tweaked Push Loop renders as
+        a plain one."""
+        mock_get.side_effect = [
+            _mock_event_stats_response(),
+            _mock_event_athletes_response(),
+            _mock_event_response(),
+        ]
+
+        result = fetch_event_top_scores(event_id=42, score_type="Jump", sex="Men")
+
+        assert result["entries"][0]["modifier"] == "Tweaked"
+
+    @patch("pipeline.api.requests.get")
+    def test_absent_move_variation_is_an_empty_string(self, mock_get):
+        """modifier_label renders None as empty, but the template also tests the
+        value for truthiness — keep it a string so neither path prints 'None'."""
+        mock_get.side_effect = [
+            _mock_event_stats_response(),
+            _mock_event_athletes_response(),
+            _mock_event_response(),
+        ]
+
+        result = fetch_event_top_scores(event_id=42, score_type="Jump", sex="Men")
+
+        assert result["entries"][1]["modifier"] == ""
+
+    @patch("pipeline.api.requests.get")
+    def test_entries_carry_the_counting_flag(self, mock_get):
+        """Non-counting rows render dimmed with a footnote. carousel.py treats a
+        missing key as counting, so dropping it silently loses the distinction."""
+        mock_get.side_effect = [
+            _mock_event_stats_response(),
+            _mock_event_athletes_response(),
+            _mock_event_response(),
+        ]
+
+        result = fetch_event_top_scores(event_id=42, score_type="Wave", sex="Men")
+
+        assert result["entries"][0]["counting"] == 1
+        assert result["entries"][1]["counting"] == 0
+
+    @patch("pipeline.api.requests.get")
+    def test_counting_defaults_to_true_when_absent(self, mock_get):
+        stats = _mock_event_stats_response()
+        payload = stats.json()
+        for row in payload["top_wave_scores"]:
+            row.pop("counting")
+        stats.json = lambda: payload
+        mock_get.side_effect = [
+            stats,
+            _mock_event_athletes_response(),
+            _mock_event_response(),
+        ]
+
+        result = fetch_event_top_scores(event_id=42, score_type="Wave", sex="Men")
+
+        assert all(e["counting"] == 1 for e in result["entries"])
 
     @patch("pipeline.api.requests.get")
     def test_jump_entries_include_trick_type(self, mock_get):
