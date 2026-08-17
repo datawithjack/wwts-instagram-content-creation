@@ -81,12 +81,39 @@ def _clip_between(page, top, bottom, pad: int = 16) -> dict | None:
     return {"x": 0, "y": max(0, y), "width": width, "height": height}
 
 
+def _surface_box(page, locator, pad: int = 12) -> dict | None:
+    """Document-space box of the nearest enclosing card surface.
+
+    `surface-N` is the app's own card token rather than a Tailwind utility, so
+    it marks a real card boundary. That matters here: climbing by text stops at
+    the first wrapper holding the copy, which on an event card is the inner text
+    column — it cuts off the star-rating badge and the image above it.
+    """
+    handle = locator.element_handle()
+    if handle is None:
+        return None
+    return page.evaluate(
+        """([el, pad]) => {
+            const card = el.closest('[class*="surface-"]');
+            if (!card) return null;
+            const r = card.getBoundingClientRect();
+            return {
+                x: Math.max(0, r.left - pad),
+                y: Math.max(0, r.top + window.scrollY - pad),
+                width: Math.min(document.documentElement.clientWidth, r.width + pad * 2),
+                height: r.height + pad * 2,
+            };
+        }""",
+        [handle, pad],
+    )
+
+
 def _enclosing_box(page, locator, must_contain: str, pad: int = 12) -> dict | None:
     """Document-space box of the nearest ancestor whose text contains a phrase.
 
-    Cards are unlabelled Tailwind divs of unpredictable depth, so "go up N
-    parents" is a guess that breaks on the next markup change. Climbing until
-    the wanted copy is in scope is stable against that.
+    For regions with no card surface to anchor on. Cards are unlabelled Tailwind
+    divs of unpredictable depth, so "go up N parents" is a guess that breaks on
+    the next markup change; climbing until the wanted copy is in scope does not.
     """
     handle = locator.element_handle()
     if handle is None:
@@ -134,17 +161,18 @@ def _capture_hub(page, out_dir: str) -> None:
         box = _enclosing_box(page, status, "Practice Mode", pad=20)
         _shoot(page, f"{out_dir}/hub_gate.png", box)
 
-    # The entry count is the reason to shoot a card at all, so the clip has to
-    # reach the "N riders entered / Picks open at 20" line. Climb from the title
-    # until an ancestor actually contains that copy rather than guessing a depth.
+    # Shoot the whole card surface: discipline and star-rating badge, event
+    # image, title, dates, and the "N riders entered / Picks open at 20" line
+    # with its progress bar. The entry count is the point, but the badge and
+    # image are what make it read as the event's card rather than a stray row.
     for event in FOUR_STAR_EVENTS:
         title = page.get_by_text(re.compile(event["slug"], re.I)).first
         if not title.count():
             print(f"  no hub card for {event['slug']}")
             continue
-        box = _enclosing_box(page, title, "Picks open at")
+        box = _surface_box(page, title, pad=8) or _enclosing_box(page, title, "Picks open at", pad=28)
         if not box:
-            print(f"  no entry-count line on the {event['slug']} card")
+            print(f"  could not locate the {event['slug']} card")
             continue
         _shoot(page, f"{out_dir}/hub_card_{event['slug']}.png", box)
 
