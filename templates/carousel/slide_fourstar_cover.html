@@ -49,24 +49,33 @@
 
     .cover-headline {
         font-family: var(--font-display);
-        font-size: 210px;
-        letter-spacing: -0.01em;
-        line-height: 0.84;
+        font-size: 200px;
+        letter-spacing: 0.0em;
+        line-height: 0.86;
         color: var(--color-text-primary);
-        margin-bottom: 26px;
+        margin-bottom: 22px;
+        white-space: nowrap;
     }
 
     .cover-headline .accent {
         color: var(--color-discipline);
     }
 
-    .cover-event {
+    /* The actual news, and the line the whole slide is built to deliver. Sized
+       to carry weight in its own right rather than reading as a caption under
+       the headline. */
+    .cover-lede {
         font-family: var(--font-display);
-        font-size: 76px;
+        font-size: 68px;
         letter-spacing: 0.02em;
-        line-height: 1.0;
+        line-height: 1.04;
         color: var(--color-text-primary);
-        margin-bottom: 14px;
+        margin-bottom: 18px;
+        max-width: 900px;
+    }
+
+    .cover-lede .accent {
+        color: var(--color-discipline);
     }
 
     .cover-meta {
@@ -121,8 +130,8 @@
     {% endif %}
 
     <div class="cover-eyebrow">{{ eyebrow }}</div>
-    <div class="cover-headline">{{ headline_top | upper }}<br><span class="accent">{{ headline_accent | upper }}</span></div>
-    <div class="cover-event">{{ event_name | upper }}</div>
+    <div class="cover-headline">{{ headline | upper }}</div>
+    <div class="cover-lede">{{ lede | upper }} <span class="accent">{{ lede_accent | upper }}</span></div>
     <div class="cover-meta">
         <span>{{ discipline | upper }}</span>
         <span class="meta-sep">·</span>

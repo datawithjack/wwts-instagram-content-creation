@@ -106,16 +106,19 @@ def build_fourstar_session_slides() -> list[dict]:
         # brand and buries the news under a name it already shouts.
         {
             "type": "fourstar_cover",
-            "eyebrow": "WINDSURF FANTASY LEAGUE",
-            "headline_top": "It's",
-            "headline_accent": "On",
+            # Eyebrow names the mode, not the league: the lede below carries
+            # the league now, and having both say it wastes a line.
+            "eyebrow": "THE SESSION",
+            "headline": "It's On",
+            # The line the slide exists to deliver, so it is sized to carry
+            # weight rather than sit as a caption under the headline.
+            "lede": "The 4-star Wissant Wave Classic joins",
+            "lede_accent": "Windsurf Fantasy League",
             "event_name": "Wissant Wave Classic",
             "discipline": "Wave",
             "stars": 4,
             "dates": "12 to 20 Sept 2026",
-            "subtitle": "The 4-star Wissant Wave Classic joins Windsurf Fantasy "
-                        "League in The Session. Pick a squad for the event, "
-                        "score on every heat.",
+            "subtitle": "Pick a squad for the event, score on every heat.",
             "logo_url": logo_url("wissant-wave-classic.png"),
             "logo_alt": "Wissant Wave Classic 2026 event poster",
             "logo_width": 300,
