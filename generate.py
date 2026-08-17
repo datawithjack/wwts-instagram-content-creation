@@ -79,11 +79,15 @@ def fetch_live_data(template_name: str, args) -> dict:
             print("Top 10 requires: --score-type (Wave or Jump)")
             sys.exit(1)
 
-        # Use API for per-event top 10; fall back to DB if API 404s.
-        # Jumps skip the API and go straight to the DB — only the DB carries
-        # the trick modifier (1-Foot, 1-Hand, Tweaked). For per-event jumps
-        # --event is therefore the DB pwa_event_id, not the API event id.
-        if args.event and args.score_type != "Jump":
+        # Use API for per-event top 10; fall back to DB if API 404s. That order
+        # matters for unattended publishing: the DB only answers through an SSH
+        # tunnel, which the poll-backlog Action does not have.
+        # Jumps used to skip the API because only the DB carried the trick
+        # modifier (1-Foot, 1-Hand, Tweaked); /events/{id}/stats now returns it
+        # as move_variation, so they take the same path as waves.
+        # --event is therefore the API event id, and the DB pwa_event_id only
+        # on the fallback.
+        if args.event:
             try:
                 return fetch_event_top_scores(
                     event_id=args.event,
