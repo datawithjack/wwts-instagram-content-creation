@@ -54,6 +54,105 @@
 # TODO: shortlist windfluencers, decide collab vs editorial, pick a format, build.
 
 posts:
+  - id: tenerife2026-womens-waves-top10
+    template: top_10_carousel
+    params:
+      score_type: Wave
+      sex: Women
+      event: 391
+    caption: |-
+      🌊 The best women's waves of the Tenerife Grand Slam 2026.
+
+      Lina Erpenstein and Pauline Katz share top spot on 8.00, both from Semi Final Round 4, the heat that produced most of this leaderboard.
+
+      Swipe for the full top 10.
+
+      Full stats → windsurfworldtourstats.com
+    category: seasonal
+    scheduled_date: "2026-08-18T08:00:00"
+    notes: >
+      Top 10 women's wave scores, Tenerife Grand Slam 2026. event is the DB
+      pwa_event_id 391, not the API id 124: the API per-event endpoint 404s for
+      this event so generate.py falls back to the DB. Needs the SSH tunnel up at
+      render time. 08:00Z is 10:00 CEST. Includes non-counting scores (the
+      default since 2026-06-10); none appear in the women's wave top 10. Caption
+      carries no hashtags because build_caption appends the config set to an
+      override rather than replacing it, which posts them twice.
+
+  - id: tenerife2026-womens-jumps-top10
+    template: top_10_carousel
+    params:
+      score_type: Jump
+      sex: Women
+      event: 391
+    caption: |-
+      🚀 The best women's jumps of the Tenerife Grand Slam 2026.
+
+      Alexia Kiefer Quintana tops it with a 7.83 backloop in the final, and lands three of the top 10. Sarah-Quita Offringa answers with a 7.62 pushloop.
+
+      Swipe for the full top 10.
+
+      Full stats → windsurfworldtourstats.com
+    category: seasonal
+    scheduled_date: "2026-08-18T08:00:00"
+    notes: >
+      Top 10 women's jump scores, Tenerife Grand Slam 2026. Jumps always go
+      straight to the DB (only the DB carries the trick modifier), so event is
+      the DB pwa_event_id 391. Needs the SSH tunnel up at render time. 08:00Z is
+      10:00 CEST. Two non-counting scores appear in the top 10 (7.38 and 6.50,
+      both Alexia Kiefer Quintana), which is the default behaviour. Scheduled
+      for the same slot as tenerife2026-womens-waves-top10, so the poller will
+      publish both in one cycle.
+
+  - id: tenerife2026-mens-waves-top10
+    template: top_10_carousel
+    params:
+      score_type: Wave
+      sex: Men
+      event: 391
+    caption: |-
+      🌊 The best men's waves of the Tenerife Grand Slam 2026.
+
+      Marc Paré Rico tops the board with a 9.38 in Semi Final Round 5, on his way to the win. Philip Köster lands three of the top 10.
+
+      Swipe for the full top 10.
+
+      Full stats → windsurfworldtourstats.com
+    category: seasonal
+    scheduled_date: "2026-08-19T08:00:00"
+    notes: >
+      Top 10 men's wave scores, Tenerife Grand Slam 2026. event is the DB
+      pwa_event_id 391, not the API id 124: the API per-event endpoint 404s for
+      this event so generate.py falls back to the DB. Needs the SSH tunnel up at
+      render time. 08:00Z is 10:00 CEST. No non-counting scores in the top 10.
+      Caption carries no hashtags because build_caption appends the config set
+      to an override rather than replacing it, which posts them twice.
+
+  - id: tenerife2026-mens-jumps-top10
+    template: top_10_carousel
+    params:
+      score_type: Jump
+      sex: Men
+      event: 391
+    caption: |-
+      🚀 Eight perfect 10s. That was the men's jumping at the Tenerife Grand Slam 2026.
+
+      Marc Paré Rico, Philip Köster and Marino Gil Gherardi all maxed the scale, with double forwards and pushloop forwards from the quarters through to the final.
+
+      Swipe for the full top 10.
+
+      Full stats → windsurfworldtourstats.com
+    category: seasonal
+    scheduled_date: "2026-08-19T08:00:00"
+    notes: >
+      Top 10 men's jump scores, Tenerife Grand Slam 2026. Jumps always go
+      straight to the DB (only the DB carries the trick modifier), so event is
+      the DB pwa_event_id 391. Needs the SSH tunnel up at render time. 08:00Z is
+      10:00 CEST. Eight-way tie on 10.00, so build_slides puts all eight on the
+      hero card and the carousel comes out 4 slides instead of the usual 5.
+      Scheduled for the same slot as tenerife2026-mens-waves-top10, so the
+      poller will publish both in one cycle.
+
   - id: tenerife2026-finals-recap-men
     template: finals_recap
     params:

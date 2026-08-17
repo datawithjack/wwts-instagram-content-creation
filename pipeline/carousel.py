@@ -76,7 +76,10 @@ def _build_content_slides(common: dict, rows: list[dict]) -> list[dict]:
     tied = _detect_top_ties(rows)
 
     if tied:
-        hero_rows = tied
+        # Group a rider's tied scores together — an eight-way tie with the same
+        # name scattered down the card reads as a jumble. Sort is stable, so
+        # each rider's own rows keep their leaderboard order.
+        hero_rows = sorted(tied, key=lambda r: r["athlete"])
         remaining = [r for r in rows if r not in tied]
     else:
         hero_rows = [rows[0]]
