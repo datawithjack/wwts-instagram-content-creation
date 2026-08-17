@@ -1,0 +1,97 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .container {
+        justify-content: center;
+        padding: 88px 80px;
+        gap: 0;
+    }
+
+    .shot-eyebrow {
+        font-family: var(--font-body);
+        font-size: 26px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: var(--color-discipline);
+        margin-bottom: 14px;
+    }
+
+    .shot-title {
+        font-family: var(--font-display);
+        font-size: 110px;
+        letter-spacing: 0.02em;
+        line-height: 0.95;
+        color: var(--color-text-primary);
+        margin-bottom: 14px;
+    }
+
+    .shot-tagline {
+        font-family: var(--font-body);
+        font-size: 36px;
+        font-weight: 500;
+        font-style: italic;
+        color: var(--color-text-muted);
+        letter-spacing: 0.01em;
+        margin-bottom: 48px;
+    }
+
+    /* The frame does the work of saying "this is the app, not our artwork":
+       a light hairline and a lift off the background, sized to whatever the
+       shot's aspect happens to be. Screenshots arrive both wide (an event
+       card) and near-square (a stack of slot rows). */
+    .shot-frame {
+        border-radius: 18px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+        /* Hug the image. A fixed-width frame letterboxes a near-square shot
+           against its own background, which reads as a narrow screenshot
+           floating in a wider panel rather than as the app itself. */
+        display: inline-flex;
+        width: fit-content;
+        max-width: 100%;
+        align-self: center;
+    }
+
+    .shot-frame img {
+        display: block;
+        width: auto;
+        max-width: 100%;
+        max-height: {{ max_height | default(620) }}px;
+    }
+
+    .shot-caption {
+        font-family: var(--font-body);
+        font-size: 36px;
+        font-weight: 400;
+        line-height: 1.35;
+        color: var(--color-text-primary);
+        margin-top: 44px;
+    }
+
+    .shot-caption .lead {
+        color: var(--color-discipline);
+        font-weight: 700;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="shot-eyebrow">{{ eyebrow }}</div>
+    <div class="shot-title">{{ title | upper }}</div>
+    {% if tagline %}<div class="shot-tagline">{{ tagline }}</div>{% endif %}
+
+    <div class="shot-frame">
+        <img src="{{ image_url }}" alt="{{ alt | default('App screenshot') }}">
+    </div>
+
+    {% if caption %}
+    <div class="shot-caption">
+        {% if lead %}<span class="lead">{{ lead }}</span> {% endif %}{{ caption }}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
