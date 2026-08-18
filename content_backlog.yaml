@@ -70,6 +70,8 @@ posts:
       Full stats → windsurfworldtourstats.com
     category: seasonal
     scheduled_date: "2026-08-18T08:00:00"
+    published: true
+    published_at: "2026-08-18T08:02:38"
     notes: >
       Top 10 women's wave scores, Tenerife Grand Slam 2026. event is the API id
       124, not the DB pwa_event_id 391: per issue #8 the per-event path now runs
@@ -96,6 +98,8 @@ posts:
       Full stats → windsurfworldtourstats.com
     category: seasonal
     scheduled_date: "2026-08-18T08:00:00"
+    published: true
+    published_at: "2026-08-18T08:02:38"
     notes: >
       Top 10 women's jump scores, Tenerife Grand Slam 2026. event is the API id
       124: per issue #8 jumps run on the API too, since /events/{id}/stats
