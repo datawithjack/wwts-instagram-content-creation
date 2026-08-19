@@ -39,6 +39,7 @@ def build_caption(
             "slalom_mvps": _caption_slalom_mvps,
             "fantasy_league_announce": _caption_fantasy_league,
             "fantasy_rules": _caption_fantasy_rules,
+            "fourstar_session": _caption_fourstar_session,
             "how_to_pick_reel": _caption_how_to_pick_reel,
         }
         builder = builders.get(template_name, _caption_default)
@@ -448,6 +449,22 @@ def _caption_fantasy_rules(data: dict, site_url: str) -> str:
         "⚡ The Session — pick a team for a single event and score every heat.\n\n"
         "Swipe for the breakdown — then get your team in.\n\n"
         f"\U0001f449 Sign up: link in bio ({site_url})"
+    )
+
+
+def _caption_fourstar_session(data: dict, site_url: str) -> str:
+    return (
+        "\u26a1 Wissant is on Fantasy League.\n\n"
+        "The 4-star at Wissant (12 to 20 Sept) will run on The Session: "
+        "pick a squad for the one event, score on every heat they sail. No "
+        "Tour points ride on it, so there is nothing to lose.\n\n"
+        "Two things have to happen first:\n\n"
+        "1\ufe0f\u20e3 The event opens once 20 riders have entered. Wissant is at 12.\n"
+        "2\ufe0f\u20e3 Pick slots then unlock by category. Two riders in a category "
+        "opens its slot, four opens the next one.\n\n"
+        "You will not need to sit refreshing the page. We will email you the "
+        "moment picks open, and nudge you as the start list grows.\n\n"
+        f"\U0001f449 Sign up free: link in bio ({site_url})"
     )
 
 

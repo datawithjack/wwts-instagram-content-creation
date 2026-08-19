@@ -81,19 +81,25 @@ def _clip_between(page, top, bottom, pad: int = 16) -> dict | None:
     return {"x": 0, "y": max(0, y), "width": width, "height": height}
 
 
-def _surface_box(page, locator, pad: int = 12) -> dict | None:
+def _surface_box(page, locator, pad: int = 12, pad_bottom: int | None = None) -> dict | None:
     """Document-space box of the nearest enclosing card surface.
 
     `surface-N` is the app's own card token rather than a Tailwind utility, so
     it marks a real card boundary. That matters here: climbing by text stops at
     the first wrapper holding the copy, which on an event card is the inner text
     column — it cuts off the star-rating badge and the image above it.
+
+    `pad_bottom` is separate because the event card's entry progress bar is
+    painted on the card's own bottom edge: growing the box evenly to catch it
+    also drags in a slice of the card above.
     """
     handle = locator.element_handle()
     if handle is None:
         return None
+    if pad_bottom is None:
+        pad_bottom = pad
     return page.evaluate(
-        """([el, pad]) => {
+        """([el, pad, padBottom]) => {
             const card = el.closest('[class*="surface-"]');
             if (!card) return null;
             const r = card.getBoundingClientRect();
@@ -101,10 +107,10 @@ def _surface_box(page, locator, pad: int = 12) -> dict | None:
                 x: Math.max(0, r.left - pad),
                 y: Math.max(0, r.top + window.scrollY - pad),
                 width: Math.min(document.documentElement.clientWidth, r.width + pad * 2),
-                height: r.height + pad * 2,
+                height: r.height + pad + padBottom,
             };
         }""",
-        [handle, pad],
+        [handle, pad, pad_bottom],
     )
 
 
@@ -170,7 +176,9 @@ def _capture_hub(page, out_dir: str) -> None:
         if not title.count():
             print(f"  no hub card for {event['slug']}")
             continue
-        box = _surface_box(page, title, pad=8) or _enclosing_box(page, title, "Picks open at", pad=28)
+        box = _surface_box(page, title, pad=8, pad_bottom=10) or _enclosing_box(
+            page, title, "required to play", pad=28
+        )
         if not box:
             print(f"  could not locate the {event['slug']} card")
             continue

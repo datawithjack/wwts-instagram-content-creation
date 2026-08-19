@@ -630,7 +630,7 @@ def main():
     parser.add_argument(
         "--template",
         required=True,
-        choices=["head_to_head", "head_to_head_jump", "h2h_carousel", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "fantasy_league_announce", "fantasy_rules", "tour_rules_reel", "tour_availability_reel", "session_vs_tour_reel", "how_to_pick_reel", "freestyle_scores_live", "slalom_scores_live", "wave_scores_live", "event_picks", "fuerte_fantasy_mvps", "slalom_mvps", "finals_preview", "finals_recap", "commentator_brief"],
+        choices=["head_to_head", "head_to_head_jump", "h2h_carousel", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "fantasy_league_announce", "fantasy_rules", "fourstar_session", "tour_rules_reel", "tour_availability_reel", "session_vs_tour_reel", "how_to_pick_reel", "freestyle_scores_live", "slalom_scores_live", "wave_scores_live", "event_picks", "fuerte_fantasy_mvps", "slalom_mvps", "finals_preview", "finals_recap", "commentator_brief"],
     )
     parser.add_argument("--athlete1", type=int, help="Athlete 1 unified ID")
     parser.add_argument("--athlete2", type=int, help="Athlete 2 unified ID")
@@ -707,11 +707,11 @@ def main():
     if getattr(args, "rider_of_day", False):
         data["rider_of_day"] = True
 
-    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "fantasy_rules", "h2h_carousel", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "event_picks", "fuerte_fantasy_mvps", "slalom_mvps", "finals_preview", "finals_recap", "commentator_brief")
+    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "fantasy_rules", "fourstar_session", "h2h_carousel", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "event_picks", "fuerte_fantasy_mvps", "slalom_mvps", "finals_preview", "finals_recap", "commentator_brief")
 
     # Carousel preview: open all slides in browser tabs
     if is_carousel and args.preview:
-        if template_name in ("coming_soon_carousel", "about_carousel", "fantasy_rules"):
+        if template_name in ("coming_soon_carousel", "about_carousel", "fantasy_rules", "fourstar_session"):
             slides = data["slides"]
         elif template_name == "h2h_carousel":
             from pipeline.h2h_carousel import build_slides as build_h2h_slides
@@ -784,7 +784,7 @@ def main():
 
     if is_carousel:
         carousel_dir = os.path.join(output_dir, "png")
-        if template_name in ("coming_soon_carousel", "about_carousel", "fantasy_rules"):
+        if template_name in ("coming_soon_carousel", "about_carousel", "fantasy_rules", "fourstar_session"):
             slides = data["slides"]
             result_paths = []
             os.makedirs(carousel_dir, exist_ok=True)
