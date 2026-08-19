@@ -2,14 +2,18 @@
 
 {% block carousel_head %}
 <style>
-    /* Bottom-anchored, left-aligned, following the event_picks cover: it is the
-       house language for an event-specific announcement, and it puts the news
-       in the biggest type instead of giving that job to a supplied poster. */
+    /* One left-anchored column, bottom-anchored, everything on the same 72px
+       left edge: poster, eyebrow, headline, meta, body, CTA.
+
+       The poster used to be absolutely positioned top-right, which left a
+       ~400px hole between it and the text block and gave the slide two
+       competing entry points. In flow directly above the eyebrow it reads as
+       the first item in one column instead. */
     .container {
         align-items: flex-start;
         justify-content: flex-end;
         text-align: left;
-        padding: 0 72px 130px;
+        padding: 0 72px 96px;
         gap: 0;
     }
 
@@ -20,14 +24,12 @@
        CSS sits behind the same guard as the markup so an event with no poster
        emits none of it. */
     .event-logo {
-        position: absolute;
-        top: 96px;
-        right: 72px;
-        width: {{ logo_width | default(300) }}px;
+        width: {{ logo_width | default(260) }}px;
+        margin-bottom: 48px;
         border-radius: 16px;
         overflow: hidden;
         border: 1px solid rgba(255, 255, 255, 0.16);
-        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.6);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
     }
 
     .event-logo img {
@@ -47,31 +49,32 @@
         margin-bottom: 18px;
     }
 
-    .cover-headline {
-        font-family: var(--font-display);
-        font-size: 200px;
-        letter-spacing: 0.0em;
-        line-height: 0.86;
-        color: var(--color-text-primary);
-        margin-bottom: 22px;
-        white-space: nowrap;
-    }
+    /* The news IS the headline here. There used to be a separate 200px word
+       above this ("IT'S ON", then "FOUR STARS") with the news demoted to a
+       line underneath, which meant the biggest type on the slide was the part
+       carrying the least information.
 
-    .cover-headline .accent {
-        color: var(--color-discipline);
-    }
-
-    /* The actual news, and the line the whole slide is built to deliver. Sized
-       to carry weight in its own right rather than reading as a caption under
-       the headline. */
+       Two lines, and the width is the contract: at 868px starting from the
+       72px left edge, the longest line ends at x=940, so the right margin is
+       never narrower than the left. The autofit group measures against this
+       box, so a longer event name shrinks the type rather than ragging into a
+       third line or running off the slide. */
     .cover-lede {
         font-family: var(--font-display);
-        font-size: 68px;
-        letter-spacing: 0.02em;
-        line-height: 1.04;
+        font-size: {{ headline_size | default(112) }}px;
+        letter-spacing: -0.01em;
+        line-height: 0.92;
         color: var(--color-text-primary);
-        margin-bottom: 18px;
-        max-width: 900px;
+        margin-bottom: 30px;
+        width: {{ headline_width | default(868) }}px;
+        text-wrap: balance;
+    }
+
+    /* One element per line, so the break lands on the phrase rather than
+       wherever the box runs out. nowrap also keeps each line measurable:
+       autofit sizes on scrollWidth, which a wrapped line hides. */
+    .cover-lede > div {
+        white-space: nowrap;
     }
 
     .cover-lede .accent {
@@ -87,7 +90,7 @@
         display: flex;
         align-items: center;
         gap: 14px;
-        margin-bottom: 34px;
+        margin-bottom: 30px;
     }
 
     .cover-meta .stars {
@@ -97,27 +100,28 @@
 
     .meta-sep { color: rgba(255, 255, 255, 0.25); }
 
+    /* Narrower than the headline on purpose: a body measure that ran the full
+       868px read as a second headline. Two lines at this width. */
     .cover-sub {
         font-family: var(--font-body);
-        font-size: 32px;
+        font-size: 30px;
         font-weight: 400;
         line-height: 1.4;
         color: var(--color-text-muted);
-        max-width: 820px;
+        max-width: {{ body_width | default(640) }}px;
+        margin-bottom: 26px;
     }
 
-    .swipe-hint {
-        position: absolute;
-        bottom: 40px;
-        right: 64px;
+    /* Closes the column, and takes over the job the bottom-right swipe hint
+       used to do from the corner. */
+    .cover-cta {
         font-family: var(--font-body);
-        font-size: 18px;
-        color: rgba(255, 255, 255, 0.25);
-        letter-spacing: 0.12em;
+        font-size: 24px;
+        font-weight: 600;
         text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--color-discipline);
     }
-
-    .swipe-hint .arrow { color: var(--color-discipline); }
 </style>
 {% endblock %}
 
@@ -130,8 +134,12 @@
     {% endif %}
 
     <div class="cover-eyebrow">{{ eyebrow }}</div>
-    <div class="cover-headline">{{ headline | upper }}</div>
-    <div class="cover-lede">{{ lede | upper }} <span class="accent">{{ lede_accent | upper }}</span></div>
+    <div class="cover-lede" data-autofit-group>
+        {% for line in lede_lines %}
+        <div>{{ line | upper }}</div>
+        {% endfor %}
+        <div class="accent">{{ lede_accent | upper }}</div>
+    </div>
     <div class="cover-meta">
         <span>{{ discipline | upper }}</span>
         <span class="meta-sep">·</span>
@@ -140,6 +148,8 @@
         <span>{{ dates | upper }}</span>
     </div>
     <div class="cover-sub">{{ subtitle }}</div>
-    <div class="swipe-hint">Swipe <span class="arrow">→</span></div>
+    {% if cta_line %}<div class="cover-cta">{{ cta_line }}</div>{% endif %}
 </div>
 {% endblock %}
+
+{% include "carousel/_autofit.html" %}

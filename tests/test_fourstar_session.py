@@ -19,10 +19,10 @@ def slides():
 
 
 class TestSlideShape:
-    def test_six_slides_numbered_in_order(self, slides):
-        assert len(slides) == 6
-        assert [s["slide_number"] for s in slides] == [1, 2, 3, 4, 5, 6]
-        assert all(s["total_slides"] == 6 for s in slides)
+    def test_five_slides_numbered_in_order(self, slides):
+        assert len(slides) == 5
+        assert [s["slide_number"] for s in slides] == [1, 2, 3, 4, 5]
+        assert all(s["total_slides"] == 5 for s in slides)
 
     def test_opens_on_a_cover_and_closes_on_a_cta(self, slides):
         assert slides[0]["type"] == "fourstar_cover"
@@ -46,20 +46,12 @@ class TestNarrative:
         assert cover["event_name"] == "Wissant Wave Classic"
         assert cover["dates"] == "12 to 20 Sept 2026"
 
-    def test_squad_slide_gives_the_slot_shape(self, slides):
-        """Eleven slots, five of them women's. Without this the locked women's
-        slots on slide 4 have no context."""
-        points = slides[1]["points"]
-        assert "11" in slides[1]["name"]
-        assert points[0].startswith("Men:")
-        assert points[1].startswith("Women:")
-
-    def test_squad_slide_does_not_restate_the_cover(self, slides):
-        """The cover already carries the event, the dates and the pitch. Slide 2
-        repeating them is the failure mode this replaced."""
-        text = " ".join(slides[1]["points"] + [slides[1]["tagline"]])
-        assert "Wissant" not in text
-        assert "September" not in text and "Sept" not in text
+    def test_cover_leads_straight_into_the_conditions(self, slides):
+        """The squad-shape slide that sat between them is gone: the cover states
+        the news in full, so an eleven-slot breakdown before the two conditions
+        was a detour."""
+        assert slides[1]["type"] == "screenshot"
+        assert slides[2]["type"] == "screenshot"
 
     def test_does_not_mention_tiree(self, slides):
         """Tiree works the same way but is not confirmed, so it must not be
@@ -68,25 +60,37 @@ class TestNarrative:
         assert "tiree" not in blob
 
     def test_says_session_only(self, slides):
-        assert any("no Tour points" in p for p in slides[1]["points"])
+        """With the squad slide dropped, the cover is the only place left that
+        can say this is the Session, so it has to. It lives in the eyebrow:
+        the body copy is reserved for a fact nothing else on the slide
+        carries."""
+        assert "SESSION" in slides[0]["eyebrow"].upper()
 
     def test_states_the_20_rider_gate(self, slides):
-        gate = slides[2]
+        gate = slides[1]
         assert "20" in gate["title"]
         assert "20 riders have entered" in gate["tagline"]
 
     def test_gives_the_current_wissant_count(self, slides):
-        assert "9" in slides[2]["lead"]
+        """Must match the count in the committed screenshot, which was 12 when
+        it was re-shot on 2026-08-19. If the shot is refreshed the copy moves
+        with it, or the slide contradicts its own picture."""
+        assert "12" in slides[1]["lead"]
 
-    def test_tier_rule_distinguishes_two_from_four(self, slides):
-        """The app opens a band's FIRST slot at two riders and its second at
-        four. Collapsing that to "two opens a tier" would misstate the rule."""
-        unlock = slides[3]
-        assert "Two in a tier opens its first slot." == unlock["lead"]
-        assert "Four opens the second." == unlock["caption"]
+    def test_category_rule_distinguishes_two_from_four(self, slides):
+        """The app opens a category's FIRST slot at two riders and its second
+        at four. Collapsing that to "two opens everything" misstates it."""
+        unlock = slides[2]
+        assert "Two riders in a category opens its slot." == unlock["lead"]
+        assert unlock["caption"].startswith("Four opens the next one.")
+
+    def test_unlock_slide_is_framed_by_category(self, slides):
+        """The gate is per ranking category, not on the total start list, and
+        the slide has to say so or it reads as a second 20-rider threshold."""
+        assert "category" in slides[2]["tagline"].lower()
 
     def test_promises_email_and_notifications(self, slides):
-        points = " ".join(slides[4]["points"])
+        points = " ".join(slides[3]["points"])
         assert "email" in points.lower()
         assert "start list grows" in points
 
@@ -129,6 +133,89 @@ class TestRendering:
 
 
 class TestCover:
+    def test_cover_puts_the_news_in_the_biggest_type(self, slides):
+        """Two earlier attempts ("It's On", then "Four Stars") gave the largest
+        type on the slide to a word carrying no information and shrank the news
+        to a line underneath. The news is the big type now, and there is no
+        separate headline to compete with it."""
+        cover = slides[0]
+        assert "headline" not in cover
+        assert cover["eyebrow"] == "NEW SESSION EVENT"
+        assert cover["lede_lines"] == ["Wissant Wave Classic"]
+        assert cover["lede_accent"] == "Joins The Fantasy League"
+
+    def test_headline_is_exactly_two_lines(self, slides):
+        """One line for the event, one for what happened to it. Three lines
+        stair-stepped down the slide with a two-word orphan in the middle."""
+        cover = slides[0]
+        assert len(cover["lede_lines"]) + 1 == 2
+
+    def test_cover_body_copy_does_not_repeat_the_slide(self, slides):
+        """The star rating is in the meta strip and the mode is in the eyebrow.
+        Body copy restating either spends two lines saying nothing new, so it
+        carries the entry gate instead: the one fact nothing else has, and the
+        setup for slide 2."""
+        subtitle = slides[0]["subtitle"]
+        assert "20 riders" in subtitle
+        assert "4-star" not in subtitle
+        assert "Session" not in subtitle
+        assert "Fantasy League" not in subtitle
+
+    def test_cover_ends_on_a_cta(self, slides):
+        """It replaces the bottom-right watermark, which is switched off on
+        this slide so the URL does not appear twice."""
+        cover = slides[0]
+        assert "windsurfworldtourstats.com" in cover["cta_line"]
+        assert cover["hide_footer"] is True
+
+    def test_cta_does_not_claim_picks_are_open(self, slides):
+        """They are not, and will not be until the start list fills. The whole
+        post exists to explain that."""
+        assert "picks open" not in slides[0]["cta_line"].lower()
+
+    def test_cover_drops_the_watermark(self, slides):
+        """The class stays in the shared stylesheet every slide inherits; what
+        must be gone is the rendered div."""
+        html = render_template("carousel/slide_fourstar_cover", slides[0])
+        assert '<div class="carousel-footer">' not in html
+
+    def test_cover_has_no_swipe_hint(self, slides):
+        """Dropped: the cover is dense enough without a second thing competing
+        for the bottom-right corner."""
+        html = render_template("carousel/slide_fourstar_cover", slides[0])
+        assert "swipe-hint" not in html
+
+    def test_cover_renders_the_news_lines(self, slides):
+        html = render_template("carousel/slide_fourstar_cover", slides[0])
+        assert "WISSANT WAVE CLASSIC" in html
+        assert "JOINS THE FANTASY LEAGUE" in html
+
+    def test_poster_sits_in_flow_not_pinned_to_a_corner(self, slides):
+        """Absolutely positioned top-right, it left a ~400px hole between
+        itself and the text and gave the slide two entry points. In flow above
+        the eyebrow it is the first item of one left-anchored column."""
+        html = render_template("carousel/slide_fourstar_cover", slides[0])
+        logo_css = html.split(".event-logo {")[1].split("}")[0]
+        assert "position: absolute" not in logo_css
+        assert "260px" in logo_css
+
+    def test_headline_box_keeps_the_right_margin(self, slides):
+        """868px from the 72px left edge ends the longest line at x=940, so the
+        right margin is never narrower than the left. Autofit measures against
+        this box, so a longer event name shrinks rather than overflows."""
+        html = render_template("carousel/slide_fourstar_cover", slides[0])
+        assert "width: 868px" in html
+
+    def test_cover_dimensions_are_overridable(self, slides):
+        """Poster width, headline size and body measure are Jinja variables so
+        a longer event name degrades gracefully."""
+        cover = dict(slides[0], logo_width=200, headline_size=88, headline_width=700, body_width=520)
+        html = render_template("carousel/slide_fourstar_cover", cover)
+        assert "width: 200px" in html
+        assert "font-size: 88px" in html
+        assert "width: 700px" in html
+        assert "max-width: 520px" in html
+
     def test_cover_carries_the_event_logo(self, slides):
         """The cover should be recognisably this event, not a generic fantasy
         announcement."""
@@ -179,7 +266,13 @@ class TestCaption:
     def test_caption_states_both_conditions(self):
         caption = build_caption("fourstar_session", {}, {})
         assert "20 riders have entered" in caption
-        assert "four opens the second" in caption.lower()
+        assert "four opens the next one" in caption.lower()
+
+    def test_caption_count_matches_the_slide(self):
+        """Caption and slide read off the same screenshot, so they must not
+        drift apart when the count is refreshed."""
+        caption = build_caption("fourstar_session", {}, {})
+        assert "Wissant is at 12." in caption
 
     def test_caption_names_wissant_only(self):
         caption = build_caption("fourstar_session", {}, {})

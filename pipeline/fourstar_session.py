@@ -1,4 +1,4 @@
-"""Wissant Session announcement carousel — 6 hardcoded slides.
+"""Wissant Session announcement carousel — 5 hardcoded slides.
 
 Announces that Wissant Wave Classic, a 4-star wave event, plays the Fantasy
 League in Session mode only, and explains the two conditions that gate it: the
@@ -61,28 +61,6 @@ def logo_url(name: str) -> str:
     return _file_url(LOGOS_DIR, name)
 
 
-# Slide 2 — the squad shape.
-#
-# This slide used to restate the cover: the event name, the dates, "pick a
-# squad, score on every heat". With the cover carrying all of that it had
-# nothing left to say, so it says the one thing the reader actually needs
-# before slides 3 and 4 make sense: there are eleven slots, five of them
-# women's, which is why a locked women's slot matters.
-#
-# Slot shape verified against the live Wissant picks page and
-# frontend/src/utils/sessionSlotLabels.ts in the app repo.
-THE_SQUAD = {
-    "eyebrow": "YOUR SQUAD",
-    "name": "11 Picks",
-    "tagline": "Six men and five women.",
-    "points": [
-        "Men: 1 Top 5, 2 from 6-15, 3 wildcards",
-        "Women: 1 Top 5, 2 from 6-15, 2 wildcards",
-        "Every heat your riders sail scores",
-        "No captain, no Tour points, no season to commit to",
-    ],
-}
-
 # Slide 5 — the part that means nobody has to sit refreshing the page.
 YOU_WILL_KNOW = {
     "eyebrow": "NO NEED TO WATCH",
@@ -97,7 +75,12 @@ YOU_WILL_KNOW = {
 
 
 def build_fourstar_session_slides() -> list[dict]:
-    """Build 6 slide dicts: cover, the change, 2 screenshots, notifications, cta."""
+    """Build 5 slide dicts: cover, 2 screenshots, notifications, cta.
+
+    The squad-shape slide that used to sit at position 2 is gone. The cover
+    now states the news in full, and the two conditions are what the post is
+    actually for, so an eleven-slot breakdown in between was a detour.
+    """
     slides = [
         # Bottom-anchored cover borrowed from event_picks, the house language
         # for an event-specific announcement. The poster sits as a corner mark
@@ -106,55 +89,74 @@ def build_fourstar_session_slides() -> list[dict]:
         # brand and buries the news under a name it already shouts.
         {
             "type": "fourstar_cover",
-            # Eyebrow names the mode, not the league: the lede below carries
-            # the league now, and having both say it wastes a line.
-            "eyebrow": "THE SESSION",
-            "headline": "It's On",
-            # The line the slide exists to deliver, so it is sized to carry
-            # weight rather than sit as a caption under the headline.
-            "lede": "The 4-star Wissant Wave Classic joins",
-            "lede_accent": "Windsurf Fantasy League",
+            "eyebrow": "NEW SESSION EVENT",
+            # No separate headline any more. Two attempts at one ("IT'S ON",
+            # then "FOUR STARS") both put the slide's biggest type on the part
+            # carrying the least information, with the actual news shrunk to a
+            # line underneath. The news is the headline now.
+            #
+            # Two lines, not three: the event on one, what happened to it on
+            # the other. The earlier three-line split ("Wissant Wave Classic /
+            # Added To / Windsurf Fantasy League") stair-stepped down the slide
+            # and put a two-word orphan in the middle.
+            "lede_lines": ["Wissant Wave Classic"],
+            "lede_accent": "Joins The Fantasy League",
             "event_name": "Wissant Wave Classic",
             "discipline": "Wave",
             "stars": 4,
             "dates": "12 to 20 Sept 2026",
-            "subtitle": "Pick a squad for the event, score on every heat.",
+            # One fact the rest of the slide does not already carry, and the
+            # one that sets up slide 2. The star rating is in the meta strip
+            # and the mode is in the eyebrow, so restating either here just
+            # spent two lines saying nothing new.
+            "subtitle": (
+                "Picks open once 20 riders have entered the event. "
+                "Twelve are in."
+            ),
+            # Not "picks open now": they do not, and will not until the start
+            # list fills. This is the one thing a reader can act on today.
+            "cta_line": "Sign up free \u00b7 windsurfworldtourstats.com",
+            # The CTA carries the URL now, so the shared bottom-right watermark
+            # would be the same address twice on one slide. Cover only; every
+            # other slide in the carousel keeps it.
+            "hide_footer": True,
             "logo_url": logo_url("wissant-wave-classic.png"),
             "logo_alt": "Wissant Wave Classic 2026 event poster",
-            "logo_width": 300,
-            "accent_color": SESSION_COLOR,
-        },
-        {
-            "type": "fantasy_rules_game",
-            "eyebrow": THE_SQUAD["eyebrow"],
-            "name": THE_SQUAD["name"],
-            "tagline": THE_SQUAD["tagline"],
-            "points": THE_SQUAD["points"],
+            "logo_width": 260,
             "accent_color": SESSION_COLOR,
         },
         # The card carries both halves of the first condition in one shot: the
-        # 20 needed, and how far along the event is.
+        # 20 needed, and how far along the event is. Re-shot 2026-08-19 after
+        # the app's card was redesigned: the entry line now reads "12 riders
+        # entered / Min. 20 required to play" on one row, and the "Stay tuned"
+        # status next to the dates is gone.
         {
             "type": "screenshot",
             "eyebrow": "CONDITION ONE",
             "title": "20 Riders",
             "tagline": "The event opens for picks once 20 riders have entered.",
             "image_url": screenshot_url("hub_card_wissant.png"),
-            "alt": "Wissant Wave Classic card showing 9 riders entered of the 20 needed",
-            "lead": "Wissant is at 9.",
-            "caption": "Watch the bar fill: it updates as entries land on the WWT site.",
+            "alt": "Wissant Wave Classic card showing 12 riders entered of the 20 required to play",
+            "lead": "Wissant is at 12.",
+            "caption": "Eight to go. The bar fills as entries land on the WWT site.",
             "max_height": 560,
             "accent_color": SESSION_COLOR,
         },
+        # The rule in the app's own words: a slot is gated on its own ranking
+        # category, not on the total. Two riders in a category opens that
+        # category's first slot, four opens its second. The screenshot is the
+        # women's column because every slot in it is still locked, so each row
+        # is legible as "this is what I am waiting for" rather than a mix of
+        # open and locked rows the reader has to sort out.
         {
             "type": "screenshot",
             "eyebrow": "CONDITION TWO",
             "title": "Slots Unlock",
-            "tagline": "Each slot names the riders it is waiting on.",
+            "tagline": "Slots open by category, not all at once.",
             "image_url": screenshot_url("wissant_womens_locked.png"),
             "alt": "Locked women's pick slots, each naming the riders needed to open it",
-            "lead": "Two in a tier opens its first slot.",
-            "caption": "Four opens the second.",
+            "lead": "Two riders in a category opens its slot.",
+            "caption": "Four opens the next one. Every slot tells you what it is waiting for.",
             "max_height": 640,
             "accent_color": SESSION_COLOR,
         },
