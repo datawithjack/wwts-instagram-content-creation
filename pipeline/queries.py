@@ -233,6 +233,106 @@ def build_top10_query(
     return sql, tuple(params)
 
 
+def build_freestyle_top10_query(
+    sex: str = None,
+    year: int = None,
+    event_id: int = None,
+    counting_only: bool = False,
+    exclude_placeholders: bool = False,
+    limit: int = 10,
+) -> tuple[str, tuple]:
+    """Build a top N highest-scoring freestyle moves query.
+
+    Freestyle scores live in their own table (``PWA_IWT_FREESTYLE_HEAT_SCORES``),
+    one row per move attempted, so this cannot share ``build_top10_query``. Each
+    row is joined to ``MOVE_DICTIONARY`` for the move's difficulty rating, which
+    the table slide renders as a sub-line beneath the move name.
+
+    Args:
+        sex: "Men" or "Women" (optional).
+        year: Filter to a specific ``pwa_year`` (optional).
+        event_id: Filter to a specific ``pwa_event_id`` (optional). Note this is
+            the PWA event id, not the app event id — Fuerteventura 2026 is 389,
+            not 123.
+        counting_only: Only scores that counted toward the heat total. Defaults
+            to False to match the wave/jump top 10.
+        exclude_placeholders: Drop unnamed "New Move" slots. They are real
+            tricks that were landed but not yet named in the dictionary, so a
+            highest-scoring list keeps them by default; a *difficulty* list
+            should not, since all the high tier sit at a flat 10.00.
+        limit: Number of rows (default 10).
+
+    Returns:
+        (sql, params) tuple ready for db.run_query().
+
+    Notes:
+        ``score = 0`` means attempted and not landed, so bails are excluded
+        here. ``Crash`` (slug ``CRSH``) is a dictionary entry at difficulty
+        0.00 and is always excluded.
+    """
+    params = []
+
+    # A bail is a real row at score 0. Never show one on a top-scores list.
+    where_clauses = ["f.score > 0", "f.abbreviation <> %s"]
+    params.append("CRSH")
+
+    if counting_only:
+        where_clauses.append("f.counting = 1")
+
+    if exclude_placeholders:
+        where_clauses.append("COALESCE(m.is_placeholder, 0) = 0")
+
+    if sex:
+        where_clauses.append("f.sex = %s")
+        params.append(sex)
+
+    if year:
+        where_clauses.append("f.pwa_year = %s")
+        params.append(year)
+
+    if event_id:
+        where_clauses.append("f.pwa_event_id = %s")
+        params.append(event_id)
+
+    where = " AND ".join(where_clauses)
+
+    # LEFT JOIN throughout: one Fuerte 2026 row has a null abbreviation, and a
+    # missing dictionary entry should cost the difficulty sub-line, not the row.
+    sql = f"""
+        SELECT
+            a.primary_name AS athlete,
+            a.nationality AS country,
+            a.country_code AS country_code,
+            asi.athlete_id AS athlete_id,
+            f.score,
+            f.counting AS counting,
+            COALESCE(m.name, f.move_name) AS move,
+            f.abbreviation AS move_slug,
+            m.difficulty AS difficulty,
+            m.family_name AS move_family,
+            COALESCE(m.is_placeholder, 0) AS is_placeholder,
+            e.event_name AS event,
+            hp.round_name AS round,
+            hp.heat_id AS heat_id
+        FROM PWA_IWT_FREESTYLE_HEAT_SCORES f
+        JOIN ATHLETE_SOURCE_IDS asi
+            ON asi.source = f.source AND asi.source_id = f.athlete_id
+        JOIN ATHLETES a
+            ON a.id = asi.athlete_id
+        JOIN PWA_IWT_EVENTS e
+            ON e.source = f.source AND e.event_id = f.pwa_event_id
+        JOIN PWA_IWT_HEAT_PROGRESSION hp
+            ON hp.heat_id = f.heat_id AND hp.source = f.source
+        LEFT JOIN MOVE_DICTIONARY m
+            ON m.slug = f.abbreviation
+        WHERE {where}
+        ORDER BY f.score DESC
+        LIMIT {int(limit)}
+    """
+
+    return sql, tuple(params)
+
+
 def build_wave_count_query(
     sex: str,
     event_id: int,
