@@ -118,7 +118,12 @@
     }
 
     /* Rank chip on its own line, so the score below always starts at the
-       block's padding rather than shifting with the width of "1ST" vs "5TH". */
+       block's padding rather than shifting with the width of "1ST" vs "5TH".
+
+       Reads "5TH BEST WAVE", never a bare "5TH": mid-carousel this chip is the
+       only thing naming what is being counted, and a lone ordinal sitting on a
+       photo of a rider reads as their placing at the event rather than a rank
+       among the scores. */
     .rank {
         display: inline-block;
         font-family: var(--font-display);
@@ -130,6 +135,13 @@
         border-radius: 2px;
         padding: 9px 22px 5px;
         margin-bottom: 26px;
+    }
+
+    /* The qualifier is the same size as the ordinal but lighter, so the chip
+       reads as one label while the number still carries first. */
+    .rank .rank-suffix {
+        opacity: 0.62;
+        margin-left: 0.28em;
     }
 
     .rank.place-1 { background: var(--color-rank-1st); }
@@ -263,7 +275,7 @@
     {% endif %}
 
     <div class="score-block">
-        <span class="rank {% if rank in [1, 2, 3] %}place-{{ rank }}{% else %}place-other{% endif %}">{{ rank_label }}</span>
+        <span class="rank {% if rank in [1, 2, 3] %}place-{{ rank }}{% else %}place-other{% endif %}">{{ rank_label }}{% if rank_suffix %}<span class="rank-suffix">{{ rank_suffix }}</span>{% endif %}</span>
 
         <div class="score-line">
             <span class="score-value">{{ "%.2f" | format(score) }}</span>

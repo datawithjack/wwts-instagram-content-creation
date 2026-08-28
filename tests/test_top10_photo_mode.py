@@ -75,6 +75,25 @@ def test_photo_slides_are_literal_top_five_not_deduped_by_rider():
     assert [s["score"] for s in photos] == [8.12, 8.12, 8.50, 8.75, 9.38]
 
 
+def test_rank_chip_names_what_is_being_counted():
+    """A bare "5TH" on a photo of a rider reads as their event placing."""
+    photos = [s for s in build_slides(_data()) if s["type"] == "wave_photo"]
+    assert all(s["rank_suffix"] == "BEST WAVE" for s in photos)
+
+    jumps = _data(title_metric="Jumps")
+    photos = [s for s in build_slides(jumps) if s["type"] == "wave_photo"]
+    assert all(s["rank_suffix"] == "BEST JUMP" for s in photos)
+
+
+def test_photo_mode_title_drops_the_ten():
+    """The cover promising 10 then opening a 5-4-3 countdown reads as a restart."""
+    assert build_slides(_data())[0]["title"] == "MEN'S TOP WAVES"
+
+    default = _data()
+    default["photo_mode"] = False
+    assert build_slides(default)[0]["title"] == "MEN'S TOP 10 WAVES"
+
+
 def test_table_slide_carries_all_ten_rows_compact():
     slides = build_slides(_data())
     table = next(s for s in slides if s["type"] == "table")

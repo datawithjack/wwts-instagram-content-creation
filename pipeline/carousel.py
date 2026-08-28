@@ -36,7 +36,11 @@ def _detect_top_ties(entries: list[dict]) -> list[dict]:
 def _build_common(data: dict) -> dict:
     """Extract shared context fields from data."""
     discipline = data["title_metric"].lower().rstrip("s") + "s"  # "Waves" -> "waves"
-    title = data.get("custom_title") or f"{data['title_gender'].upper()} TOP 10 {data['title_metric'].upper()}"
+    # Photo mode drops the "10": the cover promises ten, then the next slide
+    # opens a 5-4-3 countdown, and the reader has to work out that the count
+    # restarted. The table at the end still shows all ten, labelled 1st-10th.
+    count = "" if data.get("photo_mode") else "10 "
+    title = data.get("custom_title") or f"{data['title_gender'].upper()} TOP {count}{data['title_metric'].upper()}"
     accent = ACCENT_JUMPS if discipline == "jumps" else ACCENT_WAVES
     return {
         "title": title,
@@ -124,6 +128,11 @@ def _build_photo_slides(common: dict, rows: list[dict], event_id=None) -> list[d
             "type": "wave_photo",
             "rank": rank,
             "rank_label": ordinal(int(rank)).upper() if rank else "",
+            # "5TH BEST WAVE", not a bare "5TH". Mid-carousel the chip is the
+            # only thing saying what is being counted, and a lone ordinal on a
+            # photo reads as a placing (5th at the event) rather than a rank
+            # among the scores.
+            "rank_suffix": f"BEST {common['title_metric'][:-1].upper()}",
             "athlete_id": athlete_id,
             "name": name,
             "first_name": first_name,
