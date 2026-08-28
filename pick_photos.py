@@ -163,8 +163,50 @@ def _install(selection, event_id):
     return installed
 
 
-def _serve(html, riders, event_id):
-    """Serve the sheet until Save is pressed, then install and stop."""
+def generation_plan(event_id, score_type, sex, athletes_mode: bool):
+    """What post to build once the photos are in, or None if there isn't one.
+
+    ``--athletes`` names riders directly rather than coming from a leaderboard,
+    so there is no top-10 post to generate from it. That mode is for topping up
+    the photo library, and it should say so rather than fail.
+    """
+    if athletes_mode:
+        return None
+    return {"event_id": event_id, "score_type": score_type, "sex": sex}
+
+
+def generate_post(event_id, score_type, sex):
+    """Build and open the photo-variant carousel for this event."""
+    from pipeline.carousel import build_slides
+    from pipeline.preview import open_slide_previews
+
+    data = fetch_event_top_scores(event_id=event_id, score_type=score_type, sex=sex)
+    data["photo_mode"] = True
+    data["photo_event_id"] = event_id
+    return open_slide_previews(build_slides(data))
+
+
+def generate_after_save(plan, installed):
+    """Generate the post, reporting rather than raising.
+
+    The photos are already written by the time this runs, so a failure here must
+    never read as though the picking was lost. Whatever happens, the caller gets
+    the list of what was installed back.
+    """
+    if not plan:
+        return {"ok": True, "skipped": True, "installed": installed,
+                "message": "Photos installed. No post to generate for --athletes."}
+    try:
+        paths = generate_post(**plan)
+    except Exception as exc:
+        return {"ok": False, "installed": installed,
+                "error": f"{type(exc).__name__}: {exc}"}
+    return {"ok": True, "skipped": False, "installed": installed,
+            "slides": len(paths)}
+
+
+def _serve(html, riders, event_id, plan=None):
+    """Serve the sheet until Save is pressed, then install, generate and stop."""
     done = threading.Event()
     result = {}
 
@@ -198,8 +240,16 @@ def _serve(html, riders, event_id):
             try:
                 print()
                 installed = _install(payload, event_id)
-                body = {"ok": True, "installed": installed}
                 result["installed"] = installed
+                # Generation runs after the photos are safely written, and
+                # reports rather than raising: a failure here must not read as
+                # though the picking was lost.
+                print("\nGenerating the post...")
+                outcome = generate_after_save(plan, installed)
+                body = {**outcome, "installed": installed}
+                if not outcome["ok"]:
+                    print(f"  generation failed: {outcome['error']}")
+                    print("  the photos are installed and safe")
             except Exception as exc:                      # surfaced in the page
                 body = {"ok": False, "error": str(exc)}
                 result["error"] = str(exc)
@@ -268,7 +318,9 @@ def main():
     _build_thumbs(riders)
 
     label = f"{event_name} {args.sex or ''} {args.score_type}s".strip()
-    _serve(render_sheet(riders, label), riders, args.event)
+    plan = generation_plan(args.event, args.score_type, args.sex,
+                           athletes_mode=bool(args.athletes))
+    _serve(render_sheet(riders, label), riders, args.event, plan)
 
 
 if __name__ == "__main__":
