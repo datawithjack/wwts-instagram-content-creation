@@ -1,0 +1,6 @@
+{
+  "_comment": "object-position per athlete. A 1920x1280 landscape keeps its full height at 1080x1350 and loses about half its width, so the X value is what matters here.",
+  "49": "50% 50%",
+  "68": "45% 50%",
+  "97": "42% 50%"
+}
