@@ -136,6 +136,29 @@ def _xmp_credit(path) -> tuple[str, str]:
             rights.group(1).decode("utf-8", "replace").strip() if rights else "")
 
 
+_EXIF_ARTIST = 0x013B
+_EXIF_COPYRIGHT = 0x8298
+
+
+def _exif_credit(path) -> tuple[str, str]:
+    """(artist, copyright) from EXIF, or ("", "").
+
+    On every PWA file seen so far EXIF, IPTC and XMP carry the same name, so
+    this never fires in practice. It exists because that agreement is a
+    property of one photographer's export settings, not a guarantee -- and the
+    cost of being wrong is a misattributed photo in a published caption.
+    """
+    try:
+        with Image.open(path) as im:
+            exif = im.getexif()
+        return (str(exif.get(_EXIF_ARTIST, "") or "").strip(),
+                str(exif.get(_EXIF_COPYRIGHT, "") or "").strip())
+    except Exception:
+        # Unreadable or not an image: the caller treats that as "no credit",
+        # which is the safe answer.
+        return "", ""
+
+
 def credit_for(path) -> dict:
     """Who took this photo: filename marker, then XMP, then unknown.
 
@@ -152,14 +175,14 @@ def credit_for(path) -> dict:
             return {"photographer": photographer, "handle": handle,
                     "source_file": name, "confirmed": True, "via": "filename"}
 
-    creator, rights = _xmp_credit(path)
-    if creator or rights:
-        photographer = creator or rights
-        handle = HANDLES.get(photographer.lower(), "")
-        if not handle and rights:
-            handle = HANDLES.get(rights.lower(), "")
-        return {"photographer": photographer, "handle": handle,
-                "source_file": name, "confirmed": True, "via": "xmp"}
+    for via, (creator, rights) in (("xmp", _xmp_credit(path)),
+                                   ("exif", _exif_credit(path))):
+        if creator or rights:
+            photographer = creator or rights
+            handle = (HANDLES.get(photographer.lower(), "")
+                      or (HANDLES.get(rights.lower(), "") if rights else ""))
+            return {"photographer": photographer, "handle": handle,
+                    "source_file": name, "confirmed": True, "via": via}
 
     return {"photographer": "", "handle": "", "source_file": name,
             "confirmed": False, "via": "",
@@ -264,6 +287,10 @@ def install_photo(src, dest_dir, athlete_id, max_px: int = REPO_MAX_PX,
     dest = dest_dir / f"{athlete_id}.jpg"
 
     with Image.open(src) as im:
+        # The installed file is the repo's only copy, so the credit baked into
+        # the original travels with it. credits.json is the record we read, but
+        # a file that still carries its own Artist tag can be re-checked later.
+        exif = im.info.get("exif")
         im = im.convert("RGB")
         if square:
             side = min(im.size)
@@ -273,7 +300,8 @@ def install_photo(src, dest_dir, athlete_id, max_px: int = REPO_MAX_PX,
                 (square, square), Image.LANCZOS)
         elif max(im.size) > max_px:
             im.thumbnail((max_px, max_px), Image.LANCZOS)
-        im.save(dest, "JPEG", quality=JPEG_QUALITY, optimize=True)
+        extra = {"exif": exif} if exif else {}
+        im.save(dest, "JPEG", quality=JPEG_QUALITY, optimize=True, **extra)
 
     return dest
 

@@ -145,15 +145,24 @@ def resolve_photo_credit(athlete_id, event_id) -> str:
     Reads ``assets/photos/events/{event_id}/credits.json``. Kept beside the
     photos rather than in the caption code because the credit belongs to the
     image, and the same rider carries a different one at the next event.
+
+    Two entry shapes are supported. The original is a bare handle
+    (``"97": "@rafasoulart"``), written by hand. ``pick_photos.py`` writes a
+    richer entry recording the photographer, the handle, and the file the credit
+    was read from, so an attribution can be traced instead of trusted.
+
+    An entry with no handle returns "", deliberately: an untagged photo prints
+    no credit line rather than a guessed one.
     """
-    if not athlete_id or not event_id:
+    if not athlete_id or not event_id or str(athlete_id).startswith("_"):
         return ""
     path = os.path.join(PHOTOS_DIR, "events", str(event_id), "credits.json")
     if not os.path.exists(path):
         return ""
     try:
         with open(path, encoding="utf-8") as fh:
-            return json.load(fh).get(str(athlete_id)) or ""
+            entry = json.load(fh).get(str(athlete_id))
+        return (entry.get("handle") or "") if isinstance(entry, dict) else (entry or "")
     except (ValueError, OSError):
         return ""
 

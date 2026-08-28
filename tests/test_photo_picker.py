@@ -238,3 +238,163 @@ class TestMergeJsonEntry:
         p.write_text("{not json", encoding="utf-8")
         merge_json_entry(p, "49", "50% 50%")
         assert json.loads(p.read_text(encoding="utf-8"))["49"] == "50% 50%"
+
+
+class TestMatchEventFolder:
+    """The Drive numbers its event folders and the API does not, so the folder
+    is found by name rather than by a map that needs editing every season."""
+
+    TENERIFE = ["01 - OCEANIA YOUTH WAVE", "04 - GRAN CANARIA",
+                "05 - FUERTEVENTURA", "06 - TENERIFE"]
+
+    def test_finds_a_one_word_event(self):
+        from pipeline.photo_picker import match_event_folder
+        assert match_event_folder("Tenerife Grand Slam", self.TENERIFE) == "06 - TENERIFE"
+
+    def test_finds_a_two_word_event(self):
+        from pipeline.photo_picker import match_event_folder
+        got = match_event_folder("Gran Canaria Gloria Windsurf World Cup", self.TENERIFE)
+        assert got == "04 - GRAN CANARIA"
+
+    def test_ignores_the_leading_number(self):
+        from pipeline.photo_picker import match_event_folder
+        assert match_event_folder("Fuerteventura Windsurf World Cup",
+                                  self.TENERIFE) == "05 - FUERTEVENTURA"
+
+    def test_no_match_returns_empty_rather_than_a_wrong_folder(self):
+        from pipeline.photo_picker import match_event_folder
+        assert match_event_folder("Sylt World Cup", self.TENERIFE) == ""
+
+    def test_empty_inputs_are_safe(self):
+        from pipeline.photo_picker import match_event_folder
+        assert match_event_folder("", self.TENERIFE) == ""
+        assert match_event_folder("Tenerife Grand Slam", []) == ""
+
+    def test_prefers_the_longest_matching_folder_name(self):
+        """A folder called CANARIA must not beat GRAN CANARIA."""
+        from pipeline.photo_picker import match_event_folder
+        folders = ["09 - CANARIA", "04 - GRAN CANARIA"]
+        got = match_event_folder("Gran Canaria Gloria Windsurf World Cup", folders)
+        assert got == "04 - GRAN CANARIA"
+
+
+class TestCreditFromExifAndIptc:
+    """XMP is not the only place a credit lives.
+
+    On these files EXIF Artist, IPTC By-line and XMP dc:creator all travel
+    together, so reading only XMP happens to be right. A workflow that writes
+    just one of them would be misread as unknown, and unknown is the one answer
+    that must be earned rather than assumed.
+    """
+
+    def _jpeg(self, path, artist=None, copyright_=None):
+        from PIL import Image
+        im = Image.new("RGB", (64, 64), (10, 20, 30))
+        exif = Image.Exif()
+        if artist:
+            exif[0x013B] = artist          # Artist
+        if copyright_:
+            exif[0x8298] = copyright_      # Copyright
+        extra = {"exif": exif.tobytes()} if (artist or copyright_) else {}
+        im.save(path, "JPEG", **extra)
+        return path
+
+    def test_reads_the_exif_artist_when_there_is_no_xmp(self, tmp_path):
+        p = self._jpeg(tmp_path / "TF26_wv_G21_1.jpg", artist="john carter")
+        credit = credit_for(p)
+        assert credit["photographer"] == "john carter"
+        assert credit["handle"] == "@jcwindsurf"
+        assert credit["confirmed"] is True
+        assert credit["via"] == "exif"
+
+    def test_falls_back_to_exif_copyright(self, tmp_path):
+        p = self._jpeg(tmp_path / "TF26_wv_G21_2.jpg", copyright_="rafasoulart")
+        credit = credit_for(p)
+        assert credit["photographer"] == "rafasoulart"
+        assert credit["handle"] == "@rafasoulart"
+
+    def test_xmp_still_wins_over_exif(self, tmp_path):
+        """XMP is what the tagging tool writes last, so it is the intended value."""
+        p = _jpeg_with_xmp(tmp_path / "TF26_wv_G21_3.jpg", creator="john carter")
+        assert credit_for(p)["via"] == "xmp"
+
+    def test_no_metadata_at_all_is_still_unknown(self, tmp_path):
+        p = self._jpeg(tmp_path / "TF26_wv_G21_4.jpg")
+        credit = credit_for(p)
+        assert credit["photographer"] == ""
+        assert credit["confirmed"] is False
+
+    def test_a_file_that_is_not_an_image_does_not_explode(self, tmp_path):
+        p = tmp_path / "TF26_wv_G21_5.jpg"
+        p.write_bytes(b"not a jpeg at all")
+        assert credit_for(p)["confirmed"] is False
+
+
+class TestCreditFileContract:
+    """credits.json already exists with bare handle strings. The picker writes a
+    richer entry, so the reader has to accept both or the caption breaks."""
+
+    def test_reader_accepts_the_old_bare_handle(self, tmp_path, monkeypatch):
+        import pipeline.templates as templates
+        monkeypatch.setattr(templates, "PHOTOS_DIR", str(tmp_path))
+        d = tmp_path / "events" / "124"
+        d.mkdir(parents=True)
+        (d / "credits.json").write_text(json.dumps({"97": "@rafasoulart"}),
+                                        encoding="utf-8")
+        assert templates.resolve_photo_credit(97, 124) == "@rafasoulart"
+
+    def test_reader_accepts_the_pickers_object(self, tmp_path, monkeypatch):
+        import pipeline.templates as templates
+        monkeypatch.setattr(templates, "PHOTOS_DIR", str(tmp_path))
+        d = tmp_path / "events" / "124"
+        d.mkdir(parents=True)
+        (d / "credits.json").write_text(json.dumps({
+            "13": {"photographer": "john carter", "handle": "@jcwindsurf",
+                   "source_file": "TF26_wv_SUI4_1069.jpg"}}), encoding="utf-8")
+        assert templates.resolve_photo_credit(13, 124) == "@jcwindsurf"
+
+    def test_an_unconfirmed_credit_yields_nothing_to_print(self, tmp_path, monkeypatch):
+        """Better a missing credit line than a guessed attribution."""
+        import pipeline.templates as templates
+        monkeypatch.setattr(templates, "PHOTOS_DIR", str(tmp_path))
+        d = tmp_path / "events" / "122"
+        d.mkdir(parents=True)
+        (d / "credits.json").write_text(json.dumps({
+            "49": {"photographer": "", "handle": "",
+                   "note": "UNTAGGED - credit unconfirmed"}}), encoding="utf-8")
+        assert templates.resolve_photo_credit(49, 122) == ""
+
+    def test_the_comment_key_is_never_read_as_a_rider(self, tmp_path, monkeypatch):
+        import pipeline.templates as templates
+        monkeypatch.setattr(templates, "PHOTOS_DIR", str(tmp_path))
+        d = tmp_path / "events" / "124"
+        d.mkdir(parents=True)
+        (d / "credits.json").write_text(json.dumps({"_comment": "notes"}),
+                                        encoding="utf-8")
+        assert templates.resolve_photo_credit("_comment", 124) == ""
+
+
+class TestInstallKeepsProvenance:
+    """The installed file is the only copy in the repo, so the credit that was
+    baked into it should survive the downscale."""
+
+    def test_exif_artist_survives_install(self, tmp_path):
+        from PIL import Image, ExifTags
+        from pipeline.photo_picker import install_photo
+        src = tmp_path / "src.jpg"
+        exif = Image.Exif()
+        exif[0x013B] = "john carter"
+        Image.new("RGB", (3000, 2000), (9, 9, 9)).save(
+            src, "JPEG", exif=exif.tobytes())
+
+        dest = install_photo(src, tmp_path / "out", 13)
+        with Image.open(dest) as im:
+            got = {ExifTags.TAGS.get(k, k): str(v) for k, v in im.getexif().items()}
+        assert got.get("Artist") == "john carter"
+
+    def test_a_source_without_exif_still_installs(self, tmp_path):
+        from PIL import Image
+        from pipeline.photo_picker import install_photo
+        src = tmp_path / "plain.jpg"
+        Image.new("RGB", (900, 600), (9, 9, 9)).save(src, "JPEG")
+        assert install_photo(src, tmp_path / "out", 14).exists()
