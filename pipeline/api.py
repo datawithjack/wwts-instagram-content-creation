@@ -345,6 +345,9 @@ def fetch_event_top_scores(event_id: int, score_type: str, sex: str = None, limi
         entry = {
             "rank": i + 1,
             "athlete": r.get("athlete_name", ""),
+            # Needed to resolve a rider's photos. The API already returns it on
+            # the score row; it was simply being dropped here.
+            "athlete_id": r.get("athlete_id"),
             "country": nationality_to_iso(country_map.get(r.get("athlete_id"), "")),
             "score": float(r.get("score", 0)),
             "event": event_name,

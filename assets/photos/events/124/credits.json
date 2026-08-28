@@ -4,7 +4,30 @@
   "49": "@rafasoulart",
   "48": "@rafasoulart",
   "75": "@jcwindsurf",
-  "5": "@rafasoulart",
-  "16": "@rafasoulart",
-  "11": "@rafasoulart"
-}
+  "5": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "TF26_wv_ARU91_1059.jpg"
+  },
+  "16": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "TF26_wv_G3_1189.jpg"
+  },
+  "11": "@rafasoulart",
+  "12": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "TF26_wv_E59_1038.jpg"
+  },
+  "13": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "TF26_wv_SUI4_1069.jpg"
+  },
+  "17": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "TF26_wv_E737_1042.jpg"
+  }
+}
