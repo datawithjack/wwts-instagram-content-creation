@@ -18,11 +18,20 @@ Three things the Drive does that a naive lookup gets wrong:
    in the XMP; and about a third of files carry no credit at all.
 """
 
+import json
 import os
 import re
 from pathlib import Path
 
+from PIL import Image
+
 from pipeline.helpers import ISO3_TO_ISO2, nationality_to_iso
+
+# Athlete photos in this repo are 1920px on the long edge at 1-2.5MB. The slide
+# is 1080x1350, so this is already generous; the Drive's 8192px originals are
+# 20-40MB and have no business in git.
+REPO_MAX_PX = 1920
+JPEG_QUALITY = 88
 
 # Sail as registered: letters, an optional separator, then digits.
 _SAIL = re.compile(r"^([A-Za-z]+)[\s\-_]*(\d+)$")
@@ -155,3 +164,60 @@ def credit_for(path) -> dict:
     return {"photographer": "", "handle": "", "source_file": name,
             "confirmed": False, "via": "",
             "note": "UNTAGGED - credit unconfirmed"}
+
+
+def install_photo(src, dest_dir, athlete_id, max_px: int = REPO_MAX_PX,
+                  square: int = 0) -> Path:
+    """Copy a chosen frame into the repo as ``{athlete_id}.jpg``, downscaled.
+
+    ``square`` crops a centred square first, for the headshot that feeds the
+    slide's portrait mode when a rider has no landscape action shot.
+
+    Never upscales: a source already smaller than ``max_px`` is written at its
+    own size rather than interpolated up to look like something it is not.
+    """
+    dest_dir = Path(dest_dir)
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / f"{athlete_id}.jpg"
+
+    with Image.open(src) as im:
+        im = im.convert("RGB")
+        if square:
+            side = min(im.size)
+            left = (im.width - side) // 2
+            top = (im.height - side) // 2
+            im = im.crop((left, top, left + side, top + side)).resize(
+                (square, square), Image.LANCZOS)
+        elif max(im.size) > max_px:
+            im.thumbnail((max_px, max_px), Image.LANCZOS)
+        im.save(dest, "JPEG", quality=JPEG_QUALITY, optimize=True)
+
+    return dest
+
+
+def merge_json_entry(path, key: str, value, comment: str = "") -> dict:
+    """Set one rider's entry in focus.json / credits.json, keeping the rest.
+
+    Both files are hand-editable and hold every rider for an event, so a write
+    has to merge rather than replace. A file that has been corrupted by hand is
+    started again rather than allowed to swallow the new entry -- losing a
+    broken file is better than silently not saving the pick.
+    """
+    path = Path(path)
+    data = {}
+    if path.exists():
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            if not isinstance(data, dict):
+                data = {}
+        except ValueError:
+            data = {}
+
+    if comment and "_comment" not in data:
+        data["_comment"] = comment
+    data[str(key)] = value
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + os.linesep,
+                    encoding="utf-8")
+    return data

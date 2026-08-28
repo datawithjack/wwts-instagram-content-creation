@@ -162,3 +162,79 @@ class TestCreditFor:
     def test_records_the_source_filename(self, tmp_path):
         p = _jpeg_with_xmp(tmp_path / "GC26_wv_G44_00825.jpg")
         assert credit_for(p)["source_file"] == "GC26_wv_G44_00825.jpg"
+
+
+class TestInstallPhoto:
+    """Picks land in the repo at the same size as every other athlete photo."""
+
+    def _big(self, tmp_path, name="src.jpg", size=(4000, 2667)):
+        from PIL import Image
+        p = tmp_path / name
+        Image.new("RGB", size, (40, 80, 120)).save(p, "JPEG")
+        return p
+
+    def test_downscales_to_the_repo_convention(self, tmp_path):
+        from PIL import Image
+        from pipeline.photo_picker import install_photo
+        src = self._big(tmp_path)
+        dest = install_photo(src, tmp_path / "out", 49)
+        assert dest.name == "49.jpg"
+        assert max(Image.open(dest).size) == 1920
+
+    def test_leaves_an_already_small_photo_alone(self, tmp_path):
+        from PIL import Image
+        from pipeline.photo_picker import install_photo
+        src = self._big(tmp_path, size=(1200, 800))
+        dest = install_photo(src, tmp_path / "out", 7)
+        assert Image.open(dest).size == (1200, 800)
+
+    def test_creates_the_event_folder(self, tmp_path):
+        from pipeline.photo_picker import install_photo
+        out = tmp_path / "events" / "122"
+        install_photo(self._big(tmp_path), out, 49)
+        assert out.is_dir()
+
+    def test_square_crop_for_a_face(self, tmp_path):
+        from PIL import Image
+        from pipeline.photo_picker import install_photo
+        src = self._big(tmp_path)
+        dest = install_photo(src, tmp_path / "faces", 19, square=600)
+        assert Image.open(dest).size == (600, 600)
+
+
+class TestMergeJsonEntry:
+    """focus.json and credits.json are hand-editable, so a write must not
+    trample the neighbouring riders or the explanatory comment."""
+
+    def test_creates_the_file_with_a_comment(self, tmp_path):
+        from pipeline.photo_picker import merge_json_entry
+        p = tmp_path / "focus.json"
+        merge_json_entry(p, "49", "50% 50%", comment="how to read this")
+        data = json.loads(p.read_text(encoding="utf-8"))
+        assert data["49"] == "50% 50%"
+        assert data["_comment"] == "how to read this"
+
+    def test_keeps_existing_riders(self, tmp_path):
+        from pipeline.photo_picker import merge_json_entry
+        p = tmp_path / "focus.json"
+        p.write_text(json.dumps({"_comment": "keep me", "68": "45% 50%"}),
+                     encoding="utf-8")
+        merge_json_entry(p, "49", "50% 50%")
+        data = json.loads(p.read_text(encoding="utf-8"))
+        assert data["68"] == "45% 50%"
+        assert data["49"] == "50% 50%"
+        assert data["_comment"] == "keep me"
+
+    def test_overwrites_the_same_rider(self, tmp_path):
+        from pipeline.photo_picker import merge_json_entry
+        p = tmp_path / "focus.json"
+        merge_json_entry(p, "49", "10% 50%")
+        merge_json_entry(p, "49", "90% 50%")
+        assert json.loads(p.read_text(encoding="utf-8"))["49"] == "90% 50%"
+
+    def test_survives_a_corrupt_file_without_losing_the_new_entry(self, tmp_path):
+        from pipeline.photo_picker import merge_json_entry
+        p = tmp_path / "focus.json"
+        p.write_text("{not json", encoding="utf-8")
+        merge_json_entry(p, "49", "50% 50%")
+        assert json.loads(p.read_text(encoding="utf-8"))["49"] == "50% 50%"
