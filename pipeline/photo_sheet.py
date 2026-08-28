@@ -213,9 +213,19 @@ document.getElementById('save').addEventListener('click', async () => {{
       body: JSON.stringify(selections()),
     }});
     const body = await res.json();
-    document.getElementById('status').textContent =
-      body.ok ? 'Saved: ' + body.installed.join(', ') + '. You can close this tab.'
-              : 'Failed: ' + body.error;
+    const saved = body.installed ? body.installed.length : 0;
+    let msg;
+    if (!body.ok) {{
+      // The photos are already on disk at this point, so say so plainly rather
+      // than letting a generation failure read as though the picking was lost.
+      msg = saved + ' photo(s) saved. Generating the post failed: ' + body.error;
+    }} else if (body.skipped) {{
+      msg = saved + ' photo(s) saved. ' + (body.message || '');
+    }} else {{
+      msg = saved + ' photo(s) saved. Post generated, ' + body.slides
+          + ' slides opened in new tabs.';
+    }}
+    document.getElementById('status').textContent = msg;
   }} catch (err) {{
     document.getElementById('status').textContent = 'Failed: ' + err;
     btn.disabled = false;
