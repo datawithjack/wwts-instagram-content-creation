@@ -93,11 +93,105 @@
         letter-spacing: 0.04em;
         margin-top: 32px;
     }
+
+    /* The plain cover's children sit directly in the flex container, so the
+       wrapper that the photo layout needs has to vanish from layout here. */
+    .contents {
+        display: contents;
+    }
+
+    /* ── Photo cover ──
+       Only applies when a photo resolved. Everything above is untouched, so a
+       cover with no photo renders exactly as it always has. */
+    .container.has-photo {
+        padding: 0;
+        justify-content: flex-end;
+        text-align: left;
+        align-items: stretch;
+    }
+
+    .cover-photo {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 0;
+    }
+
+    .cover-photo img {
+        display: block;   /* inline leaves a baseline gap that overflows 1350 */
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* Dark at the bottom for the type, near-clear at the top so the photo is
+       still a photo. Heavier than the slide gradient: the cover carries a
+       260px display face, and thin type over a busy lineup shot is unreadable. */
+    .cover-photo::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(
+            to bottom,
+            rgba(8, 20, 40, 0.30) 0%,
+            rgba(10, 14, 26, 0.34) 26%,
+            rgba(10, 14, 26, 0.62) 48%,
+            rgba(10, 14, 26, 0.88) 66%,
+            rgba(10, 14, 26, 0.98) 82%,
+            rgba(10, 14, 26, 1.00) 100%
+        );
+        z-index: 1;
+    }
+
+    /* Instagram crops a 4:5 cover to a centre square in the grid, cutting the
+       top and bottom 135px. The bottom padding keeps the last line of the
+       title inside that square, so the thumbnail reads as a titled post
+       rather than a headless photo. */
+    .cover-content {
+        position: relative;
+        z-index: 2;
+        padding: 0 52px 152px;
+    }
+
+    .has-photo .event-year {
+        font-size: 44px;
+        letter-spacing: 0.1em;
+        color: rgba(255, 255, 255, 0.66);
+        margin-bottom: 2px;
+    }
+
+    .has-photo .event-name {
+        font-size: 58px;
+        line-height: 1.02;
+        margin-bottom: 6px;
+    }
+
+    .has-photo .event-meta {
+        font-size: 25px;
+        letter-spacing: 0.08em;
+        margin-bottom: 30px;
+    }
+
+    /* Stepped down from 260px. Three lines at cover size would fill the frame
+       and leave the photo as a strip behind the descenders. */
+    .has-photo .cover-title {
+        font-size: 176px;
+        line-height: 0.92;
+        margin-bottom: 0;
+        text-shadow: 0 3px 24px rgba(0, 0, 0, 0.55);
+    }
 </style>
 {% endblock %}
 
 {% block carousel_content %}
-<div class="container">
+<div class="container{% if cover_photo_url %} has-photo{% endif %}">
+    {% if cover_photo_url %}
+    <div class="cover-photo">
+        <img src="{{ cover_photo_url }}" alt="{{ event_name }}"
+             style="object-position: {{ cover_photo_focus | default('center 35%') }}">
+    </div>
+    {% endif %}
+
+    <div class="{% if cover_photo_url %}cover-content{% else %}contents{% endif %}">
     {% if is_per_event and event_name %}
     <div class="event-year">{{ year }}</div>
     <div class="event-name">{{ event_name | upper }}</div>
@@ -119,7 +213,7 @@
     {% else %}
     <div class="cover-title">
         <span class="line">{{ title_gender | upper }}</span>
-        <span class="line">TOP 10</span>
+        <span class="line">TOP{% if show_count is not defined or show_count %} 10{% endif %}</span>
         <span class="line metric">{{ title_metric | upper }}</span>
         {% if day or finals_day or so_far %}
         <span class="line day">{% if so_far %}SO FAR{% elif finals_day %}FINALS DAY{% else %}DAY {{ day }}{% endif %}</span>
@@ -129,5 +223,6 @@
     <div class="cover-subtitle">{{ year }} Season</div>
     {% endif %}
     {% endif %}
+    </div>
 </div>
 {% endblock %}

@@ -66,7 +66,7 @@
     }
 
     .col-type {
-        width: 140px;
+        width: 260px;
         flex-shrink: 0;
         text-align: center;
         margin-left: 16px;
@@ -158,6 +158,36 @@
         margin-top: 4px;
         letter-spacing: 0.04em;
     }
+
+    /* ── Compact mode: all ten rows on one card ──
+       Photo mode already gave the top five a slide each, so this card is the
+       recap and has to hold ten rows in the height five normally take. Every
+       type size steps down together; shrinking only the row height would leave
+       52px names crammed into a 96px row with no air. */
+    .table-compact .col-rank { font-size: 26px; }
+    .table-compact .col-athlete { font-size: 36px; }
+    .table-compact .col-score { font-size: 40px; width: 120px; }
+    .table-compact .col-event { font-size: 22px; }
+    .table-compact .col-type { font-size: 18px; width: 200px; }
+    .table-compact .col-type .type-mod { font-size: 15px; }
+    .table-compact .score-round { font-size: 16px; }
+
+    .table-compact .col-flag img {
+        width: 34px;
+        height: 25px;
+    }
+
+    .table-compact .table-header {
+        padding: 10px 24px;
+    }
+
+    .table-compact .table-header span,
+    .table-compact .table-header .col-score,
+    .table-compact .table-header .col-event,
+    .table-compact .table-header .col-type,
+    .table-compact .table-header .col-flag {
+        font-size: 19px;
+    }
 </style>
 {% endblock %}
 
@@ -171,7 +201,13 @@
     {{ slide_header(title, event_name, is_per_event, rows[0].rank | ordinal ~ ' – ' ~ rows[-1].rank | ordinal, day, finals_day, so_far) }}
     {% endif %}
 
+    {% if compact %}
+    <div class="table-compact">
+        {{ table_component(rows, show_trick_type, is_per_event, '96px', show_round, show_year_sex) }}
+    </div>
+    {% else %}
     {{ table_component(rows, show_trick_type, is_per_event, '192px', show_round, show_year_sex) }}
+    {% endif %}
 
     {% if has_non_counting %}
     <div class="table-footnote">Dimmed = didn't count toward heat total</div>

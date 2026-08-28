@@ -1,0 +1,25 @@
+{
+  "_comment": "Photographer per photo, read from the file's own XMP dc:creator. Gran Canaria 2026 has no photographer-named folders, so the tag is the only source. 49.jpg carries no tag: confirm before crediting it.",
+  "49": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "GC26_wv_G44_00825.jpg",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "68": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "GC26_wv_BRA105_01030.jpg"
+  },
+  "97": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "GC26_wv_E334_00887.jpg"
+  },
+  "19": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "GC26_ls_E95_7022.jpg (registration portrait, cropped to faces/19.jpg)",
+    "note": "UNTAGGED - credit unconfirmed"
+  }
+}

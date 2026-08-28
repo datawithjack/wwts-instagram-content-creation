@@ -95,6 +95,19 @@ def resolve_action_url(athlete_id, event_id, current_url: str) -> str:
     return _local_photo(athlete_id) or current_url
 
 
+def resolve_event_cover_url(event_id) -> str:
+    """Resolve a generic cover shot for an event, or "".
+
+    Looks for ``events/{event_id}/cover.{ext}``. Not keyed to an athlete: a
+    cover wants the best frame from the event, which is often a wide lineup or
+    conditions shot rather than a portrait of whoever happens to top the
+    leaderboard. Callers fall back to a rider photo when this returns "".
+    """
+    if not event_id:
+        return ""
+    return _subfolder_photo("cover", "events", event_id)
+
+
 def resolve_hero_url(athlete_id, event_id) -> str:
     """Resolve a large landscape/action shot for a hero slide, or "".
 

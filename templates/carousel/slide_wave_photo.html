@@ -1,0 +1,309 @@
+{% extends "carousel/base_carousel.html" %}
+
+{#
+  One score from the top five, given a whole slide.
+
+  Ranks waves, not riders, so the score is the hero element and the name sits
+  under it: the same rider can hold two of these slides, and on the second one
+  the only thing that has changed is the number.
+
+  Two photo modes, matching slide_recap_rider:
+
+  action   — a full-bleed hero shot (events/{event_id}/{id}, then h2h/{id},
+             then the flat {id} photo)
+  portrait — nothing landscape resolved, so the best headshot sits large in
+             the same footprint under the same gradient rather than being
+             stretched to 1080x1350.
+#}
+
+{% block carousel_head %}
+<style>
+    .container {
+        padding: 0;
+        position: relative;
+        justify-content: flex-end;
+    }
+
+    /* ── Full-bleed action shot ── */
+    .photo-bg {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 0;
+    }
+
+    .photo-bg img {
+        display: block;   /* inline leaves a ~4px baseline gap under the image,
+                             which pushes the body past 1350 and clips the slide */
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .photo-bg::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(
+            to bottom,
+            rgba(8, 20, 40, 0.20) 0%,
+            rgba(10, 14, 26, 0.42) 40%,
+            rgba(10, 14, 26, 0.80) 62%,
+            rgba(10, 14, 26, 0.97) 78%,
+            rgba(10, 14, 26, 1.00) 100%
+        );
+        z-index: 1;
+    }
+
+    /* ── Portrait fallback ──
+       Same footprint and gradient as the action shot so the carousel reads as
+       one design either way. Sized and centred, never stretched: a face crop
+       blown up to full bleed looks broken, which is why this is its own mode. */
+    .portrait-hero {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 0;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding-top: 96px;
+        overflow: hidden;
+        background: radial-gradient(
+            ellipse 70% 42% at 50% 26%,
+            rgba(38, 62, 92, 0.72) 0%,
+            rgba(14, 25, 39, 0) 100%
+        );
+    }
+
+    .portrait-hero img {
+        width: 580px;
+        height: 580px;
+        object-fit: cover;
+        border-radius: 20px;
+        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+    }
+
+    .portrait-hero .photo-placeholder {
+        width: 580px;
+        height: 580px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 200px;
+        color: rgba(255, 255, 255, 0.20);
+        background: rgba(20, 30, 50, 0.8);
+        border-radius: 20px;
+    }
+
+    .portrait-hero::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(
+            to bottom,
+            rgba(10, 14, 26, 0.00) 0%,
+            rgba(10, 14, 26, 0.06) 40%,
+            rgba(10, 14, 26, 0.55) 56%,
+            rgba(10, 14, 26, 0.94) 68%,
+            rgba(10, 14, 26, 1.00) 76%
+        );
+        z-index: 1;
+    }
+
+    /* ── Lower content block ── */
+    .score-block {
+        position: relative;
+        z-index: 2;
+        padding: 0 52px 72px;
+    }
+
+    /* Rank chip on its own line, so the score below always starts at the
+       block's padding rather than shifting with the width of "1ST" vs "5TH".
+
+       Reads "5TH BEST WAVE", never a bare "5TH": mid-carousel this chip is the
+       only thing naming what is being counted, and a lone ordinal sitting on a
+       photo of a rider reads as their placing at the event rather than a rank
+       among the scores. */
+    .rank {
+        display: inline-block;
+        font-family: var(--font-display);
+        font-size: 38px;
+        line-height: 1;
+        letter-spacing: 0.1em;
+        white-space: nowrap;
+        color: var(--color-bg);
+        border-radius: 2px;
+        padding: 9px 22px 5px;
+        margin-bottom: 26px;
+    }
+
+    /* The qualifier is the same size as the ordinal but lighter, so the chip
+       reads as one label while the number still carries first. */
+    .rank .rank-suffix {
+        opacity: 0.62;
+        margin-left: 0.28em;
+    }
+
+    .rank.place-1 { background: var(--color-rank-1st); }
+    .rank.place-2 { background: var(--color-rank-2nd); }
+    .rank.place-3 { background: var(--color-rank-3rd); }
+
+    /* Off the podium is hollow, not a fourth filled grey: silver is itself a
+       pale grey, so a filled 4th collides with 2nd. */
+    .rank.place-other {
+        background: transparent;
+        border: 1px solid rgba(149, 165, 184, 0.65);
+        color: #95A5B8;
+        padding: 8px 21px 4px;
+    }
+
+    /* ── Score, the hero ──
+       Baseline-aligned with its label so the number reads as the headline and
+       the label as its caption, rather than as two stacked lines. */
+    .score-line {
+        display: flex;
+        align-items: baseline;
+        gap: 26px;
+        margin-bottom: 18px;
+    }
+
+    .score-value {
+        font-family: var(--font-display);
+        font-size: 210px;
+        line-height: 0.86;
+        letter-spacing: 0.01em;
+        color: var(--color-discipline);
+    }
+
+    .score-label {
+        font-family: var(--font-body);
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.46);
+    }
+
+    /* ── Rider ── */
+    .rider-name {
+        display: flex;
+        align-items: baseline;
+        gap: 20px;
+        font-family: var(--font-display);
+        color: var(--color-text-primary);
+        min-width: 0;
+        margin-bottom: 26px;
+    }
+
+    .rider-name .flag img {
+        width: 52px;
+        height: 38px;
+        object-fit: cover;
+        border-radius: 3px;
+        margin-right: 4px;
+        transform: translateY(4px);
+    }
+
+    .rider-name .first {
+        font-size: 46px;
+        line-height: 1;
+        letter-spacing: 0.06em;
+        color: rgba(255, 255, 255, 0.62);
+    }
+
+    .rider-name .last {
+        font-size: 76px;
+        line-height: 1;
+        letter-spacing: 0.01em;
+    }
+
+    .rider-name.long .last { font-size: 62px; }
+    .rider-name.xlong .last { font-size: 50px; }
+
+    /* ── Where it was scored ──
+       A hairline rule instead of a card, so the photo stays the only framed
+       element on the slide. */
+    .score-context {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding-top: 18px;
+        border-top: 1px solid rgba(255, 255, 255, 0.13);
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 600;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.52);
+    }
+
+    .score-context .sep {
+        color: rgba(255, 255, 255, 0.24);
+    }
+
+    .score-context .trick {
+        color: var(--color-discipline);
+    }
+
+    .counting-note {
+        font-family: var(--font-body);
+        font-size: 18px;
+        font-weight: 400;
+        font-style: italic;
+        letter-spacing: 0.03em;
+        color: rgba(255, 255, 255, 0.34);
+        margin-top: 14px;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    {% if photo_mode == 'action' and photo_url %}
+    <div class="photo-bg">
+        <img src="{{ photo_url }}" alt="{{ name }}"
+             style="object-position: {{ photo_focus | default('center 35%') }}">
+    </div>
+    {% else %}
+    <div class="portrait-hero">
+        {% if photo_url %}
+        <img src="{{ photo_url }}" alt="{{ name }}">
+        {% else %}
+        <div class="photo-placeholder">{{ last_name[:1] or name[:1] }}</div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="score-block">
+        <span class="rank {% if rank in [1, 2, 3] %}place-{{ rank }}{% else %}place-other{% endif %}">{{ rank_label }}{% if rank_suffix %}<span class="rank-suffix">{{ rank_suffix }}</span>{% endif %}</span>
+
+        <div class="score-line">
+            <span class="score-value">{{ "%.2f" | format(score) }}</span>
+            <span class="score-label">{{ title_metric[:-1] | upper }} SCORE</span>
+        </div>
+
+        <div class="rider-name {{ name_class }}">
+            {% if country %}
+            <span class="flag"><img src="https://flagcdn.com/w80/{{ country | lower }}.png" alt="{{ country }}"></span>
+            {% endif %}
+            <span class="first">{{ first_name }}</span>
+            {% if last_name %}<span class="last">{{ last_name }}</span>{% endif %}
+        </div>
+
+        <div class="score-context">
+            {% if event_name %}<span>{{ event_name }}</span>{% endif %}
+            {% if event_name and round %}<span class="sep">&middot;</span>{% endif %}
+            {% if round %}<span>{{ round }}</span>{% endif %}
+            {% if heat %}<span class="sep">&middot;</span><span>{{ heat }}</span>{% endif %}
+            {% if show_trick_type and trick_type %}
+            <span class="sep">&middot;</span>
+            <span class="trick">{{ trick_type | trick_type_label }}{% if modifier %} {{ modifier | modifier_label }}{% endif %}</span>
+            {% endif %}
+        </div>
+
+        {% if not counting %}
+        <div class="counting-note">Didn't count toward the heat total</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

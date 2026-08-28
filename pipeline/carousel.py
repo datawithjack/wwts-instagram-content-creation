@@ -2,7 +2,18 @@
 
 Unified flow (ties and no-ties handled by the same hero card):
 cover → hero(all #1s) → table(next chunk) → table(remainder) → cta
+
+Photo mode (--photos) trades the hero + two tables for a longer, slower read:
+cover → 5 photo slides → one table of all 10 → cta
 """
+
+from pipeline.helpers import ordinal
+from pipeline.templates import (
+    resolve_event_cover_url,
+    resolve_hero_focus,
+    resolve_hero_url,
+    resolve_thumb_url,
+)
 
 MEDAL_COLOURS = {
     "gold": "#F0C040",
@@ -26,7 +37,11 @@ def _detect_top_ties(entries: list[dict]) -> list[dict]:
 def _build_common(data: dict) -> dict:
     """Extract shared context fields from data."""
     discipline = data["title_metric"].lower().rstrip("s") + "s"  # "Waves" -> "waves"
-    title = data.get("custom_title") or f"{data['title_gender'].upper()} TOP 10 {data['title_metric'].upper()}"
+    # Photo mode drops the "10": the cover promises ten, then the next slide
+    # opens a 5-4-3 countdown, and the reader has to work out that the count
+    # restarted. The table at the end still shows all ten, labelled 1st-10th.
+    count = "" if data.get("photo_mode") else "10 "
+    title = data.get("custom_title") or f"{data['title_gender'].upper()} TOP {count}{data['title_metric'].upper()}"
     accent = ACCENT_JUMPS if discipline == "jumps" else ACCENT_WAVES
     return {
         "title": title,
@@ -49,6 +64,9 @@ def _build_common(data: dict) -> dict:
         "perfect_10s_mode": data.get("perfect_10s_mode", False),
         "show_year_sex": data.get("perfect_10s_mode", False),
         "custom_title": data.get("custom_title", ""),
+        # The cover assembles its own three-line stack rather than using
+        # `title`, so it needs the same signal to drop the "10".
+        "show_count": not data.get("photo_mode"),
         "custom_subtitle": data.get("custom_subtitle", ""),
     }
 
@@ -68,6 +86,111 @@ def _build_perfect_10s_slides(common: dict, rows: list[dict]) -> list[dict]:
             "label": f"Positions {chunk[0]['rank']}\u2013{chunk[-1]['rank']}",
             **common,
         })
+    return slides
+
+
+def _name_class(last_name: str) -> str:
+    """Step the surname size down so long names stay inside the slide.
+
+    Same thresholds as the finals carousels: ``last_name`` is everything after
+    the forename, so multi-word surnames are the long cases.
+    """
+    length = len(last_name)
+    if length >= 18:
+        return "xlong"
+    if length >= 13:
+        return "long"
+    return ""
+
+
+def _cover_photo(rows: list[dict], event_id) -> dict:
+    """Photo layer for the cover, or {} to keep the plain typographic cover.
+
+    Prefers a generic ``events/{id}/cover.*`` shot over the top rider's photo.
+    The cover is the grid thumbnail, and the #1 rider already carries the last
+    photo slide; leading with the same frame makes the post look like it only
+    has one picture.
+
+    Falls back to the top-ranked rider's hero shot, and to nothing at all,
+    which leaves the existing cover exactly as it was.
+    """
+    event_cover = resolve_event_cover_url(event_id)
+    if event_cover:
+        return {"cover_photo_url": event_cover, "cover_photo_focus": "center 40%"}
+
+    if not rows:
+        return {}
+    top_id = rows[0].get("athlete_id")
+    hero = resolve_hero_url(top_id, event_id)
+    if not hero:
+        return {}
+    return {
+        "cover_photo_url": hero,
+        "cover_photo_focus": resolve_hero_focus(top_id, event_id, "center 30%"),
+    }
+
+
+def _build_photo_slides(common: dict, rows: list[dict], event_id=None) -> list[dict]:
+    """Photo mode: the top 5 scores as full-bleed slides, then one table of 10.
+
+    The five slides are the literal top 5 rows, not five distinct riders. A
+    rider who puts two waves in the top five gets two slides, which is the
+    point: the post ranks waves, and one rider owning several of the best is
+    itself the story.
+
+    Countdown order (5th first, #1 last) so the carousel builds rather than
+    opening on its own punchline.
+    """
+    slides = []
+    for row in reversed(rows[:5]):
+        name = row.get("athlete", "")
+        parts = name.split(None, 1) if name else [""]
+        first_name = parts[0].upper()
+        last_name = parts[1].upper() if len(parts) > 1 else ""
+        athlete_id = row.get("athlete_id")
+
+        # Landscape only. A face crop blown up to 1080x1350 looks broken, so
+        # with nothing landscape the slide switches layout rather than
+        # stretching a headshot into the same footprint.
+        action_url = resolve_hero_url(athlete_id, event_id)
+        rank = row.get("rank")
+
+        slides.append({
+            "type": "wave_photo",
+            "rank": rank,
+            "rank_label": ordinal(int(rank)).upper() if rank else "",
+            # "5TH BEST WAVE", not a bare "5TH". Mid-carousel the chip is the
+            # only thing saying what is being counted, and a lone ordinal on a
+            # photo reads as a placing (5th at the event) rather than a rank
+            # among the scores.
+            "rank_suffix": f"BEST {common['title_metric'][:-1].upper()}",
+            "athlete_id": athlete_id,
+            "name": name,
+            "first_name": first_name,
+            "last_name": last_name,
+            "name_class": _name_class(last_name),
+            "country": row.get("country", ""),
+            "score": row.get("score"),
+            "round": row.get("round", ""),
+            "heat": row.get("heat", ""),
+            "counting": row.get("counting", 1),
+            "trick_type": row.get("trick_type", ""),
+            "modifier": row.get("modifier", ""),
+            "photo_mode": "action" if action_url else "portrait",
+            "photo_url": action_url or resolve_thumb_url(athlete_id, ""),
+            "photo_focus": resolve_hero_focus(athlete_id, event_id),
+            **common,
+        })
+
+    # All ten on one card. The five above have already been read one at a
+    # time, so this is the recap, not the reveal.
+    slides.append({
+        "type": "table",
+        "rows": rows,
+        "label": f"Positions {rows[0]['rank']}–{rows[-1]['rank']}",
+        "compact": True,
+        **common,
+    })
     return slides
 
 
@@ -136,9 +259,15 @@ def build_slides(data: dict) -> list[dict]:
     # least one row actually didn't count toward its heat total.
     common["has_non_counting"] = any(not r.get("counting", 1) for r in rows)
 
-    slides = [{"type": "cover", **common}]
+    cover = {"type": "cover", **common}
+    if data.get("photo_mode"):
+        cover.update(_cover_photo(rows, data.get("photo_event_id")))
+
+    slides = [cover]
     if common["perfect_10s_mode"]:
         slides.extend(_build_perfect_10s_slides(common, rows))
+    elif data.get("photo_mode"):
+        slides.extend(_build_photo_slides(common, rows, data.get("photo_event_id")))
     else:
         slides.extend(_build_content_slides(common, rows))
     slides.append({"type": "cta", **common})

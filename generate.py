@@ -15,9 +15,88 @@ from pipeline.api import fetch_head_to_head, fetch_site_stats, fetch_athlete_eve
 from pipeline.captions import build_caption
 from pipeline.db import run_query
 from pipeline.helpers import nationality_to_iso, clean_event_name, heat_label_from_id, short_round_name, full_round_name
-from pipeline.queries import build_top10_query, build_canary_kings_query, build_athlete_rise_query, build_wave_count_query, build_fantasy_mvp_points_query, build_fantasy_session_pick_pct_query
+from pipeline.queries import build_top10_query, build_freestyle_top10_query, build_canary_kings_query, build_athlete_rise_query, build_wave_count_query, build_fantasy_mvp_points_query, build_fantasy_session_pick_pct_query
 from pipeline.templates import render_template, get_dummy_data, resolve_action_url, resolve_hero_url, resolve_hero_focus, resolve_photo_credit
 from pipeline.renderer import render_to_png, render_to_video, render_carousel, render_h2h_carousel, render_rp_carousel, render_analysis_carousel, render_athlete_rise_carousel, render_picks_carousel, render_wave_count_carousel, render_fuerte_fantasy_mvps_carousel, render_slalom_mvps_carousel, render_finals_preview_carousel, render_finals_recap_carousel
+
+
+def _fetch_freestyle_top10(args) -> dict:
+    """Top 10 highest-scoring freestyle moves, for the top_10 carousel.
+
+    Freestyle rows are one move each, so the "trick type" column carries the
+    move name with its dictionary difficulty on the sub-line — the same slot
+    the jump variant uses for "1 Foot" / "Tweaked".
+
+    DB-only: there is no freestyle equivalent of the API's per-event top scores
+    endpoint, so this needs the SSH tunnel up and cannot run unattended.
+    """
+    from pipeline.fuerte_fantasy_mvps import resolve_country_iso
+
+    sql, params = build_freestyle_top10_query(
+        sex=args.sex,
+        year=args.year,
+        event_id=args.event,
+        counting_only=getattr(args, "counting_only", False),
+        exclude_placeholders=getattr(args, "exclude_placeholders", False),
+    )
+    rows = run_query(sql, params)
+
+    entries = []
+    for i, r in enumerate(rows):
+        difficulty = r.get("difficulty")
+        entries.append({
+            "rank": i + 1,
+            "athlete": r["athlete"],
+            # Several freestyle-only riders have every country column NULL in
+            # ATHLETES; resolve_country_iso falls back to a sail-derived map.
+            "country": resolve_country_iso(
+                r.get("country_code"), r.get("country"), r.get("athlete_id")
+            ),
+            "score": float(r["score"]),
+            "event": clean_event_name(r["event"]),
+            "round": full_round_name(r.get("round", "")),
+            "heat": heat_label_from_id(r.get("heat_id", "")),
+            "counting": int(r.get("counting", 1)),
+            "trick_type": r.get("move") or "",
+            "modifier": f"Difficulty {float(difficulty):.1f}" if difficulty is not None else "",
+        })
+
+    gender_map = {"Men": "Men's", "Women": "Women's"}
+    data = {
+        "title_gender": gender_map.get(args.sex, ""),
+        "title_metric": "Moves",
+        "title_year": args.year or "All Time",
+        "show_trick_type": True,
+        "is_per_event": bool(args.event),
+        "entries": entries,
+    }
+
+    if args.event:
+        event_row = run_query(
+            "SELECT event_name, start_date, end_date, stars, country_code "
+            "FROM PWA_IWT_EVENTS WHERE event_id = %s LIMIT 1",
+            (args.event,),
+        )
+        if event_row:
+            ev = event_row[0]
+            data["event_name"] = clean_event_name(ev["event_name"])
+            data["event_country"] = ev.get("country_code", "")
+            data["event_stars"] = ev.get("stars", 0)
+            start = ev.get("start_date")
+            end = ev.get("end_date")
+            from datetime import date as dt_date
+            if start:
+                if isinstance(start, str):
+                    start = dt_date.fromisoformat(start)
+                data["event_date_start"] = start.strftime("%b %d")
+            if end:
+                if isinstance(end, str):
+                    end = dt_date.fromisoformat(end)
+                data["event_date_end"] = end.strftime("%b %d")
+            if not args.year and start:
+                data["title_year"] = start.year
+
+    return data
 
 
 def fetch_live_data(template_name: str, args) -> dict:
@@ -76,8 +155,13 @@ def fetch_live_data(template_name: str, args) -> dict:
             }
 
         if not args.score_type:
-            print("Top 10 requires: --score-type (Wave or Jump)")
+            print("Top 10 requires: --score-type (Wave, Jump or Freestyle)")
             sys.exit(1)
+
+        # Freestyle has its own scores table and no API endpoint, so it takes a
+        # separate path rather than a branch inside build_top10_query.
+        if args.score_type == "Freestyle":
+            return _fetch_freestyle_top10(args)
 
         # Use API for per-event top 10; fall back to DB if API 404s. That order
         # matters for unattended publishing: the DB only answers through an SSH
@@ -121,6 +205,8 @@ def fetch_live_data(template_name: str, args) -> dict:
             entry = {
                 "rank": i + 1,
                 "athlete": r["athlete"],
+                # Photo mode resolves a hero shot from this; table slides ignore it.
+                "athlete_id": r.get("athlete_id"),
                 "country": nationality_to_iso(r.get("country", "")),
                 "score": float(r["score"]),
                 "event": clean_event_name(r["event"]),
@@ -643,13 +729,15 @@ def main():
     parser.add_argument("--women", help="Finals preview: comma-separated women's finalist athlete IDs, in draw order")
     parser.add_argument("--heats", help="Finals preview: one slide per drawn heat, e.g. '46,69,68,205|135,64,49,61' (needs --division)")
     parser.add_argument("--round-label", help="Finals preview: heat slide label prefix (default 'Quarter Final')")
-    parser.add_argument("--score-type", choices=["Wave", "Jump"], help="Score type for top 10")
+    parser.add_argument("--score-type", choices=["Wave", "Jump", "Freestyle"], help="Score type for top 10")
+    parser.add_argument("--exclude-placeholders", action="store_true", help="Top 10 freestyle: drop unnamed 'New Move' slots")
     parser.add_argument("--year", type=int, help="Year filter for top 10")
     parser.add_argument("--day", type=int, help="Day number for daily top 10 label (e.g. 1, 2, 3)")
     parser.add_argument("--finals-day", action="store_true", help="Label as Finals Day instead of Day N")
     parser.add_argument("--so-far", action="store_true", help="Label as 'So Far' for a mid-event top 10 (instead of Day N)")
     parser.add_argument("--rounds", help="Comma-separated round names to filter (e.g. 'Final,R5 B-Final')")
     parser.add_argument("--counting-only", action="store_true", help="Top 10: only scores that counted toward the heat total (default now includes non-counting)")
+    parser.add_argument("--photos", action="store_true", help="Top 10 carousel: give the top 5 scores a full-bleed photo slide each, then the top 10 as one table")
     parser.add_argument("--mode", help="Variant mode for a template (e.g. 'perfect-10s' for the all-time perfect-10 wave carousel)")
     parser.add_argument("--rider-of-day", action="store_true", help="Rider profile mid-comp variant: no finish position (cover shows 'RIDER OF THE DAY', placing shows TBC)")
     parser.add_argument(
@@ -702,6 +790,13 @@ def main():
         data["finals_day"] = True
     if getattr(args, "so_far", False):
         data["so_far"] = True
+
+    # Thread --photos into top 10 data. The event id rides along because the
+    # photo lookup is event-keyed (assets/photos/events/{event_id}/), and by
+    # this point the args are no longer in scope inside the slide builder.
+    if getattr(args, "photos", False):
+        data["photo_mode"] = True
+        data["photo_event_id"] = args.event
 
     # Thread --rider-of-day into rider profile data (mid-comp, no placement)
     if getattr(args, "rider_of_day", False):
