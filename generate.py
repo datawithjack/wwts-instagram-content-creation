@@ -205,6 +205,8 @@ def fetch_live_data(template_name: str, args) -> dict:
             entry = {
                 "rank": i + 1,
                 "athlete": r["athlete"],
+                # Photo mode resolves a hero shot from this; table slides ignore it.
+                "athlete_id": r.get("athlete_id"),
                 "country": nationality_to_iso(r.get("country", "")),
                 "score": float(r["score"]),
                 "event": clean_event_name(r["event"]),
@@ -735,6 +737,7 @@ def main():
     parser.add_argument("--so-far", action="store_true", help="Label as 'So Far' for a mid-event top 10 (instead of Day N)")
     parser.add_argument("--rounds", help="Comma-separated round names to filter (e.g. 'Final,R5 B-Final')")
     parser.add_argument("--counting-only", action="store_true", help="Top 10: only scores that counted toward the heat total (default now includes non-counting)")
+    parser.add_argument("--photos", action="store_true", help="Top 10 carousel: give the top 5 scores a full-bleed photo slide each, then the top 10 as one table")
     parser.add_argument("--mode", help="Variant mode for a template (e.g. 'perfect-10s' for the all-time perfect-10 wave carousel)")
     parser.add_argument("--rider-of-day", action="store_true", help="Rider profile mid-comp variant: no finish position (cover shows 'RIDER OF THE DAY', placing shows TBC)")
     parser.add_argument(
@@ -787,6 +790,13 @@ def main():
         data["finals_day"] = True
     if getattr(args, "so_far", False):
         data["so_far"] = True
+
+    # Thread --photos into top 10 data. The event id rides along because the
+    # photo lookup is event-keyed (assets/photos/events/{event_id}/), and by
+    # this point the args are no longer in scope inside the slide builder.
+    if getattr(args, "photos", False):
+        data["photo_mode"] = True
+        data["photo_event_id"] = args.event
 
     # Thread --rider-of-day into rider profile data (mid-comp, no placement)
     if getattr(args, "rider_of_day", False):

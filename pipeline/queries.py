@@ -209,6 +209,7 @@ def build_top10_query(
     sql = f"""
         SELECT
             a.primary_name AS athlete,
+            a.id AS athlete_id,
             a.nationality AS country,
             s.score,
             s.counting AS counting,
