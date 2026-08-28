@@ -166,6 +166,89 @@ def credit_for(path) -> dict:
             "note": "UNTAGGED - credit unconfirmed"}
 
 
+def find_year_root(year, drive_root: str = "") -> Path | None:
+    """The shared PWA folder for a season, e.g. ``.../2026``.
+
+    Google Drive exposes a folder shared with you at
+    ``G:/.shortcut-targets-by-id/<target-id>/<name>`` once you add a shortcut to
+    it. The id belongs to the folder, not the shortcut, so it survives the
+    shortcut being moved or renamed -- but it changes if the share is recreated.
+    Globbing for the year rather than hardcoding the id means neither breaks us.
+
+    ``PWA_DRIVE_ROOT`` overrides, for a machine that syncs it somewhere else.
+    """
+    override = drive_root or os.environ.get("PWA_DRIVE_ROOT", "")
+    if override:
+        candidate = Path(override) / str(year)
+        return candidate if candidate.is_dir() else None
+
+    import glob as _glob
+    for base in ("G:/.shortcut-targets-by-id/*", "G:/My Drive", "G:/Shared drives/*"):
+        for hit in _glob.glob(f"{base}/{year}"):
+            if os.path.isdir(hit):
+                return Path(hit)
+    return None
+
+
+def thumbnail_for(src, cache_dir, max_px: int = 1000) -> Path:
+    """A small cached copy of a frame, built once.
+
+    Gran Canaria keeps only 20-40MB originals, and a baseline JPEG cannot be
+    read in part, so the first sheet for such an event pays a real download.
+    Keying the cache on size and mtime as well as the path means that cost is
+    paid once and never again, including across runs.
+    """
+    src = Path(src)
+    stat = src.stat()
+    import hashlib
+    key = hashlib.sha1(
+        f"{src.resolve()}|{stat.st_size}|{int(stat.st_mtime)}|{max_px}".encode()
+    ).hexdigest()[:16]
+
+    cache_dir = Path(cache_dir)
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    dest = cache_dir / f"{key}.jpg"
+    if dest.exists():
+        return dest
+
+    with Image.open(src) as im:
+        # draft() lets the JPEG decoder skip most of the work by decoding at a
+        # fraction of full size -- worth a lot on an 8192px frame.
+        im.draft("RGB", (max_px, max_px))
+        im = im.convert("RGB")
+        im.thumbnail((max_px, max_px), Image.LANCZOS)
+        im.save(dest, "JPEG", quality=82, optimize=True)
+    return dest
+
+
+_FOLDER_PREFIX = re.compile(r"^\s*\d+\s*-\s*")
+
+
+def match_event_folder(event_name: str, folder_names) -> str:
+    """The Drive folder for an event, matched on its name.
+
+    The Drive numbers its folders (``06 - TENERIFE``) and the API does not
+    (``Tenerife Grand Slam``), so this strips the number and asks whether what
+    is left appears in the event name. Longest match wins, so a folder called
+    ``CANARIA`` cannot beat ``GRAN CANARIA``.
+
+    Returns "" when nothing matches, rather than guessing at the closest
+    folder -- picking photos from the wrong event is worse than picking none.
+    """
+    if not event_name or not folder_names:
+        return ""
+    haystack = re.sub(r"[^A-Z ]", "", event_name.upper())
+
+    best, best_len = "", 0
+    for folder in folder_names:
+        stripped = _FOLDER_PREFIX.sub("", folder).strip().upper()
+        if not stripped:
+            continue
+        if stripped in haystack and len(stripped) > best_len:
+            best, best_len = folder, len(stripped)
+    return best
+
+
 def install_photo(src, dest_dir, athlete_id, max_px: int = REPO_MAX_PX,
                   square: int = 0) -> Path:
     """Copy a chosen frame into the repo as ``{athlete_id}.jpg``, downscaled.
