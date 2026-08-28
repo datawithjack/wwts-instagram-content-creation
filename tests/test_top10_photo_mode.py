@@ -162,3 +162,52 @@ def test_jump_fields_ride_along_for_a_jump_top_ten():
     top = [s for s in build_slides(data) if s["type"] == "wave_photo"][-1]
     assert top["trick_type"] == "P"
     assert top["modifier"] == "1-Foot"
+
+
+class TestCoverPhoto:
+    """The cover is the grid thumbnail, so it gets a photo where one exists."""
+
+    def test_prefers_a_generic_event_cover_over_the_top_rider(self, monkeypatch):
+        """The #1 rider already carries the last photo slide.
+
+        Opening on the same frame makes the post look like it has one picture.
+        """
+        monkeypatch.setattr("pipeline.carousel.resolve_event_cover_url",
+                            lambda event_id: "file:///events/124/cover.jpg")
+        monkeypatch.setattr("pipeline.carousel.resolve_hero_url",
+                            lambda athlete_id, event_id: "file:///events/124/97.jpg")
+
+        cover = build_slides(_data())[0]
+        assert cover["cover_photo_url"] == "file:///events/124/cover.jpg"
+
+    def test_falls_back_to_the_top_ranked_riders_hero_shot(self, monkeypatch):
+        monkeypatch.setattr("pipeline.carousel.resolve_event_cover_url",
+                            lambda event_id: "")
+        monkeypatch.setattr("pipeline.carousel.resolve_hero_url",
+                            lambda athlete_id, event_id: f"file:///hero/{athlete_id}.jpg")
+
+        cover = build_slides(_data())[0]
+        assert cover["cover_photo_url"] == "file:///hero/1.jpg"
+
+    def test_no_photo_anywhere_leaves_the_plain_cover_untouched(self, monkeypatch):
+        monkeypatch.setattr("pipeline.carousel.resolve_event_cover_url",
+                            lambda event_id: "")
+        monkeypatch.setattr("pipeline.carousel.resolve_hero_url",
+                            lambda athlete_id, event_id: "")
+
+        assert "cover_photo_url" not in build_slides(_data())[0]
+
+    def test_default_mode_never_gets_a_cover_photo(self, monkeypatch):
+        monkeypatch.setattr("pipeline.carousel.resolve_event_cover_url",
+                            lambda event_id: "file:///events/124/cover.jpg")
+        data = _data()
+        data["photo_mode"] = False
+        assert "cover_photo_url" not in build_slides(data)[0]
+
+    def test_show_count_drives_the_covers_own_title_stack(self):
+        """The cover assembles its own lines rather than using `title`."""
+        assert build_slides(_data())[0]["show_count"] is False
+
+        default = _data()
+        default["photo_mode"] = False
+        assert build_slides(default)[0]["show_count"] is True

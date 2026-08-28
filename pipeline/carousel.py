@@ -9,6 +9,7 @@ cover → 5 photo slides → one table of all 10 → cta
 
 from pipeline.helpers import ordinal
 from pipeline.templates import (
+    resolve_event_cover_url,
     resolve_hero_focus,
     resolve_hero_url,
     resolve_thumb_url,
@@ -63,6 +64,9 @@ def _build_common(data: dict) -> dict:
         "perfect_10s_mode": data.get("perfect_10s_mode", False),
         "show_year_sex": data.get("perfect_10s_mode", False),
         "custom_title": data.get("custom_title", ""),
+        # The cover assembles its own three-line stack rather than using
+        # `title`, so it needs the same signal to drop the "10".
+        "show_count": not data.get("photo_mode"),
         "custom_subtitle": data.get("custom_subtitle", ""),
     }
 
@@ -97,6 +101,33 @@ def _name_class(last_name: str) -> str:
     if length >= 13:
         return "long"
     return ""
+
+
+def _cover_photo(rows: list[dict], event_id) -> dict:
+    """Photo layer for the cover, or {} to keep the plain typographic cover.
+
+    Prefers a generic ``events/{id}/cover.*`` shot over the top rider's photo.
+    The cover is the grid thumbnail, and the #1 rider already carries the last
+    photo slide; leading with the same frame makes the post look like it only
+    has one picture.
+
+    Falls back to the top-ranked rider's hero shot, and to nothing at all,
+    which leaves the existing cover exactly as it was.
+    """
+    event_cover = resolve_event_cover_url(event_id)
+    if event_cover:
+        return {"cover_photo_url": event_cover, "cover_photo_focus": "center 40%"}
+
+    if not rows:
+        return {}
+    top_id = rows[0].get("athlete_id")
+    hero = resolve_hero_url(top_id, event_id)
+    if not hero:
+        return {}
+    return {
+        "cover_photo_url": hero,
+        "cover_photo_focus": resolve_hero_focus(top_id, event_id, "center 30%"),
+    }
 
 
 def _build_photo_slides(common: dict, rows: list[dict], event_id=None) -> list[dict]:
@@ -228,7 +259,11 @@ def build_slides(data: dict) -> list[dict]:
     # least one row actually didn't count toward its heat total.
     common["has_non_counting"] = any(not r.get("counting", 1) for r in rows)
 
-    slides = [{"type": "cover", **common}]
+    cover = {"type": "cover", **common}
+    if data.get("photo_mode"):
+        cover.update(_cover_photo(rows, data.get("photo_event_id")))
+
+    slides = [cover]
     if common["perfect_10s_mode"]:
         slides.extend(_build_perfect_10s_slides(common, rows))
     elif data.get("photo_mode"):
