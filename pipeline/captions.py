@@ -13,7 +13,9 @@ def build_caption(
     site_url = config.get("captions", {}).get("site_url", "windsurfworldtourstats.com")
 
     if caption_override:
-        body = caption_override
+        # The credit is owed whoever wrote the words, so it is appended here
+        # too rather than only by the generated-copy path.
+        body = _with_photo_credits(caption_override, data)
     else:
         builders = {
             "head_to_head": _caption_head_to_head,
@@ -61,6 +63,23 @@ def _caption_head_to_head(data: dict, site_url: str) -> str:
     )
 
 
+def _with_photo_credits(body: str, data: dict) -> str:
+    """Append the photographer line, if there is anything to append.
+
+    A photo post carries someone else's work on five slides, so this is not
+    decoration. Blank entries are dropped rather than joined, or the separator
+    shows up with nothing either side of it; an untagged photo is deliberately
+    blank, because a missing credit beats a guessed one.
+    """
+    credits = []
+    for credit in data.get("photo_credits") or []:
+        if credit and credit not in credits:
+            credits.append(credit)
+    if not credits:
+        return body
+    return body + "\n\n\U0001f4f8 " + " | ".join(credits)
+
+
 def _caption_top_10(data: dict, site_url: str) -> str:
     gender = data.get("title_gender", "")
     metric = data.get("title_metric", "")
@@ -79,28 +98,32 @@ def _caption_top_10(data: dict, site_url: str) -> str:
 
     if data.get("so_far"):
         event_name = data.get("event_name", "")
-        return (
+        return _with_photo_credits(
             f"\U0001f3c4 The {event_name} is well underway.\n\n"
             f"Here are the highest {gender.lower()} {metric.lower().rstrip('s')} scores so far.\n\n"
             f"Who has been your standout rider? \U0001f447\n\n"
-            f"Full leaderboard → {site_url}"
+            f"Full leaderboard → {site_url}",
+            data,
         )
 
     if day or data.get("finals_day"):
         event_name = data.get("event_name", "")
         day_label = "Finals Day" if data.get("finals_day") else f"Day {day}"
-        return (
-            f"\U0001f3c6 {day_label} \u2014 the best {gender.lower()} {metric.lower()} at {event_name}.\n\n"
+        return _with_photo_credits(
+            f"\U0001f3c6 {day_label} at {event_name}: the best {gender.lower()} "
+            f"{metric.lower()}.\n\n"
             f"Swipe to see who made the list.\n\n"
             f"Who impressed you this round? \U0001f447\n\n"
-            f"Full leaderboard \u2192 {site_url}"
+            f"Full leaderboard \u2192 {site_url}",
+            data,
         )
 
-    return (
-        f"\U0001f3c6 The 10 best {gender.lower()} {metric.lower()} \u2014 {year}.\n\n"
-        f"Swipe to see who made the list \u2014 and who\u2019s missing.\n\n"
+    return _with_photo_credits(
+        f"\U0001f3c6 The 10 best {gender.lower()} {metric.lower()} of {year}.\n\n"
+        f"Swipe to see who made the list, and who\u2019s missing.\n\n"
         f"Who deserves a spot? Tell us \U0001f447\n\n"
-        f"Full leaderboard \u2192 {site_url}"
+        f"Full leaderboard \u2192 {site_url}",
+        data,
     )
 
 
@@ -294,16 +317,9 @@ def _caption_finals_recap(data: dict, site_url: str) -> str:
         f"Full stats → {site_url}"
     )
 
-    # Sourced photos always carry a credit. Deduped in slide order rather than
+    # Sourced photos always carry a credit, deduped in slide order rather than
     # sorted, so the photographer of the lead image is named first.
-    credits = []
-    for credit in data.get("photo_credits") or []:
-        if credit and credit not in credits:
-            credits.append(credit)
-    if credits:
-        body += "\n\n📸 " + " | ".join(credits)
-
-    return body
+    return _with_photo_credits(body, data)
 
 
 def _caption_finals_preview(data: dict, site_url: str) -> str:

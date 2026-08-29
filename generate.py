@@ -797,6 +797,12 @@ def main():
     if getattr(args, "photos", False):
         data["photo_mode"] = True
         data["photo_event_id"] = args.event
+        # Resolved here, not inside the caption builder, so the credits come
+        # from the same photo resolution the slides use and a hand-written
+        # --caption still gets the photographer line appended.
+        from pipeline.carousel import photo_credits
+
+        data["photo_credits"] = photo_credits(data)
 
     # Thread --rider-of-day into rider profile data (mid-comp, no placement)
     if getattr(args, "rider_of_day", False):

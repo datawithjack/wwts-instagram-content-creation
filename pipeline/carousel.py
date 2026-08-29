@@ -12,8 +12,43 @@ from pipeline.templates import (
     resolve_event_cover_url,
     resolve_hero_focus,
     resolve_hero_url,
+    resolve_photo_credit,
     resolve_thumb_url,
 )
+
+
+def photo_credits(data: dict) -> list[str]:
+    """Photographer handles for the photos actually on slides, in slide order.
+
+    Only the cover and the five photo slides carry a photograph; ranks 6 to 10
+    appear in the table and are nobody's picture, so they are not credited.
+
+    Lead image first, then the countdown, mirroring what a reader swipes past.
+    Where no dedicated cover file exists the cover reuses the top rider's shot,
+    so that rider is named first rather than last.
+
+    An untagged photo contributes nothing: a caption missing a credit is a
+    smaller problem than one carrying a guessed attribution.
+    """
+    event_id = data.get("photo_event_id")
+    rows = data.get("entries") or []
+    if not event_id or not rows:
+        return []
+
+    ordered = []
+    if resolve_event_cover_url(event_id):
+        ordered.append(resolve_photo_credit("cover", event_id))
+    else:
+        ordered.append(resolve_photo_credit(rows[0].get("athlete_id"), event_id))
+
+    for row in reversed(rows[:5]):
+        ordered.append(resolve_photo_credit(row.get("athlete_id"), event_id))
+
+    deduped = []
+    for credit in ordered:
+        if credit and credit not in deduped:
+            deduped.append(credit)
+    return deduped
 
 MEDAL_COLOURS = {
     "gold": "#F0C040",
