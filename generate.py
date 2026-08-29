@@ -16,6 +16,7 @@ from pipeline.captions import build_caption
 from pipeline.db import run_query
 from pipeline.helpers import nationality_to_iso, clean_event_name, heat_label_from_id, short_round_name, full_round_name
 from pipeline.queries import build_top10_query, build_freestyle_top10_query, build_canary_kings_query, build_athlete_rise_query, build_wave_count_query, build_fantasy_mvp_points_query, build_fantasy_session_pick_pct_query
+from pipeline.post_options import apply_post_options
 from pipeline.templates import render_template, get_dummy_data, resolve_action_url, resolve_hero_url, resolve_hero_focus, resolve_photo_credit
 from pipeline.renderer import render_to_png, render_to_video, render_carousel, render_h2h_carousel, render_rp_carousel, render_analysis_carousel, render_athlete_rise_carousel, render_picks_carousel, render_wave_count_carousel, render_fuerte_fantasy_mvps_carousel, render_slalom_mvps_carousel, render_finals_preview_carousel, render_finals_recap_carousel
 
@@ -783,30 +784,10 @@ def main():
     else:
         data = fetch_live_data(template_name, args)
 
-    # Thread --day into data for daily top 10
-    if getattr(args, "day", None):
-        data["day"] = args.day
-    if getattr(args, "finals_day", False):
-        data["finals_day"] = True
-    if getattr(args, "so_far", False):
-        data["so_far"] = True
-
-    # Thread --photos into top 10 data. The event id rides along because the
-    # photo lookup is event-keyed (assets/photos/events/{event_id}/), and by
-    # this point the args are no longer in scope inside the slide builder.
-    if getattr(args, "photos", False):
-        data["photo_mode"] = True
-        data["photo_event_id"] = args.event
-        # Resolved here, not inside the caption builder, so the credits come
-        # from the same photo resolution the slides use and a hand-written
-        # --caption still gets the photographer line appended.
-        from pipeline.carousel import photo_credits
-
-        data["photo_credits"] = photo_credits(data)
-
-    # Thread --rider-of-day into rider profile data (mid-comp, no placement)
-    if getattr(args, "rider_of_day", False):
-        data["rider_of_day"] = True
+    # Rendering options (--photos, --day, --so-far, --finals-day,
+    # --rider-of-day) are threaded in one shared place so the backlog poller,
+    # which never runs main(), applies exactly the same ones.
+    apply_post_options(data, vars(args))
 
     is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "fantasy_rules", "fourstar_session", "h2h_carousel", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "event_picks", "fuerte_fantasy_mvps", "slalom_mvps", "finals_preview", "finals_recap", "commentator_brief")
 
