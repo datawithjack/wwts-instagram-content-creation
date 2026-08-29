@@ -187,9 +187,7 @@ def generate_post(event_id, score_type, sex, event_name="", year=None):
     way to write a caption while looking at them. They come back as HTML now and
     the page shows them inline.
     """
-    from pipeline.post_flow import review_payload
-
-    return review_payload(
+    return post_flow.review_payload(
         {"event_id": event_id, "score_type": score_type, "sex": sex},
         event_name, year,
     )
