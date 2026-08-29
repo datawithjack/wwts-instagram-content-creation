@@ -45,13 +45,27 @@ class TestGenerateAfterInstall:
     def test_success_reports_the_slide_count(self, monkeypatch):
         import pick_photos
         monkeypatch.setattr(pick_photos, "generate_post",
-                            lambda **kwargs: ["a.html", "b.html"])
+                            lambda **kwargs: {"slides": ["<a>", "<b>"],
+                                              "caption": "Words."})
         result = pick_photos.generate_after_save(
             {"event_id": 124, "score_type": "Wave", "sex": "Women"},
             installed=["13 <- x.jpg"],
         )
         assert result["ok"] is True
         assert result["slides"] == 2
+
+    def test_the_built_post_comes_back_for_the_page_to_review(self, monkeypatch):
+        """Slides used to open a browser tab each, which is no way to write a
+        caption while looking at them. They come back as markup now."""
+        import pick_photos
+        monkeypatch.setattr(pick_photos, "generate_post",
+                            lambda **kwargs: {"slides": ["<a>"],
+                                              "caption": "Words."})
+        result = pick_photos.generate_after_save(
+            {"event_id": 124, "score_type": "Wave", "sex": "Women"},
+            installed=["13 <- x.jpg"],
+        )
+        assert result["post"]["caption"] == "Words."
 
     def test_no_plan_skips_generation_without_failing(self, monkeypatch):
         import pick_photos

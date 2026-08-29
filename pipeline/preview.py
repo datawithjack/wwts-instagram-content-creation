@@ -17,11 +17,20 @@ from pipeline.templates import render_template
 PREVIEW_ZOOM = 'style="zoom: 0.5;"'
 
 
+def slide_html(slides) -> list[str]:
+    """Each slide as finished HTML, unscaled.
+
+    The post flow reviews slides inline on its own page rather than opening a
+    tab per slide, so it needs the markup rather than a file to open.
+    """
+    return [render_template(f"carousel/slide_{slide['type']}", slide)
+            for slide in slides]
+
+
 def open_slide_previews(slides, announce=True) -> list[str]:
     """Render each slide to a temp file and open it. Returns the paths."""
     paths = []
-    for slide in slides:
-        html = render_template(f"carousel/slide_{slide['type']}", slide)
+    for html in slide_html(slides):
         html = html.replace("<body>", f"<body {PREVIEW_ZOOM}>")
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".html", delete=False, encoding="utf-8"

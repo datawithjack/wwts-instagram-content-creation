@@ -292,6 +292,7 @@ class TestAgainstTheRealBacklog:
 
     def test_appending_leaves_every_comment_line_intact(self, real):
         before = real.read_text(encoding="utf-8").splitlines()
+        before_count = len(_posts(real))
         upsert_entry(str(real), {
             "id": "a-brand-new-post", "template": "top_10_carousel",
             "params": {"score_type": "Wave", "sex": "Men", "event": 124,
@@ -302,7 +303,7 @@ class TestAgainstTheRealBacklog:
         after = real.read_text(encoding="utf-8").splitlines()
         comments = [ln for ln in before if ln.strip().startswith("#")]
         assert comments == [ln for ln in after if ln.strip().startswith("#")]
-        assert len(_posts(real)) == 46
+        assert len(_posts(real)) == before_count + 1
 
     def test_updating_the_published_tenerife_entry_keeps_its_neighbours(self, real):
         before_posts = _posts(real)
@@ -352,6 +353,16 @@ class TestProposeId:
     def test_it_follows_the_files_own_convention(self):
         assert propose_id("Tenerife Grand Slam", 2026, "Women", "Wave") == \
             "tenerife2026-womens-waves-top10"
+
+    def test_the_apis_own_event_names_lead_with_the_year(self):
+        """The API calls it "2026 Tenerife Grand Slam *****", which naively
+        sliced gives 20262026-womens-waves-top10."""
+        assert propose_id("2026 Tenerife Grand Slam *****", 2026, "Women",
+                          "Wave") == "tenerife2026-womens-waves-top10"
+
+    def test_a_star_rating_is_not_part_of_the_name(self):
+        assert propose_id("***** Fiji Pro", 2026, "Men", "Wave") == \
+            "fiji2026-mens-waves-top10"
 
     def test_men_and_jumps(self):
         assert propose_id("Gran Canaria Wind and Waves Festival", 2026,

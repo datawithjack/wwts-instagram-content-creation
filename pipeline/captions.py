@@ -10,6 +10,19 @@ def build_caption(
     If caption_override is provided, uses that as the body text
     but still appends hashtags.
     """
+    body = build_caption_body(template_name, data, config, caption_override)
+    return f"{body}\n\n{hashtags_for(template_name, config)}"
+
+
+def build_caption_body(
+    template_name: str, data: dict, config: dict, caption_override: str = None
+) -> str:
+    """The caption without the hashtag set appended.
+
+    This is what the backlog stores: build_caption appends the config's
+    hashtags to an override rather than replacing them, so a stored caption
+    carrying its own hashtags publishes them twice.
+    """
     site_url = config.get("captions", {}).get("site_url", "windsurfworldtourstats.com")
 
     if caption_override:
@@ -47,8 +60,12 @@ def build_caption(
         builder = builders.get(template_name, _caption_default)
         body = builder(data, site_url)
 
-    hashtags = _get_hashtags(template_name, config)
-    return f"{body}\n\n{hashtags}"
+    return body
+
+
+def hashtags_for(template_name: str, config: dict) -> str:
+    """The hashtag set appended at publish time, as one line."""
+    return _get_hashtags(template_name, config)
 
 
 def _caption_head_to_head(data: dict, site_url: str) -> str:
@@ -63,21 +80,44 @@ def _caption_head_to_head(data: dict, site_url: str) -> str:
     )
 
 
-def _with_photo_credits(body: str, data: dict) -> str:
+def _owed_credits(data: dict) -> list[str]:
+    """The photographer handles this post owes, deduped in slide order."""
+    credits = []
+    for credit in data.get("photo_credits") or []:
+        if credit and credit not in credits:
+            credits.append(credit)
+    return credits
+
+
+def missing_photo_credits(body: str, data: dict) -> list[str]:
+    """Owed handles the text does not carry.
+
+    Matched on the handle rather than the exact line, so rewording the credit
+    into a sentence still counts as crediting. What matters is that the
+    photographer is named.
+    """
+    return [c for c in _owed_credits(data) if c not in body]
+
+
+def with_photo_credits(body: str, data: dict) -> str:
     """Append the photographer line, if there is anything to append.
 
     A photo post carries someone else's work on five slides, so this is not
     decoration. Blank entries are dropped rather than joined, or the separator
     shows up with nothing either side of it; an untagged photo is deliberately
     blank, because a missing credit beats a guessed one.
+
+    Appending is skipped when every owed handle is already in the text, so this
+    can be used to repair an edited caption as well as to build a fresh one.
     """
-    credits = []
-    for credit in data.get("photo_credits") or []:
-        if credit and credit not in credits:
-            credits.append(credit)
-    if not credits:
+    credits = _owed_credits(data)
+    if not credits or not missing_photo_credits(body, data):
         return body
     return body + "\n\n\U0001f4f8 " + " | ".join(credits)
+
+
+# The old private name, kept because every caption builder below calls it.
+_with_photo_credits = with_photo_credits
 
 
 def _caption_top_10(data: dict, site_url: str) -> str:

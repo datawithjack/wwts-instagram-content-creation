@@ -16,13 +16,16 @@ picked out of an arbitrary sample of six.
 import argparse
 import glob
 import json
+import mimetypes
 import os
 import sys
 import threading
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
+from pipeline import post_flow
 from pipeline.api import fetch_event, fetch_event_top_scores
 from pipeline.helpers import ordinal
 from pipeline.photo_picker import (
@@ -40,6 +43,8 @@ from pipeline.photo_sheet import render_sheet
 
 PHOTOS_DIR = Path("assets/photos")
 CACHE_DIR = Path(".cache/photo_picker")
+REPO_ROOT = Path(__file__).resolve().parent
+BACKLOG = str(REPO_ROOT / "content_backlog.yaml")
 
 FOCUS_COMMENT = ("object-position per athlete, set from the picker's crop slider. "
                  "A landscape frame keeps its full height at 1080x1350 and loses "
@@ -62,20 +67,20 @@ def _athlete_index(event_id, sex):
 
 
 def _event_dir(event_id):
-    """The Drive folder holding this event's photos, or None."""
+    """The Drive folder holding this event's photos, plus its name and year."""
     event = fetch_event(event_id)
     name = event.get("event_name") or event.get("name") or ""
     year = (event.get("date_start") or "")[:4] or event.get("year")
     if not year:
-        return None, name
+        return None, name, year
 
     root = find_year_root(year)
     if not root:
-        return None, name
+        return None, name, year
 
     folders = [p.name for p in root.iterdir() if p.is_dir()]
     match = match_event_folder(name, folders)
-    return (root / match if match else None), name
+    return (root / match if match else None), name, year
 
 
 def _riders_from_scores(event_id, score_type, sex, top):
@@ -175,19 +180,23 @@ def generation_plan(event_id, score_type, sex, athletes_mode: bool):
     return {"event_id": event_id, "score_type": score_type, "sex": sex}
 
 
-def generate_post(event_id, score_type, sex):
-    """Build and open the photo-variant carousel for this event."""
-    from pipeline.carousel import build_slides
-    from pipeline.preview import open_slide_previews
+def generate_post(event_id, score_type, sex, event_name="", year=None):
+    """Build the photo-variant carousel for this event, for review in the page.
 
-    data = fetch_event_top_scores(event_id=event_id, score_type=score_type, sex=sex)
-    data["photo_mode"] = True
-    data["photo_event_id"] = event_id
-    return open_slide_previews(build_slides(data))
+    The slides used to open as a browser tab each, which is eight tabs and no
+    way to write a caption while looking at them. They come back as HTML now and
+    the page shows them inline.
+    """
+    from pipeline.post_flow import review_payload
+
+    return review_payload(
+        {"event_id": event_id, "score_type": score_type, "sex": sex},
+        event_name, year,
+    )
 
 
-def generate_after_save(plan, installed):
-    """Generate the post, reporting rather than raising.
+def generate_after_save(plan, installed, event_name="", year=None):
+    """Build the post, reporting rather than raising.
 
     The photos are already written by the time this runs, so a failure here must
     never read as though the picking was lost. Whatever happens, the caller gets
@@ -195,18 +204,24 @@ def generate_after_save(plan, installed):
     """
     if not plan:
         return {"ok": True, "skipped": True, "installed": installed,
-                "message": "Photos installed. No post to generate for --athletes."}
+                "message": "Photos installed. No post to build for --athletes."}
     try:
-        paths = generate_post(**plan)
+        post = generate_post(event_name=event_name, year=year, **plan)
     except Exception as exc:
         return {"ok": False, "installed": installed,
                 "error": f"{type(exc).__name__}: {exc}"}
     return {"ok": True, "skipped": False, "installed": installed,
-            "slides": len(paths)}
+            "slides": len(post["slides"]), "post": post}
 
 
-def _serve(html, riders, event_id, plan=None):
-    """Serve the sheet until Save is pressed, then install, generate and stop."""
+def _serve(html, riders, event_id, plan=None, meta=None):
+    """Serve the flow: pick, install, review, caption, schedule, save, stop.
+
+    The server stays up past the photo install now, because the page still
+    needs it: it serves the slide photographs, answers backlog id lookups, and
+    takes the finished entry. It stops when the entry is written, or when there
+    was no post to write one for.
+    """
     done = threading.Event()
     result = {}
 
@@ -214,63 +229,123 @@ def _serve(html, riders, event_id, plan=None):
         def log_message(self, *args):
             pass  # the CLI prints what matters; access logs only add noise
 
-        def do_GET(self):
-            if self.path.startswith("/thumbs/"):
-                path = CACHE_DIR / os.path.basename(self.path)
-                if not path.exists():
-                    self.send_error(404)
-                    return
-                body = path.read_bytes()
-                self.send_response(200)
-                self.send_header("Content-Type", "image/jpeg")
-                self.send_header("Content-Length", str(len(body)))
-                self.end_headers()
-                self.wfile.write(body)
-                return
-            body = html.encode("utf-8")
+        def _send(self, body, content_type):
             self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
 
-        def do_POST(self):
+        def _send_json(self, payload):
+            self._send(json.dumps(payload).encode("utf-8"), "application/json")
+
+        def do_GET(self):
+            route = urlparse(self.path)
+            if route.path.startswith("/thumbs/"):
+                path = CACHE_DIR / os.path.basename(route.path)
+                if not path.exists():
+                    self.send_error(404)
+                    return
+                self._send(path.read_bytes(), "image/jpeg")
+                return
+
+            # Slide photos. The page is served over http, so the slides' own
+            # file:/// urls are blocked by the browser; post_flow rewrites them
+            # to here. Confined to the repo, which is where every one of them
+            # lives -- this is a localhost tool, not a file server.
+            if route.path == "/local":
+                wanted = parse_qs(route.query).get("p", [""])[0]
+                try:
+                    path = Path(wanted).resolve()
+                    path.relative_to(REPO_ROOT)
+                except (ValueError, OSError):
+                    self.send_error(403)
+                    return
+                if not path.is_file():
+                    self.send_error(404)
+                    return
+                self._send(path.read_bytes(),
+                           mimetypes.guess_type(path.name)[0]
+                           or "application/octet-stream")
+                return
+
+            if route.path == "/lookup":
+                post_id = parse_qs(route.query).get("id", [""])[0]
+                self._send_json(post_flow.lookup(BACKLOG, post_id))
+                return
+
+            self._send(html.encode("utf-8"), "text/html; charset=utf-8")
+
+        def _payload(self):
             length = int(self.headers.get("Content-Length", 0))
-            payload = json.loads(self.rfile.read(length) or b"{}")
+            return json.loads(self.rfile.read(length) or b"{}")
+
+        def do_POST(self):
+            route = urlparse(self.path).path
+            if route == "/backlog":
+                self._send_json(self._save_backlog())
+                return
+
             try:
                 print()
-                installed = _install(payload, event_id)
+                installed = _install(self._payload(), event_id)
                 result["installed"] = installed
-                # Generation runs after the photos are safely written, and
-                # reports rather than raising: a failure here must not read as
-                # though the picking was lost.
-                print("\nGenerating the post...")
-                outcome = generate_after_save(plan, installed)
+                # Building the post runs after the photos are safely written,
+                # and reports rather than raising: a failure here must not read
+                # as though the picking was lost.
+                print("\nBuilding the post...")
+                outcome = generate_after_save(plan, installed, **(meta or {}))
                 body = {**outcome, "installed": installed}
                 if not outcome["ok"]:
-                    print(f"  generation failed: {outcome['error']}")
+                    print(f"  build failed: {outcome['error']}")
                     print("  the photos are installed and safe")
+                else:
+                    result["credits"] = outcome.get("post", {}).get("credits", [])
+                    print("  post built. Caption and time are in the browser.")
             except Exception as exc:                      # surfaced in the page
                 body = {"ok": False, "error": str(exc)}
                 result["error"] = str(exc)
-            raw = json.dumps(body).encode("utf-8")
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(raw)))
-            self.end_headers()
-            self.wfile.write(raw)
+            self._send_json(body)
+            # There is nothing to caption or schedule without a post, so a run
+            # that cannot build one ends here, as it always did.
+            if not body.get("ok") or body.get("skipped"):
+                done.set()
+
+        def _save_backlog(self):
+            try:
+                entry = self._payload()
+                saved = post_flow.save_to_backlog(
+                    BACKLOG, entry, result.get("credits") or [])
+            except Exception as exc:
+                print(f"  backlog write failed: {exc}")
+                return {"ok": False, "error": str(exc)}
+
+            result["backlog"] = saved
+            print(f"\n  {saved['action']} {saved['id']} "
+                  f"@ {saved['scheduled_date']}Z in {BACKLOG}")
+            if saved["credits_restored"]:
+                print("  credit line restored: "
+                      + ", ".join(saved["credits_restored"]))
+            if saved["was_published"]:
+                print("  WARNING: that id has already published; the poller "
+                      "skips published posts, so re-dating it publishes nothing")
+            if saved["time_warning"]:
+                print(f"  {saved['time_warning']}")
             done.set()
+            return {"ok": True, **saved}
 
     server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     url = f"http://127.0.0.1:{server.server_port}/"
     threading.Thread(target=server.serve_forever, daemon=True).start()
     print(f"\nSheet: {url}")
     webbrowser.open(url)
-    print("Pick a frame per rider, then hit Save. Ctrl-C to leave everything alone.")
+    print("Pick a frame per rider and hit Save, then read the post, write the "
+          "caption and set a time.")
+    print("Ctrl-C at any point leaves everything as it is.")
     try:
         done.wait()
     except KeyboardInterrupt:
-        print("\nNothing saved.")
+        print("\nStopped.")
     server.shutdown()
     return result
 
@@ -289,7 +364,7 @@ def main():
     if args.drive_root:
         os.environ["PWA_DRIVE_ROOT"] = args.drive_root
 
-    event_dir, event_name = _event_dir(args.event)
+    event_dir, event_name, year = _event_dir(args.event)
     if not event_dir:
         print(f"No Drive folder found for event {args.event} ({event_name!r}).")
         print("Check the season shortcut is in My Drive, or pass --drive-root.")
@@ -320,7 +395,8 @@ def main():
     label = f"{event_name} {args.sex or ''} {args.score_type}s".strip()
     plan = generation_plan(args.event, args.score_type, args.sex,
                            athletes_mode=bool(args.athletes))
-    _serve(render_sheet(riders, label), riders, args.event, plan)
+    _serve(render_sheet(riders, label), riders, args.event, plan,
+           meta={"event_name": event_name, "year": year})
 
 
 if __name__ == "__main__":

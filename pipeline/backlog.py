@@ -42,8 +42,13 @@ def propose_id(event_name: str, year, sex: str | None, score_type: str) -> str:
     ``tenerife2026-womens-waves-top10``. Only a starting point: the page shows
     it in an editable field, because the file's own convention is not perfectly
     consistent and the person naming the post knows better than a rule does.
+
+    The place name is the first word that is neither the year nor the star
+    rating: the API calls this event "2026 Tenerife Grand Slam *****", and
+    taking word one gives ``20262026-womens-waves-top10``.
     """
-    slug = re.sub(r"[^a-z0-9]", "", (event_name or "").split(" ")[0].lower())
+    words = [re.sub(r"[^a-z0-9]", "", w.lower()) for w in (event_name or "").split()]
+    slug = next((w for w in words if w and not re.fullmatch(r"(19|20)\d\d", w)), "")
     parts = [f"{slug}{year}"]
     if sex:
         parts.append("womens" if sex.lower().startswith("w") else "mens")
