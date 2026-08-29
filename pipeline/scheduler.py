@@ -9,6 +9,7 @@ from pipeline.api import fetch_head_to_head, fetch_site_stats, fetch_athlete_eve
 from pipeline.captions import build_caption
 from pipeline.db import run_query
 from pipeline.helpers import nationality_to_iso, clean_event_name
+from pipeline.post_options import apply_post_options
 from pipeline.publisher import publish, publish_carousel, schedule_post
 from pipeline.queries import build_top10_query
 from pipeline.renderer import render_to_png, render_carousel
@@ -30,6 +31,7 @@ _CLI_ARG_DEFAULTS = {
     "rounds": None, "counting_only": False, "mode": None, "day": None,
     "men": None, "women": None, "heats": None, "round_label": None,
     "so_far": False, "rider_of_day": False, "template": None,
+    "photos": False, "finals_day": False,
 }
 
 
@@ -295,6 +297,17 @@ def run_poll(calendar_path: str) -> list:
 
 
 def resolve_post_data(post: dict) -> dict:
+    """Fetch live data for a calendar post, with its rendering options applied.
+
+    The options step is not optional decoration: an entry carrying
+    ``photos: true`` renders the old hero-plus-tables layout without it, and
+    publishes with nobody credited. See pipeline/post_options.py.
+    """
+    params = post.get("params", {})
+    return apply_post_options(_fetch_post_data(post), params)
+
+
+def _fetch_post_data(post: dict) -> dict:
     """Fetch live data for a calendar post based on its template and params."""
     template = post["template"]
     params = post.get("params", {})

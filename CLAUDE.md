@@ -28,6 +28,32 @@ Automated Instagram image generation pipeline for windsurfworldtourstats.com. Pu
 | `pipeline/captions.py` | Caption + hashtag generation per template |
 | `pipeline/analysis_carousel.py` | Canary Kings analysis carousel slide builder |
 | `pipeline/athlete_rise_carousel.py` | Athlete rise progression carousel slide builder |
+| `pipeline/post_options.py` | Threads `--photos`, `--day`, `--so-far`, `--rider-of-day` into the data. Called by `generate.main()` **and** by the scheduler, so a backlog entry renders what the CLI renders |
+| `pipeline/post_flow.py` | The steps `pick_photos` runs after picking: build the post, prefill the caption, convert the time, write the entry |
+| `pipeline/backlog.py` | Upsert one entry in `content_backlog.yaml` by line-level text edit. Never round-trips the file through a YAML dumper: the comments carry decisions |
+
+## Making a photo post (`pick_photos.py`)
+One command takes a top-10 photo post from picking to a backlog entry:
+
+```bash
+python pick_photos.py --event 124 --score-type Wave --sex Women
+```
+
+Five steps on one page: pick a frame per rider off the contact sheet → Save
+installs the photos and builds the post → the slides appear inline → the caption
+is prefilled and editable → set a publish time → Save to backlog.
+
+- **Hashtags are not stored.** `build_caption` appends the config set to a stored
+  caption rather than replacing it, so a stored hashtag posts twice. The page
+  prefills the body only and shows what will be appended.
+- **The photographer line is repaired on save** if it was edited away, matched on
+  the handle so rewording it into a sentence still counts.
+- **Times are UTC.** The input is local; the page shows both.
+- **Saving does not schedule anything.** The poller runs from GitHub Actions
+  against `main`, so the entry only exists once the diff is read, committed and
+  pushed. Deliberately manual: it is the last gate before something goes public.
+- Photos land in `assets/photos/events/{event_id}/` with `focus.json` and
+  `credits.json`; `--athletes` tops up the photo library and builds no post.
 
 ## Review Workflow
 **ALWAYS generate `--preview` over PNG when the user is reviewing a design.** Use `--preview` for every iteration. Only render PNG when the user explicitly asks for one, or at the very end to attach a final asset to a ticket/publish. PNG renders take ~30s, use Playwright, and clutter `output/png/`; previews open instantly in the browser.
