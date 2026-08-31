@@ -592,3 +592,103 @@ def build_slalom_elimination_view_query(event_id: int) -> tuple[str, tuple]:
         WHERE event_id = %s
     """
     return sql, (event_id,)
+
+
+def build_sylt_kings_query(sex: str) -> tuple[str, tuple]:
+    """Build the venue-record query behind the Kings/Queens of Sylt carousels.
+
+    One row per rider who has either won Sylt or stood on the podium twice,
+    ordered by podiums descending. Carries the year lists so a slide can name
+    the editions rather than only counting them.
+
+    Only editions with exactly one recorded winner are counted. Six Sylt
+    editions have no results in the DB at all (2006, 2010, 2011, 2015, 2020,
+    2021), and three more are recorded with ties at the top where the contest
+    did not complete: 2005 lists 8 men and all 12 women first, 2023 Wave Men
+    lists 16 riders first and 16 seventeenth (one round sailed), and 2008 Wave
+    Women lists two firsts and no second. Counting those hands Victor
+    Fernandez, Marc Pare and Thomas Traversa a phantom title each. Testing the
+    winner count rather than listing the good years keeps the filter honest as
+    the scrape is fixed or extended.
+
+    Args:
+        sex: "Men" or "Women"
+
+    Returns:
+        (sql, params) tuple ready for db.run_query(). Rows carry: athlete,
+        nationality, athlete_id, photo_url, wins, podiums, starts, best_finish,
+        avg_finish and placings — ordered by podiums DESC.
+
+        ``placings`` is every year the rider finished, as "2008:1,2012:3".
+        One column rather than a win-years and a best-years column: the years
+        behind any placing are a slice of the same list, and deriving them in
+        the builder keeps the query from growing a column per slide element.
+    """
+    sql = """
+        SELECT a.primary_name AS athlete,
+               a.nationality,
+               a.id AS athlete_id,
+               a.liveheats_image_url AS photo_url,
+               SUM(r.place = '1') AS wins,
+               SUM(CAST(r.place AS UNSIGNED) <= 3) AS podiums,
+               COUNT(*) AS starts,
+               MIN(CAST(r.place AS UNSIGNED)) AS best_finish,
+               ROUND(AVG(CAST(r.place AS UNSIGNED)), 1) AS avg_finish,
+               GROUP_CONCAT(DISTINCT CONCAT(e.year, ':', CAST(r.place AS UNSIGNED))
+                            ORDER BY e.year) AS placings
+        FROM PWA_IWT_RESULTS r
+        JOIN PWA_IWT_EVENTS e
+            ON e.event_id = r.event_id AND e.source = r.source
+        JOIN ATHLETE_SOURCE_IDS asi
+            ON asi.source = 'PWA' AND asi.source_id = r.athlete_id
+        JOIN ATHLETES a
+            ON a.id = asi.athlete_id
+        WHERE r.source = 'PWA'
+          AND r.division_label = %s
+          AND e.event_name LIKE '%%Sylt%%'
+          AND r.event_id IN (
+              SELECT r2.event_id
+              FROM PWA_IWT_RESULTS r2
+              JOIN PWA_IWT_EVENTS e2
+                  ON e2.event_id = r2.event_id AND e2.source = r2.source
+              WHERE r2.source = 'PWA'
+                AND r2.division_label = %s
+                AND e2.event_name LIKE '%%Sylt%%'
+              GROUP BY r2.event_id
+              HAVING SUM(r2.place = '1') = 1
+          )
+        GROUP BY a.id, a.primary_name, a.nationality, a.liveheats_image_url
+        HAVING wins >= 1 OR podiums >= 2
+        ORDER BY podiums DESC, wins DESC, avg_finish ASC, a.primary_name
+    """
+    division = f"Wave {sex}"
+    return sql, (division, division)
+
+
+def build_sylt_editions_query(sex: str) -> tuple[str, tuple]:
+    """Count the Sylt editions that feed ``build_sylt_kings_query``.
+
+    The slides state the sample ("10 editions, 2008-2025"), and stating it
+    wrong is worse than not stating it, so the count comes from the same
+    one-winner test rather than being written down beside it.
+
+    Returns:
+        (sql, params) tuple. One row: editions, first_year, last_year.
+    """
+    sql = """
+        SELECT COUNT(*) AS editions,
+               MIN(t.year) AS first_year,
+               MAX(t.year) AS last_year
+        FROM (
+            SELECT e.year
+            FROM PWA_IWT_RESULTS r
+            JOIN PWA_IWT_EVENTS e
+                ON e.event_id = r.event_id AND e.source = r.source
+            WHERE r.source = 'PWA'
+              AND r.division_label = %s
+              AND e.event_name LIKE '%%Sylt%%'
+            GROUP BY r.event_id, e.year
+            HAVING SUM(r.place = '1') = 1
+        ) t
+    """
+    return sql, (f"Wave {sex}",)

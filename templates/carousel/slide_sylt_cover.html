@@ -1,0 +1,90 @@
+{% extends "carousel/base_carousel.html" %}
+
+{#
+  Cover for the Kings / Queens of Sylt carousel. Same shape as the canary
+  cover, but the sample and the inclusion rule sit under the title: the
+  ranking is a filtered list drawn from an incomplete record, and a cover that
+  says only "SYLT" implies neither.
+#}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 60px 48px 64px;
+        gap: 0;
+    }
+
+    .eyebrow {
+        font-size: 40px;
+        margin-bottom: 16px;
+        color: rgba(255, 255, 255, 0.30);
+    }
+
+    .cover-title {
+        font-family: var(--font-display);
+        font-size: 340px;
+        letter-spacing: -0.04em;
+        line-height: 0.88;
+        transform: scaleX(0.85);
+        transform-origin: center;
+        color: #FFFFFF;
+        margin-bottom: 8px;
+    }
+
+    .cover-title .highlight {
+        color: var(--color-discipline);
+    }
+
+    .cover-sample {
+        font-family: var(--font-body);
+        font-size: 30px;
+        font-weight: 600;
+        color: var(--color-text-muted);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .cover-criteria {
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 500;
+        font-style: italic;
+        color: rgba(255, 255, 255, 0.38);
+        letter-spacing: 0.03em;
+        margin-top: 14px;
+        max-width: 760px;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="eyebrow">Sylt, Germany</div>
+
+    <div class="cover-title" data-autofit>
+        <span class="highlight">{{ title_word }}</span><br>
+        OF<br>
+        SYLT
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="cover-sample">{{ sample_line }}</div>
+    <div class="cover-criteria">{{ criteria_note }}</div>
+</div>
+<script>
+document.fonts.ready.then(() => {
+    document.querySelectorAll('[data-autofit]').forEach(el => {
+        const maxWidth = el.parentElement.offsetWidth;
+        let size = parseInt(getComputedStyle(el).fontSize);
+        while (el.scrollWidth > maxWidth && size > 40) {
+            size -= 4;
+            el.style.fontSize = size + 'px';
+        }
+    });
+});
+</script>
+{% endblock %}

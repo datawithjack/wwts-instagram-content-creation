@@ -42,6 +42,7 @@ def build_caption_body(
             "site_stats_reel": _caption_site_stats,
             "rider_profile": _caption_rider_profile,
             "canary_kings": _caption_canary_kings,
+            "sylt_kings": _caption_sylt_kings,
             "wave_count": _caption_wave_count,
             "finals_preview": _caption_finals_preview,
             "finals_recap": _caption_finals_recap,
@@ -217,6 +218,46 @@ def _caption_canary_kings(data: dict, site_url: str) -> str:
         f"Since 2006, {king} and {queen} have dominated Gran Canaria and Tenerife.\n\n"
         f"Swipe to see the full rankings. Who\u2019s next? \U0001f447\n\n"
         f"Full stats \u2192 {site_url}"
+    )
+
+
+def _caption_sylt_kings(data: dict, site_url: str) -> str:
+    """Caption for one division's Sylt venue record.
+
+    States the sample and the inclusion rule. The ranking is podiums first, so
+    the leader is not always the most decorated, and a caption that only named
+    a "king" would misdescribe the post it sits under.
+    """
+    rows = data.get("rows", [])
+    sex = data.get("sex", "Men")
+    editions = data.get("editions") or {}
+    title_word = "King" if sex == "Men" else "Queen"
+
+    leader = rows[0]["athlete"] if rows else "?"
+    span = ""
+    if editions.get("first_year") and editions.get("last_year"):
+        span = f" across {int(editions.get('editions', 0))} editions, {editions['first_year']} to {editions['last_year']}"
+
+    most_titles = max(rows, key=lambda r: int(r.get("wins") or 0), default=None)
+    titles_line = ""
+    if most_titles and int(most_titles.get("wins") or 0) > 0:
+        wins = int(most_titles["wins"])
+        if most_titles is not rows[0]:
+            titles_line = (
+                f"{most_titles['athlete']} has the most titles with {wins}, "
+                f"but {leader} has stood on the podium more often.\n\n"
+            )
+        else:
+            titles_line = f"{wins} titles, and the most podiums of anyone.\n\n"
+
+    return (
+        f"\U0001f3c6 Who is the {title_word} of Sylt?\n\n"
+        f"{leader} leads on podiums{span}.\n\n"
+        f"{titles_line}"
+        f"Ranked by podiums. To make the list a rider needs at least 1 win "
+        f"or 2 podiums.\n\n"
+        f"Swipe for every rider, then the full chart.\n\n"
+        f"Full stats → {site_url}"
     )
 
 
