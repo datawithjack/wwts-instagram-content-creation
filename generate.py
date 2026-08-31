@@ -340,7 +340,11 @@ def fetch_live_data(template_name: str, args) -> dict:
             print("Finals recap requires: --event (API id) and --division (Men or Women)")
             sys.exit(1)
 
-        final = fetch_final_heat(args.event, args.division)
+        try:
+            final = fetch_final_heat(args.event, args.division)
+        except ValueError as exc:
+            print(exc)
+            sys.exit(1)
         riders = final["riders"]
         if not riders:
             print(f"No final found for event {args.event} ({args.division}). "

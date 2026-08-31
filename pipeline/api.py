@@ -424,21 +424,112 @@ def fetch_site_stats() -> dict:
     return result
 
 
-def fetch_final_heat(event_id: int, division: str, round_name: str = "Final") -> dict:
-    """Fetch the final heat itself: who placed where, and every score in it.
+def _wave_heats(raw: dict) -> list:
+    """Every heat carrying a wave score, ordered as they were sailed.
 
-    Returns ``{"round_order": int, "riders": [...]}`` with riders in finishing
-    order. Each rider carries ``place``, ``final_total`` and the heat's own
-    scores split into ``final_waves`` / ``final_jumps``.
+    The score type is what separates the disciplines; the round name is not.
+    A Grand Slam runs wave, freestyle and slalom under one event and names a
+    round "Final" in each: Sylt 2017 has four of them, and Sylt 2018 calls the
+    men's wave final "Round 6". What does hold is the shape of the scores --
+    a wave heat carries ``Wave`` alongside jump move codes (``B ``, ``2xF``),
+    a freestyle heat carries ``Freestyle``, and a slalom heat carries none.
 
-    This is the one heat all four riders sailed together, which is what makes
-    it the only like-for-like comparison after an event. Event-wide aggregates
-    come from the head-to-head endpoint instead (``fetch_finalist_stats``);
-    this endpoint is the only one carrying per-heat scores.
+    Returns ``[(round_order, heat_order, round, heat), ...]``.
+    """
+    found = []
+    for round_ in raw.get("rounds", []):
+        for heat in round_.get("heats") or []:
+            athletes = heat.get("athletes") or []
+            if any((score.get("type") or "").strip().lower() == "wave"
+                   for athlete in athletes
+                   for score in (athlete.get("scores") or [])):
+                found.append((round_.get("round_order") or 0,
+                              heat.get("heat_order") or 0, round_, heat))
+    found.sort(key=lambda item: item[:2])
+    return found
 
-    Non-counting scores are kept. A rider's highest wave in the final is the
-    highest they scored, whether or not it made their counting total -- the
-    same default the top 10 posts use.
+
+def _wave_depth(candidates: list) -> dict:
+    """How far each rider got in the wave ladder.
+
+    ``{athlete_id: (last_round_order, place_in_that_heat)}``, counting only
+    riders who scored a wave themselves rather than everyone who appears in a
+    heat that carried one.
+
+    It is a cross-check on ``overall_position``, which cannot be trusted on
+    its own: a rider entering two disciplines gets one row from the athletes
+    endpoint and the position on it is not necessarily the wave one. Gollito
+    Estredo sailed both at Sylt 2018, went out in round 2 of the wave, and
+    still comes back as ``overall_position`` 1 -- his freestyle win.
+    """
+    depth = {}
+    for round_order, _heat_order, _round, heat in candidates:
+        for athlete in heat.get("athletes") or []:
+            athlete_id = athlete.get("athlete_id")
+            if athlete_id is None:
+                continue
+            if not any((score.get("type") or "").strip().lower() == "wave"
+                       for score in (athlete.get("scores") or [])):
+                continue
+            previous = depth.get(athlete_id)
+            if previous is None or round_order >= previous[0]:
+                depth[athlete_id] = (round_order, athlete.get("place") or 99)
+    return depth
+
+
+def _wave_finishers(event_id: int, division: str, candidates: list) -> list:
+    """The event's wave riders in finishing order.
+
+    Ordered on ``overall_position``, restricted to riders who actually scored
+    a wave. That restriction is what separates the disciplines: the athletes
+    endpoint returns every entrant, so at a Grand Slam several riders share
+    position 1, one per discipline.
+
+    Ladder depth only breaks ties here. It deliberately does not lead: at an
+    event whose double elimination was abandoned part-run, the last wave heat
+    sailed is not the final, and ordering on depth would rank whoever sailed
+    it above the winner.
+    """
+    resp = requests.get(
+        f"{API_BASE_URL}/events/{event_id}/athletes",
+        params={"sex": division},
+        timeout=30,
+    )
+    resp.raise_for_status()
+
+    depth = _wave_depth(candidates)
+    riders = [a for a in resp.json().get("athletes", [])
+              if a.get("athlete_id") in depth]
+    riders.sort(key=lambda a: (a.get("overall_position") or 99,
+                               -depth[a["athlete_id"]][0]))
+    return riders
+
+
+def _warn_shallow(riders: list, depth: dict) -> None:
+    """Say so when a rider's placing and their ladder run disagree.
+
+    A rider placed in the top few who went out well before the others did is
+    the shape of a position borrowed from another discipline. It cannot be
+    corrected from this data -- the endpoint gives one position per rider --
+    but it can be made visible instead of silently wrong.
+    """
+    reached = [depth[r["athlete_id"]][0] for r in riders if r["athlete_id"] in depth]
+    if not reached:
+        return
+    deepest = max(reached)
+    for rider in riders:
+        if depth.get(rider["athlete_id"], (deepest,))[0] < deepest:
+            print(f"  WARNING: {rider.get('name', '?')} is placed "
+                  f"{rider.get('overall_position')} but went out earlier than "
+                  "the others in the wave ladder. Check the placing: it may "
+                  "belong to another discipline.")
+
+
+def _wave_event(event_id: int, division: str):
+    """The event's wave heats and its wave finishing order, or raise.
+
+    Both placings and the final are read off the same two calls, so they are
+    fetched together.
     """
     resp = requests.get(
         f"{API_BASE_URL}/events/{event_id}/heats",
@@ -446,46 +537,121 @@ def fetch_final_heat(event_id: int, division: str, round_name: str = "Final") ->
         timeout=30,
     )
     resp.raise_for_status()
-    raw = resp.json()
 
-    wanted = (round_name or "").strip().lower()
-    for round_ in raw.get("rounds", []):
-        if (round_.get("round_name") or "").strip().lower() != wanted:
+    candidates = _wave_heats(resp.json())
+    if not candidates:
+        raise ValueError(
+            f"No wave heat found for event {event_id} ({division}): not one "
+            "heat came back carrying a wave score. Either the event ran no "
+            "wave discipline, or its scores are missing from the API (Sylt "
+            "2024 is one such event)."
+        )
+
+    return candidates, _wave_finishers(event_id, division, candidates)
+
+
+def fetch_final_heat(event_id: int, division: str) -> dict:
+    """Fetch the final heat itself: who placed where, and every score in it.
+
+    Returns ``{"round_order": int, "riders": [...]}`` with riders in finishing
+    order. Each rider carries ``place``, ``final_total`` and the heat's own
+    scores split into ``final_waves`` / ``final_jumps``.
+
+    This is the one heat those riders sailed together, which is what makes it
+    the only like-for-like comparison after an event. Event-wide aggregates
+    come from the head-to-head endpoint instead (``fetch_finalist_stats``);
+    this endpoint is the only one carrying per-heat scores.
+
+    The heat is found by shape, not by round name -- see ``_wave_heats``. Of
+    the wave heats, the final is the last one the event's top two finishers
+    sailed together. Simply taking the last wave heat is wrong: an unfinished
+    double elimination leaves later heats behind the final, which is how the
+    Sylt 2018 women's recap would otherwise be built from Huvermann against
+    Sniady rather than Offringa against Iballa Ruano Moreno.
+
+    Note that a man-on-man event puts two riders in this heat, not four:
+    third and fourth sailed a separate heat and are not in the result.
+
+    Non-counting scores are kept. A rider's highest wave in the final is the
+    highest they scored, whether or not it made their counting total -- the
+    same default the top 10 posts use.
+    """
+    candidates, finishers = _wave_event(event_id, division)
+    podium = [rider["athlete_id"] for rider in finishers[:2]]
+
+    # The top two, then the winner alone, then whatever sailed last: enough to
+    # stay right on an event whose placings are missing or tied.
+    chosen = candidates[-1]
+    for wanted in ({*podium}, {*podium[:1]}):
+        if not wanted:
             continue
-        heats = round_.get("heats") or []
-        if not heats:
-            continue
+        matches = [c for c in candidates
+                   if wanted <= {a.get("athlete_id")
+                                 for a in (c[3].get("athletes") or [])}]
+        if matches:
+            chosen = matches[-1]
+            break
 
-        riders = []
-        for athlete in heats[0].get("athletes") or []:
-            waves, jumps = [], []
-            best_jump, best_jump_move = 0.0, ""
-            for score in athlete.get("scores") or []:
-                value = score.get("score")
-                if value is None:
-                    continue
-                if (score.get("type") or "").strip().lower() == "wave":
-                    waves.append(float(value))
-                    continue
-                jumps.append(float(value))
-                # The move name is half the story of a jump score, so the
-                # best one's move is carried alongside the number.
-                if float(value) > best_jump:
-                    best_jump = float(value)
-                    best_jump_move = score.get("move_type") or score.get("type") or ""
+    round_, heat = chosen[2], chosen[3]
+    # A wrong pick used to be invisible -- it renders as a normal carousel with
+    # the wrong riders -- so say which heat this was built from.
+    print(f"  final heat: round {round_.get('round_name', '?')!r} "
+          f"heat {heat.get('heat_number', '?')}, "
+          f"{len(heat.get('athletes') or [])} riders")
 
-            riders.append({
-                "athlete_id": athlete.get("athlete_id"),
-                "name": athlete.get("athlete_name", ""),
-                "photo_url": athlete.get("profile_picture_url", "") or "",
-                "place": athlete.get("place"),
-                "final_total": athlete.get("result_total"),
-                "final_waves": sorted(waves, reverse=True),
-                "final_jumps": sorted(jumps, reverse=True),
-                "final_best_jump_move": best_jump_move,
-            })
+    riders = []
+    for athlete in heat.get("athletes") or []:
+        waves, jumps = [], []
+        best_jump, best_jump_move = 0.0, ""
+        for score in athlete.get("scores") or []:
+            value = score.get("score")
+            if value is None:
+                continue
+            if (score.get("type") or "").strip().lower() == "wave":
+                waves.append(float(value))
+                continue
+            jumps.append(float(value))
+            # The move name is half the story of a jump score, so the
+            # best one's move is carried alongside the number.
+            if float(value) > best_jump:
+                best_jump = float(value)
+                best_jump_move = score.get("move_type") or score.get("type") or ""
 
-        riders.sort(key=lambda r: r.get("place") or 99)
-        return {"round_order": round_.get("round_order") or 0, "riders": riders}
+        riders.append({
+            "athlete_id": athlete.get("athlete_id"),
+            "name": athlete.get("athlete_name", ""),
+            "photo_url": athlete.get("profile_picture_url", "") or "",
+            "place": athlete.get("place"),
+            "final_total": athlete.get("result_total"),
+            "final_waves": sorted(waves, reverse=True),
+            "final_jumps": sorted(jumps, reverse=True),
+            "final_best_jump_move": best_jump_move,
+        })
 
-    return {"round_order": 0, "riders": []}
+    riders.sort(key=lambda r: r.get("place") or 99)
+    return {"round_order": round_.get("round_order") or 0, "riders": riders}
+
+
+def fetch_top_finishers(event_id: int, division: str, top: int = 4) -> list:
+    """The event's top ``top`` wave riders, by finishing position.
+
+    A placings post is not a recap: it does not care which heat anyone sailed.
+    That matters wherever the final is man-on-man -- at Sylt third and fourth
+    never shared water with the winner, so ``fetch_final_heat`` can only ever
+    return two of them.
+
+    Each entry carries ``place``, ``name``, ``nationality``, ``sail_number``
+    and ``photo_url``. Per-rider stats come from ``fetch_finalist_stats``.
+    """
+    candidates, finishers = _wave_event(event_id, division)
+    top_riders = finishers[:top]
+    _warn_shallow(top_riders, _wave_depth(candidates))
+
+    return [{
+        "athlete_id": rider.get("athlete_id"),
+        "name": rider.get("name", ""),
+        "nationality": rider.get("country", ""),
+        "sail_number": rider.get("sail_number", ""),
+        "photo_url": rider.get("profile_image", "") or "",
+        "place": rider.get("overall_position"),
+    } for rider in top_riders]
