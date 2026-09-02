@@ -221,12 +221,39 @@ def _caption_canary_kings(data: dict, site_url: str) -> str:
     )
 
 
+def _shared_title_note(rows: list) -> str:
+    """Name any edition two riders won, so the title counts add up on screen.
+
+    Sylt 2008 Wave Women ended joint first, and both women are credited with
+    the win. Without a line saying so the caption claims five titles from a
+    twelve-edition sample where eleven had a single winner, which reads as an
+    error. Derived from the placings rather than hardcoded: no men's edition
+    is shared, so the men's caption must not carry a note about one.
+    """
+    winners: dict = {}
+    for row in rows:
+        for token in (row.get("placings") or "").split(","):
+            year, _, place = token.partition(":")
+            if place.strip() == "1" and year.strip():
+                winners.setdefault(year.strip(), []).append(row.get("athlete") or "?")
+
+    shared = [(y, n) for y, n in sorted(winners.items()) if len(n) > 1]
+    if not shared:
+        return ""
+
+    return " ".join(
+        f"{y} is a shared title: {' and '.join(names)} both finished first, "
+        f"and both are credited with the win."
+        for y, names in shared
+    ) + "\n\n"
+
+
 def _caption_sylt_kings(data: dict, site_url: str) -> str:
     """Caption for one division's Sylt venue record.
 
-    States the sample and the inclusion rule. The ranking is podiums first, so
-    the leader is not always the most decorated, and a caption that only named
-    a "king" would misdescribe the post it sits under.
+    States the sample and the inclusion rule. The ranking is titles first, so
+    the leader is not always the rider with the most podiums, and naming only
+    the champion would leave the most consistent rider on the list unexplained.
     """
     rows = data.get("rows", [])
     sex = data.get("sex", "Men")
@@ -238,24 +265,30 @@ def _caption_sylt_kings(data: dict, site_url: str) -> str:
     if editions.get("first_year") and editions.get("last_year"):
         span = f" across {int(editions.get('editions', 0))} editions, {editions['first_year']} to {editions['last_year']}"
 
-    most_titles = max(rows, key=lambda r: int(r.get("wins") or 0), default=None)
-    titles_line = ""
-    if most_titles and int(most_titles.get("wins") or 0) > 0:
-        wins = int(most_titles["wins"])
-        if most_titles is not rows[0]:
-            titles_line = (
-                f"{most_titles['athlete']} has the most titles with {wins}, "
-                f"but {leader} has stood on the podium more often.\n\n"
+    wins_line = ""
+    if rows:
+        wins = int(rows[0].get("wins") or 0)
+        wins_line = f"{leader} leads on titles with {wins}{span}.\n\n"
+
+    most_podiums = max(rows, key=lambda r: int(r.get("podiums") or 0), default=None)
+    podiums_line = ""
+    if most_podiums:
+        podiums = int(most_podiums.get("podiums") or 0)
+        if most_podiums is not rows[0]:
+            podiums_line = (
+                f"{most_podiums['athlete']} has the most podiums with {podiums}, "
+                f"but {leader} has won the event more often.\n\n"
             )
         else:
-            titles_line = f"{wins} titles, and the most podiums of anyone.\n\n"
+            podiums_line = f"{podiums} podiums too, more than anyone else.\n\n"
 
     return (
         f"\U0001f3c6 Who is the {title_word} of Sylt?\n\n"
-        f"{leader} leads on podiums{span}.\n\n"
-        f"{titles_line}"
-        f"Ranked by podiums. To make the list a rider needs at least 1 win "
-        f"or 2 podiums.\n\n"
+        f"{wins_line}"
+        f"{podiums_line}"
+        f"{_shared_title_note(rows)}"
+        f"Ranked by titles, then podiums, counting a podium as a 2nd or a "
+        f"3rd. To make the list a rider needs at least 1 win or 2 podiums.\n\n"
         f"Swipe for every rider, then the full chart.\n\n"
         f"Full stats → {site_url}"
     )

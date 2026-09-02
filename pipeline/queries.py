@@ -598,18 +598,35 @@ def build_sylt_kings_query(sex: str) -> tuple[str, tuple]:
     """Build the venue-record query behind the Kings/Queens of Sylt carousels.
 
     One row per rider who has either won Sylt or stood on the podium twice,
-    ordered by podiums descending. Carries the year lists so a slide can name
-    the editions rather than only counting them.
+    ordered by titles descending, then podiums. Carries the year lists so a
+    slide can name the editions rather than only counting them.
 
-    Only editions with exactly one recorded winner are counted. Six Sylt
-    editions have no results in the DB at all (2006, 2010, 2011, 2015, 2020,
-    2021), and three more are recorded with ties at the top where the contest
-    did not complete: 2005 lists 8 men and all 12 women first, 2023 Wave Men
-    lists 16 riders first and 16 seventeenth (one round sailed), and 2008 Wave
-    Women lists two firsts and no second. Counting those hands Victor
-    Fernandez, Marc Pare and Thomas Traversa a phantom title each. Testing the
-    winner count rather than listing the good years keeps the filter honest as
-    the scrape is fixed or extended.
+    ``wins`` and ``podiums`` do not overlap: a podium here is a 2nd or a 3rd.
+    Counting firsts in both made the pair unreadable side by side, because
+    "2 titles, 5 podiums" gives no way to tell whether the rider won twice and
+    placed five more times or won twice and placed three more. It does not
+    move anyone on the list: every rider with a win is on it for the win, and
+    a rider with none has no first place to subtract.
+
+    An edition counts if it has one or two recorded winners. Six Sylt editions
+    have no results in the DB at all (2006, 2010, 2011, 2015, 2020, 2021), and
+    two more are recorded with the whole fleet tied at the top because the
+    contest never produced a result: 2005 lists 8 men and all 12 women first,
+    and 2023 Wave Men lists 16 riders first and 16 seventeenth, one round
+    having been sailed. Counting those would hand Victor Fernandez, Marc Pare
+    and Thomas Traversa a phantom title each.
+
+    Two riders tied at the top is a different thing and must be counted. Sylt
+    2008 Wave Women ended with Daida and Iballa Ruano Moreno joint first, no
+    second, and Junko Nagoshi and Nayra Alonso joint third. That is an
+    official shared title, not a broken scrape: the PWA awarded both women
+    2084 ranking points for it, and Sylt was one of only two events in that
+    season's world ranking. Demanding a single winner dropped the edition and
+    cost Iballa the fifth title that makes her the most decorated rider at the
+    venue. No men's edition is shared, so the wider test changes nothing there.
+
+    Testing the winner count rather than listing the good years keeps the
+    filter honest as the scrape is fixed or extended.
 
     Args:
         sex: "Men" or "Women"
@@ -617,7 +634,7 @@ def build_sylt_kings_query(sex: str) -> tuple[str, tuple]:
     Returns:
         (sql, params) tuple ready for db.run_query(). Rows carry: athlete,
         nationality, athlete_id, photo_url, wins, podiums, starts, best_finish,
-        avg_finish and placings — ordered by podiums DESC.
+        avg_finish and placings — ordered by wins DESC, then podiums DESC.
 
         ``placings`` is every year the rider finished, as "2008:1,2012:3".
         One column rather than a win-years and a best-years column: the years
@@ -630,7 +647,7 @@ def build_sylt_kings_query(sex: str) -> tuple[str, tuple]:
                a.id AS athlete_id,
                a.liveheats_image_url AS photo_url,
                SUM(r.place = '1') AS wins,
-               SUM(CAST(r.place AS UNSIGNED) <= 3) AS podiums,
+               SUM(CAST(r.place AS UNSIGNED) BETWEEN 2 AND 3) AS podiums,
                COUNT(*) AS starts,
                MIN(CAST(r.place AS UNSIGNED)) AS best_finish,
                ROUND(AVG(CAST(r.place AS UNSIGNED)), 1) AS avg_finish,
@@ -655,11 +672,11 @@ def build_sylt_kings_query(sex: str) -> tuple[str, tuple]:
                 AND r2.division_label = %s
                 AND e2.event_name LIKE '%%Sylt%%'
               GROUP BY r2.event_id
-              HAVING SUM(r2.place = '1') = 1
+              HAVING SUM(r2.place = '1') BETWEEN 1 AND 2
           )
         GROUP BY a.id, a.primary_name, a.nationality, a.liveheats_image_url
         HAVING wins >= 1 OR podiums >= 2
-        ORDER BY podiums DESC, wins DESC, avg_finish ASC, a.primary_name
+        ORDER BY wins DESC, podiums DESC, avg_finish ASC, a.primary_name
     """
     division = f"Wave {sex}"
     return sql, (division, division)
@@ -670,7 +687,7 @@ def build_sylt_editions_query(sex: str) -> tuple[str, tuple]:
 
     The slides state the sample ("10 editions, 2008-2025"), and stating it
     wrong is worse than not stating it, so the count comes from the same
-    one-winner test rather than being written down beside it.
+    winner-count test as the rows rather than being written down beside it.
 
     Returns:
         (sql, params) tuple. One row: editions, first_year, last_year.
@@ -688,7 +705,7 @@ def build_sylt_editions_query(sex: str) -> tuple[str, tuple]:
               AND r.division_label = %s
               AND e.event_name LIKE '%%Sylt%%'
             GROUP BY r.event_id, e.year
-            HAVING SUM(r.place = '1') = 1
+            HAVING SUM(r.place = '1') BETWEEN 1 AND 2
         ) t
     """
     return sql, (f"Wave {sex}",)

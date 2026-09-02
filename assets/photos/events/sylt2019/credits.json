@@ -1,0 +1,24 @@
+{
+  "105": {
+    "photographer": "John Carter",
+    "handle": "@jcwindsurf",
+    "source_file": "SY19_wv_E30_0389.jpg",
+    "confirmed": true,
+    "via": "xmp"
+  },
+  "224": {
+    "photographer": "John Carter",
+    "handle": "@jcwindsurf",
+    "source_file": "SY19_wv_G4_0221.jpg",
+    "confirmed": true,
+    "via": "xmp"
+  },
+  "_comment": "Photographer per photo, resolved from the filename then the file's own XMP. Entries marked unconfirmed carry no credit tag anywhere: confirm before crediting them.",
+  "95": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY19_wv_FRA181_0290.jpg",
+    "confirmed": false,
+    "note": "UNTAGGED - credit unconfirmed"
+  }
+}

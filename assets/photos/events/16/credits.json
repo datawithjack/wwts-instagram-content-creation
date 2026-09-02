@@ -1,0 +1,67 @@
+{
+  "56": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY25_wv_E42_01188.jpg",
+    "confirmed": false,
+    "via": "",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "49": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY25_wv_G44_01225.jpg",
+    "confirmed": false,
+    "via": "",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "97": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY25_wv_E334_01077.jpg",
+    "confirmed": false,
+    "via": "",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "60": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY25_wv_F3_01250.jpg",
+    "confirmed": false,
+    "via": "",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "68": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY25_wv_BRA105_01246.jpg",
+    "confirmed": false,
+    "via": "",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "_comment": "Photographer per photo, resolved from the filename then the file's own XMP. Entries marked unconfirmed carry no credit tag anywhere: confirm before crediting them.",
+  "5": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY25_wv_ARU91_01086.jpg",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "10": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY25_wv_B5_01200.jpg",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "11": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY25_wv_POL1111_01298.jpg",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "16": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY25_wv_G3_01275.jpg",
+    "note": "UNTAGGED - credit unconfirmed"
+  }
+}

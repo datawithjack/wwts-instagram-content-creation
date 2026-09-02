@@ -161,7 +161,7 @@
         flex: 1;
         min-width: 0;
         font-family: var(--font-display);
-        font-size: 42px;
+        font-size: 36px;
         letter-spacing: 0.03em;
         color: var(--color-text-primary);
         white-space: nowrap;
@@ -171,7 +171,7 @@
     }
 
     .col-num {
-        width: 122px;
+        width: 104px;
         flex-shrink: 0;
         text-align: center;
         font-family: var(--font-display);
@@ -179,9 +179,15 @@
         color: rgba(255, 255, 255, 0.62);
     }
 
-    /* Podiums is what the table is ordered on, so it carries the accent. */
-    .col-podiums {
-        width: 122px;
+    /* Appearances is context, not a ranking number: it sits back from the two
+       columns the order is built on. */
+    .col-apps {
+        color: rgba(255, 255, 255, 0.42);
+    }
+
+    /* Titles is what the table is ordered on, so it carries the accent. */
+    .col-titles {
+        width: 112px;
         flex-shrink: 0;
         text-align: center;
         font-family: var(--font-display);
@@ -192,7 +198,7 @@
     /* Wide enough for four years on one line: a rider who has won Sylt four
        times is exactly the row you least want wrapping. */
     .col-best {
-        width: 186px;
+        width: 176px;
         flex-shrink: 0;
         text-align: center;
     }
@@ -241,8 +247,9 @@
             <span class="col-rank">#</span>
             <span class="col-photo"></span>
             <span class="col-athlete">Rider</span>
-            <span class="col-podiums">Podiums</span>
-            <span class="col-num">Titles</span>
+            <span class="col-titles">Titles</span>
+            <span class="col-num">Podiums</span>
+            <span class="col-num col-apps">Apps</span>
             <span class="col-best">Best</span>
         </div>
 
@@ -261,8 +268,9 @@
                     {% if row.country %}<img class="flag" src="https://flagcdn.com/w40/{{ row.country }}.png" alt="{{ row.country }}">{% endif %}
                 </div>
                 <div class="col-athlete">{{ row.athlete | upper }}</div>
-                <div class="col-podiums">{{ row.podiums }}</div>
-                <div class="col-num">{{ row.wins }}</div>
+                <div class="col-titles">{{ row.wins }}</div>
+                <div class="col-num">{{ row.podiums }}</div>
+                <div class="col-num col-apps">{{ row.starts }}</div>
                 <div class="col-best">
                     <div class="place">{{ row.best_label }}</div>
                     {% if row.best_years %}<div class="years">{{ row.best_years }}</div>{% endif %}

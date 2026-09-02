@@ -119,32 +119,19 @@
         margin-bottom: 26px;
     }
 
+    /* Only the joint top spot carries this, so it is a name rather than a
+       number and sits smaller than the old #1 did: twenty-one characters at
+       the old size crowded the name underneath it. */
     .rank {
         font-family: var(--font-display);
-        font-size: 38px;
+        font-size: 26px;
         line-height: 1;
         letter-spacing: 0.08em;
         white-space: nowrap;
         border-radius: 3px;
-        padding: 9px 22px 5px;
+        padding: 8px 18px 5px;
         background: var(--color-discipline);
         color: var(--color-bg);
-    }
-
-    .rank.no-title {
-        background: transparent;
-        border: 1px solid rgba(148, 120, 181, 0.75);
-        color: #A992C9;
-        padding: 8px 21px 4px;
-    }
-
-    .years-line {
-        font-family: var(--font-body);
-        font-size: 26px;
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: rgba(255, 255, 255, 0.62);
     }
 
     .name-flag {
@@ -162,8 +149,12 @@
         margin-bottom: 30px;
     }
 
+    /* The flag rides the first-name line: it belongs to the rider, and on the
+       meta row above it read as one more badge beside the label. */
     .rider-name .first {
-        display: block;
+        display: flex;
+        align-items: center;
+        gap: 18px;
         font-size: 62px;
         line-height: 1;
         padding-top: 7px;
@@ -189,6 +180,20 @@
         letter-spacing: 0.11em;
         text-transform: uppercase;
         color: rgba(255, 255, 255, 0.48);
+        margin-bottom: 14px;
+    }
+
+    /* Only on the cards whose own years carry the asterisk. It sits with the
+       years line it annotates rather than at the foot of the slide, where the
+       url already lives and the stat grid leaves no room. */
+    .shared-note {
+        font-family: var(--font-body);
+        font-size: 18px;
+        font-weight: 600;
+        font-style: italic;
+        letter-spacing: 0.03em;
+        color: rgba(255, 255, 255, 0.42);
+        margin-top: -8px;
         margin-bottom: 14px;
     }
 
@@ -262,18 +267,19 @@
     {% endif %}
 
     <div class="rider-block">
+        {% if rank_label %}
         <div class="rider-meta">
-            <span class="rank {% if not is_champion %}no-title{% endif %}">{{ rank_label }}</span>
-            {% if country %}<img class="name-flag" src="https://flagcdn.com/w40/{{ country }}.png" alt="{{ country }}">{% endif %}
-            <span class="years-line">{{ years_line }}</span>
+            <span class="rank">{{ rank_label }}</span>
         </div>
+        {% endif %}
 
         <div class="rider-name {{ name_class }}">
-            <span class="first">{{ first_name | upper }}</span>
+            <span class="first">{{ first_name | upper }}{% if country %}<img class="name-flag" src="https://flagcdn.com/w40/{{ country }}.png" alt="{{ country }}">{% endif %}</span>
             {% if last_name %}<span class="last">{{ last_name | upper }}</span>{% endif %}
         </div>
 
-        <div class="stat-note">At Sylt &middot; {{ sample_line }}</div>
+        <div class="stat-note">{{ years_line }}</div>
+        {% if shared_note %}<div class="shared-note">{{ shared_note }}</div>{% endif %}
         <div class="stat-grid">
             {% for stat in stats %}
             <div class="stat-cell">
