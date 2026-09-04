@@ -712,3 +712,133 @@ def build_sylt_editions_query(sex: str, discipline: str = "Wave") -> tuple[str, 
         ) t
     """
     return sql, (f"{discipline} {sex}",)
+
+
+# Riders on the Sylt slalom list who are in ATHLETES but have no PWA row in
+# ATHLETE_SOURCE_IDS, so the join finds nothing. Both won the event, and an
+# unjoined rider loses their nationality and their photo as well as their name.
+# Mapped here rather than by inserting the missing source ids, which would be a
+# content change reaching into the app's own data; the insert is the better fix
+# if this list grows past a handful.
+SLALOM_ATHLETE_ID_FALLBACK = {
+    642: 1085,   # Pierre Mortefon, won 2018
+    1108: 1120,  # Marco Lang, won 2017
+}
+
+
+def build_sylt_slalom_query(sex: str = "Men") -> tuple[str, tuple]:
+    """Build the Sylt slalom venue record, from ``PWA_RANKINGS``.
+
+    A separate builder from ``build_sylt_kings_query`` because it reads a
+    different table. That one reads ``PWA_IWT_RESULTS``, whose slalom rows
+    start at 2016: Sylt gets three editions, three different winners and
+    nobody with a second title, which is not a ranking. ``PWA_RANKINGS``
+    carries the venue every year from 2006 and turns the same post into a
+    fourteen-edition record with Antoine Albeau four times a champion.
+
+    **Fin era only.** Sylt ran ``Slalom Men`` from 2006 to 2023 and
+    ``Foil Slalom Men`` in 2024-25; no year ran both, so the discipline string
+    is the whole test. The two are left apart because merging them distorts
+    exactly the part of the list the post is about: Johan Soe won both foil
+    editions from two starts, which on a combined count ranks him level with
+    Bjorn Dunkerbeck, who won two from eight against fleets of 120-132 with
+    Albeau in them. The foil fields were also the smallest in the run, 72 and
+    73 against 87-152. Same column, nothing like the same achievement.
+
+    Places are ranked from ``event_points`` rather than read from
+    ``event_position``, which is NULL for every 2006-2009 row. The points are
+    an exact ladder (2100, 2067, 2034, step 33), so the finishing order is
+    fully recoverable, and deriving it for all years keeps one code path
+    instead of two. ``DENSE_RANK`` so a genuine tie on points shares a place.
+
+    The name falls back to ``PWA_RANKINGS.athlete_name`` because 548 of the 615
+    riders in this data have no ``ATHLETE_SOURCE_IDS`` row, and two of them,
+    Pierre Mortefon and Marco Lang, won the event. Grouping is on
+    ``pwa_athlete_id`` rather than the athlete id for the same reason: every
+    unmapped rider has a NULL athlete id, and grouping on that would collapse
+    them into a single row.
+
+    Two riders are joined through ``SLALOM_ATHLETE_ID_FALLBACK`` because the
+    source-id table has no PWA row for them. The name fallback below still
+    matters: it covers everyone else the table misses.
+
+    The fallback name is aggregated, not grouped on. ``athlete_name`` is not
+    stable across years for one rider: the scrape marks a youth entry with a
+    "(Y)" suffix, so Amado Vrieswijk is stored under two spellings and grouping
+    on the column split him into a 3-start row and a 4-start row that each
+    counted a title. ``MIN`` also picks the unsuffixed spelling, the suffix
+    sorting after the bare name.
+
+    Args:
+        sex: "Men". Sylt has never run a women's slalom event, only one Foil
+            Slalom Women edition in 2024, so there is no women's record to
+            rank. The argument exists to match the wave and freestyle
+            builders' signature.
+
+    Returns:
+        (sql, params) for db.run_query(), in the same column shape as
+        ``build_sylt_kings_query`` so ``build_sylt_kings_slides`` needs no
+        change: athlete, nationality, athlete_id, photo_url, wins, podiums,
+        starts, best_finish, avg_finish, placings.
+    """
+    sql = """
+        WITH placed AS (
+            SELECT r.year,
+                   r.pwa_athlete_id,
+                   r.athlete_name,
+                   DENSE_RANK() OVER (PARTITION BY r.year
+                                      ORDER BY r.event_points DESC) AS place
+            FROM PWA_RANKINGS r
+            WHERE r.discipline = %s
+              AND r.event_name LIKE '%%Sylt%%'
+              AND r.event_points IS NOT NULL
+        )
+        SELECT COALESCE(a.primary_name, MIN(p.athlete_name)) AS athlete,
+               a.nationality,
+               a.id AS athlete_id,
+               a.liveheats_image_url AS photo_url,
+               SUM(p.place = 1) AS wins,
+               SUM(p.place BETWEEN 2 AND 3) AS podiums,
+               COUNT(*) AS starts,
+               MIN(p.place) AS best_finish,
+               ROUND(AVG(p.place), 1) AS avg_finish,
+               GROUP_CONCAT(DISTINCT CONCAT(p.year, ':', p.place)
+                            ORDER BY p.year) AS placings
+        FROM placed p
+        LEFT JOIN ATHLETE_SOURCE_IDS asi
+            ON asi.source = 'PWA' AND asi.source_id = p.pwa_athlete_id
+        LEFT JOIN ATHLETES a
+            ON a.id = COALESCE(asi.athlete_id, %s)
+        GROUP BY p.pwa_athlete_id, a.id, a.primary_name,
+                 a.nationality, a.liveheats_image_url
+        HAVING wins >= 1 OR podiums >= 2
+        ORDER BY wins DESC, podiums DESC, avg_finish ASC, athlete
+    """
+    # One CASE rather than a placeholder per rider, so the params stay two.
+    cases = " ".join(f"WHEN {pwa} THEN {aid}"
+                     for pwa, aid in SLALOM_ATHLETE_ID_FALLBACK.items())
+    fallback = f"CASE p.pwa_athlete_id {cases} END"
+    return sql.replace("COALESCE(asi.athlete_id, %s)",
+                       f"COALESCE(asi.athlete_id, {fallback})"), (f"Slalom {sex}",)
+
+
+def build_sylt_slalom_editions_query(sex: str = "Men") -> tuple[str, tuple]:
+    """Count the Sylt slalom editions behind ``build_sylt_slalom_query``.
+
+    Same filter as the rows, so the sample line on the slides cannot drift
+    from the record it describes. Sylt ran no slalom in 2011 or 2019 and the
+    2020 and 2021 events were cancelled, so the span is not the count.
+
+    Returns:
+        (sql, params) tuple. One row: editions, first_year, last_year.
+    """
+    sql = """
+        SELECT COUNT(DISTINCT year) AS editions,
+               MIN(year) AS first_year,
+               MAX(year) AS last_year
+        FROM PWA_RANKINGS
+        WHERE discipline = %s
+          AND event_name LIKE '%%Sylt%%'
+          AND event_points IS NOT NULL
+    """
+    return sql, (f"Slalom {sex}",)
