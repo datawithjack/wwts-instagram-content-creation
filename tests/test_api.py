@@ -12,6 +12,8 @@ from pipeline.api import (
     fetch_finalist_stats,
     fetch_heat_routes,
     fetch_heat_history,
+    fetch_final_heat,
+    fetch_top_finishers,
 )
 
 
@@ -729,3 +731,244 @@ class TestFetchHeatHistory:
         history = fetch_heat_history(event_id=124, division="Men")
 
         assert len(history[97]) == 1
+
+
+# ── Discipline selection (ticket #5) ───────────────────────────
+# A Grand Slam runs wave, freestyle and slalom under one event, and the round
+# names do not separate them: Sylt 2017 has four rounds called "Final" and
+# Sylt 2018 calls the men's wave final "Round 6". These fixtures reproduce
+# that shape, so the selector is tested on it rather than on Tenerife's single
+# tidy Final.
+
+def _wave_athlete(athlete_id, name, place, waves=(8.0, 6.5), jumps=(9.0,)):
+    scores = [{"type": "Wave", "score": w} for w in waves]
+    scores += [{"type": "B ", "score": j, "move_type": "Backloop"} for j in jumps]
+    return {
+        "athlete_id": athlete_id,
+        "athlete_name": name,
+        "place": place,
+        "result_total": sum(waves) + sum(jumps),
+        "scores": scores,
+    }
+
+
+def _slalom_athlete(athlete_id, name, place):
+    """Slalom heats come back with no scores at all."""
+    return {"athlete_id": athlete_id, "athlete_name": name,
+            "place": place, "result_total": None, "scores": []}
+
+
+def _freestyle_athlete(athlete_id, name, place):
+    return {
+        "athlete_id": athlete_id, "athlete_name": name, "place": place,
+        "result_total": 20.0,
+        "scores": [{"type": "Freestyle", "score": 9.5}],
+    }
+
+
+def _multi_discipline_heats():
+    """Sylt-shaped: slalom and freestyle each name a round "Final", the wave
+    final sits in a round called "Round 6", and an unfinished double
+    elimination leaves a later wave heat that is not the final."""
+    return {
+        "rounds": [
+            {"round_name": "Final", "round_order": 4, "heats": [
+                {"heat_number": "16", "heat_order": 16, "athletes": [
+                    _slalom_athlete(900, "Pierre Mortefon", 1),
+                    _slalom_athlete(901, "Antoine Albeau", 2),
+                ]},
+            ]},
+            {"round_name": "Final", "round_order": 5, "heats": [
+                {"heat_number": "25a", "heat_order": 25, "athletes": [
+                    _freestyle_athlete(910, "Gollito Estredo", 1),
+                    _freestyle_athlete(911, "Amado Vrieswijk", 2),
+                ]},
+            ]},
+            {"round_name": "Round 6", "round_order": 9, "heats": [
+                {"heat_number": "16a", "heat_order": 16, "athletes": [
+                    _wave_athlete(3, "Jaeger Stone", 1),
+                    _wave_athlete(4, "Victor Fernandez", 2),
+                ]},
+                {"heat_number": "17a", "heat_order": 17, "athletes": [
+                    _wave_athlete(1, "Alex Mussolini", 1, waves=(9.0, 7.0)),
+                    _wave_athlete(2, "Thomas Traversa", 2),
+                ]},
+            ]},
+            {"round_name": "Final", "round_order": 10, "heats": [
+                {"heat_number": "31a", "heat_order": 31, "athletes": [
+                    _wave_athlete(5, "Maaike Huvermann", 1),
+                    _wave_athlete(6, "Justyna Sniady", 2),
+                ]},
+            ]},
+        ]
+    }
+
+
+def _mock_multi_discipline_responses():
+    """The heats call, then the athletes call the selector makes after it."""
+    athletes = {"athletes": [
+        {"athlete_id": 1, "name": "Alex Mussolini", "overall_position": 1,
+         "country": "Spanish", "sail_number": "E-30", "profile_image": "u1"},
+        {"athlete_id": 2, "name": "Thomas Traversa", "overall_position": 2,
+         "country": "French", "sail_number": "F-3", "profile_image": "u2"},
+        {"athlete_id": 3, "name": "Jaeger Stone", "overall_position": 3,
+         "country": "Australian", "sail_number": "KA-120", "profile_image": "u3"},
+        {"athlete_id": 4, "name": "Victor Fernandez", "overall_position": 4,
+         "country": "Spanish", "sail_number": "E-42", "profile_image": "u4"},
+        {"athlete_id": 5, "name": "Maaike Huvermann", "overall_position": 7,
+         "country": "Dutch", "sail_number": "H-1", "profile_image": "u5"},
+        {"athlete_id": 6, "name": "Justyna Sniady", "overall_position": 7,
+         "country": "Polish", "sail_number": "POL-1111", "profile_image": "u6"},
+        # Shares position 1 with the wave winner, as a slalom entrant does.
+        {"athlete_id": 900, "name": "Pierre Mortefon", "overall_position": 1,
+         "country": "French", "sail_number": "F-7", "profile_image": "u900"},
+    ]}
+    return [
+        MagicMock(status_code=200, json=lambda: _multi_discipline_heats()),
+        MagicMock(status_code=200, json=lambda: athletes),
+    ]
+
+
+class TestFetchFinalHeatDisciplineSelection:
+    @patch("pipeline.api.requests.get")
+    def test_ignores_slalom_and_freestyle_rounds_named_final(self, mock_get):
+        mock_get.side_effect = _mock_multi_discipline_responses()
+
+        final = fetch_final_heat(event_id=98, division="Men")
+
+        names = [r["name"] for r in final["riders"]]
+        assert "Pierre Mortefon" not in names
+        assert "Gollito Estredo" not in names
+
+    @patch("pipeline.api.requests.get")
+    def test_finds_a_wave_final_in_a_round_not_named_final(self, mock_get):
+        mock_get.side_effect = _mock_multi_discipline_responses()
+
+        final = fetch_final_heat(event_id=98, division="Men")
+
+        assert [r["name"] for r in final["riders"]] == ["Alex Mussolini",
+                                                        "Thomas Traversa"]
+        assert final["round_order"] == 9
+
+    @patch("pipeline.api.requests.get")
+    def test_prefers_the_heat_the_top_two_sailed_over_a_later_wave_heat(self, mock_get):
+        """An unfinished double elimination leaves wave heats after the final."""
+        mock_get.side_effect = _mock_multi_discipline_responses()
+
+        final = fetch_final_heat(event_id=98, division="Men")
+
+        assert [r["athlete_id"] for r in final["riders"]] == [1, 2]
+
+    @patch("pipeline.api.requests.get")
+    def test_splits_the_heats_own_scores(self, mock_get):
+        mock_get.side_effect = _mock_multi_discipline_responses()
+
+        winner = fetch_final_heat(event_id=98, division="Men")["riders"][0]
+
+        assert winner["final_waves"] == [9.0, 7.0]
+        assert winner["final_jumps"] == [9.0]
+        assert winner["final_best_jump_move"] == "Backloop"
+
+    @patch("pipeline.api.requests.get")
+    def test_raises_when_no_heat_carries_a_wave_score(self, mock_get):
+        """Sylt 2024 comes back with no wave scores in either division."""
+        raw = {"rounds": [
+            {"round_name": "Final", "round_order": 4, "heats": [
+                {"heat_number": "16", "heat_order": 16, "athletes": [
+                    _slalom_athlete(900, "Pierre Mortefon", 1),
+                ]},
+            ]},
+        ]}
+        mock_get.return_value = MagicMock(status_code=200, json=lambda: raw)
+
+        with pytest.raises(ValueError, match="wave"):
+            fetch_final_heat(event_id=27, division="Men")
+
+
+class TestFetchTopFinishers:
+    @patch("pipeline.api.requests.get")
+    def test_returns_the_top_four_by_finishing_position(self, mock_get):
+        mock_get.side_effect = _mock_multi_discipline_responses()
+
+        riders = fetch_top_finishers(event_id=98, division="Men", top=4)
+
+        assert [r["name"] for r in riders] == [
+            "Alex Mussolini", "Thomas Traversa", "Jaeger Stone",
+            "Victor Fernandez",
+        ]
+        assert [r["place"] for r in riders] == [1, 2, 3, 4]
+
+    @patch("pipeline.api.requests.get")
+    def test_excludes_riders_who_never_sailed_a_wave_heat(self, mock_get):
+        """Slalom entrants share the same overall_position numbers."""
+        mock_get.side_effect = _mock_multi_discipline_responses()
+
+        riders = fetch_top_finishers(event_id=98, division="Men", top=4)
+
+        assert 900 not in [r["athlete_id"] for r in riders]
+
+    @patch("pipeline.api.requests.get")
+    def test_carries_what_a_placing_slide_needs(self, mock_get):
+        mock_get.side_effect = _mock_multi_discipline_responses()
+
+        winner = fetch_top_finishers(event_id=98, division="Men", top=4)[0]
+
+        assert winner["athlete_id"] == 1
+        assert winner["sail_number"] == "E-30"
+        assert winner["nationality"] == "Spanish"
+        assert winner["photo_url"] == "u1"
+
+
+class TestTopFinishersFlagsABorrowedPlacing:
+    """A rider entering two disciplines gets one row from the athletes
+    endpoint, and the position on it need not be the wave one. Gollito
+    Estredo sailed both at Sylt 2018, went out in wave round 2, and still
+    comes back as position 1. It cannot be corrected from this data, so it
+    has to be visible."""
+
+    @staticmethod
+    def _responses():
+        heats = {"rounds": [
+            {"round_name": "Round 2", "round_order": 2, "heats": [
+                {"heat_number": "9b", "heat_order": 9, "athletes": [
+                    _wave_athlete(910, "Gollito Estredo", 2),
+                    _wave_athlete(7, "Antony Ruenes", 1),
+                ]},
+            ]},
+            {"round_name": "Round 6", "round_order": 9, "heats": [
+                {"heat_number": "36a", "heat_order": 36, "athletes": [
+                    _wave_athlete(1, "Alex Mussolini", 1),
+                    _wave_athlete(2, "Thomas Traversa", 2),
+                ]},
+            ]},
+        ]}
+        athletes = {"athletes": [
+            {"athlete_id": 1, "name": "Alex Mussolini", "overall_position": 1,
+             "country": "Spanish", "sail_number": "E-30", "profile_image": "u1"},
+            {"athlete_id": 910, "name": "Gollito Estredo", "overall_position": 1,
+             "country": "Venezuelan", "sail_number": "V-10", "profile_image": "u910"},
+            {"athlete_id": 2, "name": "Thomas Traversa", "overall_position": 2,
+             "country": "French", "sail_number": "F-3", "profile_image": "u2"},
+            {"athlete_id": 7, "name": "Antony Ruenes", "overall_position": 5,
+             "country": "French", "sail_number": "F-6", "profile_image": "u7"},
+        ]}
+        return [
+            MagicMock(status_code=200, json=lambda: heats),
+            MagicMock(status_code=200, json=lambda: athletes),
+        ]
+
+    @patch("pipeline.api.requests.get")
+    def test_warns_when_a_placing_contradicts_the_ladder(self, mock_get, capsys):
+        mock_get.side_effect = self._responses()
+
+        fetch_top_finishers(event_id=98, division="Men", top=4)
+
+        assert "Gollito Estredo" in capsys.readouterr().out
+
+    @patch("pipeline.api.requests.get")
+    def test_leaves_a_consistent_placing_unremarked(self, mock_get, capsys):
+        mock_get.side_effect = _mock_multi_discipline_responses()
+
+        fetch_top_finishers(event_id=98, division="Men", top=4)
+
+        assert "WARNING" not in capsys.readouterr().out

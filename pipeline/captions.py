@@ -433,10 +433,22 @@ def _caption_finals_recap(data: dict, site_url: str) -> str:
     elif name:
         heading += f"\n\n{name} took it."
 
+    # Where the final was man on man, third and fourth never shared water
+    # with the winner. The slides say so; the caption has to agree, or the
+    # post contradicts itself underneath its own images.
+    from pipeline.finals_recap import _shared_final
+
+    if _shared_final(riders):
+        swipe = ("Swipe from 4th up to 1st, then see all four compared "
+                 "across the scores from the final itself.")
+    else:
+        swipe = ("Swipe from 4th up to 1st, then see all four compared. "
+                 "Only the top two sailed the final, so those scores are "
+                 "1st against 2nd.")
+
     body = (
         f"{heading}\n\n"
-        "Swipe from 4th up to 1st, then see all four compared across the "
-        "scores from the final itself.\n\n"
+        f"{swipe}\n\n"
         f"Full stats → {site_url}"
     )
 

@@ -603,3 +603,42 @@ class TestFinalsRecapCaption:
         from pipeline.captions import build_caption
         caption = build_caption("finals_recap", self._data(), {})
         assert "\U0001f4f8" not in caption
+
+
+class TestFinalsRecapCaptionSplitFinal:
+    """The slides learned that a man-on-man final holds two riders; the
+    caption did not, and went on claiming all four were compared on the
+    final's own scores."""
+
+    def _data(self, finals):
+        return {
+            "event_meta": {"event_name": "Mercedes-Benz World Cup Sylt",
+                           "year": 2016},
+            "division": "Men",
+            "riders": [
+                {"place": i + 1, "name": f"Rider {i + 1}", "final_total": ft}
+                for i, ft in enumerate(finals)
+            ],
+        }
+
+    def test_a_shared_final_still_says_the_final_itself(self):
+        caption = build_caption("finals_recap",
+                                self._data([19.0, 17.5, 16.0, 15.0]), {})
+        assert "the scores from the final itself" in caption
+
+    def test_a_two_rider_final_does_not_claim_all_four_sailed_it(self):
+        """Sylt 2016: third and fourth never shared water with the winner."""
+        caption = build_caption("finals_recap",
+                                self._data([19.0, 17.5, None, None]), {})
+        assert "all four compared across the scores from the final itself" not in caption
+        assert "top two" in caption.lower()
+
+    def test_the_winner_line_is_unchanged_either_way(self):
+        caption = build_caption("finals_recap",
+                                self._data([19.0, 17.5, None, None]), {})
+        assert "Rider 1 took it with 19.00." in caption
+
+    def test_no_em_dashes(self):
+        caption = build_caption("finals_recap",
+                                self._data([19.0, 17.5, None, None]), {})
+        assert "\u2014" not in caption

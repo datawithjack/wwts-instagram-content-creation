@@ -30,7 +30,7 @@ no landscape shot the same slide keeps its hero footprint and sizes a headshot
 inside it, rather than stretching a face crop to full bleed.
 """
 
-from pipeline.commentator_brief import _best_jump_move, _history_line
+from pipeline.commentator_brief import _best_jump_move, _history_line, heats_sailed
 from pipeline.finals_preview import (
     ACCENT_COLOR,
     NO_VALUE,
@@ -51,6 +51,11 @@ RIDER_NOTE = "At this event"
 COUNTING_NOTE = "Wave and jump averages use counting scores only"
 
 FINAL_GROUP = "IN THE FINAL"
+
+# Where the final was man-on-man the same rows still carry the winner's and
+# runner-up's scores, and third and fourth show a dash. Naming the heat is
+# what stops that dash reading as "scored nothing".
+SPLIT_FINAL_GROUP = "IN THE FINAL (1ST V 2ND)"
 
 EVENT_GROUP = "AT THIS EVENT"
 
@@ -137,6 +142,9 @@ def _cover(division: str, riders: list, common: dict) -> dict:
     a half-filled grid is worse than none. With nothing to show the template
     falls back to the plain cover.
     """
+    # "Finalists" is only true where they all sailed the final. Elsewhere the
+    # carousel is a placings countdown and has to say so.
+    subject = "FINALISTS" if _shared_final(riders) else f"TOP {len(riders)}"
     hero_photos = [
         {
             "place": r.get("place"),
@@ -151,7 +159,7 @@ def _cover(division: str, riders: list, common: dict) -> dict:
     # cover in the set, which is what breaks the family resemblance.
     return {
         "type": "recap_cover",
-        "title_lines": [line for line in (f"{division}'S" if division else "", "FINALISTS") if line],
+        "title_lines": [f"{division}'S {subject}".strip()],
         "title_accent": "THE STATS",
         "hero_photos": hero_photos,
         **common,
@@ -186,7 +194,7 @@ def _rider_slides(riders: list, common: dict, event_label: str = "") -> list:
                 continue
             best = best_win_rate if fmt == "fraction" else leaders.get(key)
             cell = _recap_stat(label, rider.get(key), best, bar_max.get(key),
-                               fmt, len(history))
+                               fmt, heats_sailed(history))
             cell["row_break"] = key == SCORE_ROW_START
             stats.append(cell)
         _attach_jump_move(stats, _best_jump_move(history))
@@ -267,20 +275,29 @@ def _compare_slide(riders: list, common: dict, event_label: str = "") -> dict:
     same kind of number.
     """
     show_jumps = _division_has_jumps(riders)
+    shared_final = _shared_final(riders)
+    any_final = any(r.get("final_total") is not None for r in riders)
+    final_group = FINAL_GROUP if shared_final else SPLIT_FINAL_GROUP
     has_final_jumps = any(r.get("final_jumps") for r in riders)
 
-    rows = [
-        _compare_row("FINAL SCORE", riders, FINAL_GROUP, lambda r: r.get("final_total")),
-        _compare_row("BEST WAVE", riders, FINAL_GROUP, lambda r: _best(r.get("final_waves"))),
-    ]
-    if has_final_jumps:
-        rows.append(_compare_row(
-            "BEST JUMP", riders, FINAL_GROUP,
-            lambda r: _best(r.get("final_jumps")),
-            # The move is half the story of a jump score, so it travels with
-            # the number onto the summary as well as the rider slide.
-            note=lambda r: r.get("final_best_jump_move") or "",
-        ))
+    # The final's own scores are the like-for-like half of this card. Where the
+    # final was man-on-man they cover the top two only, which is still the
+    # sharpest comparison on the page -- the same heat, the same conditions --
+    # so the rows stay and the group header says who they belong to.
+    rows = []
+    if any_final:
+        rows = [
+            _compare_row("FINAL SCORE", riders, final_group, lambda r: r.get("final_total")),
+            _compare_row("BEST WAVE", riders, final_group, lambda r: _best(r.get("final_waves"))),
+        ]
+        if has_final_jumps:
+            rows.append(_compare_row(
+                "BEST JUMP", riders, final_group,
+                lambda r: _best(r.get("final_jumps")),
+                # The move is half the story of a jump score, so it travels with
+                # the number onto the summary as well as the rider slide.
+                note=lambda r: r.get("final_best_jump_move") or "",
+            ))
 
     for label, key, fmt in STAT_FIELDS:
         if not show_jumps and key in JUMP_FIELDS:
@@ -291,7 +308,7 @@ def _compare_slide(riders: list, common: dict, event_label: str = "") -> dict:
 
     return {
         "type": "recap_compare",
-        "title_lead": "THE FINALISTS",
+        "title_lead": "THE FINALISTS" if shared_final else f"THE TOP {len(riders)}",
         "title_accent": "COMPARED",
         "subtitle": event_label,
         "counting_note": COUNTING_NOTE if show_jumps else
@@ -331,7 +348,7 @@ def _compare_row(label: str, riders: list, group: str, getter, fmt: str = "score
         best_rate = _best_win_rate(riders)
         cells = []
         for rider, raw in zip(riders, raw_values):
-            sailed = len(rider.get("history") or [])
+            sailed = heats_sailed(rider.get("history"))
             missing = getter(rider) is None or not sailed
             rate = 0.0 if missing else raw / sailed
             cells.append({
@@ -371,9 +388,9 @@ def _best_win_rate(riders: list) -> float:
     ladder it is small enough that the rate is a fair ranking.
     """
     rates = [
-        _num(r.get("heat_wins")) / len(r.get("history") or [])
+        _num(r.get("heat_wins")) / heats_sailed(r.get("history"))
         for r in riders
-        if r.get("history") and r.get("heat_wins") is not None
+        if heats_sailed(r.get("history")) and r.get("heat_wins") is not None
     ]
     return max(rates, default=0.0)
 
@@ -393,6 +410,17 @@ def _division_has_jumps(riders: list) -> bool:
         _num(r.get("avg_jump")) > 0 or _num(r.get("best_jump")) > 0 or r.get("final_jumps")
         for r in riders
     )
+
+
+def _shared_final(riders: list) -> bool:
+    """Did every rider on the carousel sail the same final heat?
+
+    At a man-on-man event they did not: the final holds two riders and third
+    and fourth were settled in a heat of their own. That makes the final's own
+    scores useless as a comparison and "finalists" the wrong word for the set,
+    so both follow from this one question.
+    """
+    return bool(riders) and all(r.get("final_total") is not None for r in riders)
 
 
 def _by_place(riders: list) -> list:

@@ -299,7 +299,7 @@ class TestCommentaryStats:
         return _rider_slides(build_slides(_data(riders=riders)))[-1]
 
     def test_carries_the_full_seven_stat_set(self):
-        winner = self._winner(history=[{}, {}, {}, {}, {}], heat_wins=3)
+        winner = self._winner(history=[{"total": 1.0}] * 5, heat_wins=3)
         labels = [s["label"] for s in winner["stats"]]
         for expected in ("BEST HEAT", "AVG HEAT", "HEATS WON",
                          "BEST WAVE", "AVG WAVE", "BEST JUMP", "AVG JUMP"):
@@ -313,7 +313,7 @@ class TestCommentaryStats:
         assert values["AVG HEAT"] == "24.50"
 
     def test_heats_won_prints_as_a_fraction(self):
-        winner = self._winner(history=[{}, {}, {}, {}, {}], heat_wins=3)
+        winner = self._winner(history=[{"total": 1.0}] * 5, heat_wins=3)
         values = {s["label"]: s["value"] for s in winner["stats"]}
         assert values["HEATS WON"] == "3/5"
 
@@ -322,10 +322,10 @@ class TestCommentaryStats:
         comparing. The denominators still differ, so the leader is decided on
         rate: 3/3 beats 4/6."""
         slides = _rider_slides(build_slides(_data(riders=[
-            _rider(97, "Marc Pare Rico", 1, heat_wins=3, history=[{}] * 3),
-            _rider(49, "Philip Koster", 2, heat_wins=4, history=[{}] * 6),
-            _rider(48, "Marino Gil Gherardi", 3, heat_wins=1, history=[{}] * 5),
-            _rider(75, "Lennart Neubauer", 4, heat_wins=0, history=[{}] * 3),
+            _rider(97, "Marc Pare Rico", 1, heat_wins=3, history=[{"total": 1.0}] * 3),
+            _rider(49, "Philip Koster", 2, heat_wins=4, history=[{"total": 1.0}] * 6),
+            _rider(48, "Marino Gil Gherardi", 3, heat_wins=1, history=[{"total": 1.0}] * 5),
+            _rider(75, "Lennart Neubauer", 4, heat_wins=0, history=[{"total": 1.0}] * 3),
         ])))
         leaders = {}
         for slide in slides:
@@ -339,7 +339,7 @@ class TestCommentaryStats:
     def test_heats_won_with_no_heats_never_leads(self):
         slides = _rider_slides(build_slides(_data(riders=[
             _rider(97, "Marc Pare Rico", 1, heat_wins=None, history=[]),
-            _rider(49, "Philip Koster", 2, heat_wins=2, history=[{}] * 4),
+            _rider(49, "Philip Koster", 2, heat_wins=2, history=[{"total": 1.0}] * 4),
         ])))
         won = next(s for s in slides[-1]["stats"] if s["label"] == "HEATS WON")
         assert won["is_leader"] is False
@@ -449,7 +449,7 @@ class TestSummarySheetFullStats:
         riders = _riders()
         for i, r in enumerate(riders):
             r["heat_wins"] = 4 - i
-            r["history"] = [{}] * 4
+            r["history"] = [{"total": 1.0}] * 4
         rows = self._rows(riders)
         won = next(r for r in rows if r["label"] == "HEATS WON")
         assert won["cells"][0]["value"] == "4/4"
@@ -615,3 +615,126 @@ class TestClosingCta:
 
     def test_cta_still_carries_event_meta(self):
         assert build_slides(_data())[-1]["event_name"] == "Tenerife Grand Slam"
+
+
+class TestTopFourWhereTheFinalWasManOnMan:
+    """Sylt runs a man-on-man final, so only two riders sail the last heat and
+    third and fourth are decided in a separate one. The carousel still counts
+    down four riders; what it must not do is call them finalists or compare
+    them on a heat two of them never sailed."""
+
+    @staticmethod
+    def _riders_split_final():
+        riders = [
+            _rider(105, "Alex Mussolini", 1, final_total=19.00),
+            _rider(60, "Thomas Traversa", 2, final_total=18.66),
+            _rider(187, "Jaeger Stone", 3),
+            _rider(56, "Victor Fernandez", 4),
+        ]
+        # Third and fourth were not in the final, so they carry no scores from it.
+        for rider in riders[2:]:
+            rider["final_total"] = None
+            rider["final_waves"] = []
+            rider["final_jumps"] = []
+        return riders
+
+    def _slides(self):
+        return build_slides(_data(riders=self._riders_split_final()))
+
+    def test_every_one_of_the_four_gets_a_slide(self):
+        rider_slides = [s for s in self._slides() if s["type"] == "recap_rider"]
+
+        assert [s["place"] for s in rider_slides] == [4, 3, 2, 1]
+        assert "Jaeger Stone" in [s["name"] for s in rider_slides]
+
+    def test_cover_says_top_four_not_finalists(self):
+        cover = self._slides()[0]
+
+        assert cover["title_lines"] == ["MEN'S TOP 4"]
+
+    def test_the_final_group_names_whose_heat_it_was(self):
+        """The scores stay -- they are still the sharpest comparison here --
+        but the header has to say they cover the top two only."""
+        compare = [s for s in self._slides() if s["type"] == "recap_compare"][0]
+        groups = {row["group"] for row in compare["rows"]}
+
+        assert "IN THE FINAL (1ST V 2ND)" in groups
+        assert "IN THE FINAL" not in groups
+        assert "AT THIS EVENT" in groups
+
+    def test_riders_who_missed_the_final_show_no_score_for_it(self):
+        compare = [s for s in self._slides() if s["type"] == "recap_compare"][0]
+        final_score = [r for r in compare["rows"] if r["label"] == "FINAL SCORE"][0]
+
+        # Riders run 1st to 4th across the card.
+        assert [c["value"] for c in final_score["cells"]][2:] == ["-", "-"]
+        assert final_score["cells"][0]["value"] == "19.00"
+
+    def test_comparison_is_titled_for_the_top_four(self):
+        compare = [s for s in self._slides() if s["type"] == "recap_compare"][0]
+
+        assert compare["title_lead"] == "THE TOP 4"
+
+    def test_a_shared_final_still_compares_on_it(self):
+        """Tenerife's four-rider final must be unchanged by any of this."""
+        slides = build_slides(_data())
+        compare = [s for s in slides if s["type"] == "recap_compare"][0]
+
+        assert any(row["group"] == "IN THE FINAL" for row in compare["rows"])
+        assert compare["title_lead"] == "THE FINALISTS"
+        assert slides[0]["title_lines"] == ["MEN'S FINALISTS"]
+
+
+class TestHeatsSailedIgnoresPhantomHeats:
+    """Sylt 2016 returns one extra heat per rider in round "Final" carrying no
+    place, no total and no scores (35a, 34a, 33a, 32a). Counting it made Alex
+    Mussolini, who won every heat he sailed, read as 5/6 with an 83% win rate.
+    """
+
+    def _history(self):
+        return [
+            {"round": "Round 1", "heat": "6b", "place": 1, "total": 17.62,
+             "scores": [{"score": 7.0, "counting": True}]},
+            {"round": "Round 2", "heat": "11b", "place": 1, "total": 20.38,
+             "scores": [{"score": 8.0, "counting": True}]},
+            {"round": "Round 3", "heat": "14a", "place": 1, "total": 21.25,
+             "scores": [{"score": 8.0, "counting": True}]},
+            {"round": "Round 4", "heat": "15b", "place": 1, "total": 17.00,
+             "scores": [{"score": 7.0, "counting": True}]},
+            {"round": "Final", "heat": "17a", "place": 1, "total": 19.00,
+             "scores": [{"score": 8.0, "counting": True}]},
+            # The phantom: no place, no total, nobody sailed it.
+            {"round": "Final", "heat": "35a", "place": 0, "total": None,
+             "scores": []},
+        ]
+
+    def test_a_heat_with_no_result_is_not_counted(self):
+        from pipeline.commentator_brief import heats_sailed
+        assert heats_sailed(self._history()) == 5
+
+    def test_a_full_card_counts_every_heat(self):
+        from pipeline.commentator_brief import heats_sailed
+        real = [h for h in self._history() if h["total"] is not None]
+        assert heats_sailed(real) == 5
+
+    def test_no_history_is_zero(self):
+        from pipeline.commentator_brief import heats_sailed
+        assert heats_sailed([]) == 0
+        assert heats_sailed(None) == 0
+
+    def test_the_slide_says_five_of_five_not_five_of_six(self):
+        """The visible symptom: a rider who won everything reading as 5/6."""
+        from pipeline.finals_recap import build_slides
+        rider = {
+            "athlete_id": 1, "name": "Alex Mussolini", "place": 1,
+            "nationality": "Spain", "sail_number": "E-11",
+            "heat_wins": 5, "best_heat": 21.25, "avg_heat": 19.05,
+            "best_wave": 8.0, "avg_wave": 6.0,
+            "final_total": 19.0, "final_waves": [8.0], "final_jumps": [],
+            "final_best_jump_move": "", "history": self._history(),
+        }
+        slides = build_slides({"riders": [rider], "division": "Men",
+                               "event_meta": {}})
+        card = next(s for s in slides if s.get("type") == "recap_rider")
+        wins = next(st for st in card["stats"] if "WON" in st["label"].upper())
+        assert wins["value"] == "5/5"

@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from pipeline.api import fetch_head_to_head, fetch_site_stats, fetch_athlete_event_stats, fetch_event_top_scores, fetch_finalist_stats, fetch_heat_routes, fetch_heat_history, fetch_event, fetch_final_heat
+from pipeline.api import fetch_head_to_head, fetch_site_stats, fetch_athlete_event_stats, fetch_event_top_scores, fetch_finalist_stats, fetch_heat_routes, fetch_heat_history, fetch_event, fetch_final_heat, fetch_top_finishers
 from pipeline.captions import build_caption
 from pipeline.db import run_query
 from pipeline.helpers import nationality_to_iso, clean_event_name, heat_label_from_id, short_round_name, full_round_name
@@ -341,12 +341,27 @@ def fetch_live_data(template_name: str, args) -> dict:
             print("Finals recap requires: --event (API id) and --division (Men or Women)")
             sys.exit(1)
 
-        final = fetch_final_heat(args.event, args.division)
+        try:
+            final = fetch_final_heat(args.event, args.division)
+        except ValueError as exc:
+            print(exc)
+            sys.exit(1)
         riders = final["riders"]
         if not riders:
             print(f"No final found for event {args.event} ({args.division}). "
                   "The recap only works once the final has sailed.")
             sys.exit(1)
+
+        # A man-on-man final holds two riders, and third and fourth sailed a
+        # heat of their own. The post is a top-four countdown either way, so
+        # the rest come off the event placings and carry no final scores.
+        if len(riders) < 4:
+            have = {r["athlete_id"] for r in riders}
+            for finisher in fetch_top_finishers(args.event, args.division, top=4):
+                if finisher["athlete_id"] not in have:
+                    riders.append({**finisher, "final_total": None,
+                                   "final_waves": [], "final_jumps": [],
+                                   "final_best_jump_move": ""})
 
         # Event-wide aggregates for the individual rider slides. The final's
         # own scores already came back with the heat.
