@@ -145,11 +145,29 @@ def _title_lines(sex: str) -> tuple:
 
 VENUE = "Sylt, Germany"
 
+# How a discipline is named on the slides, where that differs from the name the
+# query is built on. Sylt's slalom splits at 2023: fin to 2023, foil from 2024,
+# and the post ranks the fin era only. Labelling it "Slalom" would read as the
+# whole record and leave a reader asking why Johan Soe, who won 2024 and 2025,
+# is missing. Riders on this list sailed both, so the ambiguity is real: Amado
+# Vrieswijk and Matteo Iachino are here for fin titles and raced the foil
+# editions too.
+DISCIPLINE_LABELS = {"Slalom": "Fin Slalom"}
+
+# Said on the fine print of a post whose discipline has an era the ranking
+# leaves out, so the omission is stated rather than left to be noticed.
+DISCIPLINE_NOTES = {"Slalom": "Foil slalom, from 2024, is a separate record"}
+
 
 def _eyebrow(discipline: str) -> str:
     """Venue and discipline. Sylt runs wave and freestyle at the same event,
     so a post that names only the venue does not say which record it ranks."""
-    return f"{VENUE} · {discipline}"
+    return f"{VENUE} · {_discipline_label(discipline)}"
+
+
+def _discipline_label(discipline: str) -> str:
+    """The discipline as it should read on a slide."""
+    return DISCIPLINE_LABELS.get(discipline, discipline)
 
 
 def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
@@ -173,7 +191,7 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
     common = {"accent_color": ACCENT_COLOR}
     sample = _sample_line(editions)
     shared = _shared_years(rows)
-    criteria = _criteria_note(shared)
+    criteria = _criteria_note(shared, discipline)
 
     slides = [{
         "type": "sylt_cover",
@@ -184,7 +202,7 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
         # The cover styles the discipline on its own, so it gets the two parts
         # separately as well as the joined line.
         "eyebrow_venue": VENUE,
-        "eyebrow_discipline": discipline,
+        "eyebrow_discipline": _discipline_label(discipline),
         "sample_line": sample,
         "criteria_note": criteria,
         **common,
@@ -262,11 +280,15 @@ def _shared_phrase(years) -> str:
     return f"* {listed} title{'s' if len(years) > 1 else ''} shared"
 
 
-def _criteria_note(shared: set) -> str:
+def _criteria_note(shared: set, discipline: str = "Wave") -> str:
     """The fine print, with the asterisk explained when one is in play."""
+    note = CRITERIA_NOTE
+    era = DISCIPLINE_NOTES.get(discipline)
+    if era:
+        note = f"{note} · {era}"
     if not shared:
-        return CRITERIA_NOTE
-    return f"{CRITERIA_NOTE} · {_shared_phrase(shared)}"
+        return note
+    return f"{note} · {_shared_phrase(shared)}"
 
 
 def _mark(year, shared: set) -> str:

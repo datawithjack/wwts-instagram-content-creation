@@ -745,6 +745,13 @@ def build_sylt_slalom_query(sex: str = "Men") -> tuple[str, tuple]:
     Albeau in them. The foil fields were also the smallest in the run, 72 and
     73 against 87-152. Same column, nothing like the same achievement.
 
+    A zero-point row is not a start. The rankings list the whole season
+    fleet against every event, so a rider who skipped Sylt still gets a row
+    there scoring nothing: 54 to 94 of each edition's 87-152 "riders" never
+    sailed it. Counting them inflated the appearances column and put phantom
+    placings on the cards, all of them tied at the bottom of the fleet. Micah
+    Buzianis was shown as 54th in 2008, an edition he did not enter.
+
     Places are ranked from ``event_points`` rather than read from
     ``event_position``, which is NULL for every 2006-2009 row. The points are
     an exact ladder (2100, 2067, 2034, step 33), so the finishing order is
@@ -791,7 +798,7 @@ def build_sylt_slalom_query(sex: str = "Men") -> tuple[str, tuple]:
             FROM PWA_RANKINGS r
             WHERE r.discipline = %s
               AND r.event_name LIKE '%%Sylt%%'
-              AND r.event_points IS NOT NULL
+              AND r.event_points > 0
         )
         SELECT COALESCE(a.primary_name, MIN(p.athlete_name)) AS athlete,
                a.nationality,
@@ -839,6 +846,6 @@ def build_sylt_slalom_editions_query(sex: str = "Men") -> tuple[str, tuple]:
         FROM PWA_RANKINGS
         WHERE discipline = %s
           AND event_name LIKE '%%Sylt%%'
-          AND event_points IS NOT NULL
+          AND event_points > 0
     """
     return sql, (f"Slalom {sex}",)
