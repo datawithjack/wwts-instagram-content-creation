@@ -1,0 +1,104 @@
+{% extends "carousel/base_carousel.html" %}
+
+{#
+  Cover for the Kings / Queens of Sylt carousel. Same shape as the canary
+  cover, but the sample and the inclusion rule sit under the title: the
+  ranking is a filtered list drawn from an incomplete record, and a cover that
+  says only "SYLT" implies neither.
+#}
+
+{% block carousel_head %}
+<style>
+    .container {
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 60px 48px 64px;
+        gap: 0;
+    }
+
+    .eyebrow {
+        font-size: 40px;
+        margin-bottom: 16px;
+        color: rgba(255, 255, 255, 0.30);
+    }
+
+    /* The discipline is not a footnote to the venue: Sylt runs wave and
+       freestyle, and this is the first post that is not the wave one. Its own
+       line, in the accent, so it cannot be skimmed past. */
+    .discipline-tag {
+        font-family: var(--font-display);
+        font-size: 52px;
+        letter-spacing: 0.10em;
+        color: var(--color-discipline);
+        margin-bottom: 14px;
+    }
+
+    .cover-title {
+        font-family: var(--font-display);
+        font-size: 340px;
+        letter-spacing: -0.04em;
+        line-height: 0.88;
+        transform: scaleX(0.85);
+        transform-origin: center;
+        color: #FFFFFF;
+        margin-bottom: 8px;
+    }
+
+    .cover-title .highlight {
+        color: var(--color-discipline);
+    }
+
+    .cover-sample {
+        font-family: var(--font-body);
+        font-size: 30px;
+        font-weight: 600;
+        color: var(--color-text-muted);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .cover-criteria {
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 500;
+        font-style: italic;
+        color: rgba(255, 255, 255, 0.38);
+        letter-spacing: 0.03em;
+        margin-top: 14px;
+        max-width: 760px;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="eyebrow">{{ eyebrow_venue | default(eyebrow, true) }}</div>
+    {% if eyebrow_discipline %}<div class="discipline-tag">{{ eyebrow_discipline | upper }}</div>{% endif %}
+
+    <div class="cover-title" data-autofit>
+        {%- for line in title_lines %}
+        {%- if loop.first %}<span class="highlight">{{ line }}</span>
+        {%- else %}{{ line }}{% endif %}
+        {%- if not loop.last %}<br>{% endif %}
+        {%- endfor %}
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="cover-sample">{{ sample_line }}</div>
+    <div class="cover-criteria">{{ criteria_note }}</div>
+</div>
+<script>
+document.fonts.ready.then(() => {
+    document.querySelectorAll('[data-autofit]').forEach(el => {
+        const maxWidth = el.parentElement.offsetWidth;
+        let size = parseInt(getComputedStyle(el).fontSize);
+        while (el.scrollWidth > maxWidth && size > 40) {
+            size -= 4;
+            el.style.fontSize = size + 'px';
+        }
+    });
+});
+</script>
+{% endblock %}

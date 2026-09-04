@@ -1,6 +1,7 @@
 """Main entry point for Instagram content generation pipeline."""
 import argparse
 import os
+import re
 import sys
 import webbrowser
 import tempfile
@@ -15,10 +16,10 @@ from pipeline.api import fetch_head_to_head, fetch_site_stats, fetch_athlete_eve
 from pipeline.captions import build_caption
 from pipeline.db import run_query
 from pipeline.helpers import nationality_to_iso, clean_event_name, heat_label_from_id, short_round_name, full_round_name
-from pipeline.queries import build_top10_query, build_freestyle_top10_query, build_canary_kings_query, build_athlete_rise_query, build_wave_count_query, build_fantasy_mvp_points_query, build_fantasy_session_pick_pct_query
+from pipeline.queries import build_top10_query, build_freestyle_top10_query, build_canary_kings_query, build_athlete_rise_query, build_wave_count_query, build_fantasy_mvp_points_query, build_fantasy_session_pick_pct_query, build_sylt_kings_query, build_sylt_editions_query
 from pipeline.post_options import apply_post_options
 from pipeline.templates import render_template, get_dummy_data, resolve_action_url, resolve_hero_url, resolve_hero_focus, resolve_photo_credit
-from pipeline.renderer import render_to_png, render_to_video, render_carousel, render_h2h_carousel, render_rp_carousel, render_analysis_carousel, render_athlete_rise_carousel, render_picks_carousel, render_wave_count_carousel, render_fuerte_fantasy_mvps_carousel, render_slalom_mvps_carousel, render_finals_preview_carousel, render_finals_recap_carousel
+from pipeline.renderer import render_to_png, render_to_video, render_carousel, render_h2h_carousel, render_rp_carousel, render_analysis_carousel, render_athlete_rise_carousel, render_picks_carousel, render_wave_count_carousel, render_fuerte_fantasy_mvps_carousel, render_slalom_mvps_carousel, render_finals_preview_carousel, render_finals_recap_carousel, render_sylt_kings_carousel
 
 
 def _fetch_freestyle_top10(args) -> dict:
@@ -505,6 +506,25 @@ def fetch_live_data(template_name: str, args) -> dict:
         women_data = run_query(women_sql, women_params)
         return {"men": men_data, "women": women_data}
 
+    if template_name == "sylt_kings":
+        # One division per post: the men's and women's records at Sylt are
+        # different lengths and different stories, and a card each would run
+        # to nineteen slides combined.
+        sex = args.sex or "Men"
+        discipline = getattr(args, "discipline", None) or "Wave"
+        rows_sql, rows_params = build_sylt_kings_query(sex, discipline)
+        ed_sql, ed_params = build_sylt_editions_query(sex, discipline)
+        editions = run_query(ed_sql, ed_params)
+        rows = run_query(rows_sql, rows_params)
+        from pipeline.sylt_kings import sylt_photo_credits
+        return {
+            "rows": rows,
+            "sex": sex,
+            "discipline": discipline,
+            "editions": editions[0] if editions else None,
+            "photo_credits": sylt_photo_credits(rows),
+        }
+
     if template_name == "wave_count":
         if not args.event:
             print("Wave count requires: --event (DB pwa_event_id)")
@@ -712,18 +732,60 @@ def load_config():
         return yaml.safe_load(f)
 
 
+def group_into_post_folder(result_paths: list) -> list:
+    """Move a carousel's slides into a folder named for the post.
+
+    A flat output/png fills up fast: one carousel is a dozen files, and three
+    runs of the same post are told apart only by a timestamp buried in the
+    middle of every filename. The folder is the slide name minus its trailing
+    index, so it carries the template, the division and the run, and a second
+    run lands beside the first rather than overwriting it.
+
+    Returns the new paths, in slide order: they are what gets published, and a
+    carousel posted out of order is a re-upload rather than an edit.
+    """
+    if not result_paths:
+        return result_paths
+    stem = re.sub(r"_\d+\.png$", "", os.path.basename(result_paths[0]))
+    folder = os.path.join(os.path.dirname(result_paths[0]), stem)
+    os.makedirs(folder, exist_ok=True)
+    moved = []
+    for path in result_paths:
+        dest = os.path.join(folder, os.path.basename(path))
+        os.replace(path, dest)
+        moved.append(dest)
+    return moved
+
+
+def write_caption_file(result_paths: list, caption: str):
+    """Drop the suggested caption in beside the slides, or None if no slides.
+
+    Posting by hand means copying the caption from somewhere, and a terminal
+    that has scrolled is a bad somewhere. Written as the caption that would be
+    published, hashtags and photo credits included.
+    """
+    if not result_paths:
+        return None
+    path = os.path.join(os.path.dirname(result_paths[0]), "caption.txt")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(caption)
+    return path
+
+
 def main():
     parser = argparse.ArgumentParser(description="WWT Instagram content generator")
     parser.add_argument(
         "--template",
         required=True,
-        choices=["head_to_head", "head_to_head_jump", "h2h_carousel", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "fantasy_league_announce", "fantasy_rules", "fourstar_session", "tour_rules_reel", "tour_availability_reel", "session_vs_tour_reel", "how_to_pick_reel", "freestyle_scores_live", "slalom_scores_live", "wave_scores_live", "event_picks", "fuerte_fantasy_mvps", "slalom_mvps", "finals_preview", "finals_recap", "commentator_brief"],
+        choices=["head_to_head", "head_to_head_jump", "h2h_carousel", "top_10", "top_10_carousel", "about_carousel", "coming_soon_carousel", "site_stats", "site_stats_reel", "stat_of_the_day", "rider_profile", "canary_kings", "sylt_kings", "athlete_rise", "wave_count", "fantasy_league_announce", "fantasy_rules", "fourstar_session", "tour_rules_reel", "tour_availability_reel", "session_vs_tour_reel", "how_to_pick_reel", "freestyle_scores_live", "slalom_scores_live", "wave_scores_live", "event_picks", "fuerte_fantasy_mvps", "slalom_mvps", "finals_preview", "finals_recap", "commentator_brief"],
     )
     parser.add_argument("--athlete1", type=int, help="Athlete 1 unified ID")
     parser.add_argument("--athlete2", type=int, help="Athlete 2 unified ID")
     parser.add_argument("--event", type=int, help="Event ID")
     parser.add_argument("--division", choices=["Men", "Women"], help="Division for H2H")
-    parser.add_argument("--sex", choices=["Men", "Women"], help="Sex filter for top 10 / athlete rise")
+    parser.add_argument("--sex", choices=["Men", "Women"], help="Sex filter for top 10 / athlete rise / sylt kings")
+    parser.add_argument("--discipline", choices=["Wave", "Freestyle"], default="Wave",
+                        help="Discipline for sylt_kings (default Wave)")
     parser.add_argument("--location", help="Location pattern for athlete rise (e.g. 'Gran Canaria')")
     parser.add_argument("--picks-data", help="Path to event picks JSON file (event_picks template)")
     parser.add_argument("--men", help="Finals preview: comma-separated men's finalist athlete IDs, in draw order")
@@ -789,7 +851,7 @@ def main():
     # which never runs main(), applies exactly the same ones.
     apply_post_options(data, vars(args))
 
-    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "fantasy_rules", "fourstar_session", "h2h_carousel", "rider_profile", "canary_kings", "athlete_rise", "wave_count", "event_picks", "fuerte_fantasy_mvps", "slalom_mvps", "finals_preview", "finals_recap", "commentator_brief")
+    is_carousel = template_name in ("top_10_carousel", "coming_soon_carousel", "about_carousel", "fantasy_rules", "fourstar_session", "h2h_carousel", "rider_profile", "canary_kings", "sylt_kings", "athlete_rise", "wave_count", "event_picks", "fuerte_fantasy_mvps", "slalom_mvps", "finals_preview", "finals_recap", "commentator_brief")
 
     # Carousel preview: open all slides in browser tabs
     if is_carousel and args.preview:
@@ -804,6 +866,10 @@ def main():
         elif template_name == "canary_kings":
             from pipeline.analysis_carousel import build_canary_kings_slides
             slides = build_canary_kings_slides(data["men"], data["women"])
+        elif template_name == "sylt_kings":
+            from pipeline.sylt_kings import build_sylt_kings_slides
+            slides = build_sylt_kings_slides(data["rows"], data["sex"], data.get("editions"),
+                                             data.get("discipline", "Wave"))
         elif template_name == "athlete_rise":
             from pipeline.athlete_rise_carousel import build_athlete_rise_slides
             slides = build_athlete_rise_slides(data)
@@ -907,6 +973,13 @@ def main():
                 event_meta=data.get("event_meta"),
                 width=width, height=height, dpr=dpr,
             )
+        elif template_name == "sylt_kings":
+            result_paths = render_sylt_kings_carousel(
+                data["rows"], data["sex"], carousel_dir,
+                base_name=f"sylt_kings_{data.get('discipline', 'wave').lower()}_{data['sex'].lower()}_{timestamp}",
+                editions=data.get("editions"),
+                width=width, height=height, dpr=dpr,
+            )
         elif template_name == "event_picks":
             result_paths = render_picks_carousel(
                 data, carousel_dir,
@@ -961,8 +1034,20 @@ def main():
                 base_name=f"top_10_carousel_{timestamp}",
                 width=width, height=height, dpr=dpr,
             )
+        result_paths = group_into_post_folder(result_paths)
         for p in result_paths:
             print(f"Rendered: {p}")
+
+        # The caption is a convenience beside the images, not the deliverable,
+        # so a template whose builder cannot make one still renders.
+        try:
+            suggested = args.caption or build_caption(template_name, data, config)
+        except Exception as exc:  # noqa: BLE001 - reported, never fatal
+            print(f"No caption written: {exc}")
+        else:
+            written = write_caption_file(result_paths, suggested)
+            if written:
+                print(f"Caption:  {written}")
 
         if args.publish == "now":
             from pipeline.publisher import publish_carousel as publish_carousel_to_ig

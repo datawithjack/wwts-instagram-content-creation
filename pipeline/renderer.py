@@ -171,6 +171,35 @@ def render_wave_count_carousel(
     return paths
 
 
+def render_sylt_kings_carousel(
+    rows: list[dict],
+    sex: str,
+    output_dir: str,
+    base_name: str = "sylt_kings",
+    editions: dict = None,
+    width: int = 1080,
+    height: int = 1350,
+    dpr: int = 2,
+) -> list[str]:
+    """Render one division's Kings/Queens of Sylt carousel into slide PNGs.
+
+    Slide count follows the roster, so it is not fixed: 10 for the men,
+    11 for the women as the data stands.
+
+    Returns list of PNG file paths.
+    """
+    from pipeline.sylt_kings import build_sylt_kings_slides
+    slides = build_sylt_kings_slides(rows, sex, editions)
+    os.makedirs(output_dir, exist_ok=True)
+    paths = []
+    for i, slide in enumerate(slides, 1):
+        html = render_template(f"carousel/slide_{slide['type']}", slide)
+        output_path = os.path.join(output_dir, f"{base_name}_{i}.png")
+        render_to_png(html, output_path, width=width, height=height, dpr=dpr)
+        paths.append(output_path)
+    return paths
+
+
 def render_finals_preview_carousel(
     data: dict,
     output_dir: str,

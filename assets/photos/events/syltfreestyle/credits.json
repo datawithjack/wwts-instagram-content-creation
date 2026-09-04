@@ -1,0 +1,77 @@
+{
+  "_comment": "Photographer per photo, resolved from the filename then the file's own XMP. Entries marked unconfirmed carry no credit tag anywhere: confirm before crediting them.",
+  "722": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY18_fs_NB9_1280.jpg",
+    "confirmed": false,
+    "via": "",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "103": {
+    "photographer": "John Carter",
+    "handle": "@jcwindsurf",
+    "source_file": "SY19_fs_F296_0832.jpg",
+    "confirmed": true,
+    "via": "xmp"
+  },
+  "75": {
+    "photographer": "John Carter",
+    "handle": "@jcwindsurf",
+    "source_file": "SY19_fs_G734_0867.jpg",
+    "confirmed": true,
+    "via": "xmp"
+  },
+  "202": {
+    "photographer": "John Carter",
+    "handle": "@jcwindsurf",
+    "source_file": "SY19_fs_V10_0826.jpg",
+    "confirmed": true,
+    "via": "xmp"
+  },
+  "892": {
+    "photographer": "Rafael E.",
+    "handle": "@rafasoulart",
+    "source_file": "SY25_fs_B16_01101.jpg",
+    "confirmed": true,
+    "via": "xmp"
+  },
+  "890": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "SY22_fs_B72_1479.jpg",
+    "confirmed": true,
+    "via": "xmp"
+  },
+  "113": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "SY22_fs_NB20_0532.jpg",
+    "confirmed": true,
+    "via": "xmp"
+  },
+  "74": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "SY22_fs_ITA160_0530.jpg",
+    "confirmed": true,
+    "via": "xmp",
+    "note": "PLACEHOLDER - this is Bruno Martini (ITA-160), NOT Jacopo Testa (ITA-261). Layout only. Replace before publishing."
+  },
+  "888": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY15_fs_NB61_0382.jpg",
+    "confirmed": false,
+    "via": "",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "723": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY15_fs_NB7_0213.jpg",
+    "confirmed": false,
+    "via": "",
+    "note": "UNTAGGED - credit unconfirmed"
+  }
+}

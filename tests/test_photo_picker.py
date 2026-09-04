@@ -261,6 +261,13 @@ class TestMatchEventFolder:
         assert match_event_folder("Fuerteventura Windsurf World Cup",
                                   self.TENERIFE) == "05 - FUERTEVENTURA"
 
+    def test_ignores_a_repeated_year_and_number_prefix(self):
+        """The 2025 season names its folders "2025 - 10 - SYLT"."""
+        from pipeline.photo_picker import match_event_folder
+        folders = ["2025 - 08 - TENERIFE", "2025 - 10 - SYLT"]
+        assert match_event_folder("2025 Sylt, Germany Grand Slam *******",
+                                  folders) == "2025 - 10 - SYLT"
+
     def test_no_match_returns_empty_rather_than_a_wrong_folder(self):
         from pipeline.photo_picker import match_event_folder
         assert match_event_folder("Sylt World Cup", self.TENERIFE) == ""

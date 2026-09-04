@@ -1,0 +1,285 @@
+{% extends "carousel/base_carousel.html" %}
+
+{#
+  The summary that closes the carousel, after the countdown has walked the
+  cards. A table rather than the bar chart the canary post used: eight women
+  qualify, and eight bar rows with a thumbnail each overran the slide, taking
+  the last rider's row and the criteria note off the bottom edge. A table fits
+  the same eight comfortably and carries three numbers per rider instead of
+  one, which the bar could not.
+
+  The body flexes, so seven rows and eight rows both fill the slide without
+  the row height being tuned per division.
+#}
+
+{% block carousel_head %}
+<style>
+    .container {
+        padding: 44px 48px 44px;
+    }
+
+    .table-head-block {
+        flex-shrink: 0;
+    }
+
+    .sylt-eyebrow {
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgba(255, 255, 255, 0.30);
+        margin-bottom: 4px;
+    }
+
+    .sylt-title {
+        font-family: var(--font-display);
+        font-size: 84px;
+        letter-spacing: 0.02em;
+        line-height: 1;
+        color: var(--color-text-primary);
+        margin-bottom: 8px;
+    }
+
+    .sylt-subtitle {
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--color-text-muted);
+        margin-bottom: 20px;
+    }
+
+    /* ── Rows ── */
+    .sylt-table {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+    }
+
+    .sylt-row {
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .sylt-row.head {
+        flex-shrink: 0;
+        border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+        padding-bottom: 12px;
+        padding-top: 4px;
+    }
+
+    .sylt-row.head span {
+        font-family: var(--font-body);
+        font-size: 19px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--color-text-label);
+    }
+
+    .sylt-body {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+    }
+
+    /* Rows share the space left over, so the table fills the slide whether
+       the division has seven qualifiers or eight. */
+    .sylt-body .sylt-row {
+        flex: 1;
+        min-height: 0;
+    }
+
+    .sylt-body .sylt-row:nth-child(odd) { background: rgba(30, 41, 59, 0.30); }
+    .sylt-body .sylt-row:nth-child(even) { background: rgba(30, 41, 59, 0.10); }
+
+    /* The rider the whole countdown built to. */
+    .sylt-body .sylt-row.rank-1 {
+        background: rgba(148, 120, 181, 0.12) !important;
+    }
+
+    .col-rank {
+        width: 54px;
+        flex-shrink: 0;
+        font-family: var(--font-display);
+        font-size: 36px;
+        color: rgba(255, 255, 255, 0.38);
+    }
+
+    .sylt-row.rank-1 .col-rank { color: var(--color-discipline); }
+
+    .col-photo {
+        width: 88px;
+        flex-shrink: 0;
+        position: relative;
+    }
+
+    .col-photo .thumb {
+        width: 68px;
+        height: 68px;
+        border-radius: 8px;
+        overflow: hidden;
+        background: rgba(10, 14, 26, 0.6);
+    }
+
+    .col-photo .thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .col-photo .thumb .placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 30px;
+        color: rgba(255, 255, 255, 0.30);
+    }
+
+    .col-photo .flag {
+        position: absolute;
+        bottom: -4px;
+        left: 44px;
+        width: 32px;
+        height: 22px;
+        border-radius: 3px;
+        border: 2px solid #0a0e1a;
+        object-fit: cover;
+    }
+
+    .col-athlete {
+        flex: 1;
+        min-width: 0;
+        font-family: var(--font-display);
+        font-size: 36px;
+        letter-spacing: 0.03em;
+        color: var(--color-text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding-right: 12px;
+    }
+
+    .col-num {
+        width: 104px;
+        flex-shrink: 0;
+        text-align: center;
+        font-family: var(--font-display);
+        font-size: 40px;
+        color: rgba(255, 255, 255, 0.62);
+    }
+
+    /* Appearances is context, not a ranking number: it sits back from the two
+       columns the order is built on. */
+    .col-apps {
+        color: rgba(255, 255, 255, 0.42);
+    }
+
+    /* Titles is what the table is ordered on, so it carries the accent. */
+    .col-titles {
+        width: 112px;
+        flex-shrink: 0;
+        text-align: center;
+        font-family: var(--font-display);
+        font-size: 50px;
+        color: var(--color-discipline);
+    }
+
+    /* Wide enough for four years on one line: a rider who has won Sylt four
+       times is exactly the row you least want wrapping. */
+    .col-best {
+        width: 176px;
+        flex-shrink: 0;
+        text-align: center;
+    }
+
+    .col-best .place {
+        font-family: var(--font-display);
+        font-size: 40px;
+        color: var(--color-text-primary);
+        line-height: 1;
+    }
+
+    .col-best .years {
+        font-family: var(--font-body);
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: rgba(255, 255, 255, 0.36);
+        margin-top: 4px;
+        line-height: 1.2;
+    }
+
+    .criteria-footnote {
+        flex-shrink: 0;
+        font-family: var(--font-body);
+        font-size: 20px;
+        font-weight: 400;
+        font-style: italic;
+        letter-spacing: 0.03em;
+        color: rgba(255, 255, 255, 0.36);
+        text-align: center;
+        margin-top: 18px;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="table-head-block">
+        <div class="sylt-eyebrow">{{ eyebrow }}</div>
+        <div class="sylt-title">{{ slide_title }}</div>
+        <div class="sylt-subtitle">{{ sample_line }}</div>
+    </div>
+
+    <div class="sylt-table">
+        <div class="sylt-row head">
+            <span class="col-rank">#</span>
+            <span class="col-photo"></span>
+            <span class="col-athlete">Rider</span>
+            <span class="col-titles">Titles</span>
+            <span class="col-num">Podiums</span>
+            <span class="col-num col-apps">Apps</span>
+            <span class="col-best">Best</span>
+        </div>
+
+        <div class="sylt-body">
+            {% for row in rows %}
+            <div class="sylt-row rank-{{ row.rank }}">
+                <div class="col-rank">{{ row.rank }}</div>
+                <div class="col-photo">
+                    <div class="thumb">
+                        {% if row.photo_url %}
+                        <img src="{{ row.photo_url }}" alt="{{ row.athlete }}">
+                        {% else %}
+                        <div class="placeholder">{{ row.athlete[0] }}</div>
+                        {% endif %}
+                    </div>
+                    {% if row.country %}<img class="flag" src="https://flagcdn.com/w40/{{ row.country }}.png" alt="{{ row.country }}">{% endif %}
+                </div>
+                <div class="col-athlete">{{ row.athlete | upper }}</div>
+                <div class="col-titles">{{ row.wins }}</div>
+                <div class="col-num">{{ row.podiums }}</div>
+                <div class="col-num col-apps">{{ row.starts }}</div>
+                <div class="col-best">
+                    <div class="place">{{ row.best_label }}</div>
+                    {% if row.best_years %}<div class="years">{{ row.best_years }}</div>{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="criteria-footnote">{{ criteria_note }}</div>
+</div>
+{% endblock %}

@@ -180,6 +180,28 @@ def resolve_photo_credit(athlete_id, event_id) -> str:
         return ""
 
 
+def resolve_face_credit(athlete_id) -> str:
+    """Photographer credit for a rider's headshot, or "".
+
+    Headshots are athlete-level, so unlike ``resolve_photo_credit`` the record
+    is not event-keyed: it lives in ``assets/photos/faces/credits.json``.
+
+    A headshot is a photograph like any other, and it carries the table slide,
+    so the person who took it is owed the same credit as the action shot.
+    """
+    if not athlete_id or str(athlete_id).startswith("_"):
+        return ""
+    path = os.path.join(PHOTOS_DIR, "faces", "credits.json")
+    if not os.path.exists(path):
+        return ""
+    try:
+        with open(path, encoding="utf-8") as fh:
+            entry = json.load(fh).get(str(athlete_id))
+        return (entry.get("handle") or "") if isinstance(entry, dict) else (entry or "")
+    except (ValueError, OSError):
+        return ""
+
+
 def resolve_thumb_url(athlete_id, current_url: str) -> str:
     """Resolve the small square thumbnail (headshot) for data slides.
 
@@ -651,6 +673,24 @@ def get_dummy_data(template_name: str) -> dict:
                 {"athlete": "Jane Seman", "nationality": "Australia", "athlete_id": 211, "wave_count": 27, "heats": 5, "photo_url": None},
                 {"athlete": "Maria Andres", "nationality": "Spain", "athlete_id": 212, "wave_count": 22, "heats": 4, "photo_url": None},
                 {"athlete": "Jessica Crisp", "nationality": "Australia", "athlete_id": 213, "wave_count": 16, "heats": 3, "photo_url": None},
+            ],
+        }
+    if template_name == "sylt_kings":
+        # The real men's roster, so a dry run exercises the two cases that
+        # matter: a rider on the list with no title (Browne), and riders whose
+        # action shot the library does not have (Fernandez, Mussolini,
+        # Traversa, Voget) falling back to the portrait layout.
+        return {
+            "sex": "Men",
+            "editions": {"editions": 10, "first_year": 2008, "last_year": 2025},
+            "rows": [
+                {"athlete": "Víctor Fernández", "nationality": "Spain", "athlete_id": 56, "photo_url": None, "wins": 2, "podiums": 3, "starts": 10, "best_finish": 1, "avg_finish": 3.6, "placings": "2008:1,2009:9,2012:3,2016:4,2017:1,2018:3,2019:4,2022:4,2024:3,2025:4"},
+                {"athlete": "Philip Köster", "nationality": "Germany", "athlete_id": 49, "photo_url": None, "wins": 2, "podiums": 3, "starts": 9, "best_finish": 1, "avg_finish": 8.0, "placings": "2008:17,2009:33,2012:1,2017:3,2018:7,2019:3,2022:1,2024:5,2025:2"},
+                {"athlete": "Alex Mussolini", "nationality": "Spanish", "athlete_id": 105, "photo_url": None, "wins": 2, "podiums": 1, "starts": 7, "best_finish": 1, "avg_finish": 5.4, "placings": "2008:17,2009:1,2012:2,2016:1,2017:4,2018:4,2019:9"},
+                {"athlete": "Marc Paré Rico", "nationality": "Spain", "athlete_id": 97, "photo_url": None, "wins": 2, "podiums": 1, "starts": 7, "best_finish": 1, "avg_finish": 7.7, "placings": "2016:17,2017:9,2018:17,2019:7,2022:2,2024:1,2025:1"},
+                {"athlete": "Thomas Traversa", "nationality": "France", "athlete_id": 60, "photo_url": None, "wins": 2, "podiums": 1, "starts": 10, "best_finish": 1, "avg_finish": 7.7, "placings": "2008:17,2009:9,2012:9,2016:2,2017:7,2018:1,2019:1,2022:5,2024:9,2025:17"},
+                {"athlete": "Marcilio Browne", "nationality": "Brazil", "athlete_id": 68, "photo_url": None, "wins": 0, "podiums": 4, "starts": 10, "best_finish": 2, "avg_finish": 7.1, "placings": "2008:17,2009:9,2012:13,2016:9,2017:2,2018:9,2019:2,2022:3,2024:2,2025:5"},
+                {"athlete": "Klaas Voget", "nationality": "German", "athlete_id": 224, "photo_url": None, "wins": 0, "podiums": 2, "starts": 8, "best_finish": 2, "avg_finish": 7.9, "placings": "2008:3,2009:2,2012:13,2016:5,2017:13,2018:9,2019:9,2022:9"},
             ],
         }
     if template_name == "athlete_rise":

@@ -1,0 +1,294 @@
+{% extends "carousel/base_carousel.html" %}
+
+{#
+  One rider's Sylt record. Two photo modes, as in slide_recap_rider:
+
+  action   — a landscape shot goes full bleed under the gradient
+  portrait — nothing landscape resolved, so the headshot sits large in the
+             same hero footprint rather than being stretched to 1080x1350
+
+  Podiums is the hero number because podiums are what the list is ranked on.
+  Titles sits beside it rather than above it, so a rider who leads on
+  consistency and a rider who leads on wins are legible against each other.
+#}
+
+{% block carousel_head %}
+<style>
+    .container {
+        padding: 0;
+        position: relative;
+        justify-content: flex-end;
+    }
+
+    /* ── Full-bleed action shot ── */
+    .photo-bg {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 0;
+        background: linear-gradient(160deg, #16243f 0%, #0a0e1a 100%);
+    }
+
+    .photo-bg img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .photo-bg::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(
+            to bottom,
+            rgba(8, 20, 40, 0.20) 0%,
+            rgba(10, 14, 26, 0.42) 40%,
+            rgba(10, 14, 26, 0.80) 62%,
+            rgba(10, 14, 26, 0.97) 78%,
+            rgba(10, 14, 26, 1.00) 100%
+        );
+        z-index: 1;
+    }
+
+    /* ── Portrait fallback — same footprint, same gradient ── */
+    .portrait-hero {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 0;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding-top: 104px;
+        overflow: hidden;
+        background: radial-gradient(
+            ellipse 70% 42% at 50% 26%,
+            rgba(38, 62, 92, 0.72) 0%,
+            rgba(14, 25, 39, 0) 100%
+        );
+    }
+
+    .portrait-hero img {
+        width: 600px;
+        height: 600px;
+        object-fit: cover;
+        border-radius: 20px;
+        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+    }
+
+    .portrait-hero .photo-placeholder {
+        width: 600px;
+        height: 600px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 200px;
+        color: rgba(255, 255, 255, 0.20);
+        background: rgba(20, 30, 50, 0.8);
+        border-radius: 20px;
+    }
+
+    .portrait-hero::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(
+            to bottom,
+            rgba(10, 14, 26, 0.00) 0%,
+            rgba(10, 14, 26, 0.06) 40%,
+            rgba(10, 14, 26, 0.55) 56%,
+            rgba(10, 14, 26, 0.94) 68%,
+            rgba(10, 14, 26, 1.00) 76%
+        );
+        z-index: 1;
+    }
+
+    /* ── Lower content block ── */
+    .rider-block {
+        position: relative;
+        z-index: 2;
+        padding: 0 52px 64px;
+    }
+
+    /* Rank chip. Filled for a champion, hollow for a rider on the list by
+       podiums alone, so the ranking and the titles read as two facts rather
+       than one. */
+    .rider-meta {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        margin-bottom: 26px;
+    }
+
+    /* Only the joint top spot carries this, so it is a name rather than a
+       number and sits smaller than the old #1 did: twenty-one characters at
+       the old size crowded the name underneath it. */
+    .rank {
+        font-family: var(--font-display);
+        font-size: 26px;
+        line-height: 1;
+        letter-spacing: 0.08em;
+        white-space: nowrap;
+        border-radius: 3px;
+        padding: 8px 18px 5px;
+        background: var(--color-discipline);
+        color: var(--color-bg);
+    }
+
+    .name-flag {
+        width: 48px;
+        height: 34px;
+        border-radius: 4px;
+        object-fit: cover;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .rider-name {
+        font-family: var(--font-display);
+        color: var(--color-text-primary);
+        min-width: 0;
+        margin-bottom: 30px;
+    }
+
+    /* The flag rides the first-name line: it belongs to the rider, and on the
+       meta row above it read as one more badge beside the label. */
+    .rider-name .first {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        font-size: 62px;
+        line-height: 1;
+        padding-top: 7px;
+        letter-spacing: 0.06em;
+        color: rgba(255, 255, 255, 0.62);
+    }
+
+    .rider-name .last {
+        display: block;
+        font-size: 118px;
+        line-height: 0.92;
+        padding-top: 12px;
+        letter-spacing: 0.01em;
+    }
+
+    .rider-name.long .last { font-size: 92px; }
+    .rider-name.xlong .last { font-size: 72px; line-height: 0.98; }
+
+    .stat-note {
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 600;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.48);
+        margin-bottom: 14px;
+    }
+
+    /* Only on the cards whose own years carry the asterisk. It sits with the
+       years line it annotates rather than at the foot of the slide, where the
+       url already lives and the stat grid leaves no room. */
+    .shared-note {
+        font-family: var(--font-body);
+        font-size: 18px;
+        font-weight: 600;
+        font-style: italic;
+        letter-spacing: 0.03em;
+        color: rgba(255, 255, 255, 0.42);
+        margin-top: -8px;
+        margin-bottom: 14px;
+    }
+
+    /* Four stats, one row. No cards: a hairline rule per cell keeps the photo
+       the only framed element on the slide. */
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        column-gap: 16px;
+    }
+
+    .stat-cell {
+        display: flex;
+        flex-direction: column;
+        padding: 12px 4px 0 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.13);
+    }
+
+    .stat-cell .stat-label {
+        font-family: var(--font-body);
+        font-size: 17px;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.40);
+        margin-bottom: 8px;
+        white-space: nowrap;
+    }
+
+    .stat-cell .stat-value {
+        font-family: var(--font-display);
+        font-size: 76px;
+        line-height: 1;
+        color: var(--color-text-primary);
+    }
+
+    /* Podiums leads: it is the number the list is ordered on. */
+    .stat-cell:first-child .stat-value {
+        color: var(--color-discipline);
+    }
+
+    /* The years behind a best finish, under the value. Small and dim: it
+       qualifies the number rather than competing with it. */
+    .stat-cell .stat-note-years {
+        font-family: var(--font-body);
+        font-size: 18px;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        color: rgba(255, 255, 255, 0.42);
+        margin-top: 8px;
+        line-height: 1.25;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    {% if photo_mode == 'action' and photo_url %}
+    <div class="photo-bg">
+        <img src="{{ photo_url }}" alt="{{ athlete_name }}"
+             style="object-position: {{ photo_focus | default('center 30%') }}">
+    </div>
+    {% else %}
+    <div class="portrait-hero">
+        {% if photo_url %}
+        <img src="{{ photo_url }}" alt="{{ athlete_name }}">
+        {% else %}
+        <div class="photo-placeholder">{{ (last_name or athlete_name)[:1] }}</div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="rider-block">
+        {% if rank_label %}
+        <div class="rider-meta">
+            <span class="rank">{{ rank_label }}</span>
+        </div>
+        {% endif %}
+
+        <div class="rider-name {{ name_class }}">
+            <span class="first">{{ first_name | upper }}{% if country %}<img class="name-flag" src="https://flagcdn.com/w40/{{ country }}.png" alt="{{ country }}">{% endif %}</span>
+            {% if last_name %}<span class="last">{{ last_name | upper }}</span>{% endif %}
+        </div>
+
+        <div class="stat-note">{{ years_line }}</div>
+        {% if shared_note %}<div class="shared-note">{{ shared_note }}</div>{% endif %}
+        <div class="stat-grid">
+            {% for stat in stats %}
+            <div class="stat-cell">
+                <div class="stat-label">{{ stat.label }}</div>
+                <div class="stat-value">{{ stat.value }}</div>
+                {% if stat.note %}<div class="stat-note-years">{{ stat.note }}</div>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

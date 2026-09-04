@@ -592,3 +592,123 @@ def build_slalom_elimination_view_query(event_id: int) -> tuple[str, tuple]:
         WHERE event_id = %s
     """
     return sql, (event_id,)
+
+
+def build_sylt_kings_query(sex: str, discipline: str = "Wave") -> tuple[str, tuple]:
+    """Build the venue-record query behind the Kings/Queens of Sylt carousels.
+
+    One row per rider who has either won Sylt or stood on the podium twice,
+    ordered by titles descending, then podiums. Carries the year lists so a
+    slide can name the editions rather than only counting them.
+
+    ``wins`` and ``podiums`` do not overlap: a podium here is a 2nd or a 3rd.
+    Counting firsts in both made the pair unreadable side by side, because
+    "2 titles, 5 podiums" gives no way to tell whether the rider won twice and
+    placed five more times or won twice and placed three more. It does not
+    move anyone on the list: every rider with a win is on it for the win, and
+    a rider with none has no first place to subtract.
+
+    An edition counts if it has one or two recorded winners. Six Sylt editions
+    have no results in the DB at all (2006, 2010, 2011, 2015, 2020, 2021), and
+    two more are recorded with the whole fleet tied at the top because the
+    contest never produced a result: 2005 lists 8 men and all 12 women first,
+    and 2023 Wave Men lists 16 riders first and 16 seventeenth, one round
+    having been sailed. Counting those would hand Victor Fernandez, Marc Pare
+    and Thomas Traversa a phantom title each.
+
+    Two riders tied at the top is a different thing and must be counted. Sylt
+    2008 Wave Women ended with Daida and Iballa Ruano Moreno joint first, no
+    second, and Junko Nagoshi and Nayra Alonso joint third. That is an
+    official shared title, not a broken scrape: the PWA awarded both women
+    2084 ranking points for it, and Sylt was one of only two events in that
+    season's world ranking. Demanding a single winner dropped the edition and
+    cost Iballa the fifth title that makes her the most decorated rider at the
+    venue. No men's edition is shared, so the wider test changes nothing there.
+
+    Testing the winner count rather than listing the good years keeps the
+    filter honest as the scrape is fixed or extended.
+
+    Args:
+        sex: "Men" or "Women"
+        discipline: "Wave" or "Freestyle". Sylt has run both for most of its
+            history and the two records are different lengths and different
+            stories, so a post takes one at a time.
+
+    Returns:
+        (sql, params) tuple ready for db.run_query(). Rows carry: athlete,
+        nationality, athlete_id, photo_url, wins, podiums, starts, best_finish,
+        avg_finish and placings — ordered by wins DESC, then podiums DESC.
+
+        ``placings`` is every year the rider finished, as "2008:1,2012:3".
+        One column rather than a win-years and a best-years column: the years
+        behind any placing are a slice of the same list, and deriving them in
+        the builder keeps the query from growing a column per slide element.
+    """
+    sql = """
+        SELECT a.primary_name AS athlete,
+               a.nationality,
+               a.id AS athlete_id,
+               a.liveheats_image_url AS photo_url,
+               SUM(r.place = '1') AS wins,
+               SUM(CAST(r.place AS UNSIGNED) BETWEEN 2 AND 3) AS podiums,
+               COUNT(*) AS starts,
+               MIN(CAST(r.place AS UNSIGNED)) AS best_finish,
+               ROUND(AVG(CAST(r.place AS UNSIGNED)), 1) AS avg_finish,
+               GROUP_CONCAT(DISTINCT CONCAT(e.year, ':', CAST(r.place AS UNSIGNED))
+                            ORDER BY e.year) AS placings
+        FROM PWA_IWT_RESULTS r
+        JOIN PWA_IWT_EVENTS e
+            ON e.event_id = r.event_id AND e.source = r.source
+        JOIN ATHLETE_SOURCE_IDS asi
+            ON asi.source = 'PWA' AND asi.source_id = r.athlete_id
+        JOIN ATHLETES a
+            ON a.id = asi.athlete_id
+        WHERE r.source = 'PWA'
+          AND r.division_label = %s
+          AND e.event_name LIKE '%%Sylt%%'
+          AND r.event_id IN (
+              SELECT r2.event_id
+              FROM PWA_IWT_RESULTS r2
+              JOIN PWA_IWT_EVENTS e2
+                  ON e2.event_id = r2.event_id AND e2.source = r2.source
+              WHERE r2.source = 'PWA'
+                AND r2.division_label = %s
+                AND e2.event_name LIKE '%%Sylt%%'
+              GROUP BY r2.event_id
+              HAVING SUM(r2.place = '1') BETWEEN 1 AND 2
+          )
+        GROUP BY a.id, a.primary_name, a.nationality, a.liveheats_image_url
+        HAVING wins >= 1 OR podiums >= 2
+        ORDER BY wins DESC, podiums DESC, avg_finish ASC, a.primary_name
+    """
+    division = f"{discipline} {sex}"
+    return sql, (division, division)
+
+
+def build_sylt_editions_query(sex: str, discipline: str = "Wave") -> tuple[str, tuple]:
+    """Count the Sylt editions that feed ``build_sylt_kings_query``.
+
+    The slides state the sample ("10 editions, 2008-2025"), and stating it
+    wrong is worse than not stating it, so the count comes from the same
+    winner-count test as the rows rather than being written down beside it.
+
+    Returns:
+        (sql, params) tuple. One row: editions, first_year, last_year.
+    """
+    sql = """
+        SELECT COUNT(*) AS editions,
+               MIN(t.year) AS first_year,
+               MAX(t.year) AS last_year
+        FROM (
+            SELECT e.year
+            FROM PWA_IWT_RESULTS r
+            JOIN PWA_IWT_EVENTS e
+                ON e.event_id = r.event_id AND e.source = r.source
+            WHERE r.source = 'PWA'
+              AND r.division_label = %s
+              AND e.event_name LIKE '%%Sylt%%'
+            GROUP BY r.event_id, e.year
+            HAVING SUM(r.place = '1') BETWEEN 1 AND 2
+        ) t
+    """
+    return sql, (f"{discipline} {sex}",)

@@ -244,7 +244,11 @@ def thumbnail_for(src, cache_dir, max_px: int = 1000) -> Path:
     return dest
 
 
-_FOLDER_PREFIX = re.compile(r"^\s*\d+\s*-\s*")
+# Repeated, because the Drive numbers its folders two ways: the 2026 season
+# uses "06 - TENERIFE" and the 2025 season repeats the year first,
+# "2025 - 10 - SYLT". Stripping only the first group leaves "10 - SYLT", which
+# matches no event name, so every 2025 event failed to resolve a folder.
+_FOLDER_PREFIX = re.compile(r"^(?:\s*\d+\s*-\s*)+")
 
 
 def match_event_folder(event_name: str, folder_names) -> str:

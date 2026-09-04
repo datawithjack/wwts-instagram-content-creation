@@ -1,0 +1,77 @@
+{
+  "_comment": "Photographer per headshot, resolved from the filename then the file's own XMP. Entries marked unconfirmed carry no credit tag anywhere: confirm before crediting them.",
+  "892": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "FV26_ls_B16_00091 copy.jpg",
+    "confirmed": true,
+    "via": "exif"
+  },
+  "75": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "FV26_ls_GRE734_00059 copy.jpg",
+    "confirmed": true,
+    "via": "exif"
+  },
+  "888": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY15_ls_NB61_0305.jpg",
+    "confirmed": false,
+    "via": "",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "723": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY15_ls_NB7_0245.jpg",
+    "confirmed": false,
+    "via": "",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "202": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY15_ls_V10_0451.jpg",
+    "confirmed": false,
+    "via": "",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "74": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "SY25_ls_ITA2610_00089 copy.jpg",
+    "confirmed": true,
+    "via": "exif"
+  },
+  "103": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "FV23_ls_F296_0073.jpg",
+    "confirmed": true,
+    "via": "exif"
+  },
+  "113": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "FV26_ls_NB20_1123.jpg",
+    "confirmed": true,
+    "via": "exif"
+  },
+  "722": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "FV26_ls_NB9_1539.jpg",
+    "confirmed": true,
+    "via": "exif"
+  },
+  "890": {
+    "photographer": "Inna Bru",
+    "handle": "Inna Bru",
+    "source_file": "FUE25 Podium 27JulyLOW_I3A5189.jpg",
+    "confirmed": true,
+    "via": "user",
+    "note": "Credited by name: Instagram handle not known. Replace handle with the @ if it is confirmed."
+  }
+}
