@@ -145,18 +145,26 @@ def _title_lines(sex: str) -> tuple:
 
 VENUE = "Sylt, Germany"
 
-# How a discipline is named on the slides, where that differs from the name the
-# query is built on. Sylt's slalom splits at 2023: fin to 2023, foil from 2024,
-# and the post ranks the fin era only. Labelling it "Slalom" would read as the
-# whole record and leave a reader asking why Johan Soe, who won 2024 and 2025,
-# is missing. Riders on this list sailed both, so the ambiguity is real: Amado
-# Vrieswijk and Matteo Iachino are here for fin titles and raced the foil
-# editions too.
-DISCIPLINE_LABELS = {"Slalom": "Fin Slalom"}
+# How a discipline is named on the slides, where that differs from the name
+# the query is built on. Nothing needs renaming while the slalom post ranks
+# both of its eras: "Slalom" is the whole record and reads as it.
+DISCIPLINE_LABELS = {}
 
-# Said on the fine print of a post whose discipline has an era the ranking
-# leaves out, so the omission is stated rather than left to be noticed.
-DISCIPLINE_NOTES = {"Slalom": "Foil slalom, from 2024, is a separate record"}
+# The mark against a year sailed on a foil, and the note that explains it.
+#
+# Sylt's slalom has been two different races: fin to 2023, foil from 2024. The
+# post ranks them as one venue record, because the event is one event and the
+# riders treat it as one thing to win, but a title is not comparable across the
+# boundary and the slide has to say so. Johan Soe won both foil editions from
+# two starts; Bjorn Dunkerbeck won two fin editions from eight against fleets
+# of 120-132 with Albeau in them. Two titles each, and a reader can only weigh
+# them if the years carry which race they were.
+#
+# A dagger rather than a second asterisk: the asterisk already means a shared
+# title, and a women's wave post uses it. Both are set in Inter, which has the
+# glyph; the display face is not asked to render it.
+FOIL_MARK = "†"
+FOIL_PHRASE = "† sailed on a foil"
 
 
 def _eyebrow(discipline: str) -> str:
@@ -191,7 +199,8 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
     common = {"accent_color": ACCENT_COLOR}
     sample = _sample_line(editions)
     shared = _shared_years(rows)
-    criteria = _criteria_note(shared, discipline)
+    foil = _foil_years(rows)
+    criteria = _criteria_note(shared, foil)
 
     slides = [{
         "type": "sylt_cover",
@@ -214,7 +223,7 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
     # it; ``rows`` stays in ranking order and only the walk is reversed.
     ranked = list(zip(_ranks(rows), rows))
     for rank, row in reversed(ranked):
-        slides.append(_rider_slide(row, rank, sample, shared, **common))
+        slides.append(_rider_slide(row, rank, sample, shared, foil, **common))
 
     slides.append({
         "type": "sylt_table",
@@ -223,7 +232,7 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
         "eyebrow": eyebrow,
         "sample_line": sample,
         "criteria_note": criteria,
-        "rows": _table_rows(rows, shared),
+        "rows": _table_rows(rows, shared, foil),
         **common,
     })
     slides.append({"type": "analysis_cta", **common})
@@ -247,6 +256,22 @@ def _sample_line(editions: dict) -> str:
     first, last = editions.get("first_year"), editions.get("last_year")
     span = f", {first}-{last}" if first and last else ""
     return f"{int(editions['editions'])} editions{span}"
+
+
+def _foil_years(rows: list[dict]) -> set:
+    """Every year at this venue that was sailed on a foil.
+
+    Read from the rows rather than written down as a constant, so the set
+    follows the data: three Sylt foil editions from 2017 to 2019 are missing
+    from the scrape at the time of writing, and a hardcoded "2024 and after"
+    would keep marking them fin once they arrive.
+    """
+    years = set()
+    for row in rows:
+        for chunk in str(row.get("foil_years") or "").split(","):
+            if chunk.strip().isdigit():
+                years.add(int(chunk))
+    return years
 
 
 def _shared_years(rows: list[dict]) -> set:
@@ -280,20 +305,41 @@ def _shared_phrase(years) -> str:
     return f"* {listed} title{'s' if len(years) > 1 else ''} shared"
 
 
-def _criteria_note(shared: set, discipline: str = "Wave") -> str:
-    """The fine print, with the asterisk explained when one is in play."""
+def _card_note(win_years: list, best_years: list, shared: set, foil: set) -> str:
+    """The footnote for one card: only the marks that card is actually showing.
+
+    Driven by the years printed on the card, not by the rider's whole record.
+    Amado Vrieswijk raced Sylt on a foil but won it on a fin, so no year on his
+    card carries a dagger and explaining one would send a reader hunting for a
+    mark that is not there. Johan Soe won both his titles on a foil, so his
+    card needs it.
+    """
+    marked = list(win_years) + list(best_years)
+    notes = []
+    if any(y in shared for y in win_years):
+        notes.append(_shared_phrase([y for y in win_years if y in shared]))
+    if any(y in foil for y in marked):
+        notes.append(FOIL_PHRASE)
+    return " · ".join(n for n in notes if n)
+
+
+def _criteria_note(shared: set, foil: set = frozenset()) -> str:
+    """The fine print, with each mark explained only when one is in play."""
     note = CRITERIA_NOTE
-    era = DISCIPLINE_NOTES.get(discipline)
-    if era:
-        note = f"{note} · {era}"
+    if foil:
+        first = min(foil)
+        note = f"{note} · {FOIL_PHRASE}, from {first}"
     if not shared:
         return note
     return f"{note} · {_shared_phrase(shared)}"
 
 
-def _mark(year, shared: set) -> str:
-    """A year, asterisked if the title that year was shared."""
-    return f"{year}*" if year in shared else str(year)
+def _mark(year, shared: set, foil: set = frozenset()) -> str:
+    """A year, marked for a shared title and for a foil race.
+
+    Both can apply at once, so the marks append rather than choose.
+    """
+    return f"{year}{'*' if year in shared else ''}{FOIL_MARK if year in foil else ''}"
 
 
 def _ranks(rows: list[dict]) -> list[int]:
@@ -317,7 +363,8 @@ def _ranks(rows: list[dict]) -> list[int]:
     return ranks
 
 
-def _rider_slide(row: dict, rank: int, sample: str, shared: set, **common) -> dict:
+def _rider_slide(row: dict, rank: int, sample: str, shared: set,
+                 foil: set = frozenset(), **common) -> dict:
     """One rider's card.
 
     ``photo_mode`` picks the layout: a landscape action shot goes full bleed,
@@ -337,6 +384,7 @@ def _rider_slide(row: dict, rank: int, sample: str, shared: set, **common) -> di
     podiums = int(row.get("podiums") or 0)
     placings = _placings(row.get("placings"))
     best_place, best_years = _best(placings, row.get("best_finish"))
+    win_years = [year for year, place in placings if place == 1]
 
     return {
         "type": "sylt_rider",
@@ -356,12 +404,11 @@ def _rider_slide(row: dict, rank: int, sample: str, shared: set, **common) -> di
         "photo_mode": photo_mode,
         "photo_focus": focus,
         "is_champion": wins > 0,
-        "years_line": _years_line([y for y, p in placings if p == 1], podiums,
-                                  [y for y, _ in placings], shared),
-        # Only the riders whose own years carry an asterisk explain it. A note
-        # on all eight cards would raise a question seven of them do not answer.
-        "shared_note": _shared_phrase([y for y, p in placings
-                                       if p == 1 and y in shared]),
+        "years_line": _years_line(win_years, podiums,
+                                  [y for y, _ in placings], shared, foil),
+        # Only the riders whose own years carry a mark explain it. A note on
+        # all eight cards would raise a question seven of them do not answer.
+        "shared_note": _card_note(win_years, best_years, shared, foil),
         "sample_line": sample,
         "stats": [
             {"value": str(wins), "label": "Titles", "note": ""},
@@ -370,7 +417,9 @@ def _rider_slide(row: dict, rank: int, sample: str, shared: set, **common) -> di
             # A best finish is worth more with its date on it: 2nd in 2008 and
             # 2nd across 2017, 2019 and 2024 are the same cell otherwise.
             {"value": _place_label(best_place), "label": "Best",
-             "note": ", ".join(str(y) for y in best_years)},
+             "note": ", ".join(
+                 _mark(y, shared if best_place == 1 else frozenset(), foil)
+                 for y in best_years)},
         ],
         **common,
     }
@@ -482,7 +531,7 @@ def _best(placings: list[tuple[int, int]], fallback) -> tuple[int, list[int]]:
 
 
 def _years_line(win_years: list[int], podiums: int, years: list[int],
-                shared: set = frozenset()) -> str:
+                shared: set = frozenset(), foil: set = frozenset()) -> str:
     """The years won, or what the rider has instead, and the span behind it.
 
     A rider on the list without a title is there on podiums, so saying nothing
@@ -494,7 +543,7 @@ def _years_line(win_years: list[int], podiums: int, years: list[int],
     that distinction can be drawn. Champions get the same treatment, so the
     cards read as one series rather than two.
     """
-    head = ("Won " + ", ".join(_mark(y, shared) for y in win_years)
+    head = ("Won " + ", ".join(_mark(y, shared, foil) for y in win_years)
             if win_years else f"{podiums} podiums")
     if not years:
         return f"{head} at Sylt World Cup"
@@ -525,7 +574,8 @@ def _name_class(last_name: str) -> str:
     return ""
 
 
-def _table_rows(rows: list[dict], shared: set = frozenset()) -> list[dict]:
+def _table_rows(rows: list[dict], shared: set = frozenset(),
+                foil: set = frozenset()) -> list[dict]:
     """The closing summary, one line per rider, in ranking order.
 
     A table rather than the canary post's bar chart. Eight women qualify, and
@@ -556,7 +606,8 @@ def _table_rows(rows: list[dict], shared: set = frozenset()) -> list[dict]:
             "starts": int(row.get("starts") or 0),
             "best_label": _place_label(best_place),
             "best_years": ", ".join(
-                _mark(y, shared) if best_place == 1 else str(y) for y in best_years),
+                _mark(y, shared if best_place == 1 else frozenset(), foil)
+                for y in best_years),
         })
 
     return table
