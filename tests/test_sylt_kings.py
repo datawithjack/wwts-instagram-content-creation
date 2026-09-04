@@ -387,3 +387,109 @@ def test_caption_omits_the_note_when_no_title_is_shared():
 def test_caption_has_no_em_dashes():
     caption = build_caption("sylt_kings", {"rows": ROWS, "sex": "Men", "editions": EDITIONS}, {})
     assert "—" not in caption
+
+
+def test_caption_credits_the_photographers_and_the_tour():
+    """A card is someone else's photograph, so the caption must name them.
+
+    The handles come from the folder each photo actually came from, and the
+    tour handle closes the line because every Sylt folder is filled from the
+    PWA library.
+    """
+    data = {"rows": ROWS, "sex": "Men", "editions": EDITIONS,
+            "photo_credits": ["@jcwindsurf", "@pwaworldtour"]}
+    caption = build_caption("sylt_kings", data, {})
+    assert "\U0001f4f8 @jcwindsurf | @pwaworldtour" in caption
+
+
+def test_credits_read_the_folder_the_photo_came_from(monkeypatch):
+    """A venue post spans twenty years, so two riders' shots can be nine years
+    and two photographers apart. Reading the newest folder for everyone would
+    credit the wrong one."""
+    monkeypatch.setattr(sylt_kings, "_hero",
+                        lambda aid: ("x.jpg", "50% 50%", {1: 16, 2: "sylt2019"}.get(aid)))
+    monkeypatch.setattr(sylt_kings, "resolve_photo_credit",
+                        lambda aid, ev: {16: "@newer", "sylt2019": "@older"}.get(ev, ""))
+    credits = sylt_kings.sylt_photo_credits([{"athlete_id": 1}, {"athlete_id": 2}])
+    assert credits == ["@newer", "@older", "@pwaworldtour"]
+
+
+def test_untagged_photos_credit_only_the_tour(monkeypatch):
+    """A missing credit beats a guessed one, but the library still gets named."""
+    monkeypatch.setattr(sylt_kings, "_hero", lambda aid: ("x.jpg", "50% 50%", 16))
+    monkeypatch.setattr(sylt_kings, "resolve_photo_credit", lambda aid, ev: "")
+    assert sylt_kings.sylt_photo_credits([{"athlete_id": 1}]) == ["@pwaworldtour"]
+
+
+def test_no_sylt_photo_credits_nobody(monkeypatch):
+    """Nothing resolved from a Sylt folder means no photograph to credit."""
+    monkeypatch.setattr(sylt_kings, "_hero", lambda aid: ("flat.jpg", "50% 50%", None))
+    assert sylt_kings.sylt_photo_credits([{"athlete_id": 1}]) == []
+
+
+def test_headshot_photographers_are_credited(monkeypatch):
+    """The table slide is built from headshots, so those are photographs on the
+    post too. Crediting only the rider cards drops whoever shot the thumbnails.
+    """
+    monkeypatch.setattr(sylt_kings, "_hero", lambda aid: ("x.jpg", "50% 50%", 16))
+    monkeypatch.setattr(sylt_kings, "resolve_photo_credit", lambda aid, ev: "@action")
+    monkeypatch.setattr(sylt_kings, "resolve_face_credit",
+                        lambda aid: "@portrait" if aid == 2 else "")
+    credits = sylt_kings.sylt_photo_credits([{"athlete_id": 1}, {"athlete_id": 2}])
+    assert credits == ["@action", "@portrait", "@pwaworldtour"]
+
+
+def test_a_headshot_photographer_is_not_repeated(monkeypatch):
+    """One photographer who shot both the action frame and the headshot is
+    named once, not twice."""
+    monkeypatch.setattr(sylt_kings, "_hero", lambda aid: ("x.jpg", "50% 50%", 16))
+    monkeypatch.setattr(sylt_kings, "resolve_photo_credit", lambda aid, ev: "@jc")
+    monkeypatch.setattr(sylt_kings, "resolve_face_credit", lambda aid: "@jc")
+    assert sylt_kings.sylt_photo_credits([{"athlete_id": 1}]) == ["@jc", "@pwaworldtour"]
+
+
+def test_cover_carries_the_discipline_as_its_own_field():
+    """The cover sets the discipline apart from the venue, so it can be styled
+    on its own. One joined string would force the styling onto the venue too.
+    """
+    slides = build_sylt_kings_slides(ROWS, "Men", EDITIONS, "Freestyle")
+    cover = slides[0]
+    assert cover["eyebrow_venue"] == "Sylt, Germany"
+    assert cover["eyebrow_discipline"] == "Freestyle"
+    # The table slide keeps the joined line it already had.
+    table = next(s for s in slides if s["type"] == "sylt_table")
+    assert table["eyebrow"] == "Sylt, Germany \u00b7 Freestyle"
+
+
+def test_a_long_name_is_abbreviated_in_the_table():
+    """The table cell is nowrap with an ellipsis, so a name past its width is
+    cut mid-word: "STEVEN VAN BROECKHOVEN" rendered as "STEVEN VAN BROECK...".
+    Dropping the first name to an initial keeps the surname, which is the part
+    that identifies the rider.
+    """
+    rows = [_row("Steven Van Broeckhoven", 890, 0, 5),
+            _row("Amado Vrieswijk", 113, 1, 3)]
+    table = sylt_kings._table_rows(rows)
+    assert table[0]["athlete"] == "S. Van Broeckhoven"
+    # A name that already fits is left exactly as it is.
+    assert table[1]["athlete"] == "Amado Vrieswijk"
+
+
+def test_a_single_word_name_is_never_abbreviated():
+    """There is no first name to drop, so the name has to stand as it is."""
+    rows = [_row("Van Broeckhoven", 9001, 0, 5)]  # no NAME_OVERRIDES entry
+    assert sylt_kings._table_rows(rows)[0]["athlete"] == "Van Broeckhoven"
+
+
+def test_the_caption_uses_the_same_names_as_the_slides():
+    """The cards apply NAME_OVERRIDES, the caption read the raw column, so a
+    post showed "GOLLITO ESTREDO" on the slide and Jose "Gollito" Estredo in
+    its own caption, quotes and all. Same rider, same name, both places.
+    """
+    rows = [_row("Jose \"Gollito\" Estredo", 202, 6, 1),
+            _row("Van Broeckhoven", 890, 0, 5)]
+    caption = build_caption("sylt_kings", {"rows": rows, "sex": "Men",
+                                           "editions": EDITIONS}, {})
+    assert "Gollito Estredo" in caption
+    assert '"Gollito"' not in caption
+    assert "Steven Van Broeckhoven" in caption

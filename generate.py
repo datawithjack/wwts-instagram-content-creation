@@ -1,6 +1,7 @@
 """Main entry point for Instagram content generation pipeline."""
 import argparse
 import os
+import re
 import sys
 import webbrowser
 import tempfile
@@ -510,13 +511,18 @@ def fetch_live_data(template_name: str, args) -> dict:
         # different lengths and different stories, and a card each would run
         # to nineteen slides combined.
         sex = args.sex or "Men"
-        rows_sql, rows_params = build_sylt_kings_query(sex)
-        ed_sql, ed_params = build_sylt_editions_query(sex)
+        discipline = getattr(args, "discipline", None) or "Wave"
+        rows_sql, rows_params = build_sylt_kings_query(sex, discipline)
+        ed_sql, ed_params = build_sylt_editions_query(sex, discipline)
         editions = run_query(ed_sql, ed_params)
+        rows = run_query(rows_sql, rows_params)
+        from pipeline.sylt_kings import sylt_photo_credits
         return {
-            "rows": run_query(rows_sql, rows_params),
+            "rows": rows,
             "sex": sex,
+            "discipline": discipline,
             "editions": editions[0] if editions else None,
+            "photo_credits": sylt_photo_credits(rows),
         }
 
     if template_name == "wave_count":
@@ -726,6 +732,46 @@ def load_config():
         return yaml.safe_load(f)
 
 
+def group_into_post_folder(result_paths: list) -> list:
+    """Move a carousel's slides into a folder named for the post.
+
+    A flat output/png fills up fast: one carousel is a dozen files, and three
+    runs of the same post are told apart only by a timestamp buried in the
+    middle of every filename. The folder is the slide name minus its trailing
+    index, so it carries the template, the division and the run, and a second
+    run lands beside the first rather than overwriting it.
+
+    Returns the new paths, in slide order: they are what gets published, and a
+    carousel posted out of order is a re-upload rather than an edit.
+    """
+    if not result_paths:
+        return result_paths
+    stem = re.sub(r"_\d+\.png$", "", os.path.basename(result_paths[0]))
+    folder = os.path.join(os.path.dirname(result_paths[0]), stem)
+    os.makedirs(folder, exist_ok=True)
+    moved = []
+    for path in result_paths:
+        dest = os.path.join(folder, os.path.basename(path))
+        os.replace(path, dest)
+        moved.append(dest)
+    return moved
+
+
+def write_caption_file(result_paths: list, caption: str):
+    """Drop the suggested caption in beside the slides, or None if no slides.
+
+    Posting by hand means copying the caption from somewhere, and a terminal
+    that has scrolled is a bad somewhere. Written as the caption that would be
+    published, hashtags and photo credits included.
+    """
+    if not result_paths:
+        return None
+    path = os.path.join(os.path.dirname(result_paths[0]), "caption.txt")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(caption)
+    return path
+
+
 def main():
     parser = argparse.ArgumentParser(description="WWT Instagram content generator")
     parser.add_argument(
@@ -738,6 +784,8 @@ def main():
     parser.add_argument("--event", type=int, help="Event ID")
     parser.add_argument("--division", choices=["Men", "Women"], help="Division for H2H")
     parser.add_argument("--sex", choices=["Men", "Women"], help="Sex filter for top 10 / athlete rise / sylt kings")
+    parser.add_argument("--discipline", choices=["Wave", "Freestyle"], default="Wave",
+                        help="Discipline for sylt_kings (default Wave)")
     parser.add_argument("--location", help="Location pattern for athlete rise (e.g. 'Gran Canaria')")
     parser.add_argument("--picks-data", help="Path to event picks JSON file (event_picks template)")
     parser.add_argument("--men", help="Finals preview: comma-separated men's finalist athlete IDs, in draw order")
@@ -820,7 +868,8 @@ def main():
             slides = build_canary_kings_slides(data["men"], data["women"])
         elif template_name == "sylt_kings":
             from pipeline.sylt_kings import build_sylt_kings_slides
-            slides = build_sylt_kings_slides(data["rows"], data["sex"], data.get("editions"))
+            slides = build_sylt_kings_slides(data["rows"], data["sex"], data.get("editions"),
+                                             data.get("discipline", "Wave"))
         elif template_name == "athlete_rise":
             from pipeline.athlete_rise_carousel import build_athlete_rise_slides
             slides = build_athlete_rise_slides(data)
@@ -927,7 +976,7 @@ def main():
         elif template_name == "sylt_kings":
             result_paths = render_sylt_kings_carousel(
                 data["rows"], data["sex"], carousel_dir,
-                base_name=f"sylt_kings_{data['sex'].lower()}_{timestamp}",
+                base_name=f"sylt_kings_{data.get('discipline', 'wave').lower()}_{data['sex'].lower()}_{timestamp}",
                 editions=data.get("editions"),
                 width=width, height=height, dpr=dpr,
             )
@@ -985,8 +1034,20 @@ def main():
                 base_name=f"top_10_carousel_{timestamp}",
                 width=width, height=height, dpr=dpr,
             )
+        result_paths = group_into_post_folder(result_paths)
         for p in result_paths:
             print(f"Rendered: {p}")
+
+        # The caption is a convenience beside the images, not the deliverable,
+        # so a template whose builder cannot make one still renders.
+        try:
+            suggested = args.caption or build_caption(template_name, data, config)
+        except Exception as exc:  # noqa: BLE001 - reported, never fatal
+            print(f"No caption written: {exc}")
+        else:
+            written = write_caption_file(result_paths, suggested)
+            if written:
+                print(f"Caption:  {written}")
 
         if args.publish == "now":
             from pipeline.publisher import publish_carousel as publish_carousel_to_ig

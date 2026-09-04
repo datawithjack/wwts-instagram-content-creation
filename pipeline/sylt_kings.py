@@ -27,7 +27,13 @@ inside the same hero footprint, the way ``finals_recap`` does it.
 """
 
 from pipeline.helpers import nationality_to_iso
-from pipeline.templates import resolve_hero_focus, resolve_hero_url, resolve_thumb_url
+from pipeline.templates import (
+    resolve_face_credit,
+    resolve_hero_focus,
+    resolve_hero_url,
+    resolve_photo_credit,
+    resolve_thumb_url,
+)
 
 # Sylt is side-on and waist-high: the rider sits low and central in most
 # frames, so the default anchor sits higher than a jumping shot would want.
@@ -60,10 +66,94 @@ SYLT_PHOTO_EVENTS = (
     75,          # 2020
     "sylt2019",  # 2019 -- not in the API, see above
     "sylt2016",  # 2016 -- not in the API, see above
+    # Freestyle ran at Sylt alongside the wave event, and the freestyle riders
+    # are a mostly separate cast who never appear in the wave folders above.
+    # Kept in one folder rather than per year because the shots span 2018 to
+    # 2022 and no freestyle rider has more than one.
+    #
+    # Last, so a rider who sails both disciplines keeps the wave shot the wave
+    # post already uses. Nobody on either list is currently in both, so the
+    # order is not yet load-bearing; the day someone is, this wants to be
+    # searched first for a freestyle post rather than last for every post.
+    "syltfreestyle",
 )
 
 
-def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None) -> list[dict]:
+# Riders the ATHLETES table does not carry cleanly. The freestyle list is old
+# enough to reach names the scrape stored as a nickname in brackets, as a bare
+# surname, or with no nationality at all, and a card is 1080px of one rider's
+# name and flag. Fixing it here rather than in the DB keeps a content change
+# out of the app's data, but the DB is the better home if this grows.
+NAME_OVERRIDES = {
+    202: "Gollito Estredo",          # stored as: Jose "Gollito" Estredo
+    722: "Taty Frans",               # stored as: Elton (Taty) Frans
+    723: "Tonky Frans",              # stored as: Everon (Tonky) Frans
+    890: "Steven Van Broeckhoven",   # stored as: Van Broeckhoven, no first name
+}
+
+NATIONALITY_OVERRIDES = {
+    722: "Bonaire",   # NULL in ATHLETES
+    723: "Bonaire",
+    888: "Bonaire",   # Kiri Thode
+    890: "Belgium",
+    892: "Belgium",   # Yentel Caers
+}
+
+
+# The table cell is nowrap with an ellipsis at 36px, and the longest name that
+# fits is about this many characters. Past it the surname gets cut mid-word,
+# which is worse than losing the first name.
+TABLE_NAME_MAX = 18
+
+
+def _table_name(name: str) -> str:
+    """A rider's name, shortened to fit the table's one line.
+
+    Drops the first name to an initial rather than truncating, because the
+    surname is what identifies the rider: "S. Van Broeckhoven" reads, where
+    "Steven Van Broeck..." does not. A single-word name is left alone, having
+    nothing to give up.
+    """
+    if len(name) <= TABLE_NAME_MAX:
+        return name
+    first, _, rest = name.partition(" ")
+    if not rest:
+        return name
+    return f"{first[0]}. {rest}"
+
+
+def _athlete_name(row: dict) -> str:
+    """The rider's name as it should read on a slide."""
+    return NAME_OVERRIDES.get(row.get("athlete_id")) or row.get("athlete") or ""
+
+
+def _nationality(row: dict) -> str:
+    """The rider's nationality, filled in where the DB has none."""
+    return row.get("nationality") or NATIONALITY_OVERRIDES.get(row.get("athlete_id"), "")
+
+
+def _title_lines(sex: str) -> tuple:
+    """The cover headline, as the three lines it is set on.
+
+    Every discipline gets the same headline for now; the eyebrow carries the
+    discipline. Set as lines rather than one string because the autofit only
+    shrinks on overflow, and a line long enough to wrap grows the block by a
+    whole line instead: "MOST STYLISH" took the cover from 898px to 1197px.
+    """
+    return ("KINGS" if sex == "Men" else "QUEENS", "OF", "SYLT")
+
+
+VENUE = "Sylt, Germany"
+
+
+def _eyebrow(discipline: str) -> str:
+    """Venue and discipline. Sylt runs wave and freestyle at the same event,
+    so a post that names only the venue does not say which record it ranks."""
+    return f"{VENUE} · {discipline}"
+
+
+def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
+                            discipline: str = "Wave") -> list[dict]:
     """Build the carousel for one division.
 
     Args:
@@ -78,6 +168,8 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None) -
         List of slide dicts: cover, one per rider, chart, cta.
     """
     title_word = "KINGS" if sex == "Men" else "QUEENS"
+    title_lines = _title_lines(sex)
+    eyebrow = _eyebrow(discipline)
     common = {"accent_color": ACCENT_COLOR}
     sample = _sample_line(editions)
     shared = _shared_years(rows)
@@ -86,7 +178,13 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None) -
     slides = [{
         "type": "sylt_cover",
         "title_word": title_word,
+        "title_lines": title_lines,
         "division_label": sex.upper(),
+        "eyebrow": eyebrow,
+        # The cover styles the discipline on its own, so it gets the two parts
+        # separately as well as the joined line.
+        "eyebrow_venue": VENUE,
+        "eyebrow_discipline": discipline,
         "sample_line": sample,
         "criteria_note": criteria,
         **common,
@@ -102,8 +200,9 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None) -
 
     slides.append({
         "type": "sylt_table",
-        "slide_title": f"{title_word} OF SYLT",
+        "slide_title": " ".join(title_lines),
         "division_label": sex.upper(),
+        "eyebrow": eyebrow,
         "sample_line": sample,
         "criteria_note": criteria,
         "rows": _table_rows(rows, shared),
@@ -205,10 +304,10 @@ def _rider_slide(row: dict, rank: int, sample: str, shared: set, **common) -> di
     broken, which is exactly what one shared layout would force.
     """
     athlete_id = row.get("athlete_id")
-    name = row.get("athlete") or ""
+    name = _athlete_name(row)
     first_name, _, last_name = name.partition(" ")
 
-    hero_url, focus = _hero(athlete_id)
+    hero_url, focus, _ = _hero(athlete_id)
     photo_mode = "action" if hero_url else "portrait"
     photo_url = hero_url or resolve_thumb_url(athlete_id, row.get("photo_url") or "")
 
@@ -229,7 +328,7 @@ def _rider_slide(row: dict, rank: int, sample: str, shared: set, **common) -> di
         "first_name": first_name,
         "last_name": last_name,
         "name_class": _name_class(last_name),
-        "country": nationality_to_iso(row.get("nationality") or ""),
+        "country": nationality_to_iso(_nationality(row)),
         "athlete_id": athlete_id,
         "photo_url": photo_url,
         "photo_mode": photo_mode,
@@ -255,15 +354,20 @@ def _rider_slide(row: dict, rank: int, sample: str, shared: set, **common) -> di
     }
 
 
-def _hero(athlete_id) -> tuple[str, str]:
-    """A rider's action shot and its crop anchor, from the Sylt event folders.
+def _hero(athlete_id) -> tuple[str, str, object]:
+    """A rider's action shot, its crop anchor, and the folder both came from.
 
-    Returns ("", "") when nothing landscape resolves, which is the signal for
-    the portrait layout. The crop anchor comes from the same folder as the
+    Returns ("", "", None) when nothing landscape resolves, which is the signal
+    for the portrait layout. The crop anchor comes from the same folder as the
     photo, so a shot picked at Sylt 2022 keeps the anchor it was cropped with.
+
+    The folder is returned because the photographer is recorded beside the
+    photo, not beside the rider: ``sylt_photo_credits`` needs to read the same
+    ``credits.json`` this shot was chosen from, and searching again from the
+    newest folder would credit whoever shot the most recent edition.
     """
     if not athlete_id:
-        return "", ""
+        return "", "", None
     for event_id in SYLT_PHOTO_EVENTS:
         url = resolve_hero_url(athlete_id, event_id)
         # ``resolve_hero_url`` runs its own chain to h2h and the legacy flat
@@ -273,10 +377,61 @@ def _hero(athlete_id) -> tuple[str, str]:
         # folders would never be read: the Ruano Moreno twins last sailed the
         # venue in 2017 and 2019, and both have a flat photo.
         if url and f"/events/{event_id}/" in url.replace("\\", "/"):
-            return url, resolve_hero_focus(athlete_id, event_id, DEFAULT_FOCUS)
+            return url, resolve_hero_focus(athlete_id, event_id, DEFAULT_FOCUS), event_id
     # Nothing at Sylt: a shot cropped for a head-to-head or the legacy flat
     # photo still beats dropping the rider to a headshot.
-    return resolve_hero_url(athlete_id, None), DEFAULT_FOCUS
+    # No folder to return: a fallback shot was not taken at Sylt, so this
+    # post has no record of who took it and credits nobody for it.
+    return resolve_hero_url(athlete_id, None), DEFAULT_FOCUS, None
+
+
+# Every Sylt folder is filled from the PWA library, so the tour is owed a
+# credit on any post built from those photos, including one where no individual
+# photographer is tagged.
+TOUR_HANDLE = "@pwaworldtour"
+
+
+def sylt_photo_credits(rows: list[dict]) -> list[str]:
+    """Photographer handles for the rider cards, in slide order.
+
+    Every rider on the list gets a card, so slide order is row order and every
+    photograph on the post is accounted for.
+
+    The credit is read from the folder each photo actually came from. A venue
+    post spans nearly twenty years, so two riders' shots can be nine years and
+    two photographers apart, and reading one folder for everyone would put the
+    wrong name under half the post.
+
+    An untagged photo contributes nothing: a caption missing a credit is a
+    smaller problem than one carrying a guessed attribution. The tour handle
+    still closes the line, because the library the shot came from is known even
+    when the photographer is not.
+    """
+    credits = []
+    used_sylt_photo = False
+    for row in rows:
+        athlete_id = row.get("athlete_id")
+        _, _, event_id = _hero(athlete_id)
+        if not event_id:
+            continue
+        used_sylt_photo = True
+        handle = resolve_photo_credit(athlete_id, event_id)
+        if handle and handle not in credits:
+            credits.append(handle)
+
+    # The table slide is built from headshots, so those are photographs on the
+    # post too. They come second because the cards are what a reader swipes
+    # through first, and a photographer who shot both is named once.
+    for row in rows:
+        handle = resolve_face_credit(row.get("athlete_id"))
+        if handle:
+            used_sylt_photo = True
+            if handle not in credits:
+                credits.append(handle)
+
+    if used_sylt_photo and TOUR_HANDLE not in credits:
+        credits.append(TOUR_HANDLE)
+    return credits
 
 
 def _placings(raw) -> list[tuple[int, int]]:
@@ -370,8 +525,8 @@ def _table_rows(rows: list[dict], shared: set = frozenset()) -> list[dict]:
 
         table.append({
             "rank": rank,
-            "athlete": row.get("athlete") or "",
-            "country": nationality_to_iso(row.get("nationality") or ""),
+            "athlete": _table_name(_athlete_name(row)),
+            "country": nationality_to_iso(_nationality(row)),
             "athlete_id": athlete_id,
             "photo_url": resolve_thumb_url(athlete_id, row.get("photo_url") or ""),
             "podiums": int(row.get("podiums") or 0),

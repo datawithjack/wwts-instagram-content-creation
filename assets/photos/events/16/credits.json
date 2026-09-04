@@ -41,27 +41,31 @@
   },
   "_comment": "Photographer per photo, resolved from the filename then the file's own XMP. Entries marked unconfirmed carry no credit tag anywhere: confirm before crediting them.",
   "5": {
-    "photographer": "",
-    "handle": "",
+    "photographer": "John Carter",
+    "handle": "@jcwindsurf",
     "source_file": "SY25_wv_ARU91_01086.jpg",
-    "note": "UNTAGGED - credit unconfirmed"
+    "confirmed": true,
+    "via": "user"
   },
   "10": {
-    "photographer": "",
-    "handle": "",
+    "photographer": "John Carter",
+    "handle": "@jcwindsurf",
     "source_file": "SY25_wv_B5_01200.jpg",
-    "note": "UNTAGGED - credit unconfirmed"
+    "confirmed": true,
+    "via": "user"
   },
   "11": {
-    "photographer": "",
-    "handle": "",
+    "photographer": "John Carter",
+    "handle": "@jcwindsurf",
     "source_file": "SY25_wv_POL1111_01298.jpg",
-    "note": "UNTAGGED - credit unconfirmed"
+    "confirmed": true,
+    "via": "user"
   },
   "16": {
-    "photographer": "",
-    "handle": "",
+    "photographer": "John Carter",
+    "handle": "@jcwindsurf",
     "source_file": "SY25_wv_G3_01275.jpg",
-    "note": "UNTAGGED - credit unconfirmed"
+    "confirmed": true,
+    "via": "user"
   }
-}
+}

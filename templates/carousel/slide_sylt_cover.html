@@ -23,6 +23,17 @@
         color: rgba(255, 255, 255, 0.30);
     }
 
+    /* The discipline is not a footnote to the venue: Sylt runs wave and
+       freestyle, and this is the first post that is not the wave one. Its own
+       line, in the accent, so it cannot be skimmed past. */
+    .discipline-tag {
+        font-family: var(--font-display);
+        font-size: 52px;
+        letter-spacing: 0.10em;
+        color: var(--color-discipline);
+        margin-bottom: 14px;
+    }
+
     .cover-title {
         font-family: var(--font-display);
         font-size: 340px;
@@ -62,12 +73,15 @@
 
 {% block carousel_content %}
 <div class="container">
-    <div class="eyebrow">Sylt, Germany</div>
+    <div class="eyebrow">{{ eyebrow_venue | default(eyebrow, true) }}</div>
+    {% if eyebrow_discipline %}<div class="discipline-tag">{{ eyebrow_discipline | upper }}</div>{% endif %}
 
     <div class="cover-title" data-autofit>
-        <span class="highlight">{{ title_word }}</span><br>
-        OF<br>
-        SYLT
+        {%- for line in title_lines %}
+        {%- if loop.first %}<span class="highlight">{{ line }}</span>
+        {%- else %}{{ line }}{% endif %}
+        {%- if not loop.last %}<br>{% endif %}
+        {%- endfor %}
     </div>
 
     <div class="divider"></div>

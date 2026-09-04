@@ -594,7 +594,7 @@ def build_slalom_elimination_view_query(event_id: int) -> tuple[str, tuple]:
     return sql, (event_id,)
 
 
-def build_sylt_kings_query(sex: str) -> tuple[str, tuple]:
+def build_sylt_kings_query(sex: str, discipline: str = "Wave") -> tuple[str, tuple]:
     """Build the venue-record query behind the Kings/Queens of Sylt carousels.
 
     One row per rider who has either won Sylt or stood on the podium twice,
@@ -630,6 +630,9 @@ def build_sylt_kings_query(sex: str) -> tuple[str, tuple]:
 
     Args:
         sex: "Men" or "Women"
+        discipline: "Wave" or "Freestyle". Sylt has run both for most of its
+            history and the two records are different lengths and different
+            stories, so a post takes one at a time.
 
     Returns:
         (sql, params) tuple ready for db.run_query(). Rows carry: athlete,
@@ -678,11 +681,11 @@ def build_sylt_kings_query(sex: str) -> tuple[str, tuple]:
         HAVING wins >= 1 OR podiums >= 2
         ORDER BY wins DESC, podiums DESC, avg_finish ASC, a.primary_name
     """
-    division = f"Wave {sex}"
+    division = f"{discipline} {sex}"
     return sql, (division, division)
 
 
-def build_sylt_editions_query(sex: str) -> tuple[str, tuple]:
+def build_sylt_editions_query(sex: str, discipline: str = "Wave") -> tuple[str, tuple]:
     """Count the Sylt editions that feed ``build_sylt_kings_query``.
 
     The slides state the sample ("10 editions, 2008-2025"), and stating it
@@ -708,4 +711,4 @@ def build_sylt_editions_query(sex: str) -> tuple[str, tuple]:
             HAVING SUM(r.place = '1') BETWEEN 1 AND 2
         ) t
     """
-    return sql, (f"Wave {sex}",)
+    return sql, (f"{discipline} {sex}",)

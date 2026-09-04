@@ -165,6 +165,9 @@ NATIONALITY_TO_ISO = {
     "barbadian": "bb",
     "belgian": "be",
     "belgium": "be",
+    # Bonaire rides under its own flag on the tour: Taty and Tonky Frans and
+    # Kiri Thode are all Bonairean, and without this they render flagless.
+    "bonaire": "bq",
     "brazil": "br",
     "brazilian": "br",
     "british": "gb",

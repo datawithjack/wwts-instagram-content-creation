@@ -255,10 +255,18 @@ def _caption_sylt_kings(data: dict, site_url: str) -> str:
     the leader is not always the rider with the most podiums, and naming only
     the champion would leave the most consistent rider on the list unexplained.
     """
-    rows = data.get("rows", [])
+    # The cards clean these names up (a nickname stored in brackets, a surname
+    # with no first name); the caption has to read the same, or the post names
+    # the rider one way on the slide and another underneath it.
+    from pipeline.sylt_kings import _athlete_name
+
+    rows = [dict(r, athlete=_athlete_name(r)) for r in data.get("rows", [])]
     sex = data.get("sex", "Men")
     editions = data.get("editions") or {}
     title_word = "King" if sex == "Men" else "Queen"
+    # The caption asks the question the cover asks, so this follows the cover
+    # headline rather than the discipline.
+    headline = f"Who is the {title_word} of Sylt?"
 
     leader = rows[0]["athlete"] if rows else "?"
     span = ""
@@ -282,8 +290,8 @@ def _caption_sylt_kings(data: dict, site_url: str) -> str:
         else:
             podiums_line = f"{podiums} podiums too, more than anyone else.\n\n"
 
-    return (
-        f"\U0001f3c6 Who is the {title_word} of Sylt?\n\n"
+    body = (
+        f"\U0001f3c6 {headline}\n\n"
         f"{wins_line}"
         f"{podiums_line}"
         f"{_shared_title_note(rows)}"
@@ -292,6 +300,7 @@ def _caption_sylt_kings(data: dict, site_url: str) -> str:
         f"Swipe for every rider, then the full chart.\n\n"
         f"Full stats → {site_url}"
     )
+    return _with_photo_credits(body, data)
 
 
 def _caption_fantasy_mvps(data: dict, site_url: str) -> str:

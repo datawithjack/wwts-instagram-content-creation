@@ -180,6 +180,28 @@ def resolve_photo_credit(athlete_id, event_id) -> str:
         return ""
 
 
+def resolve_face_credit(athlete_id) -> str:
+    """Photographer credit for a rider's headshot, or "".
+
+    Headshots are athlete-level, so unlike ``resolve_photo_credit`` the record
+    is not event-keyed: it lives in ``assets/photos/faces/credits.json``.
+
+    A headshot is a photograph like any other, and it carries the table slide,
+    so the person who took it is owed the same credit as the action shot.
+    """
+    if not athlete_id or str(athlete_id).startswith("_"):
+        return ""
+    path = os.path.join(PHOTOS_DIR, "faces", "credits.json")
+    if not os.path.exists(path):
+        return ""
+    try:
+        with open(path, encoding="utf-8") as fh:
+            entry = json.load(fh).get(str(athlete_id))
+        return (entry.get("handle") or "") if isinstance(entry, dict) else (entry or "")
+    except (ValueError, OSError):
+        return ""
+
+
 def resolve_thumb_url(athlete_id, current_url: str) -> str:
     """Resolve the small square thumbnail (headshot) for data slides.
 
