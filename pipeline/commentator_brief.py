@@ -135,7 +135,7 @@ def _build_riders(riders: list[dict]) -> list[dict]:
             "photo_url": resolve_thumb_url(athlete_id, r.get("photo_url") or ""),
             "stats": _with_jump_move(
                 [
-                    _stat(label, r.get(key), leaders.get(key), fmt, len(r.get("history") or []))
+                    _stat(label, r.get(key), leaders.get(key), fmt, heats_sailed(r.get("history")))
                     for label, key, fmt in STAT_FIELDS
                 ],
                 _best_jump_move(r.get("history") or []),
@@ -187,6 +187,20 @@ def _meta_class(first_name: str, sail_number: str) -> str:
 def _best(riders: list[dict], key: str) -> float:
     """Highest value for a stat within this heat."""
     return max((_num(r.get(key)) for r in riders), default=0.0)
+
+
+def heats_sailed(history) -> int:
+    """How many heats a rider actually sailed.
+
+    The API returns a heat per rider that nobody sailed: at Sylt 2016 each of
+    the four came back with an extra entry in round "Final" (35a, 34a, 33a,
+    32a) carrying no place, no total and no scores. Counting those made Alex
+    Mussolini, who won every heat he sailed, read as 5/6 on his own card.
+
+    A heat counts when it has a result: a total, or scores to make one from.
+    """
+    return sum(1 for h in (history or [])
+               if h.get("total") is not None or h.get("scores"))
 
 
 def _stat(label: str, value, best, fmt: str, heats_sailed: int = 0) -> dict:

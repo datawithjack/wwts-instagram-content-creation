@@ -99,6 +99,10 @@
 
     .event-name {
         font-family: var(--font-display);
+        /* One line, always. A wrapped event name pushes the title down and
+           breaks the family resemblance with the other covers, so this is
+           sized down to fit by _autofit rather than allowed to wrap. */
+        white-space: nowrap;
         font-size: 104px;
         letter-spacing: 0.04em;
         line-height: 1.05;
@@ -174,7 +178,7 @@
 
     <div class="cover-body">
         {% if event_year %}<div class="event-year">{{ event_year }}</div>{% endif %}
-        <div class="event-name">{{ event_name | upper }}</div>
+        <div class="event-name" data-autofit>{{ event_name | upper }}</div>
         <div class="event-meta">
             {%- if event_country %}{{ event_country }}{% endif %}
             {%- if event_date_start and event_date_end %}
