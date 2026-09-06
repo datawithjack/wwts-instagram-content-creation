@@ -1,0 +1,378 @@
+{% extends "base.html" %}
+
+{# Road to Finals promo reel — animated 1080x1920 page recorded to MP4 by Playwright
+   (render_to_video). The branded card track of the post; live predictor screen-record
+   footage is intercut between these cards by pipeline/rtf_reel_edit.py.
+   Message: the title race is live, you can play it out yourself, and only a rider's
+   best four results count. Data: pipeline/road_to_finals_reel.py. #}
+
+{% block head %}
+<style>
+    :root {
+        --tour-400: {{ accent_tour }};
+        --warn-400: {{ accent_warn }};
+        --slate-100: #f1f5f9;
+        --slate-300: #cbd5e1;
+        --slate-400: #94a3b8;
+        --slate-500: #64748b;
+        --surface-bg: rgba(30, 41, 59, 0.55);
+        --surface-border: rgba(51, 65, 85, 0.6);
+    }
+
+    /* Reels record at a 1920px viewport, but base.html's body height defaults to
+       1350 when height isn't threaded into the template data, which would leave dead
+       space below. Force the full frame so justify-content:center actually centres. */
+    html, body { height: 1920px; }
+
+    .container { width: 100%; height: 100%; position: relative; }
+
+    .screen {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 0 80px;
+        text-align: center;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+    }
+    .screen.visible { opacity: 1; }
+
+    /* ── Hook ── */
+    .hook-eyebrow {
+        font-family: var(--font-body);
+        font-size: 34px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3em;
+        color: var(--tour-400);
+        margin-bottom: 36px;
+    }
+    .hook-title {
+        font-family: var(--font-display);
+        font-size: 210px;
+        line-height: 0.88;
+        letter-spacing: 0.03em;
+        color: var(--color-text-primary);
+        text-transform: uppercase;
+        white-space: pre-line;
+    }
+
+    /* The two riders at the top, stacked, each sliding in on its own beat — the
+       second landing on an identical number is the whole point of the card. */
+    .rivals {
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+        width: 100%;
+        max-width: 820px;
+        margin-top: 56px;
+    }
+    .rival {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 32px;
+        padding: 26px 36px;
+        border: 1px solid var(--surface-border);
+        border-radius: 20px;
+        background: var(--surface-bg);
+        opacity: 0;
+        transform: translateY(28px);
+        transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.22, 0.61, 0.36, 1);
+    }
+    .rival.in { opacity: 1; transform: translateY(0); }
+    .rival-name {
+        font-family: var(--font-display);
+        font-size: 60px;
+        line-height: 1;
+        letter-spacing: 0.02em;
+        color: var(--slate-100);
+        text-align: left;
+    }
+    .rival-points {
+        font-family: var(--font-body);
+        font-size: 52px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: var(--tour-400);
+        white-space: nowrap;
+    }
+
+    .hook-sub {
+        font-family: var(--font-body);
+        font-size: 44px;
+        font-weight: 400;
+        line-height: 1.4;
+        color: var(--slate-400);
+        margin-top: 52px;
+        max-width: 860px;
+    }
+
+    /* ── Numbered step ── */
+    .step-num {
+        width: 132px;
+        height: 132px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-display);
+        font-size: 92px;
+        line-height: 1;
+        color: #07121a;
+        background: var(--tour-400);
+        margin-bottom: 44px;
+        opacity: 0;
+        transform: scale(0.6);
+        transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .screen.visible .step-num { opacity: 1; transform: scale(1); }
+
+    .step-title {
+        font-family: var(--font-display);
+        font-size: 150px;
+        line-height: 0.92;
+        letter-spacing: 0.03em;
+        color: var(--color-text-primary);
+        text-transform: uppercase;
+        white-space: pre-line;
+    }
+    .step-sub {
+        font-family: var(--font-body);
+        font-size: 46px;
+        line-height: 1.4;
+        color: var(--slate-400);
+        margin-top: 40px;
+        max-width: 840px;
+    }
+
+    /* ── Counting rule ── */
+    .counts-title {
+        font-family: var(--font-display);
+        font-size: 138px;
+        line-height: 0.94;
+        letter-spacing: 0.03em;
+        color: var(--color-text-primary);
+        text-transform: uppercase;
+        white-space: pre-line;
+        margin-bottom: 60px;
+    }
+    .counts-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+        max-width: 880px;
+        width: 100%;
+    }
+    .counts-point {
+        display: flex;
+        align-items: flex-start;
+        gap: 26px;
+        font-family: var(--font-body);
+        font-size: 46px;
+        line-height: 1.35;
+        color: var(--slate-300);
+        text-align: left;
+        opacity: 0;
+        transform: translateX(-22px);
+        transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .counts-point.in { opacity: 1; transform: translateX(0); }
+    .counts-point::before {
+        content: '';
+        flex: 0 0 auto;
+        width: 16px;
+        height: 16px;
+        margin-top: 22px;
+        border-radius: 50%;
+        background: var(--tour-400);
+    }
+    .counts-footnote {
+        font-family: var(--font-body);
+        font-size: 32px;
+        line-height: 1.45;
+        color: var(--slate-500);
+        margin-top: 64px;
+        max-width: 820px;
+    }
+
+    /* ── CTA ── */
+    .cta-eyebrow {
+        font-family: var(--font-body);
+        font-size: 34px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3em;
+        color: var(--tour-400);
+        margin-bottom: 44px;
+    }
+    .cta-url-big {
+        font-family: var(--font-display);
+        font-size: 200px;
+        line-height: 0.88;
+        letter-spacing: 0.03em;
+        color: var(--color-text-primary);
+        text-transform: uppercase;
+        white-space: pre-line;
+    }
+    .cta-sub {
+        font-family: var(--font-body);
+        font-size: 50px;
+        font-weight: 500;
+        color: var(--slate-300);
+        margin-top: 52px;
+    }
+    .cta-handle {
+        font-family: var(--font-body);
+        font-size: 38px;
+        font-weight: 600;
+        color: var(--tour-400);
+        margin-top: 64px;
+        opacity: 0;
+        transform: translateY(18px);
+        transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .cta-handle.visible { opacity: 1; transform: translateY(0); }
+
+    .watermark {
+        position: absolute;
+        bottom: 40px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.22);
+        letter-spacing: 0.06em;
+        z-index: 10;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <!-- 1. Hook — the state of the title race -->
+    <div class="screen" id="screen-hook">
+        <div class="hook-eyebrow">{{ hook_eyebrow }}</div>
+        <div class="hook-title">{{ hook_title }}</div>
+        {% if hook_rivals %}
+        <div class="rivals" id="rivals">
+            {% for rival in hook_rivals %}
+            <div class="rival">
+                <span class="rival-name">{{ rival.name }}</span>
+                <span class="rival-points">{{ rival.points }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        <div class="hook-sub">{{ hook_sub }}</div>
+    </div>
+
+    <!-- 2. Predict the rest -->
+    <div class="screen" id="screen-predict">
+        <div class="step-num">{{ predict_num }}</div>
+        <div class="step-title">{{ predict_title }}</div>
+        <div class="step-sub">{{ predict_sub }}</div>
+    </div>
+
+    <!-- 3. The counting rule + the on-screen caveats -->
+    <div class="screen" id="screen-counts">
+        <div class="counts-title">{{ counts_title }}</div>
+        <ul class="counts-list" id="counts-list">
+            {% for point in counts_points %}
+            <li class="counts-point">{{ point }}</li>
+            {% endfor %}
+        </ul>
+        <div class="counts-footnote">{{ counts_footnote }}</div>
+    </div>
+
+    <!-- 4. CTA -->
+    <div class="screen" id="screen-cta">
+        <div class="cta-eyebrow">{{ cta_eyebrow }}</div>
+        <div class="cta-url-big">{{ cta_url_big }}</div>
+        <div class="cta-sub">{{ cta_sub }}</div>
+        <div class="cta-handle" id="cta-handle">{{ handle }} · Link in bio</div>
+    </div>
+
+    <div class="watermark">{{ url }}</div>
+</div>
+
+<script>
+    const FADE = 500;
+    // Solo mode: render a single screen as a standalone clip (used by
+    // rtf_reel_edit.py to intercut cards with footage). null = full sequence.
+    const SOLO = {{ (solo if solo is defined else none) | tojson }};
+    const SOLO_HOLD = {{ (solo_hold_ms if solo_hold_ms is defined else 2400) | tojson }};
+
+    function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+    // Stagger a set of elements in, one beat apart.
+    async function stagger(nodes, gap) {
+        for (const node of nodes) {
+            node.classList.add('in');
+            await wait(gap);
+        }
+    }
+
+    async function enter(id) {
+        const el = document.getElementById(id);
+        el.classList.add('visible');
+        if (id === 'screen-hook') {
+            await wait(FADE);
+            // 700ms apart: long enough that the second number lands as its own
+            // beat, which is what sells a tie.
+            await stagger(el.querySelectorAll('.rival'), 700);
+            return;
+        }
+        if (id === 'screen-counts') {
+            await wait(FADE);
+            await stagger(el.querySelectorAll('.counts-point'), 620);
+            return;
+        }
+        if (id === 'screen-cta') {
+            await wait(900);
+            document.getElementById('cta-handle').classList.add('visible');
+            return;
+        }
+        await wait(FADE);
+    }
+
+    async function leave(id) {
+        document.getElementById(id).classList.remove('visible');
+        await wait(FADE);
+    }
+
+    async function showHold(id, ms) {
+        await enter(id);
+        await wait(ms);
+        await leave(id);
+    }
+
+    async function runAnimation() {
+        await showHold('screen-hook', 2600);
+        await showHold('screen-predict', 2400);
+        await showHold('screen-counts', 3000);
+        await showHold('screen-cta', 2600);
+        document.body.dataset.animationComplete = 'true';
+    }
+
+    async function runSolo() {
+        await enter('screen-' + SOLO);
+        await wait(SOLO_HOLD);
+        await leave('screen-' + SOLO);
+        document.body.dataset.animationComplete = 'true';
+    }
+
+    document.fonts.ready.then(() => {
+        setTimeout(SOLO ? runSolo : runAnimation, 300);
+    });
+</script>
+{% endblock %}
