@@ -4,8 +4,11 @@ Stitches the explainer-card clips (rendered from templates/road_to_finals_reel.h
 one screen per clip) together with slices of the predictor screen-record footage
 (pipeline/screen_record_rtf.py) into one portrait MP4:
 
-    HOOK card -> [rankings + season chart] -> PREDICT card -> [placing riders]
-    -> [the recomputed race] -> COUNTS card -> CTA card
+    HEATING UP card -> AS IT STANDS card -> WHO WINS? card -> [placing riders]
+    -> [scoring it] -> [the chart redrawing] -> [editing the matrix] -> CTA card
+
+The three cards set the question and the footage answers it. The chart segment is the
+one the reel is really built around, so it runs closest to real time.
 
 Footage slices come from the markers screen_record_rtf.py writes alongside its video,
 so page load and dead time are trimmed automatically. Falls back to a card-only reel
@@ -33,48 +36,65 @@ from pipeline.reel_edit import (
     trim_clip_cmd,
 )
 
-# Per-card hold (ms) as a standalone clip. The counts card holds longest: it carries
-# three staggered bullets and the caveat line, and it is the one people screenshot.
+# Per-card hold (ms) as a standalone clip. The podium holds longest: six riders
+# stagger in and each carries a number worth reading.
 CARD_HOLD_MS = {
-    "hook": 3400,
-    "predict": 2400,
-    "counts": 4400,
-    "cta": 2800,
+    "hook": 2600,
+    # Six riders stagger in over ~1.8s and the card has to hold well past that:
+    # at 4200 the women's podium was still arriving when the clip cut.
+    "podium": 6200,
+    "question": 2200,
+    "cta": 3400,      # carries the caveat line as well as the URL
 }
 
+# x264 settings for every clip. The default crf 23 smears the matrix's small tabular
+# numbers, which are exactly what the outcome beats ask you to read.
+CRF = "16"
+PRESET = "slow"
+
+
+def _with_quality(cmd: list[str]) -> list[str]:
+    """The shared ffmpeg builders encode at libx264's defaults; this reel wants
+    better. The output path is always last, so the flags go in ahead of it."""
+    return cmd[:-1] + ["-crf", CRF, "-preset", PRESET] + cmd[-1:]
+
 # The reel spine: ("card", screen_id) or ("footage", segment_key), in order.
-# Narrative: the race is level -> here is the real standings and how it got there ->
-# now predict what is left -> watch it recompute -> only the best four count -> go.
+# Narrative: the race is heating up -> here is where both fleets stand -> who do you
+# think wins? -> place them -> score it -> watch the chart redraw -> edit it -> go.
 REEL_SPINE = [
     ("card", "hook"),
-    ("footage", "race"),
-    ("card", "predict"),
+    ("card", "podium"),
+    ("card", "question"),
     ("footage", "predict"),
-    ("footage", "outcome"),
-    ("card", "counts"),
+    ("footage", "score"),
+    ("footage", "chart"),
+    ("footage", "matrix"),
     ("card", "cta"),
 ]
 
-# Footage playback speed per segment. The predict segment is twenty taps' worth of
-# scrolling and reads as a montage sped up; the outcome stays closest to real time
-# because the numbers on it are the payoff and have to be legible.
+# Footage playback speed per segment. The predict segment is four taps' worth of
+# scrolling and reads as a montage sped up. The chart runs at 1x and nothing else
+# does: its draw animation is 1.5s of real time and speeding it up is speeding up
+# the one thing the reel is for.
 FOOTAGE_SPEED = {
-    "race": 1.8,
-    "predict": 2.4,
-    "outcome": 1.4,
+    "predict": 2.2,
+    "score": 1.0,
+    "chart": 1.0,
+    "matrix": 1.5,
 }
 
-SEGMENT_KEYS = ("race", "predict", "outcome")
+SEGMENT_KEYS = ("predict", "score", "chart", "matrix")
 
 
 def footage_segments(markers: dict) -> dict:
     """Plan which footage windows to cut in, from screen_record_rtf markers.
 
-    Every segment is optional except `race`: without the standings the reel has no
-    evidence that the thing it is promoting exists.
+    Every segment is optional except `chart`: the chart redrawing itself from a
+    prediction is the thing the reel exists to show, and a cut without it is an
+    advert for a page nobody has seen work.
     """
-    if "race_start" not in markers or "race_end" not in markers:
-        raise ValueError("markers must define race_start and race_end")
+    if "chart_start" not in markers or "chart_end" not in markers:
+        raise ValueError("markers must define chart_start and chart_end")
 
     segs = {}
     for key in SEGMENT_KEYS:
@@ -153,13 +173,18 @@ def build_road_to_finals_reel(
                 clip = os.path.join(work, f"footage_{key}.mp4")
                 print(f"Trimming footage [{key}] {start}-{end}s @ {speed}x ...")
                 subprocess.run(
-                    trim_clip_cmd(footage_path, start, end, clip, speed=speed),
+                    _with_quality(
+                        trim_clip_cmd(footage_path, start, end, clip, speed=speed)
+                    ),
                     capture_output=True, check=True,
                 )
                 clips.append(clip)
 
         print(f"Concatenating {len(clips)} clips ...")
-        subprocess.run(concat_clips_cmd(clips, out_path), capture_output=True, check=True)
+        subprocess.run(
+            _with_quality(concat_clips_cmd(clips, out_path)),
+            capture_output=True, check=True,
+        )
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
@@ -179,5 +204,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-

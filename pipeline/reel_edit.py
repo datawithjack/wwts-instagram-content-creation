@@ -67,7 +67,7 @@ def _scale_pad_filter(width: int, height: int, fps: int, speed: float = 1.0) -> 
     cleanly. Speed is applied before the fps resample so the result is a clean
     constant-rate clip."""
     return (
-        f"scale={width}:{height}:force_original_aspect_ratio=decrease,"
+        f"scale={width}:{height}:force_original_aspect_ratio=decrease:flags=lanczos,"
         f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,"
         f"setsar=1,setpts=(PTS-STARTPTS)/{speed},fps={fps},format=yuv420p"
     )

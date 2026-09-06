@@ -6,39 +6,63 @@ windsurfworldtourstats.com/road-to-finals. Branded explainer cards
 the predictor itself (pipeline/screen_record_rtf.py), stitched by
 pipeline/rtf_reel_edit.py.
 
-The hook is whatever the season is actually doing, so the top two riders and their
-points are READ OFF THE API rather than typed in. On 2026-09-06 the men's race was
-tied -- Koster and Pare both on 22,400 -- which is the strongest hook the season has
-offered; a month later it will be something else, and a card that quietly kept
-claiming a tie would be worse than one that never named a number.
+Three cards open the reel and one closes it: the race is heating up, here is the
+podium in both fleets, who do you think wins -- then the footage answers it, and the
+CTA sends you to go and answer it yourself.
 
-Card 3 carries the caveats. The predictor states four of them on the page; two go on
-screen here (it is a fun predictor, not official rankings; future points are
-estimated) and the rest belong in the caption -- a reel that stops to explain the
-counting window loses the viewer.
+Nothing on the podium card is typed in. The riders, their points and their faces all
+come from the same endpoint the predictor page uses, so a card and the footage behind
+it cannot disagree, and a month from now the card is a different podium rather than a
+stale one asserted as today's.
 """
+import os
+
 import requests
 
 from pipeline.api import API_BASE_URL
+
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_FACES_DIR = os.path.join(_REPO_ROOT, "assets", "photos", "faces")
 
 # Accents mirror the app + sibling reels.
 ACCENT_TOUR = "#22d3ee"
 ACCENT_WARN = "#facc15"
 
-# What the cards fall back to if the standings call fails. Deliberately a shape, not
-# a stale scoreboard: no names, no numbers, so a failed fetch reads as a generic hook
-# rather than as last month's race asserted as today's.
-FALLBACK_HOOK = {
-    "hook_rivals": [],
-    "hook_sub": "Predict every event left and crown the World Champion.",
-}
+PODIUM_SIZE = 3
 
 
-def fetch_title_race(year: int, fleet: str = "Men", timeout: int = 30) -> dict:
-    """The top two of the season standings, and whether they are level.
+def _face_url(athlete_id, fallback: str | None) -> str:
+    """The best available headshot for one rider.
 
-    Uses the same endpoint the predictor page does (`/rankings/season/{year}`), so
-    the card and the footage behind it cannot disagree.
+    Prefers the repo's own curated face crop, which is squared and tightly framed;
+    falls back to the ranking feed's picture, which every ranked rider has. The card
+    renders both as circles, so the two sources sit together without reading as two
+    sources.
+    """
+    for ext in ("jpg", "jpeg", "png", "webp"):
+        path = os.path.join(_FACES_DIR, f"{athlete_id}.{ext}")
+        if os.path.exists(path):
+            return "file:///" + os.path.abspath(path).replace(os.sep, "/")
+    return fallback or ""
+
+
+def _podium(rows: list) -> list:
+    """The top three of one fleet, shaped for the card."""
+    return [
+        {
+            "rank": row.get("rank") or i + 1,
+            "name": row.get("athlete_name") or "Unknown",
+            "points": f"{int(row.get('total_points') or 0):,}",
+            "face": _face_url(row.get("athlete_id"), row.get("image_url")),
+        }
+        for i, row in enumerate(rows[:PODIUM_SIZE])
+    ]
+
+
+def fetch_title_race(year: int, timeout: int = 30) -> dict:
+    """Both fleets' podiums and the events still to come.
+
+    Uses the same endpoint the predictor page does (`/rankings/season/{year}`).
     """
     resp = requests.get(
         f"{API_BASE_URL}/rankings/season/{year}",
@@ -47,18 +71,11 @@ def fetch_title_race(year: int, fleet: str = "Men", timeout: int = 30) -> dict:
     )
     resp.raise_for_status()
     data = resp.json()
-    rows = data.get("standings", {}).get(fleet, [])[:2]
-    events = [e for e in data.get("events", []) if e.get("predictable")]
+    standings = data.get("standings", {})
     return {
-        "rivals": [
-            {
-                "name": (row.get("athlete_name") or "").upper(),
-                "points": f"{int(row.get('total_points') or 0):,}",
-            }
-            for row in rows
-        ],
-        "level": len({row.get("total_points") for row in rows}) == 1 and len(rows) == 2,
-        "events_left": len(events),
+        "men": _podium(standings.get("Men", [])),
+        "women": _podium(standings.get("Women", [])),
+        "events_left": len([e for e in data.get("events", []) if e.get("predictable")]),
         "year": data.get("year", year),
     }
 
@@ -70,58 +87,54 @@ _COUNT_WORDS = [
 ]
 
 
-def build_road_to_finals_reel_data(year: int = 2026, fleet: str = "Men") -> dict:
+def build_road_to_finals_reel_data(year: int = 2026) -> dict:
     """Build the content dict for the Road to Finals promo reel cards."""
     try:
-        race = fetch_title_race(year, fleet)
+        race = fetch_title_race(year)
     except Exception as exc:  # network, shape change, anything
-        print(f"Standings fetch failed ({exc}); building the generic hook.")
+        print(f"Standings fetch failed ({exc}); building the podium-free cards.")
         race = None
 
-    if race and race["rivals"]:
+    if race:
         left = race["events_left"]
         word = _COUNT_WORDS[left] if left < len(_COUNT_WORDS) else str(left)
-        hook_title = "THE TITLE\nIS LEVEL" if race["level"] else "THE TITLE\nRACE"
-        hook_sub = (
-            f"{word} events left. Predict them and "
-            f"crown the {race['year']} World Champion."
-        )
-        rivals = race["rivals"]
+        # No numeral in the hook: the card is a mood, and the count belongs on the
+        # podium card where there are numbers to read anyway.
+        podium_sub = f"{word} 4 and 5-star events still to sail"
+        men, women = race["men"], race["women"]
+        season_year = race["year"]
     else:
-        hook_title = "THE TITLE\nRACE"
-        hook_sub = FALLBACK_HOOK["hook_sub"]
-        rivals = FALLBACK_HOOK["hook_rivals"]
+        podium_sub = "Events still to sail"
+        men, women = [], []
+        season_year = year
 
     return {
         "accent_tour": ACCENT_TOUR,
         "accent_warn": ACCENT_WARN,
 
-        # Screen 1 — hook. The two riders at the top and what separates them.
-        "hook_eyebrow": "Wave World Title",
-        "hook_title": hook_title,
-        "hook_rivals": rivals,
-        "hook_sub": hook_sub,
+        # Screen 1 — the mood. No numbers, no names: this is the "stop scrolling" beat.
+        "hook_eyebrow": f"{season_year} Wave World Tour",
+        "hook_title": "THE WORLD\nTITLE RACE",
+        "hook_kicker": "is heating up...",
 
-        # Screen 2 — the predict step (footage of placing riders plays around this)
-        "predict_num": "1",
-        "predict_title": "PREDICT\nTHE REST",
-        "predict_sub": "Place the riders at every 4 and 5-star event still to come.",
+        # Screen 2 — where both fleets actually stand.
+        "podium_title": "AS IT STANDS",
+        "podium_men_label": "Men",
+        "podium_women_label": "Women",
+        "podium_men": men,
+        "podium_women": women,
+        "podium_sub": podium_sub,
 
-        # Screen 3 — the counting rule, which is the thing nobody knows, plus the
-        # two caveats that have to be on screen rather than only in the caption.
-        "counts_title": "ONLY YOUR BEST\nFOUR COUNT",
-        "counts_points": [
-            "A season counts a rider's best four results",
-            "Everything else is discarded, however good",
-            "Predict the rest and watch who it crowns",
-        ],
-        "counts_footnote": "A fun predictor, not official rankings. Points for events "
-        "that have not happened yet are estimated.",
+        # Screen 3 — the question the footage then answers.
+        "question_title": "WHO DO\nYOU THINK\nWILL WIN?",
+        "question_sub": "Predict every event left and see who it crowns.",
 
         # Screen 4 — CTA. The frictionless bit is the sell.
         "cta_eyebrow": "Play it out yourself",
         "cta_url_big": "ROAD TO\nFINALS",
         "cta_sub": "No account. No email. Just pick.",
+        "cta_footnote": "A fun predictor, not official rankings. Points for events "
+        "that have not happened yet are estimated.",
         "handle": "@windsurfworldtourstats",
         "url": "windsurfworldtourstats.com/road-to-finals",
     }
