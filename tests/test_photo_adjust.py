@@ -70,7 +70,7 @@ class TestFitsFrame:
 
 
 class TestSaveCrop:
-    def _rider(self, tmp_path, size=(1920, 1280)):
+    def _rider(self, tmp_path, size=(1920, 1280), kind="hero"):
         from PIL import Image
         src = tmp_path / "SRC_fs_V10_0001.jpg"
         im = Image.new("RGB", size)
@@ -81,8 +81,8 @@ class TestSaveCrop:
         im.save(src, "JPEG", quality=95)
         installed = tmp_path / "74.jpg"
         im.save(installed, "JPEG", quality=95)
-        return {"id": 74, "installed": str(installed), "display": str(src),
-                "nw": size[0], "nh": size[1]}
+        return {"id": 74, "kind": kind, "installed": str(installed),
+                "display": str(src), "nw": size[0], "nh": size[1]}
 
     def test_the_saved_file_is_the_slide_size(self, tmp_path):
         """Anything else would be resized again at render, losing sharpness."""
@@ -117,3 +117,15 @@ class TestSaveCrop:
         tight = crop_box((rider["nw"], rider["nh"]), (1080, 1350), zoom=2.0)
         assert tight.width < wide.width
         adjust_photos.save_crop(rider, zoom=2.0, dx=0.0, dy=0.0)  # must not raise
+
+
+    def test_a_headshot_is_saved_square(self, tmp_path):
+        """The table sets the thumbnail in a circle, so a hero-shaped crop
+        would be squashed into it. The kind picks the frame.
+        """
+        from PIL import Image
+        import adjust_photos
+        rider = self._rider(tmp_path, kind="face")
+        adjust_photos.save_crop(rider, zoom=1.0, dx=0.0, dy=0.0)
+        with Image.open(rider["installed"]) as out:
+            assert out.size == (600, 600)

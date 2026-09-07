@@ -33,6 +33,17 @@ from PIL import Image
 from pipeline.photo_adjust import crop_box
 
 PHOTOS_DIR = Path(__file__).parent / "assets" / "photos"
+# The zoom every photo opens at.
+#
+# Not 1.0, and this is the whole reason: at 1.0 a 3:2 photo fills the slide's
+# height exactly, so there is no vertical slack and the photo can only ever
+# slide sideways. Positioning and zooming are meant to be two separate moves,
+# and at 1.0 the first one is half unavailable. Opening a touch inside the
+# frame buys about 130px of travel up and down, at the cost of 6% of the
+# height, so a view can be picked by dragging alone and the slider is only
+# reached for when a shot genuinely wants to be tighter. The slider still goes
+# down to 1.0 for the widest framing a photo has.
+DEFAULT_ZOOM = 1.12
 # The two shapes a photo is cropped to. A hero fills the slide; a headshot is
 # the square thumbnail the summary table sets in a circle, and it needs the
 # same treatment for the same reason: a face that lands off-centre cannot be
@@ -190,9 +201,11 @@ PAGE = """<!doctype html>
   #status { color: #8b949e; }
 </style>
 <h1>Adjust crops</h1>
-<div class="hint">Drag to move in any direction, scroll or use the slider to
-  zoom. Dragging up or down zooms in only as far as the move needs, because a
-  landscape photo already fills the slide's height. The gradient
+<div class="hint">Drag to place the shot, then zoom with the slider or the
+  wheel. Dragging never changes the zoom. Photos open just inside the frame so
+  there is room to move up and down from the start: at 1.00&times; a landscape
+  photo fills the slide's height exactly and can only slide sideways. The
+  gradient
 is where the slide's text sits. Headshots are the square thumbnails on the
   summary table and carry no gradient. Save re-crops from the original file.</div>
 <div id="bar">
@@ -202,6 +215,7 @@ is where the slide's text sits. Headshots are the square thumbnails on the
 <div class="grid" id="grid"></div>
 <script>
 const RIDERS = __RIDERS__;
+const DEFAULT_ZOOM = __DEFAULT_ZOOM__;
 const state = {};
 
 function build(r) {
@@ -213,7 +227,8 @@ function build(r) {
       <img src="/photo/${r.key}" id="img-${r.key}" draggable="false">
       ${r.kind === 'hero' ? '<div class="grad"></div>' : ''}
     </div>
-    <row><input type="range" id="z-${r.key}" min="1" max="3" step="0.01" value="1">
+    <row><input type="range" id="z-${r.key}" min="1" max="3" step="0.01"
+      value="${DEFAULT_ZOOM}">
     <button class="ghost" onclick="reset('${r.key}')">Reset</button></row>
     <div class="meta">${r.id} &middot; ${r.kind === 'hero' ? 'action' : 'headshot'}
       &middot; ${r.source_file}${r.handle ? ' &middot; ' + r.handle : ''}</div>
@@ -223,7 +238,7 @@ function build(r) {
     </div>
     <div class="meta warn" id="w-${r.key}"></div>`;
   document.getElementById('grid').appendChild(card);
-  state[r.key] = {zoom: 1, dx: 0, dy: 0, r};
+  state[r.key] = {zoom: DEFAULT_ZOOM, dx: 0, dy: 0, r};
   const img = document.getElementById('img-' + r.key);
   img.onload = () => render(r.key);
   document.getElementById('z-' + r.key).oninput = e => {
@@ -247,19 +262,6 @@ function build(r) {
     s.dx += (e.clientX - px) / vp.clientWidth;
     s.dy += (e.clientY - py) / vp.clientHeight;
     px = e.clientX; py = e.clientY;
-    // A drag past the edge zooms in by exactly as much as the drag needs.
-    // At zoom 1 a 3:2 photo fills the frame's height exactly, so there is no
-    // vertical slack and dy clamps to nothing: the photo would only ever move
-    // sideways, and "move him up" meant going to the slider first, guessing a
-    // zoom, then dragging. Now the drag is the whole gesture.
-    const vw = vp.clientWidth, vh = vp.clientHeight;
-    const b0 = Math.max(vw / r.nw, vh / r.nh);
-    const needed = Math.max(vh * (1 + 2 * Math.abs(s.dy)) / (r.nh * b0),
-                            vw * (1 + 2 * Math.abs(s.dx)) / (r.nw * b0));
-    if (needed > s.zoom) {
-      s.zoom = Math.min(3, needed);
-      document.getElementById('z-' + r.key).value = s.zoom;
-    }
     render(r.key);
   });
 }
@@ -280,14 +282,17 @@ function render(key) {
   img.style.left = (-mx + s.dx * vw) + 'px';
   img.style.top = (-my + s.dy * vh) + 'px';
   const visible = (vw / base) / r.nw;
+  const room = Math.round(my / base);
   document.getElementById('w-' + key).textContent =
-    'showing ' + Math.round(visible * 100) + '% of width' +
-    (s.zoom > 1 ? '  \u00b7  zoom ' + s.zoom.toFixed(2) + '\u00d7' : '  \u00b7  fully zoomed out');
+    'showing ' + Math.round(visible * 100) + '% of width'
+    + '  \u00b7  zoom ' + s.zoom.toFixed(2) + '\u00d7'
+    + (room > 0 ? '  \u00b7  \u00b1' + room + 'px up/down'
+                : '  \u00b7  no vertical room at this zoom');
 }
 
 function reset(key) {
-  state[key].zoom = 1; state[key].dx = 0; state[key].dy = 0;
-  document.getElementById('z-' + key).value = 1;
+  state[key].zoom = DEFAULT_ZOOM; state[key].dx = 0; state[key].dy = 0;
+  document.getElementById('z-' + key).value = DEFAULT_ZOOM;
   render(key);
 }
 
@@ -322,7 +327,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = urlparse(self.path).path
         if path == "/":
-            page = PAGE.replace("__RIDERS__", json.dumps(self.riders))
+            page = (PAGE.replace("__RIDERS__", json.dumps(self.riders))
+                        .replace("__DEFAULT_ZOOM__", str(DEFAULT_ZOOM)))
             return self._send(200, page.encode("utf-8"))
         if path.startswith("/photo/"):
             wanted = path.rsplit("/", 1)[-1]
