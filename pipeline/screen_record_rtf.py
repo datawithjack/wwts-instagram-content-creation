@@ -74,10 +74,7 @@ PRESET = "slow"
 
 # Pacing (ms). Every beat here is something to READ, so these run slower than the
 # picks reel's.
-# 16 placements across four events, so the gap between taps is half what it was when
-# the reel predicted one: the predict beat is a montage, and at 900 it ran to 40s of
-# raw footage that no playback speed rescues.
-BEAT = 450            # between rider taps
+BEAT = 800            # between rider taps; every one of them is a name to read
 HOLD_CHART = 5200     # the line-drawing animation is 1.5s; the rest is reading it
 HOLD_MATRIX = 3600    # the counting grid, before and after an edit
 HOLD_SCORE = 1400     # the finished order held before the tap that scores it
@@ -94,25 +91,29 @@ HOLD_SCORE = 1400     # the finished order held before the tap that scores it
 # runs out gracefully when there are fewer events left than entries. The order as of
 # 2026-09-07 is Wissant, Sylt, Tiree, Aloha, Chile -- Tiree is the skipped one.
 #
-# The prediction is deliberately ROGUE. A sensible one barely moves the table, which
-# makes for a dull Score tap; this one has an outsider win the three 5-stars, so the
-# board tears itself up and a name from mid-table ends the season on top. It is a
-# predictor, not a forecast, and the reel is selling "go and play with it".
+# Two events, the two 5-stars, top five each. The placings are FEASIBLE: the reel is
+# arguing "this is close and it swings", which needs a prediction a viewer recognises
+# as a real possibility. An outsider sweeping the season is funnier for about three
+# seconds and then it is just noise, and the Score tap stops meaning anything.
+#
+# Koster takes Sylt and goes clear; Pare takes Aloha and claws it back. The two of
+# them are level on 22,400 today, so both halves are arguable.
 PREDICTIONS = {
     "Men": [
-        # Wissant: the plausible opener, so there is a baseline to wreck.
-        ["Marc Paré Rico", "Marcilio Browne", "Philip Köster", "Bernd Roediger"],
-        ["Lennart Neubauer", "Takuma Sugi", "Morgan Noireaux", "Philip Köster"],
-        [],  # Tiree, left unpredicted
-        ["Lennart Neubauer", "Morgan Noireaux", "Marcilio Browne", "Marc Paré Rico"],
-        ["Lennart Neubauer", "Antoine Martin", "Takuma Sugi", "Bernd Roediger"],
+        [],  # Wissant, walked past
+        ["Philip Köster", "Marc Paré Rico", "Marcilio Browne",
+         "Bernd Roediger", "Antoine Martin"],
+        [],  # Tiree, walked past
+        ["Marc Paré Rico", "Marcilio Browne", "Philip Köster",
+         "Morgan Noireaux", "Bernd Roediger"],
     ],
     "Women": [
-        ["Maria Behrens", "Lina Erpenstein", "Marine Hunter", "Sol Degrieck"],
-        ["Sarah-Quita Offringa", "Pauline Katz", "Lina Erpenstein", "Maria Behrens"],
-        [],  # Tiree, left unpredicted
-        ["Sarah-Quita Offringa", "Marine Hunter", "Sol Degrieck", "Lina Erpenstein"],
-        ["Sarah-Quita Offringa", "Alexia Kiefer Quintana", "Pauline Katz", "Maria Behrens"],
+        [],  # Wissant, walked past
+        ["Lina Erpenstein", "Maria Behrens", "Sarah-Quita Offringa",
+         "Marine Hunter", "Sol Degrieck"],
+        [],  # Tiree, walked past
+        ["Sarah-Quita Offringa", "Marine Hunter", "Lina Erpenstein",
+         "Maria Behrens", "Pauline Katz"],
     ],
 }
 
@@ -126,7 +127,7 @@ PREDICTIONS = {
 # which lands as half a minute of dead footage in the middle of the beat. (The app
 # has a fix for this on feat/sparse-prediction-places, unmerged as of 2026-09-07 --
 # once it ships, any of the ten places is offered and this can open up.)
-MATRIX_DEMOTE_TO = "4th"
+MATRIX_DEMOTE_TO = "5th"
 
 
 def _select_fleet(page, fleet: str) -> None:
