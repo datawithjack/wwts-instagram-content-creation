@@ -41,15 +41,6 @@
     .screen.visible { opacity: 1; }
 
     /* ── 1. Hook ── */
-    .hook-eyebrow {
-        font-family: var(--font-body);
-        font-size: 34px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.3em;
-        color: var(--tour-400);
-        margin-bottom: 40px;
-    }
     .hook-title {
         font-family: var(--font-display);
         font-size: 210px;
@@ -165,7 +156,7 @@
         font-size: 42px;
         font-weight: 700;
         font-variant-numeric: tabular-nums;
-        color: var(--tour-400);
+        color: var(--slate-100);
     }
 
     /* ── 3. The question ── */
@@ -247,7 +238,6 @@
 
     <!-- 1. Hook — the mood, no numbers -->
     <div class="screen" id="screen-hook">
-        <div class="hook-eyebrow">{{ hook_eyebrow }}</div>
         <div class="hook-title">{{ hook_title }}</div>
         <div class="hook-kicker" id="hook-kicker">{{ hook_kicker }}</div>
     </div>

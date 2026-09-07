@@ -75,16 +75,14 @@ def fetch_title_race(year: int, timeout: int = 30) -> dict:
     return {
         "men": _podium(standings.get("Men", [])),
         "women": _podium(standings.get("Women", [])),
-        "events_left": len([e for e in data.get("events", []) if e.get("predictable")]),
-        "year": data.get("year", year),
     }
 
 
-# Small counts read better as words in a headline. Mirrors the page's own rule.
-_COUNT_WORDS = [
-    "No", "One", "Two", "Three", "Four", "Five", "Six",
-    "Seven", "Eight", "Nine", "Ten",
-]
+# The podium card says WHEN the standings are from, not how many events are left.
+# A count ("Five 4 and 5-star events still to sail") is a fact about the future and
+# reads as one more thing to work out; the last event sailed is the thing that dates
+# the numbers, which is what a viewer actually needs to trust them.
+STANDINGS_AS_OF = "After Tenerife World Cup"
 
 
 def build_road_to_finals_reel_data(year: int = 2026) -> dict:
@@ -96,24 +94,15 @@ def build_road_to_finals_reel_data(year: int = 2026) -> dict:
         race = None
 
     if race:
-        left = race["events_left"]
-        word = _COUNT_WORDS[left] if left < len(_COUNT_WORDS) else str(left)
-        # No numeral in the hook: the card is a mood, and the count belongs on the
-        # podium card where there are numbers to read anyway.
-        podium_sub = f"{word} 4 and 5-star events still to sail"
         men, women = race["men"], race["women"]
-        season_year = race["year"]
     else:
-        podium_sub = "Events still to sail"
         men, women = [], []
-        season_year = year
 
     return {
         "accent_tour": ACCENT_TOUR,
         "accent_warn": ACCENT_WARN,
 
         # Screen 1 — the mood. No numbers, no names: this is the "stop scrolling" beat.
-        "hook_eyebrow": f"{season_year} Wave World Tour",
         "hook_title": "THE WORLD\nTITLE RACE",
         "hook_kicker": "is heating up...",
 
@@ -123,11 +112,11 @@ def build_road_to_finals_reel_data(year: int = 2026) -> dict:
         "podium_women_label": "Women",
         "podium_men": men,
         "podium_women": women,
-        "podium_sub": podium_sub,
+        "podium_sub": STANDINGS_AS_OF,
 
         # Screen 3 — the question the footage then answers.
         "question_title": "WHO DO\nYOU THINK\nWILL WIN?",
-        "question_sub": "Predict every event left and see who it crowns.",
+        "question_sub": "Predict every event left and see who it crowns world champion.",
 
         # Screen 4 — CTA. The name and the handle carry it: the frictionless line
         # ("No account. No email. Just pick.") was one line too many on the card.

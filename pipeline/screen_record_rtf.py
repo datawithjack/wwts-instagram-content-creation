@@ -1,10 +1,14 @@
 """Screen-record the live Road to Finals predictor as portrait reel footage.
 
-Drives the production web app with Playwright and records five beats: finding the
+Drives the production web app with Playwright and records four beats: finding the
 predictor from the site's home page via the menu, placing riders across the events
-still to sail, scoring the prediction, the title chart redrawing itself from those
-placings, and the counting matrix being edited. Output is B-roll intercut with
-rendered explainer cards by pipeline/rtf_reel_edit.py.
+still to sail, scoring the prediction, and the title chart redrawing itself from
+those placings. Output is B-roll intercut with rendered explainer cards by
+pipeline/rtf_reel_edit.py.
+
+The counting matrix used to get a fifth beat, entering edit mode and changing a
+placing. Cut 2026-09-07: it was the longest segment in the reel and the least of
+it, and the matrix is on screen under the chart anyway.
 
 Unlike pipeline/screen_record.py there is NO LOGIN: the predictor takes no account
 and no email, which is one of the things the reel is selling. Nothing is written
@@ -44,8 +48,8 @@ be fixed before the cuts landed where the markers say:
    it draws.
 2. The marker clock and the video clock are NOT the same clock. See `_align_markers`.
 
-Writes a sidecar <out>.markers.json (nav/predict/score/chart/matrix _start and _end)
-so pipeline/rtf_reel_edit.py can cut the footage into slices.
+Writes a sidecar <out>.markers.json (nav/predict/score/chart _start and _end) so
+pipeline/rtf_reel_edit.py can cut the footage into slices.
 
 Usage:
     python -m pipeline.screen_record_rtf
@@ -74,6 +78,43 @@ from pipeline.screen_record import (
     _tap,
 )
 
+# The shared cursor in pipeline/screen_record.py is a translucent touch circle. This
+# reel wants a mouse pointer instead, so the arrow tip lands ON the thing being
+# clicked rather than a disc sitting over it and hiding the label underneath.
+#
+# Added as a SECOND init script that wraps `__cursor_install` rather than editing the
+# shared one: the picks reel is already published with the circle, and this should
+# not silently restyle it. Both scripts run on every document, in the order added, so
+# the wrap survives the route change from the home page into the predictor.
+POINTER_CURSOR_JS = r"""
+(() => {
+  const install = window.__cursor_install;
+  window.__cursor_install = () => {
+    install();
+    const c = document.getElementById('__fake_cursor');
+    if (!c || c.dataset.pointer) return;
+    c.dataset.pointer = '1';
+    const s = document.createElement('style');
+    s.textContent = `
+      #__fake_cursor{width:28px;height:36px;margin:0;border:none;border-radius:0;
+        background:transparent;box-shadow:none;
+        filter:drop-shadow(0 2px 5px rgba(0,0,0,0.6));}
+      #__fake_cursor.__press{background:transparent;}
+      /* Ripple at the TIP, which is the top-left corner for an arrow, not the
+         middle of its box the way it was for the circle. */
+      #__fake_cursor.__tap::after{left:2px;top:2px;width:34px;height:34px;
+        margin:-17px 0 0 -17px;}
+    `;
+    document.head.appendChild(s);
+    c.innerHTML =
+      '<svg viewBox="0 0 24 32" width="28" height="36" style="display:block">' +
+      '<path d="M3 2 L3 25 L9.5 19 L13.5 28.5 L17.5 26.5 L13.5 17.5 L21 17.5 Z" ' +
+      'fill="#ffffff" stroke="rgba(15,23,42,0.9)" stroke-width="1.6" ' +
+      'stroke-linejoin="round"/></svg>';
+  };
+})();
+"""
+
 HOME_URL = "https://www.windsurfworldtourstats.com/"
 PAGE_URL = "https://www.windsurfworldtourstats.com/road-to-finals"
 
@@ -90,11 +131,11 @@ PRESET = "slow"
 # picks reel's.
 BEAT = 800            # between rider taps; every one of them is a name to read
 HOLD_CHART = 5200     # the line-drawing animation is 1.5s; the rest is reading it
-HOLD_MATRIX = 3600    # the counting grid, before and after an edit
 HOLD_SCORE = 1400     # the finished order held before the tap that scores it
 HOLD_HOME = 1500      # the home page, before the menu opens
 HOLD_MENU = 1400      # the open menu, so ROAD TO FINALS is read before it is tapped
-HOLD_ARRIVE = 2200    # the predictor's own landing step, having just arrived
+HOLD_ARRIVE = 3000    # the predictor's landing step, having just arrived
+HOLD_STANDINGS = 3200  # reading the standings before tapping on into Predict
 
 # Who to place, in predicted finishing order: one list per event, in calendar order.
 # An EMPTY list walks past that event without predicting it. Names must match the
@@ -133,19 +174,6 @@ PREDICTIONS = {
          "Maria Behrens", "Pauline Katz"],
     ],
 }
-
-# The matrix edit shown at the end demotes the winner of the LAST event predicted to
-# this place. Both the rider and the event are taken from what actually got placed,
-# so the edit cannot drift out of step with PREDICTIONS.
-#
-# ⚠️ A cell only offers the places that EXIST at that event -- one more than are
-# already filled -- so a four-rider prediction offers 1st to 4th and nothing beyond.
-# Asking for "6th" there fails, and Playwright spends 30s retrying before it says so,
-# which lands as half a minute of dead footage in the middle of the beat. (The app
-# has a fix for this on feat/sparse-prediction-places, unmerged as of 2026-09-07 --
-# once it ships, any of the ten places is offered and this can open up.)
-MATRIX_DEMOTE_TO = "5th"
-
 
 def _align_markers(markers: dict, video_path: str) -> dict:
     """Slide the marker timeline onto the video's, and return the corrected markers.
@@ -233,8 +261,8 @@ def _current_event(page) -> str:
 
     The bar's aria-label is "Predicting {event}, {n} of 10 placed. Choose a
     different event." -- the only place the page names the event now that the chip
-    rail is gone. Returned so the matrix beat can find the right column without the
-    recorder hardcoding a name that the calendar moves past.
+    rail is gone. Printed as the take runs, so a calendar that has moved on shows up
+    in the log rather than in the footage.
     """
     match = re.compile(r"^Predicting (.+?), \d+ of \d+ placed")
     buttons = page.get_by_role("button")
@@ -294,58 +322,6 @@ def _place_riders(page, athletes: list[str]) -> list[str]:
     return placed
 
 
-def _edit_matrix(page, athlete: str, place: str, event_label: str) -> bool:
-    """Enter the matrix's edit mode, change one placing, and submit it.
-
-    Returns False if any control is missing, so a page change costs the reel this
-    beat rather than the whole take. The edit is made with `select_option` rather
-    than a click: a native <select> opens an OS-level list that the recorder cannot
-    film anyway, and the value change is the part worth showing.
-    """
-    change = page.get_by_role("button", name="Change my prediction")
-    if change.count() == 0:
-        print("  matrix edit control not found, skipping the edit beat")
-        return False
-    _tap(page, change)
-    page.wait_for_timeout(1000)
-
-    # One cell per (rider, event), so both halves are needed to name it: matching on
-    # the surname alone finds the rider's FIRST event, which is not this one. The
-    # labels read "{Name} at {Event}, predicted 3rd. Change place." -- matched on the
-    # event's first word only, because the bottom bar and the cell are two different
-    # shortenings of the same event name and nothing guarantees they stay identical.
-    surname = athlete.split()[-1]
-    event_key = event_label.split()[0] if event_label else ""
-    selects = page.get_by_role("combobox")
-    target = None
-    for i in range(selects.count()):
-        label = selects.nth(i).get_attribute("aria-label") or ""
-        if surname in label and event_key in label:
-            target = selects.nth(i)
-            break
-    if target is None:
-        print("  no place control matched, holding on the edit controls only")
-        page.wait_for_timeout(HOLD_MATRIX)
-        return True
-
-    _slow_scroll_into_view(page, target)
-    page.wait_for_timeout(SETTLE)
-    try:
-        # Short timeout on purpose: the default 30s of retries would be filmed.
-        target.select_option(label=place, timeout=5000)
-    except Exception as exc:
-        print(f"  could not set the place ({exc}); holding on the controls")
-        page.wait_for_timeout(HOLD_MATRIX)
-        return True
-    page.wait_for_timeout(1200)
-
-    submit = page.get_by_role("button", name="Submit")
-    if submit.count() > 0:
-        _tap(page, submit)
-        page.wait_for_timeout(1600)
-    return True
-
-
 def record_rtf_flow(fleet: str, out_path: str) -> str:
     """Record the Road to Finals flow to a portrait mp4. Returns the path."""
     os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
@@ -366,6 +342,7 @@ def record_rtf_flow(fleet: str, out_path: str) -> str:
             # offsets line up with the recorded timeline.
             t0 = time.monotonic()
             page.add_init_script(CURSOR_JS)
+            page.add_init_script(POINTER_CURSOR_JS)  # must come after CURSOR_JS
 
             page.goto(HOME_URL, wait_until="networkidle", timeout=60000)
             page.wait_for_timeout(2500)
@@ -379,14 +356,22 @@ def record_rtf_flow(fleet: str, out_path: str) -> str:
             markers["nav_start"] = round(time.monotonic() - t0, 2)
             _navigate_from_home(page)
             _force_dark_bg(page)
-            markers["nav_end"] = round(time.monotonic() - t0, 2)
-
             _select_fleet(page, fleet)
 
-            # Into the predict step. `.last`: the phone's pinned bottom bar carries
-            # its own copy of this button and it is the one on screen.
+            # Into the predict step, and this tap is INSIDE the nav beat on purpose.
+            # It used to fall in the cut between nav and predict, so the reel went
+            # from "where it stands" straight to a list of riders with no visible
+            # reason: the viewer never saw the button that moved them on. `.last`:
+            # the phone's pinned bottom bar carries its own copy of this button and
+            # it is the one on screen.
+            _slow_scroll_into_view(
+                page, page.get_by_role("button", name="Predict what happens next").last
+            )
+            page.wait_for_timeout(HOLD_STANDINGS)
             _tap(page, page.get_by_role("button", name="Predict what happens next").last)
             page.wait_for_timeout(1600)
+            markers["nav_end"] = round(time.monotonic() - t0, 2)
+
             # The step swap keeps the landing step's scroll, so the predict beat can
             # open halfway down the rider pool with its heading off frame.
             _scroll_to_top(page)
@@ -395,7 +380,6 @@ def record_rtf_flow(fleet: str, out_path: str) -> str:
             # No event is chosen by name: the page opens on the first one still to
             # sail and the bottom bar walks forward from there.
             markers["predict_start"] = round(time.monotonic() - t0, 2)
-            event_label, last_winner = "", ""
             for i, athletes in enumerate(PREDICTIONS[fleet]):
                 if i and not _next_event(page):
                     print("  no further event to predict, stopping at", i)
@@ -407,9 +391,7 @@ def record_rtf_flow(fleet: str, out_path: str) -> str:
                     print("Skipping:", here)
                     continue
                 print("Predicting:", here or "(event not named on the page)")
-                event_label = here
                 placed += _place_riders(page, athletes)
-                last_winner = athletes[0]
             page.wait_for_timeout(SETTLE)
             markers["predict_end"] = round(time.monotonic() - t0, 2)
 
@@ -447,14 +429,6 @@ def record_rtf_flow(fleet: str, out_path: str) -> str:
             markers["chart_start"] = round(time.monotonic() - t0, 2)
             page.wait_for_timeout(HOLD_CHART)
             markers["chart_end"] = round(time.monotonic() - t0, 2)
-
-            # --- Beat 4: the matrix, and editing it ---------------------------
-            markers["matrix_start"] = round(time.monotonic() - t0, 2)
-            _slow_scroll_into_view(page, page.get_by_role("heading", name="WHAT COUNTS"))
-            page.wait_for_timeout(HOLD_MATRIX)
-            _edit_matrix(page, last_winner, MATRIX_DEMOTE_TO, event_label)
-            page.wait_for_timeout(HOLD_MATRIX)
-            markers["matrix_end"] = round(time.monotonic() - t0, 2)
 
             page.close()
             context.close()

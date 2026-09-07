@@ -6,7 +6,7 @@ one screen per clip) together with slices of the predictor screen-record footage
 
     HEATING UP card -> AS IT STANDS card -> WHO WINS? card -> [home page, menu,
     ROAD TO FINALS] -> [placing riders] -> [scoring it] -> [the chart redrawing]
-    -> [editing the matrix] -> CTA card
+    -> CTA card
 
 The three cards set the question and the footage answers it. The chart segment is the
 one the reel is really built around, so it runs closest to real time.
@@ -61,7 +61,7 @@ def _with_quality(cmd: list[str]) -> list[str]:
 
 # The reel spine: ("card", screen_id) or ("footage", segment_key), in order.
 # Narrative: the race is heating up -> here is where both fleets stand -> who do you
-# think wins? -> place them -> score it -> watch the chart redraw -> edit it -> go.
+# think wins? -> find the page -> place them -> score it -> watch the chart redraw -> go.
 REEL_SPINE = [
     ("card", "hook"),
     ("card", "podium"),
@@ -70,7 +70,6 @@ REEL_SPINE = [
     ("footage", "predict"),
     ("footage", "score"),
     ("footage", "chart"),
-    ("footage", "matrix"),
     ("card", "cta"),
 ]
 
@@ -81,16 +80,16 @@ REEL_SPINE = [
 # animation is 1.5s of real time and speeding it up is speeding up the one thing the
 # reel is for.
 FOOTAGE_SPEED = {
-    # Three taps to find the page. Brisk, but a viewer has to be able to see
-    # WHICH menu item was tapped, so not montage-fast.
-    "nav": 1.6,
+    # Finding the page, reading the standings, and tapping through to Predict. It
+    # carries the reel's only explanation of where any of this is, so it runs slower
+    # than the picking does: at 1.6x the standings were gone before they were read.
+    "nav": 1.25,
     "predict": 2.0,
     "score": 1.0,
     "chart": 1.0,
-    "matrix": 1.5,
 }
 
-SEGMENT_KEYS = ("nav", "predict", "score", "chart", "matrix")
+SEGMENT_KEYS = ("nav", "predict", "score", "chart")
 
 
 def footage_segments(markers: dict) -> dict:
