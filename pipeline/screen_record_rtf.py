@@ -22,9 +22,12 @@ the trim pass in rtf_reel_edit.py. It used to happen here as well, which meant t
 footage was upscaled, encoded, re-encoded and encoded again.
 
 ⚠️ The chart's draw animation is the payoff beat and it fires ON MOUNT, 1.5s long.
-On a phone the chart sits BELOW a ten-rider matrix, so a human-speed scroll arrives
-after it has finished. `_jump_to` snaps there instead, inside the cut between the
-score and chart segments, so the animation is still running when the frame lands.
+The outcome step now LEADS with the chart on a phone (app commit dd33181), so the
+Score tap and the chart reveal are the same moment: the chart is already in frame at
+scroll 0 and the recorder holds still while it draws. It used to sit below a
+ten-rider matrix and had to be snapped to mid-cut; that snap is gone, and so is the
+`_jump_to` helper it needed. Do not reintroduce a scroll here -- any scroll during
+the 1.5s is a scroll across the one shot the reel exists for.
 
 This is screen-capture of the REAL app, NOT an HTML render, so it is inherently
 side-effectful (live site, real browser) and verified by running, not unit tests.
@@ -39,6 +42,7 @@ Usage:
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -72,41 +76,41 @@ PRESET = "slow"
 BEAT = 900            # between rider taps
 HOLD_CHART = 5200     # the line-drawing animation is 1.5s; the rest is reading it
 HOLD_MATRIX = 3600    # the counting grid, before and after an edit
-HOLD_SCORE = 1400     # the tap that turns a prediction into a title race
+HOLD_SCORE = 1400     # the finished order held before the tap that scores it
 
-# Who to place, in predicted finishing order, at the event keyed by its SHORT chip
-# label. Names must match the pool's aria-labels. Kept here rather than argparse'd:
-# the prediction is an editorial choice about what the reel argues, not a knob.
+# Who to place, in predicted finishing order. Names must match the pool's aria-labels.
+# Kept here rather than argparse'd: the prediction is an editorial choice about what
+# the reel argues, not a knob.
 #
-# Men: Koster and Pare are tied at the top on 22,400 (2026-09-06), so the reel's
-# claim is "this is level, one event decides it". Pare wins Sylt, Koster is 3rd.
+# ⚠️ ONE event, and it is whichever the page opens on -- the first still to sail
+# (Wissant, as of 2026-09-07). The event rail the recorder used to tap is gone from
+# the phone layout: the event now lives in the pinned bottom bar behind "Choose a
+# different event", and the way forward is a "Predict {next} next" button. Nothing
+# here selects an event, so this follows the calendar on its own.
+#
+# Men: Koster and Pare are level at the top on 22,400 (2026-09-06), so the reel's
+# claim is "this is level, one event decides it". Pare wins it, Koster is 3rd, and
+# the projected table comes out 24,500 to 22,400.
 PREDICTIONS = {
-    "Men": [
-        (
-            "Sylt",
-            ["Marc Paré Rico", "Marcilio Browne", "Philip Köster", "Bernd Roediger"],
-        ),
-    ],
-    "Women": [
-        (
-            "Sylt",
-            ["Maria Behrens", "Lina Erpenstein", "Marine Hunter", "Sol Degrieck"],
-        ),
-    ],
+    "Men": ["Marc Paré Rico", "Marcilio Browne", "Philip Köster", "Bernd Roediger"],
+    "Women": ["Maria Behrens", "Lina Erpenstein", "Marine Hunter", "Sol Degrieck"],
 }
 
-# The matrix edit shown at the end: (rider, event chip label, new place).
+# The matrix edit shown at the end: (rider, new place). The event is whichever one
+# was predicted, read off the page rather than named here.
 #
 # ⚠️ A cell only offers the places that EXIST at that event -- one more than are
 # already filled -- so a four-rider prediction offers 1st to 4th and nothing beyond.
 # Asking for "6th" there fails, and Playwright spends 30s retrying before it says so,
-# which lands as half a minute of dead footage in the middle of the beat.
+# which lands as half a minute of dead footage in the middle of the beat. (The app
+# has a fix for this on feat/sparse-prediction-places, unmerged as of 2026-09-07 --
+# once it ships, any of the ten places is offered and this can open up.)
 #
 # Demoting the rider placed 3rd to 4th swaps them with whoever held 4th, so two rows
 # move and two totals change: enough to read as "you can edit this".
 MATRIX_EDIT = {
-    "Men": ("Philip Köster", "Sylt", "4th"),
-    "Women": ("Marine Hunter", "Sylt", "4th"),
+    "Men": ("Philip Köster", "4th"),
+    "Women": ("Marine Hunter", "4th"),
 }
 
 
@@ -120,22 +124,22 @@ def _select_fleet(page, fleet: str) -> None:
     page.wait_for_timeout(1200)
 
 
-def _jump_to(page, locator) -> None:
-    """Snap an element to the top of the frame, with no scroll animation.
+def _current_event(page) -> str:
+    """The event being predicted, read off the phone's bottom bar.
 
-    The slow human scroll is right everywhere else and wrong here: it is the only
-    way to be looking at the chart while it is still drawing itself.
+    The bar's aria-label is "Predicting {event}, {n} of 10 placed. Choose a
+    different event." -- the only place the page names the event now that the chip
+    rail is gone. Returned so the matrix beat can find the right column without the
+    recorder hardcoding a name that the calendar moves past.
     """
-    handle = locator.element_handle()
-    if handle is None:
-        return
-    page.evaluate(
-        """(el) => {
-            const r = el.getBoundingClientRect();
-            window.scrollTo(0, Math.max(0, window.scrollY + r.top - 90));
-        }""",
-        handle,
-    )
+    match = re.compile(r"^Predicting (.+?), \d+ of \d+ placed")
+    buttons = page.get_by_role("button")
+    for i in range(buttons.count()):
+        label = buttons.nth(i).get_attribute("aria-label") or ""
+        found = match.match(label)
+        if found:
+            return found.group(1)
+    return ""
 
 
 def _pool_button(page, athlete_name: str):
@@ -169,7 +173,7 @@ def _place_riders(page, athletes: list[str]) -> list[str]:
     return placed
 
 
-def _edit_matrix(page, fleet: str) -> bool:
+def _edit_matrix(page, fleet: str, event_label: str) -> bool:
     """Enter the matrix's edit mode, change one placing, and submit it.
 
     Returns False if any control is missing, so a page change costs the reel this
@@ -184,15 +188,19 @@ def _edit_matrix(page, fleet: str) -> bool:
     _tap(page, change)
     page.wait_for_timeout(1000)
 
-    athlete, event_label, place = MATRIX_EDIT[fleet]
+    athlete, place = MATRIX_EDIT[fleet]
     # One cell per (rider, event), so both halves are needed to name it: matching on
-    # the surname alone finds the rider's FIRST event, which is not this one.
+    # the surname alone finds the rider's FIRST event, which is not this one. The
+    # labels read "{Name} at {Event}, predicted 3rd. Change place." -- matched on the
+    # event's first word only, because the bottom bar and the cell are two different
+    # shortenings of the same event name and nothing guarantees they stay identical.
     surname = athlete.split()[-1]
+    event_key = event_label.split()[0] if event_label else ""
     selects = page.get_by_role("combobox")
     target = None
     for i in range(selects.count()):
         label = selects.nth(i).get_attribute("aria-label") or ""
-        if surname in label and event_label in label:
+        if surname in label and event_key in label:
             target = selects.nth(i)
             break
     if target is None:
@@ -246,45 +254,47 @@ def record_rtf_flow(fleet: str, out_path: str) -> str:
             _select_fleet(page, fleet)
 
             # Into the predict step. The landing step is told by the cards, so none
-            # of this is filmed.
-            _tap(page, page.get_by_role("button", name="Predict what happens next"))
+            # of this is filmed. `.last`: the phone's pinned bottom bar carries its
+            # own copy of this button and it is the one on screen.
+            _tap(page, page.get_by_role("button", name="Predict what happens next").last)
             page.wait_for_timeout(1600)
+            event_label = _current_event(page)
+            print("Predicting:", event_label or "(event not named on the page)")
 
             # --- Beat 1: place the riders -------------------------------------
+            # No event to choose: the page opens on the first one still to sail.
             markers["predict_start"] = round(time.monotonic() - t0, 2)
-            for event_label, athletes in PREDICTIONS[fleet]:
-                chip = page.get_by_role("button", name=event_label).first
-                if chip.count() > 0:
-                    _slow_scroll_into_view(page, chip)
-                    _tap(page, chip)
-                    page.wait_for_timeout(SETTLE)
-                placed += _place_riders(page, athletes)
+            placed += _place_riders(page, PREDICTIONS[fleet])
             page.wait_for_timeout(SETTLE)
             markers["predict_end"] = round(time.monotonic() - t0, 2)
 
             # --- Beat 2: score it ---------------------------------------------
+            # "Score" in the phone's bottom bar (it read "Score my prediction" before
+            # the bar existed). exact=True or it also matches the bar's sibling
+            # controls; `.last` for the same reason as the button above.
             markers["score_start"] = round(time.monotonic() - t0, 2)
-            _tap(page, page.get_by_role("button", name="Score my prediction").first)
             page.wait_for_timeout(HOLD_SCORE)
-            markers["score_end"] = round(time.monotonic() - t0, 2)
+            _tap(page, page.get_by_role("button", name="Score", exact=True).last)
 
             # --- Beat 3: the chart redraws itself from the prediction ----------
-            # Snapped to, not scrolled to: see _jump_to. The cut between the score
-            # and chart segments lands on the jump, so the viewer never sees it.
-            chart_heading = page.get_by_role("heading", name="HOW THE RACE MOVES")
-            chart_heading.wait_for(state="attached", timeout=15000)
-            _jump_to(page, chart_heading)
-            # Park the pointer in the top-left gutter first. Left where the Score
-            # tap put it, the scroll lands it over the plot, and Recharts opens a
-            # tooltip that then sits across the chart for the whole hold -- the one
-            # beat that has to be unobstructed.
+            # The outcome step leads with the chart, so it is already in frame and
+            # already drawing: hold still and film it. The cut between the score and
+            # chart segments is the tap itself.
+            #
+            # Park the real pointer in the top-left gutter. Left where the Score tap
+            # put it, it sits over the plot and Recharts opens a tooltip that then
+            # covers the chart for the whole hold -- the one beat that has to be
+            # unobstructed.
             #
             # ⚠️ `page.mouse`, not the drawn cursor. The fake cursor is a
             # pointer-events:none overlay, so moving it changes what the footage
             # SHOWS and not what the page thinks the pointer is doing.
             page.mouse.move(20, 20)
             page.evaluate("window.__cursor_move && window.__cursor_move(20, 20)")
-            page.wait_for_timeout(400)
+            # The two markers meet ON the click, so the cut lands there and the whole
+            # 1.5s draw falls inside the chart segment rather than being spent on the
+            # tail of the score one.
+            markers["score_end"] = round(time.monotonic() - t0, 2)
             markers["chart_start"] = round(time.monotonic() - t0, 2)
             page.wait_for_timeout(HOLD_CHART)
             markers["chart_end"] = round(time.monotonic() - t0, 2)
@@ -293,7 +303,7 @@ def record_rtf_flow(fleet: str, out_path: str) -> str:
             markers["matrix_start"] = round(time.monotonic() - t0, 2)
             _slow_scroll_into_view(page, page.get_by_role("heading", name="WHAT COUNTS"))
             page.wait_for_timeout(HOLD_MATRIX)
-            _edit_matrix(page, fleet)
+            _edit_matrix(page, fleet, event_label)
             page.wait_for_timeout(HOLD_MATRIX)
             markers["matrix_end"] = round(time.monotonic() - t0, 2)
 
