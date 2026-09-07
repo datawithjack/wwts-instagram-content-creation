@@ -129,10 +129,10 @@ def build_road_to_finals_reel_data(year: int = 2026) -> dict:
         "question_title": "WHO DO\nYOU THINK\nWILL WIN?",
         "question_sub": "Predict every event left and see who it crowns.",
 
-        # Screen 4 — CTA. The frictionless bit is the sell.
+        # Screen 4 — CTA. The name and the handle carry it: the frictionless line
+        # ("No account. No email. Just pick.") was one line too many on the card.
         "cta_eyebrow": "Play it out yourself",
         "cta_url_big": "ROAD TO\nFINALS",
-        "cta_sub": "No account. No email. Just pick.",
         "cta_footnote": "A fun predictor, not official rankings. Points for events "
         "that have not happened yet are estimated.",
         "handle": "@windsurfworldtourstats",

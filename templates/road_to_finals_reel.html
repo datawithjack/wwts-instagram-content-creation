@@ -66,7 +66,7 @@
         font-size: 62px;
         font-weight: 500;
         font-style: italic;
-        color: var(--tour-400);
+        color: var(--color-text-muted);
         margin-top: 44px;
         opacity: 0;
         transform: translateY(20px);
@@ -101,7 +101,7 @@
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.26em;
-        color: var(--tour-400);
+        color: var(--color-text-primary);
         text-align: left;
         padding-bottom: 14px;
         border-bottom: 2px solid rgba(34, 211, 238, 0.28);
@@ -130,7 +130,12 @@
         text-align: center;
         color: var(--slate-500);
     }
-    .rider:first-child .rider-rank { color: var(--warn-400); }
+    /* Medalled off the RANK, not the row position: the men's top two are level on
+       points, so the card reads 1, 1, 3 and nth-child would hand the second of two
+       leaders a silver number. */
+    .rider[data-rank="1"] .rider-rank { color: var(--color-rank-1st); }
+    .rider[data-rank="2"] .rider-rank { color: var(--color-rank-2nd); }
+    .rider[data-rank="3"] .rider-rank { color: var(--color-rank-3rd); }
     .rider-face {
         width: 104px;
         height: 104px;
@@ -140,7 +145,7 @@
         background: #16202f;
         border: 2px solid rgba(148, 163, 184, 0.35);
     }
-    .rider:first-child .rider-face { border-color: var(--warn-400); }
+    .rider[data-rank="1"] .rider-face { border-color: var(--color-rank-1st); }
     .rider-name {
         flex: 1 1 auto;
         min-width: 0;
@@ -201,13 +206,6 @@
         text-transform: uppercase;
         white-space: pre-line;
     }
-    .cta-sub {
-        font-family: var(--font-body);
-        font-size: 50px;
-        font-weight: 500;
-        color: var(--slate-300);
-        margin-top: 48px;
-    }
     .cta-handle {
         font-family: var(--font-body);
         font-size: 38px;
@@ -265,7 +263,7 @@
         <div class="fleet">
             <div class="fleet-label">{{ fleet.label }}</div>
             {% for rider in fleet.riders %}
-            <div class="rider">
+            <div class="rider" data-rank="{{ rider.rank }}">
                 <span class="rider-rank">{{ rider.rank }}</span>
                 {% if rider.face %}
                 <img class="rider-face" src="{{ rider.face }}" alt="">
@@ -291,7 +289,6 @@
     <div class="screen" id="screen-cta">
         <div class="cta-eyebrow">{{ cta_eyebrow }}</div>
         <div class="cta-url-big">{{ cta_url_big }}</div>
-        <div class="cta-sub">{{ cta_sub }}</div>
         <div class="cta-handle" id="cta-handle">{{ handle }} · Link in bio</div>
         <div class="cta-footnote">{{ cta_footnote }}</div>
     </div>
