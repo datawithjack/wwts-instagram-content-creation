@@ -724,14 +724,24 @@ SLALOM_ATHLETE_ID_FALLBACK = {
     642: 1085,   # Pierre Mortefon, won 2018
     1108: 1120,  # Marco Lang, won 2017
     2009: 1423,  # Johan Soe, won the 2024 and 2025 foil editions
+    1538: 1127,  # Nicolas Goyard, won the 2019 foil edition
 }
 
-# Sylt's slalom in the order it was sailed: fin to 2023, foil from 2024. The
+# Sylt's slalom in the order it was sailed: fin 2006-2018, foil 2019-2025. The
 # post ranks both together, so both spellings are read. "Slalom X" never came
 # to Sylt but is listed because it is the third name the tour gives a slalom
 # race, and leaving it out would make this query silently wrong the year it
 # does.
 SLALOM_DISCIPLINES = ("Slalom {sex}", "Foil Slalom {sex}", "Slalom X {sex}")
+
+# The same races as PWA_RANKINGS calls them in PWA_IWT_RESULTS, which spells
+# them differently again: "Foil Men" in 2019, "Slalom Foil Men" from 2024.
+# Matched exactly rather than with a wildcard on purpose -- "%Foil%Men" also
+# matches "Slalom Foil Women", because "Women" ends in "men" and the collation
+# is case-insensitive, which would silently put the women's fleet in the men's
+# record.
+SLALOM_RESULT_LABELS = ("Slalom {sex}", "Foil {sex}", "Slalom Foil {sex}",
+                        "Slalom X {sex}")
 
 # The disciplines that are not sailed on a fin. Kept as a prefix test rather
 # than a list so a fourth spelling of a foil race is caught by default: a foil
@@ -764,7 +774,7 @@ def build_sylt_slalom_query(sex: str = "Men") -> tuple[str, tuple]:
     fourteen-edition record with Antoine Albeau four times a champion.
 
     **Both eras, marked.** Sylt raced on a fin to 2018 and on a foil from
-    2022, and the post ranks them as one venue record: the event is the same
+    2019, and the post ranks them as one venue record: the event is the same
     event and the riders treat it as one thing to win. So the query reads
     every slalom spelling and returns the era split beside the placings, and
     the slides mark the foil years rather than the ranking hiding them.
@@ -847,11 +857,51 @@ def build_sylt_slalom_query(sex: str = "Men") -> tuple[str, tuple]:
             WHERE r.discipline IN (%s, %s, %s)
               AND r.event_name LIKE '%%Sylt%%'
               AND r.event_points > 0
+
+            UNION ALL
+
+            -- Editions the rankings never got. Sylt's 2019 foil race is in
+            -- the results table only, and it is the venue's first foil
+            -- edition and Nicolas Goyard's only Sylt title.
+            SELECT res.year,
+                   res.athlete_id,
+                   res.athlete_name,
+                   res.division_label,
+                   CASE WHEN res.division_label LIKE '%%Foil%%'
+                             OR res.division_label LIKE 'Slalom X%%'
+                             OR res.year IN __FOIL_YEARS__
+                           THEN 'foil' ELSE 'fin' END AS era,
+                   CAST(res.place AS UNSIGNED) AS place
+            FROM PWA_IWT_RESULTS res
+            WHERE res.division_label IN (%s, %s, %s, %s)
+              AND res.event_name LIKE '%%Sylt%%'
+              AND res.place REGEXP '^[0-9]+$'
+              -- Matched on the year *and* the era, not the year alone. 2017
+              -- and 2018 each ran a fin slalom and a separate foil event, and
+              -- the rankings hold only the fin one, so a year-level test
+              -- answers "already have it" and keeps both foil editions out
+              -- for good.
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM PWA_RANKINGS rk
+                  WHERE rk.discipline IN (%s, %s, %s)
+                    AND rk.event_name LIKE '%%Sylt%%'
+                    AND rk.event_points > 0
+                    AND rk.year = res.year
+                    AND (CASE WHEN rk.discipline LIKE 'Foil%%'
+                                   OR rk.discipline LIKE 'Slalom X%%'
+                                   OR rk.year IN __FOIL_YEARS__
+                              THEN 'foil' ELSE 'fin' END)
+                        = (CASE WHEN res.division_label LIKE '%%Foil%%'
+                                     OR res.division_label LIKE 'Slalom X%%'
+                                     OR res.year IN __FOIL_YEARS__
+                                THEN 'foil' ELSE 'fin' END)
+              )
         )
-        SELECT COALESCE(a.primary_name, MIN(p.athlete_name)) AS athlete,
-               a.nationality,
-               a.id AS athlete_id,
-               a.liveheats_image_url AS photo_url,
+        SELECT COALESCE(MIN(a.primary_name), MIN(p.athlete_name)) AS athlete,
+               MIN(a.nationality) AS nationality,
+               MIN(a.id) AS athlete_id,
+               MIN(a.liveheats_image_url) AS photo_url,
                SUM(p.place = 1) AS wins,
                SUM(p.place BETWEEN 2 AND 3) AS podiums,
                COUNT(*) AS starts,
@@ -873,17 +923,24 @@ def build_sylt_slalom_query(sex: str = "Men") -> tuple[str, tuple]:
             ON asi.source = 'PWA' AND asi.source_id = p.pwa_athlete_id
         LEFT JOIN ATHLETES a
             ON a.id = COALESCE(asi.athlete_id, %s)
-        GROUP BY p.pwa_athlete_id, a.id, a.primary_name,
-                 a.nationality, a.liveheats_image_url
+        GROUP BY COALESCE(CAST(a.id AS CHAR),
+                          CONCAT('pwa:', p.pwa_athlete_id))
         HAVING wins >= 1 OR podiums >= 2
         ORDER BY wins DESC, podiums DESC, avg_finish ASC, athlete
     """
     # One CASE rather than a placeholder per rider, so the params stay two.
-    cases = " ".join(f"WHEN {pwa} THEN {aid}"
+    # Quoted: the UNION widens pwa_athlete_id to a varchar, and an
+    # unquoted integer here would coerce every name-sail key ("Goyard_F-465")
+    # to 0 and match the first rider whose pwa id is 0.
+    cases = " ".join(f"WHEN '{pwa}' THEN {aid}"
                      for pwa, aid in SLALOM_ATHLETE_ID_FALLBACK.items())
     fallback = f"CASE p.pwa_athlete_id {cases} END"
     years = ", ".join(str(y) for y in SYLT_FOIL_SLALOM_YEARS)
-    params = tuple(d.format(sex=sex) for d in SLALOM_DISCIPLINES)
+    ranked = tuple(d.format(sex=sex) for d in SLALOM_DISCIPLINES)
+    results = tuple(d.format(sex=sex) for d in SLALOM_RESULT_LABELS)
+    # In SQL order: the rankings branch, the results branch, then the
+    # anti-join back to the rankings.
+    params = ranked + results + ranked
     sql = sql.replace("__FOIL_YEARS__", f"({years})")
     return sql.replace("COALESCE(asi.athlete_id, %s)",
                        f"COALESCE(asi.athlete_id, {fallback})"), params
@@ -893,24 +950,53 @@ def build_sylt_slalom_editions_query(sex: str = "Men") -> tuple[str, tuple]:
     """Count the Sylt slalom editions behind ``build_sylt_slalom_query``.
 
     Same filter as the rows, so the sample line on the slides cannot drift
-    from the record it describes. Sylt ran no slalom in 2011 or 2019 and the
-    2020 and 2021 events were cancelled, so the span is not the count.
+    from the record it describes. Sylt ran no slalom in 2011 and the 2020 and
+    2021 events were cancelled, so the span is not the count: seventeen
+    editions across a twenty-year span.
 
-    Counted on year and discipline rather than year alone. No Sylt year has so
-    far run a fin and a foil race, but the tour has sailed two slalom formats
-    in one season elsewhere, and counting years would report that as one
-    edition.
+    Both sources, like the rows. The 2019 foil edition is in PWA_IWT_RESULTS
+    only, and an editions count that missed it would have the cover claiming
+    sixteen editions over a ranking built from seventeen. No anti-join is
+    needed here: COUNT(DISTINCT year, era) collapses the years both tables
+    hold on its own.
+
+    Counted on year and era rather than year alone, because 2017 and 2018
+    each ran a fin slalom and a separate foil event. Those two foil editions
+    are in neither table yet; counting years would report them as nothing
+    when they arrive.
 
     Returns:
         (sql, params) tuple. One row: editions, first_year, last_year.
     """
     sql = """
-        SELECT COUNT(DISTINCT year, discipline) AS editions,
+        SELECT COUNT(DISTINCT year, era) AS editions,
                MIN(year) AS first_year,
                MAX(year) AS last_year
-        FROM PWA_RANKINGS
-        WHERE discipline IN (%s, %s, %s)
-          AND event_name LIKE '%%Sylt%%'
-          AND event_points > 0
+        FROM (
+            SELECT rk.year,
+                   CASE WHEN rk.discipline LIKE 'Foil%%'
+                                  OR rk.discipline LIKE 'Slalom X%%'
+                                  OR rk.year IN __FOIL_YEARS__
+                                THEN 'foil' ELSE 'fin' END AS era
+            FROM PWA_RANKINGS rk
+            WHERE rk.discipline IN (%s, %s, %s)
+              AND rk.event_name LIKE '%%Sylt%%'
+              AND rk.event_points > 0
+
+            UNION ALL
+
+            SELECT res.year,
+                   CASE WHEN res.division_label LIKE '%%Foil%%'
+                             OR res.division_label LIKE 'Slalom X%%'
+                             OR res.year IN __FOIL_YEARS__
+                           THEN 'foil' ELSE 'fin' END AS era
+            FROM PWA_IWT_RESULTS res
+            WHERE res.division_label IN (%s, %s, %s, %s)
+              AND res.event_name LIKE '%%Sylt%%'
+              AND res.place REGEXP '^[0-9]+$'
+        ) e
     """
-    return sql, tuple(d.format(sex=sex) for d in SLALOM_DISCIPLINES)
+    years = ", ".join(str(y) for y in SYLT_FOIL_SLALOM_YEARS)
+    sql = sql.replace("__FOIL_YEARS__", f"({years})")
+    return sql, (tuple(d.format(sex=sex) for d in SLALOM_DISCIPLINES)
+                 + tuple(d.format(sex=sex) for d in SLALOM_RESULT_LABELS))

@@ -753,3 +753,123 @@ def test_reordering_drops_no_folder():
     for discipline in ("Slalom", "Freestyle", "Wave"):
         assert (set(sylt_kings._photo_events(discipline))
                 == set(sylt_kings.SYLT_PHOTO_EVENTS))
+
+
+# ── The 2019 foil edition, and the era slide ──
+
+def _slalom_row(name, athlete_id, placings, foil_years):
+    """A slalom row carrying the two columns the era split reads."""
+    row = _era_row(name, athlete_id, 1, 0)
+    row["placings"] = placings
+    row["foil_years"] = foil_years
+    return row
+
+
+SLALOM_ROWS = [
+    _slalom_row("Antoine Albeau", 700, "2006:2,2007:1,2018:2", ""),
+    _slalom_row("Nicolas Goyard", 1127, "2019:1,2023:3", "2019,2023"),
+]
+
+
+def test_the_2019_foil_edition_is_unioned_in_from_the_results_table():
+    """Sylt raced a foil-only edition in 2019. It is in PWA_IWT_RESULTS but
+    not in PWA_RANKINGS, so the rankings-only query dropped a whole edition
+    and with it the venue's first foil champion.
+    """
+    from pipeline.queries import build_sylt_slalom_query
+    sql, _ = build_sylt_slalom_query("Men")
+    assert "PWA_IWT_RESULTS" in sql
+    assert "UNION ALL" in sql
+
+
+def test_the_missing_edition_test_is_on_year_and_era_not_year_alone():
+    """2017 and 2018 each ran a fin slalom *and* a separate foil event. The
+    rankings hold only the fin one, so a year-level "is this year missing?"
+    would answer no and keep both foil editions out for good.
+    """
+    from pipeline.queries import build_sylt_slalom_query
+    sql, _ = build_sylt_slalom_query("Men")
+    anti = sql[sql.index("UNION ALL"):]
+    assert "NOT EXISTS" in anti
+    assert "rk.year = " in anti
+    assert "era" in anti
+
+
+def test_nicolas_goyard_is_bridged_across_the_two_id_spaces():
+    """The two tables key riders differently: PWA_RANKINGS on a numeric pwa
+    id (Goyard 1538), PWA_IWT_RESULTS on a name-sail string
+    (Goyard_F-465). Only the string form is in ATHLETE_SOURCE_IDS, so
+    without this bridge his 2019 win and his rankings placings become two
+    separate cards.
+    """
+    from pipeline.queries import SLALOM_ATHLETE_ID_FALLBACK
+    assert SLALOM_ATHLETE_ID_FALLBACK[1538] == 1127
+
+
+def test_riders_group_on_identity_not_on_the_source_key():
+    """Grouping on pwa_athlete_id splits any rider who appears in both
+    sources. Grouping on the resolved athlete id alone would be worse: 548
+    of 615 riders resolve to NULL and would collapse into one row. So the
+    key is the resolved id when there is one and the source key when not.
+    """
+    from pipeline.queries import build_sylt_slalom_query
+    sql, _ = build_sylt_slalom_query("Men")
+    assert "GROUP BY p.pwa_athlete_id, a.id" not in sql
+    assert "GROUP BY COALESCE(" in sql
+
+
+def test_the_editions_count_includes_the_unioned_edition():
+    """The sample line and the ranking have to describe the same record."""
+    from pipeline.queries import build_sylt_slalom_editions_query
+    sql, _ = build_sylt_slalom_editions_query("Men")
+    assert "PWA_IWT_RESULTS" in sql
+    assert "UNION ALL" in sql
+
+
+def test_the_era_slide_follows_the_cover():
+    """Every card carries a FIN or FOIL note and the years wear daggers, so
+    the reader needs to know what the two eras are before the countdown
+    starts, not after it.
+    """
+    slides = build_sylt_kings_slides(SLALOM_ROWS, "Men", EDITIONS, "Slalom")
+    assert slides[0]["type"] == "sylt_cover"
+    assert slides[1]["type"] == "sylt_eras"
+
+
+def test_only_the_slalom_post_gets_an_era_slide():
+    """Wave and freestyle at Sylt have never split by equipment, so the
+    slide would explain a distinction the post does not make.
+    """
+    for discipline in ("Wave", "Freestyle"):
+        slides = build_sylt_kings_slides(ROWS, "Men", EDITIONS, discipline)
+        assert not any(s["type"] == "sylt_eras" for s in slides)
+
+
+def test_the_era_slide_reads_its_years_from_the_record():
+    """Not written down twice. The slide splits the years the rows actually
+    contain on the same foil set that marks the daggers, so a slide and a
+    card can never disagree about which era a year belongs to.
+    """
+    rows = [_slalom_row("A", 1, "2006:1,2018:2,2019:1,2022:3", "2019,2022")]
+    eras = sylt_kings._era_lines(rows, {2019, 2022})
+    assert [e["label"] for e in eras] == ["FIN", "FOIL"]
+    assert eras[0]["years"] == "2006–2018"
+    assert eras[1]["years"] == "2019–2022"
+
+
+def test_the_era_slide_counts_editions_not_the_span():
+    """Sylt ran no slalom in 2011 and the 2020 and 2021 events were
+    cancelled, so 2006-2018 is twelve editions and not thirteen.
+    """
+    rows = [_slalom_row("A", 1, "2006:1,2007:1,2010:1,2012:1", "")]
+    eras = sylt_kings._era_lines(rows, set())
+    assert eras[0]["detail"] == "4 editions"
+    assert len(eras) == 1
+
+
+def test_an_era_with_one_edition_reads_as_a_year_not_a_range():
+    """"2019-2019" is a range with nothing in it."""
+    rows = [_slalom_row("A", 1, "2006:1,2019:1", "2019")]
+    eras = sylt_kings._era_lines(rows, {2019})
+    assert eras[1]["years"] == "2019"
+    assert eras[1]["detail"] == "1 edition"

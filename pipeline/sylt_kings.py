@@ -258,6 +258,22 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
         **common,
     }]
 
+    # Every card carries a FIN or FOIL note and every marked year wears a
+    # dagger, so the two eras have to be established before the countdown
+    # starts rather than explained in fine print underneath it. Slalom only:
+    # Sylt's wave and freestyle have never split by equipment, and the slide
+    # would draw a distinction those posts do not make.
+    eras = _era_lines(rows, foil) if discipline == "Slalom" else []
+    if len(eras) > 1:
+        slides.append({
+            "type": "sylt_eras",
+            "eyebrow": eyebrow,
+            "title": "TWO ERAS",
+            "eras": eras,
+            "division_label": sex.upper(),
+            **common,
+        })
+
     # Counted down, so the cards build to the most-decorated rider and hand
     # straight over to the chart that ranks them. Leading with #1 spends the
     # payoff on slide two and leaves seven cards of diminishing interest after
@@ -362,6 +378,34 @@ def _foil_years(rows: list[dict]) -> set:
             if chunk.strip().isdigit():
                 years.add(int(chunk))
     return years
+
+
+def _era_lines(rows: list[dict], foil: set) -> list[dict]:
+    """The venue's two eras, split from the years the record actually holds.
+
+    Derived rather than written down, and split on the same foil set that
+    marks the daggers on the cards, so the slide and a card can never
+    disagree about which era a year belongs to.
+
+    The count is not the span. Sylt ran no slalom in 2011 and the 2020 and
+    2021 events were cancelled, so 2006-2018 is twelve editions, not
+    thirteen, and a reader who does the subtraction has to land on the
+    number the cover already gave them.
+    """
+    years = {year for row in rows for year, _ in _placings(row.get("placings"))}
+    lines = []
+    for label, group in (("FIN", sorted(years - foil)),
+                         ("FOIL", sorted(years & foil))):
+        if not group:
+            continue
+        span = (str(group[0]) if len(group) == 1
+                else f"{group[0]}\u2013{group[-1]}")
+        lines.append({
+            "label": label,
+            "years": span,
+            "detail": f"{len(group)} edition{'s' if len(group) > 1 else ''}",
+        })
+    return lines
 
 
 def _shared_years(rows: list[dict]) -> set:
