@@ -493,3 +493,127 @@ def test_the_caption_uses_the_same_names_as_the_slides():
     assert "Gollito Estredo" in caption
     assert '"Gollito"' not in caption
     assert "Steven Van Broeckhoven" in caption
+
+
+def _era_row(name, athlete_id, fin_wins, foil_wins, **kw):
+    """A slalom row: the same shape plus the six era columns."""
+    row = _row(name, athlete_id, fin_wins + foil_wins, kw.pop("podiums", 0))
+    row.update({
+        "fin_wins": fin_wins, "foil_wins": foil_wins,
+        "fin_podiums": kw.pop("fin_podiums", 0),
+        "foil_podiums": kw.pop("foil_podiums", 0),
+        "fin_starts": kw.pop("fin_starts", 8),
+        "foil_starts": kw.pop("foil_starts", 0),
+    })
+    row["podiums"] = row["fin_podiums"] + row["foil_podiums"]
+    row["starts"] = row["fin_starts"] + row["foil_starts"]
+    return row
+
+
+def test_every_counter_on_a_slalom_card_carries_the_era_split():
+    """Sylt ran slalom on a fin to 2023 and on a foil from 2024, and the post
+    ranks both. A bare "2 titles" is Bjorn Dunkerbeck twice on a fin against
+    fleets of 120 and Johan Soe twice on a foil from two starts, and the
+    number alone cannot tell them apart.
+    """
+    row = _era_row("Antoine Albeau", 700, 4, 0, fin_podiums=5, fin_starts=13)
+    card = sylt_kings._rider_slide(row, 1, "16 editions", frozenset())
+    notes = {stat["label"]: stat["note"] for stat in card["stats"]}
+    assert notes["Titles"] == "4 FIN \u00b7 0 FOIL"
+    assert notes["Podiums"] == "5 FIN \u00b7 0 FOIL"
+    assert notes["Appearances"] == "13 FIN \u00b7 0 FOIL"
+
+
+def test_a_zero_era_is_written_out_rather_than_dropped():
+    """Albeau's "0 FOIL" is a fact about his record. Dropping it would leave
+    the split looking like a footnote that applies to some riders only.
+    """
+    row = _era_row("Johan Soe", 1423, 0, 2, fin_starts=2, foil_starts=2)
+    card = sylt_kings._rider_slide(row, 4, "16 editions", frozenset())
+    assert card["stats"][0]["note"] == "0 FIN \u00b7 2 FOIL"
+
+
+def test_a_wave_card_keeps_its_own_notes():
+    """The wave and freestyle records are single-era and their query returns
+    no era columns, so those cards must not grow an empty split.
+    """
+    card = sylt_kings._rider_slide(_row("Philip Koster", 49, 3, 2),
+                                   1, "10 editions", frozenset())
+    notes = {stat["label"]: stat["note"] for stat in card["stats"]}
+    assert notes["Titles"] == ""
+    assert notes["Podiums"] == "2nd or 3rd"
+    assert notes["Appearances"] == ""
+
+
+def test_the_table_names_the_era_a_riders_titles_came_from():
+    """One word, not three split counters: the row has space for a number and
+    a short line, and every champion at Sylt won in one era only.
+    """
+    rows = [_era_row("Antoine Albeau", 700, 4, 0, fin_starts=13),
+            _era_row("Johan Soe", 1423, 0, 2, fin_starts=2, foil_starts=2),
+            _era_row("Cyril Moussilmani", 656, 0, 0, fin_podiums=4)]
+    table = sylt_kings._table_rows(rows)
+    assert table[0]["titles_era"] == "FIN"
+    assert table[1]["titles_era"] == "FOIL"
+    # No titles, so there is no era to name and the line is left off.
+    assert table[2]["titles_era"] == ""
+
+
+def test_a_rider_who_won_in_both_eras_gets_both_named():
+    """Nobody has yet, but 2017 and 2018 ran fin and foil in the same week,
+    so the missing foil editions could produce one. The tag must not silently
+    pick a side.
+    """
+    rows = [_era_row("Future Champion", 9002, 1, 1, fin_starts=4,
+                     foil_starts=2)]
+    assert sylt_kings._table_rows(rows)[0]["titles_era"] == "FIN \u00b7 FOIL"
+
+
+def test_the_table_leaves_the_era_off_a_wave_record():
+    """Same rule as the cards: no era columns, no era line."""
+    table = sylt_kings._table_rows([_row("Philip Koster", 49, 3, 2)])
+    assert table[0]["titles_era"] == ""
+
+
+def test_the_closing_table_runs_over_two_slides_when_it_is_too_long():
+    """The table was laid out for the eight riders a wave record produces.
+    Slalom returns thirteen, and thirteen rows squeezed into the same height
+    is a table nobody reads on a phone.
+    """
+    table = [{"rank": i} for i in range(1, 14)]
+    slides = sylt_kings._table_slides(table, "criteria")
+    assert len(slides) == 2
+    # Split near the middle: 7 and 6 read as one table continued, where 8 and
+    # 5 reads as a table with an afterthought stuck to it.
+    assert [len(s["rows"]) for s in slides] == [7, 6]
+    assert slides[1]["continued"] is True
+
+
+def test_a_table_that_fits_stays_on_one_slide():
+    """The wave and freestyle records must be untouched by the split."""
+    slides = sylt_kings._table_slides([{"rank": i} for i in range(1, 9)], "c")
+    assert len(slides) == 1
+    assert slides[0]["continued"] is False
+
+
+def test_only_the_last_table_slide_carries_the_criteria_note():
+    """It qualifies the whole ranking. On both slides it invites the reader to
+    check whether the two are saying different things.
+    """
+    slides = sylt_kings._table_slides([{"rank": i} for i in range(1, 14)],
+                                      "at least 1 win")
+    assert slides[0]["criteria_note"] == ""
+    assert slides[1]["criteria_note"] == "at least 1 win"
+
+
+def test_the_foil_years_are_named_not_inferred_from_the_discipline():
+    """The PWA only renamed the discipline "Foil Slalom" in 2024, but Sylt
+    was already racing on foils in 2022. Reading the era off the discipline
+    string put Amado Vrieswijk's two foil titles in the fin column beside
+    Bjorn Dunkerbeck's.
+    """
+    from pipeline.queries import SYLT_FOIL_SLALOM_YEARS, build_sylt_slalom_query
+    assert 2022 in SYLT_FOIL_SLALOM_YEARS and 2023 in SYLT_FOIL_SLALOM_YEARS
+    sql, _ = build_sylt_slalom_query("Men")
+    assert "__FOIL_YEARS__" not in sql
+    assert "r.year IN (2022, 2023)" in sql

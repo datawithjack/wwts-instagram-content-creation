@@ -739,6 +739,19 @@ SLALOM_DISCIPLINES = ("Slalom {sex}", "Foil Slalom {sex}", "Slalom X {sex}")
 # name marked foil is only an unfamiliar name.
 FOIL_PREFIXES = ("Foil", "Slalom X")
 
+# The years Sylt raced its slalom on a foil while the PWA still called the
+# discipline "Slalom Men". The label lagged the equipment by two seasons: the
+# tour only renamed it "Foil Slalom" in 2024, so 2022 and 2023 are stored
+# under the fin spelling and are foil races.
+#
+# This is why the era cannot be read off the discipline string. Doing that put
+# Amado Vrieswijk's two Sylt titles in the fin column beside Bjorn
+# Dunkerbeck's, when he won both of them on a foil and has never won a fin
+# race at the venue. Every source we have repeats the label rather than the
+# equipment -- PWA_RANKINGS, PWA_IWT_RESULTS and the API's discipline code all
+# say the same wrong thing -- so the correction has to be written down here.
+SYLT_FOIL_SLALOM_YEARS = (2022, 2023)
+
 
 def build_sylt_slalom_query(sex: str = "Men") -> tuple[str, tuple]:
     """Build the Sylt slalom venue record, from ``PWA_RANKINGS``.
@@ -750,19 +763,22 @@ def build_sylt_slalom_query(sex: str = "Men") -> tuple[str, tuple]:
     carries the venue every year from 2006 and turns the same post into a
     fourteen-edition record with Antoine Albeau four times a champion.
 
-    **Both eras, marked.** Sylt ran ``Slalom Men`` from 2006 to 2023 and
-    ``Foil Slalom Men`` in 2024-25, and the post ranks them as one venue
-    record: the event is the same event and the riders treat it as one thing
-    to win. So the query reads every slalom spelling and returns a
-    ``foil_years`` column beside the placings, and the slides mark those years
-    rather than the ranking hiding them.
+    **Both eras, marked.** Sylt raced on a fin to 2018 and on a foil from
+    2022, and the post ranks them as one venue record: the event is the same
+    event and the riders treat it as one thing to win. So the query reads
+    every slalom spelling and returns the era split beside the placings, and
+    the slides mark the foil years rather than the ranking hiding them.
 
-    Marking them is not decoration. Johan Soe won both foil editions from two
-    starts, which puts him on two titles beside Bjorn Dunkerbeck, who won two
-    from eight against fleets of 120-132 with Albeau in them; the foil fields
-    were the smallest in the run, 72 and 73 against 87-152. The count is the
-    count, but a reader can only weigh it if the slide says which era each
-    title came from.
+    The era comes from ``SYLT_FOIL_SLALOM_YEARS``, not from the discipline
+    name. The PWA only renamed the discipline in 2024, so 2022 and 2023 are
+    stored as ``Slalom Men`` and were sailed on foils.
+
+    Marking them is not decoration. Johan Soe won both his titles on a foil
+    from four starts, which puts him level with Bjorn Dunkerbeck, who won two
+    fin races from eight against fleets of 120-132 with Albeau in them; the
+    foil fields were the smallest in the run. The count is the count, but a
+    reader can only weigh it if the slide says which era each title came
+    from.
 
     A zero-point row is not a start. The rankings list the whole season
     fleet against every event, so a rider who skipped Sylt still gets a row
@@ -802,10 +818,18 @@ def build_sylt_slalom_query(sex: str = "Men") -> tuple[str, tuple]:
             builders' signature.
 
     Returns:
-        (sql, params) for db.run_query(), in the same column shape as
-        ``build_sylt_kings_query`` so ``build_sylt_kings_slides`` needs no
-        change: athlete, nationality, athlete_id, photo_url, wins, podiums,
-        starts, best_finish, avg_finish, placings.
+        (sql, params) for db.run_query(), in the column shape of
+        ``build_sylt_kings_query`` plus the era split: athlete, nationality,
+        athlete_id, photo_url, wins, podiums, starts, best_finish,
+        avg_finish, placings, foil_years, and fin_wins/foil_wins,
+        fin_podiums/foil_podiums, fin_starts/foil_starts.
+
+        The split columns are what the cards show. Every total on this list
+        is one era's total: no rider has won at Sylt on both a fin and a
+        foil, so a bare "2 titles" reads the same for Bjorn Dunkerbeck and
+        Johan Soe while the two records have nothing in common. The wave and
+        freestyle builders return no era columns and the slides fall back to
+        a single number, which is right: those disciplines never split.
     """
     sql = """
         WITH placed AS (
@@ -813,6 +837,10 @@ def build_sylt_slalom_query(sex: str = "Men") -> tuple[str, tuple]:
                    r.pwa_athlete_id,
                    r.athlete_name,
                    r.discipline,
+                   CASE WHEN r.discipline LIKE 'Foil%%'
+                          OR r.discipline LIKE 'Slalom X%%'
+                          OR r.year IN __FOIL_YEARS__
+                        THEN 'foil' ELSE 'fin' END AS era,
                    DENSE_RANK() OVER (PARTITION BY r.year, r.discipline
                                       ORDER BY r.event_points DESC) AS place
             FROM PWA_RANKINGS r
@@ -827,12 +855,17 @@ def build_sylt_slalom_query(sex: str = "Men") -> tuple[str, tuple]:
                SUM(p.place = 1) AS wins,
                SUM(p.place BETWEEN 2 AND 3) AS podiums,
                COUNT(*) AS starts,
+               SUM(p.place = 1 AND p.era = 'fin') AS fin_wins,
+               SUM(p.place = 1 AND p.era = 'foil') AS foil_wins,
+               SUM(p.place BETWEEN 2 AND 3 AND p.era = 'fin') AS fin_podiums,
+               SUM(p.place BETWEEN 2 AND 3 AND p.era = 'foil') AS foil_podiums,
+               SUM(p.era = 'fin') AS fin_starts,
+               SUM(p.era = 'foil') AS foil_starts,
                MIN(p.place) AS best_finish,
                ROUND(AVG(p.place), 1) AS avg_finish,
                GROUP_CONCAT(DISTINCT CONCAT(p.year, ':', p.place)
                             ORDER BY p.year) AS placings,
-               GROUP_CONCAT(DISTINCT CASE WHEN p.discipline LIKE 'Foil%%'
-                                            OR p.discipline LIKE 'Slalom X%%'
+               GROUP_CONCAT(DISTINCT CASE WHEN p.era = 'foil'
                                           THEN p.year END
                             ORDER BY p.year) AS foil_years
         FROM placed p
@@ -849,7 +882,9 @@ def build_sylt_slalom_query(sex: str = "Men") -> tuple[str, tuple]:
     cases = " ".join(f"WHEN {pwa} THEN {aid}"
                      for pwa, aid in SLALOM_ATHLETE_ID_FALLBACK.items())
     fallback = f"CASE p.pwa_athlete_id {cases} END"
+    years = ", ".join(str(y) for y in SYLT_FOIL_SLALOM_YEARS)
     params = tuple(d.format(sex=sex) for d in SLALOM_DISCIPLINES)
+    sql = sql.replace("__FOIL_YEARS__", f"({years})")
     return sql.replace("COALESCE(asi.athlete_id, %s)",
                        f"COALESCE(asi.athlete_id, {fallback})"), params
 

@@ -225,16 +225,14 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
     for rank, row in reversed(ranked):
         slides.append(_rider_slide(row, rank, sample, shared, foil, **common))
 
-    slides.append({
-        "type": "sylt_table",
-        "slide_title": " ".join(title_lines),
-        "division_label": sex.upper(),
-        "eyebrow": eyebrow,
-        "sample_line": sample,
-        "criteria_note": criteria,
-        "rows": _table_rows(rows, shared, foil),
+    slides.extend(_table_slides(
+        _table_rows(rows, shared, foil), criteria,
+        slide_title=" ".join(title_lines),
+        division_label=sex.upper(),
+        eyebrow=eyebrow,
+        sample_line=sample,
         **common,
-    })
+    ))
     slides.append({"type": "analysis_cta", **common})
 
     total = len(slides)
@@ -243,6 +241,42 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
         slide["total_slides"] = total
 
     return slides
+
+
+# The closing table was laid out for the eight riders a wave or freestyle
+# record produces. Slalom returns thirteen, and thirteen rows in the same
+# height is a table nobody reads on a phone. Above this many the table runs
+# over two slides instead of shrinking.
+MAX_TABLE_ROWS = 8
+
+
+def _table_slides(table: list[dict], criteria: str, **fields) -> list[dict]:
+    """The closing table, over as many slides as its rows need.
+
+    Split near the middle rather than filling the first slide and leaving a
+    remainder: 7 and 6 read as one table continued, where 8 and 5 reads as a
+    table with an afterthought stuck to it.
+
+    The criteria footnote goes on the last slide only. It qualifies the whole
+    ranking, and repeating it on both invites the reader to check whether the
+    two are saying different things.
+    """
+    if len(table) <= MAX_TABLE_ROWS:
+        chunks = [table]
+    else:
+        half = -(-len(table) // 2)
+        chunks = [table[:half], table[half:]]
+
+    return [{
+        "type": "sylt_table",
+        "rows": chunk,
+        "criteria_note": criteria if i == len(chunks) - 1 else "",
+        # Continued slides say so. Two slides carrying the same title and a
+        # different six rows, with nothing to tell them apart, reads as a
+        # rendering fault rather than a table running on.
+        "continued": i > 0,
+        **fields,
+    } for i, chunk in enumerate(chunks)]
 
 
 def _sample_line(editions: dict) -> str:
@@ -411,9 +445,13 @@ def _rider_slide(row: dict, rank: int, sample: str, shared: set,
         "shared_note": _card_note(win_years, best_years, shared, foil),
         "sample_line": sample,
         "stats": [
-            {"value": str(wins), "label": "Titles", "note": ""},
-            {"value": str(podiums), "label": "Podiums", "note": "2nd or 3rd"},
-            {"value": str(int(row.get("starts") or 0)), "label": "Appearances", "note": ""},
+            {"value": str(wins), "label": "Titles",
+             "note": _era_note(row, "fin_wins", "foil_wins")},
+            {"value": str(podiums), "label": "Podiums",
+             "note": _era_note(row, "fin_podiums", "foil_podiums",
+                               "2nd or 3rd")},
+            {"value": str(int(row.get("starts") or 0)), "label": "Appearances",
+             "note": _era_note(row, "fin_starts", "foil_starts")},
             # A best finish is worth more with its date on it: 2nd in 2008 and
             # 2nd across 2017, 2019 and 2024 are the same cell otherwise.
             {"value": _place_label(best_place), "label": "Best",
@@ -423,6 +461,49 @@ def _rider_slide(row: dict, rank: int, sample: str, shared: set,
         ],
         **common,
     }
+
+
+def _era_note(row: dict, fin_key: str, foil_key: str,
+              fallback: str = "") -> str:
+    """The fin/foil split under one counter, e.g. "4 FIN · 0 FOIL".
+
+    Sylt ran its slalom on a fin from 2006 to 2023 and on a foil from 2024,
+    and sailed both in 2017 and 2018. The post ranks the two eras together
+    because the event is one event, but a bare total hides the only thing a
+    reader needs to weigh it: not one rider on this list has won at Sylt in
+    both eras. "2 titles" is Bjorn Dunkerbeck twice on a fin against fleets
+    of 120 with Antoine Albeau in them, and it is Johan Soe twice on a foil
+    from two starts, and the number alone cannot tell them apart.
+
+    The zero is deliberate. Albeau's "0 FOIL" is a fact about his record,
+    not an empty cell, and dropping it would leave the split looking like a
+    footnote that applies to some riders and not others.
+
+    Returns ``fallback`` when the row carries no era columns. The wave and
+    freestyle records come from ``build_sylt_kings_query``, which returns
+    none: those disciplines never split, and their cards keep the note they
+    already had.
+    """
+    if row.get(fin_key) is None and row.get(foil_key) is None:
+        return fallback
+    return (f"{int(row.get(fin_key) or 0)} FIN · "
+            f"{int(row.get(foil_key) or 0)} FOIL")
+
+
+def _era_tag(row: dict) -> str:
+    """Which era a rider's titles came from, for the summary table.
+
+    The table has room for a number and one short line under it, not for
+    three split counters, so it names the era rather than counting it. That
+    works precisely because the split is clean: every champion on the list
+    won in one era only, so this is one word per row.
+    """
+    fin = int(row.get("fin_wins") or 0)
+    foil = int(row.get("foil_wins") or 0)
+    if row.get("fin_wins") is None and row.get("foil_wins") is None:
+        return ""
+    return " · ".join(
+        label for label, count in (("FIN", fin), ("FOIL", foil)) if count)
 
 
 def _hero(athlete_id) -> tuple[str, str, object]:
@@ -603,6 +684,7 @@ def _table_rows(rows: list[dict], shared: set = frozenset(),
             "photo_url": resolve_thumb_url(athlete_id, row.get("photo_url") or ""),
             "podiums": int(row.get("podiums") or 0),
             "wins": int(row.get("wins") or 0),
+            "titles_era": _era_tag(row),
             "starts": int(row.get("starts") or 0),
             "best_label": _place_label(best_place),
             "best_years": ", ".join(
