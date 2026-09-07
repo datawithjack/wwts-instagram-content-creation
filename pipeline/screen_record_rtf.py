@@ -1,10 +1,10 @@
 """Screen-record the live Road to Finals predictor as portrait reel footage.
 
-Drives the production web app with Playwright and records four beats of the
-predictor: placing riders across the events still to sail, scoring the prediction,
-the title chart redrawing itself from those placings, and the counting matrix being
-edited.
-Output is B-roll intercut with rendered explainer cards by pipeline/rtf_reel_edit.py.
+Drives the production web app with Playwright and records five beats: finding the
+predictor from the site's home page via the menu, placing riders across the events
+still to sail, scoring the prediction, the title chart redrawing itself from those
+placings, and the counting matrix being edited. Output is B-roll intercut with
+rendered explainer cards by pipeline/rtf_reel_edit.py.
 
 Unlike pipeline/screen_record.py there is NO LOGIN: the predictor takes no account
 and no email, which is one of the things the reel is selling. Nothing is written
@@ -33,8 +33,19 @@ the 1.5s is a scroll across the one shot the reel exists for.
 This is screen-capture of the REAL app, NOT an HTML render, so it is inherently
 side-effectful (live site, real browser) and verified by running, not unit tests.
 
-Writes a sidecar <out>.markers.json (predict/score/chart/matrix _start and _end) so
-pipeline/rtf_reel_edit.py can cut the footage into slices.
+⚠️ Two separate things put a beat's first frame in the wrong place, and both had to
+be fixed before the cuts landed where the markers say:
+
+1. A step swap or a client-side route change KEEPS the previous scroll position, so
+   a beat can open halfway down a list with its heading off frame. `_scroll_to_top`
+   guards the three places it matters: arriving at the predictor, entering the
+   predict step, and leaving it -- the last one because the outcome step inherits
+   the pool's scroll, which would put the chart below the frame at the exact moment
+   it draws.
+2. The marker clock and the video clock are NOT the same clock. See `_align_markers`.
+
+Writes a sidecar <out>.markers.json (nav/predict/score/chart/matrix _start and _end)
+so pipeline/rtf_reel_edit.py can cut the footage into slices.
 
 Usage:
     python -m pipeline.screen_record_rtf
@@ -54,6 +65,8 @@ from playwright.sync_api import sync_playwright
 from pipeline.screen_record import (
     CURSOR_JS,
     MOBILE_CONTEXT,
+    SCROLL_PAUSE,
+    SCROLL_STEPS,
     SETTLE,
     _force_dark_bg,
     _install_cursor,
@@ -61,6 +74,7 @@ from pipeline.screen_record import (
     _tap,
 )
 
+HOME_URL = "https://www.windsurfworldtourstats.com/"
 PAGE_URL = "https://www.windsurfworldtourstats.com/road-to-finals"
 
 # The phone frame, kept deliberately -- see the module docstring.
@@ -78,6 +92,9 @@ BEAT = 800            # between rider taps; every one of them is a name to read
 HOLD_CHART = 5200     # the line-drawing animation is 1.5s; the rest is reading it
 HOLD_MATRIX = 3600    # the counting grid, before and after an edit
 HOLD_SCORE = 1400     # the finished order held before the tap that scores it
+HOLD_HOME = 1500      # the home page, before the menu opens
+HOLD_MENU = 1400      # the open menu, so ROAD TO FINALS is read before it is tapped
+HOLD_ARRIVE = 2200    # the predictor's own landing step, having just arrived
 
 # Who to place, in predicted finishing order: one list per event, in calendar order.
 # An EMPTY list walks past that event without predicting it. Names must match the
@@ -130,6 +147,41 @@ PREDICTIONS = {
 MATRIX_DEMOTE_TO = "5th"
 
 
+def _align_markers(markers: dict, video_path: str) -> dict:
+    """Slide the marker timeline onto the video's, and return the corrected markers.
+
+    ⚠️ Playwright's video does NOT start at t0. Recording begins when the page first
+    has something to paint, so the page load and settle at the top of the flow are
+    missing from the file and every marker sits roughly two seconds AHEAD of the
+    frame it names. Measured 2026-09-07: a 76.35s marker timeline in a 74.44s file,
+    which put the predict segment's first frame on a tap two beats later.
+
+    The recorder closes the browser immediately after the last marker, so nothing is
+    recorded past it: the gap between the file's duration and that marker IS the
+    offset. Self-calibrating, so it stays right if the load time changes.
+    """
+    if not markers or not shutil.which("ffprobe"):
+        return markers
+    last = max(markers.values())
+    try:
+        probed = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "default=nw=1:nk=1", video_path],
+            capture_output=True, text=True, check=True,
+        )
+        duration = float(probed.stdout.strip())
+    except Exception as exc:
+        print(f"  could not measure the footage ({exc}); markers left unaligned")
+        return markers
+
+    offset = last - duration
+    if offset <= 0.05:
+        return markers
+    print(f"Video is {duration:.2f}s to the markers' {last:.2f}s; "
+          f"sliding the timeline back {offset:.2f}s.")
+    return {k: round(max(0.0, v - offset), 2) for k, v in markers.items()}
+
+
 def _select_fleet(page, fleet: str) -> None:
     """Switch the Men/Women dropdown. Men is the default, so this is a no-op there."""
     if fleet == "Men":
@@ -138,6 +190,42 @@ def _select_fleet(page, fleet: str) -> None:
     page.wait_for_timeout(SETTLE)
     _tap(page, page.get_by_role("option", name=fleet))
     page.wait_for_timeout(1200)
+
+
+def _scroll_to_top(page) -> None:
+    """Human-speed scroll back to the top of the page, if it is not already there.
+
+    Used before a beat that has to OPEN on a header rather than halfway down a list.
+    A route change or a step swap keeps whatever scroll position the last one had,
+    which lands the next segment mid-page with its heading off frame.
+    """
+    start = page.evaluate("window.scrollY")
+    if start < 8:
+        return
+    for i in range(1, SCROLL_STEPS + 1):
+        page.evaluate("(y) => window.scrollTo(0, y)", start * (1 - i / SCROLL_STEPS))
+        page.wait_for_timeout(SCROLL_PAUSE)
+
+
+def _navigate_from_home(page) -> None:
+    """Arrive at the predictor the way a viewer would: home page, menu, ROAD TO FINALS.
+
+    This is the beat that answers "where do I even find this", so it is filmed rather
+    than skipped over with a direct goto. The menu is a real route change, so the
+    predictor mounts fresh underneath it.
+    """
+    page.wait_for_timeout(HOLD_HOME)
+    _tap(page, page.get_by_role("button", name="Open navigation menu").first)
+    page.wait_for_timeout(SETTLE + HOLD_MENU)
+    _tap(page, page.get_by_role("link", name="ROAD TO FINALS").first)
+    try:
+        page.wait_for_load_state("networkidle", timeout=20000)
+    except Exception:
+        pass
+    # A client-side route change carries the old scroll position across, so the
+    # predictor can mount halfway down itself. Land on its heading, not its middle.
+    page.evaluate("window.scrollTo(0, 0)")
+    page.wait_for_timeout(HOLD_ARRIVE)
 
 
 def _current_event(page) -> str:
@@ -279,17 +367,29 @@ def record_rtf_flow(fleet: str, out_path: str) -> str:
             t0 = time.monotonic()
             page.add_init_script(CURSOR_JS)
 
-            page.goto(PAGE_URL, wait_until="networkidle", timeout=60000)
+            page.goto(HOME_URL, wait_until="networkidle", timeout=60000)
             page.wait_for_timeout(2500)
             _force_dark_bg(page)
             _install_cursor(page)
+
+            # --- Beat 0: how you get there ------------------------------------
+            # Home page -> hamburger -> ROAD TO FINALS. Filmed rather than skipped
+            # with a direct goto: "where do I find this" is a real question and the
+            # answer is three taps.
+            markers["nav_start"] = round(time.monotonic() - t0, 2)
+            _navigate_from_home(page)
+            _force_dark_bg(page)
+            markers["nav_end"] = round(time.monotonic() - t0, 2)
+
             _select_fleet(page, fleet)
 
-            # Into the predict step. The landing step is told by the cards, so none
-            # of this is filmed. `.last`: the phone's pinned bottom bar carries its
-            # own copy of this button and it is the one on screen.
+            # Into the predict step. `.last`: the phone's pinned bottom bar carries
+            # its own copy of this button and it is the one on screen.
             _tap(page, page.get_by_role("button", name="Predict what happens next").last)
             page.wait_for_timeout(1600)
+            # The step swap keeps the landing step's scroll, so the predict beat can
+            # open halfway down the rider pool with its heading off frame.
+            _scroll_to_top(page)
 
             # --- Beat 1: place the riders, one event at a time -----------------
             # No event is chosen by name: the page opens on the first one still to
@@ -317,6 +417,10 @@ def record_rtf_flow(fleet: str, out_path: str) -> str:
             # "Score" in the phone's bottom bar (it read "Score my prediction" before
             # the bar existed). exact=True or it also matches the bar's sibling
             # controls; `.last` for the same reason as the button above.
+            # Back to the top first. Five taps leave the pool scrolled down, and the
+            # outcome step inherits that scroll -- which would put the chart, the one
+            # shot the reel is for, off the bottom of the frame when it mounts.
+            _scroll_to_top(page)
             markers["score_start"] = round(time.monotonic() - t0, 2)
             page.wait_for_timeout(HOLD_SCORE)
             _tap(page, page.get_by_role("button", name="Score", exact=True).last)
@@ -384,6 +488,8 @@ def record_rtf_flow(fleet: str, out_path: str) -> str:
             shutil.copy2(recorded, out_path)
     finally:
         shutil.rmtree(video_dir, ignore_errors=True)
+
+    markers = _align_markers(markers, out_path)
 
     markers_path = out_path + ".markers.json"
     with open(markers_path, "w", encoding="utf-8") as f:

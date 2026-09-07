@@ -4,8 +4,9 @@ Stitches the explainer-card clips (rendered from templates/road_to_finals_reel.h
 one screen per clip) together with slices of the predictor screen-record footage
 (pipeline/screen_record_rtf.py) into one portrait MP4:
 
-    HEATING UP card -> AS IT STANDS card -> WHO WINS? card -> [placing riders]
-    -> [scoring it] -> [the chart redrawing] -> [editing the matrix] -> CTA card
+    HEATING UP card -> AS IT STANDS card -> WHO WINS? card -> [home page, menu,
+    ROAD TO FINALS] -> [placing riders] -> [scoring it] -> [the chart redrawing]
+    -> [editing the matrix] -> CTA card
 
 The three cards set the question and the footage answers it. The chart segment is the
 one the reel is really built around, so it runs closest to real time.
@@ -65,6 +66,7 @@ REEL_SPINE = [
     ("card", "hook"),
     ("card", "podium"),
     ("card", "question"),
+    ("footage", "nav"),
     ("footage", "predict"),
     ("footage", "score"),
     ("footage", "chart"),
@@ -79,13 +81,16 @@ REEL_SPINE = [
 # animation is 1.5s of real time and speeding it up is speeding up the one thing the
 # reel is for.
 FOOTAGE_SPEED = {
+    # Three taps to find the page. Brisk, but a viewer has to be able to see
+    # WHICH menu item was tapped, so not montage-fast.
+    "nav": 1.6,
     "predict": 2.0,
     "score": 1.0,
     "chart": 1.0,
     "matrix": 1.5,
 }
 
-SEGMENT_KEYS = ("predict", "score", "chart", "matrix")
+SEGMENT_KEYS = ("nav", "predict", "score", "chart", "matrix")
 
 
 def footage_segments(markers: dict) -> dict:
