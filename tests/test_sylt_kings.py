@@ -921,3 +921,28 @@ def test_the_slalom_post_passes_its_crossover_years_through():
     slides = build_sylt_kings_slides(SLALOM_ROWS, "Men", EDITIONS, "Slalom")
     assert slides[1]["type"] == "sylt_eras"
     assert all("label" in e and "years" in e for e in slides[1]["eras"])
+
+
+def test_a_wrong_nationality_is_overridden_not_just_a_missing_one():
+    """ATHLETES has Bjorn Dunkerbeck down as Dutch. That is not a gap the
+    override would fill if it only deferred to NULL: it is a wrong flag on
+    the card of a rider most of the audience can name.
+    """
+    row = {"athlete_id": 128, "nationality": "Dutch"}
+    assert sylt_kings._nationality(row) == "Spanish"
+
+
+def test_the_db_still_wins_where_there_is_no_override():
+    row = {"athlete_id": 999999, "nationality": "Polish"}
+    assert sylt_kings._nationality(row) == "Polish"
+
+
+def test_every_sylt_slalom_rider_resolves_to_a_flag():
+    """Eight of the fourteen had no nationality at all, which is eight cards
+    and eight table rows with no flag where every other post has one.
+    """
+    from pipeline.helpers import nationality_to_iso
+    for athlete_id in (700, 656, 1085, 1127, 1423, 738, 667, 1120, 128):
+        nat = sylt_kings._nationality({"athlete_id": athlete_id,
+                                       "nationality": None})
+        assert nationality_to_iso(nat), f"{athlete_id} has no flag"

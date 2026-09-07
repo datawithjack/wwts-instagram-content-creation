@@ -121,12 +121,28 @@ NAME_OVERRIDES = {
     890: "Steven Van Broeckhoven",   # stored as: Van Broeckhoven, no first name
 }
 
+# Read off the sail number, which carries the country in its prefix and is
+# the one field the results data never gets wrong. Eight of the fourteen
+# slalom riders have no nationality in ATHLETES at all and one has the wrong
+# one, which is nine cards out of fourteen with a missing or false flag.
 NATIONALITY_OVERRIDES = {
     722: "Bonaire",   # NULL in ATHLETES
     723: "Bonaire",
     888: "Bonaire",   # Kiri Thode
     890: "Belgium",
     892: "Belgium",   # Yentel Caers
+    # The Sylt slalom fleet. NULL in ATHLETES, sail prefix in the comment.
+    700: "French",    # Antoine Albeau, F-192
+    656: "French",    # Cyril Moussilmani, F-71
+    1085: "French",   # Pierre Mortefon, F-14
+    1127: "French",   # Nicolas Goyard, F-465
+    1423: "Danish",   # Johan Soe, DEN-37
+    738: "Israeli",   # Arnon Dagan, ISR-1
+    667: "American",  # Micah Buzianis, US-34
+    1120: "Austrian", # Marco Lang, AUT-66
+    # Not NULL but wrong: ATHLETES has him Dutch. He raced Sylt under ESP-11
+    # and later SUI-11, and was never Dutch on a sail.
+    128: "Spanish",   # Bjorn Dunkerbeck, ESP-11
 }
 
 
@@ -158,8 +174,15 @@ def _athlete_name(row: dict) -> str:
 
 
 def _nationality(row: dict) -> str:
-    """The rider's nationality, filled in where the DB has none."""
-    return row.get("nationality") or NATIONALITY_OVERRIDES.get(row.get("athlete_id"), "")
+    """The rider's nationality: the override first, then the DB.
+
+    The override wins rather than filling a gap. ATHLETES has Bjorn
+    Dunkerbeck down as Dutch, which is not a missing value the DB would let
+    us past -- it is a wrong flag on the card of a rider most of the audience
+    can name, and deferring to a non-null field would keep flying it.
+    """
+    return (NATIONALITY_OVERRIDES.get(row.get("athlete_id"))
+            or row.get("nationality") or "")
 
 
 def _title_lines(sex: str, discipline: str = "Wave") -> tuple:
