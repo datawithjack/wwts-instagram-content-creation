@@ -407,7 +407,8 @@ def test_credits_read_the_folder_the_photo_came_from(monkeypatch):
     and two photographers apart. Reading the newest folder for everyone would
     credit the wrong one."""
     monkeypatch.setattr(sylt_kings, "_hero",
-                        lambda aid: ("x.jpg", "50% 50%", {1: 16, 2: "sylt2019"}.get(aid)))
+                        lambda aid, events=None: ("x.jpg", "50% 50%",
+                                                  {1: 16, 2: "sylt2019"}.get(aid)))
     monkeypatch.setattr(sylt_kings, "resolve_photo_credit",
                         lambda aid, ev: {16: "@newer", "sylt2019": "@older"}.get(ev, ""))
     credits = sylt_kings.sylt_photo_credits([{"athlete_id": 1}, {"athlete_id": 2}])
@@ -416,14 +417,14 @@ def test_credits_read_the_folder_the_photo_came_from(monkeypatch):
 
 def test_untagged_photos_credit_only_the_tour(monkeypatch):
     """A missing credit beats a guessed one, but the library still gets named."""
-    monkeypatch.setattr(sylt_kings, "_hero", lambda aid: ("x.jpg", "50% 50%", 16))
+    monkeypatch.setattr(sylt_kings, "_hero", lambda aid, events=None: ("x.jpg", "50% 50%", 16))
     monkeypatch.setattr(sylt_kings, "resolve_photo_credit", lambda aid, ev: "")
     assert sylt_kings.sylt_photo_credits([{"athlete_id": 1}]) == ["@pwaworldtour"]
 
 
 def test_no_sylt_photo_credits_nobody(monkeypatch):
     """Nothing resolved from a Sylt folder means no photograph to credit."""
-    monkeypatch.setattr(sylt_kings, "_hero", lambda aid: ("flat.jpg", "50% 50%", None))
+    monkeypatch.setattr(sylt_kings, "_hero", lambda aid, events=None: ("flat.jpg", "50% 50%", None))
     assert sylt_kings.sylt_photo_credits([{"athlete_id": 1}]) == []
 
 
@@ -431,7 +432,7 @@ def test_headshot_photographers_are_credited(monkeypatch):
     """The table slide is built from headshots, so those are photographs on the
     post too. Crediting only the rider cards drops whoever shot the thumbnails.
     """
-    monkeypatch.setattr(sylt_kings, "_hero", lambda aid: ("x.jpg", "50% 50%", 16))
+    monkeypatch.setattr(sylt_kings, "_hero", lambda aid, events=None: ("x.jpg", "50% 50%", 16))
     monkeypatch.setattr(sylt_kings, "resolve_photo_credit", lambda aid, ev: "@action")
     monkeypatch.setattr(sylt_kings, "resolve_face_credit",
                         lambda aid: "@portrait" if aid == 2 else "")
@@ -442,7 +443,7 @@ def test_headshot_photographers_are_credited(monkeypatch):
 def test_a_headshot_photographer_is_not_repeated(monkeypatch):
     """One photographer who shot both the action frame and the headshot is
     named once, not twice."""
-    monkeypatch.setattr(sylt_kings, "_hero", lambda aid: ("x.jpg", "50% 50%", 16))
+    monkeypatch.setattr(sylt_kings, "_hero", lambda aid, events=None: ("x.jpg", "50% 50%", 16))
     monkeypatch.setattr(sylt_kings, "resolve_photo_credit", lambda aid, ev: "@jc")
     monkeypatch.setattr(sylt_kings, "resolve_face_credit", lambda aid: "@jc")
     assert sylt_kings.sylt_photo_credits([{"athlete_id": 1}]) == ["@jc", "@pwaworldtour"]
@@ -732,3 +733,23 @@ def test_a_record_with_no_foil_results_badges_nothing_extra():
     slides = build_sylt_kings_slides(ROWS, "Men", EDITIONS, "Wave")
     cards = [s for s in slides if s["type"] == "sylt_rider"]
     assert not [c for c in cards if c["rank_label"] == "MOST SUCCESSFUL ON FOIL"]
+
+
+def test_a_discipline_searches_its_own_photo_folder_first():
+    """Amado Vrieswijk is in both the freestyle folder and the slalom one, so
+    a fixed order gives one post the wrong photograph: a slalom card showing
+    him mid-freestyle move, or a freestyle card on a slalom board.
+    """
+    assert sylt_kings._photo_events("Slalom")[0] == "syltslalom"
+    assert sylt_kings._photo_events("Freestyle")[0] == "syltfreestyle"
+    # Wave has no folder of its own; the numbered editions are its folders.
+    assert sylt_kings._photo_events("Wave") == sylt_kings.SYLT_PHOTO_EVENTS
+
+
+def test_reordering_drops_no_folder():
+    """Putting one folder first must not lose the rest: a slalom rider with no
+    slalom shot should still fall through to every other Sylt edition.
+    """
+    for discipline in ("Slalom", "Freestyle", "Wave"):
+        assert (set(sylt_kings._photo_events(discipline))
+                == set(sylt_kings.SYLT_PHOTO_EVENTS))

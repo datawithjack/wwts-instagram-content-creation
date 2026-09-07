@@ -77,11 +77,35 @@ SYLT_PHOTO_EVENTS = (
     # 2022 and no freestyle rider has more than one.
     #
     # Last, so a rider who sails both disciplines keeps the wave shot the wave
-    # post already uses. Nobody on either list is currently in both, so the
-    # order is not yet load-bearing; the day someone is, this wants to be
-    # searched first for a freestyle post rather than last for every post.
+    # post already uses.
     "syltfreestyle",
+    # Slalom's cast last raced Sylt anywhere from 2015 to 2025 and almost none
+    # of them appears in the folders above, so one folder rather than per year,
+    # the same shape as the freestyle one.
+    "syltslalom",
 )
+
+# The folder a discipline's own shots live in, searched ahead of the rest for
+# that discipline's post.
+#
+# The day this became load-bearing has arrived. Amado Vrieswijk is now in both
+# the freestyle folder and the slalom one, and a fixed order gives one of the
+# two posts the wrong photograph: a slalom card showing him mid-freestyle
+# move, or a freestyle card showing him on a slalom board. Neither is a crop
+# to nudge. So the search puts the post's own discipline first and leaves the
+# rest of the order alone.
+DISCIPLINE_PHOTO_FOLDER = {
+    "Slalom": "syltslalom",
+    "Freestyle": "syltfreestyle",
+}
+
+
+def _photo_events(discipline: str) -> tuple:
+    """``SYLT_PHOTO_EVENTS`` with this discipline's own folder searched first."""
+    own = DISCIPLINE_PHOTO_FOLDER.get(discipline)
+    if not own:
+        return SYLT_PHOTO_EVENTS
+    return (own,) + tuple(f for f in SYLT_PHOTO_EVENTS if f != own)
 
 
 # Riders the ATHLETES table does not carry cleanly. The freestyle list is old
@@ -240,9 +264,11 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
     # it; ``rows`` stays in ranking order and only the walk is reversed.
     ranked = list(zip(_ranks(rows), rows))
     leaders = _foil_leaders(rows)
+    events = _photo_events(discipline)
     for i, (rank, row) in reversed(list(enumerate(ranked))):
         slides.append(_rider_slide(row, rank, sample, shared, foil,
-                                   foil_leader=i in leaders, **common))
+                                   foil_leader=i in leaders, events=events,
+                                   **common))
 
     slides.extend(_table_slides(
         _table_rows(rows, shared, foil), criteria,
@@ -456,7 +482,7 @@ def _foil_leaders(rows: list[dict]) -> set:
 
 def _rider_slide(row: dict, rank: int, sample: str, shared: set,
                  foil: set = frozenset(), foil_leader: bool = False,
-                 **common) -> dict:
+                 events: tuple = SYLT_PHOTO_EVENTS, **common) -> dict:
     """One rider's card.
 
     ``photo_mode`` picks the layout: a landscape action shot goes full bleed,
@@ -468,7 +494,7 @@ def _rider_slide(row: dict, rank: int, sample: str, shared: set,
     name = _athlete_name(row)
     first_name, _, last_name = name.partition(" ")
 
-    hero_url, focus, _ = _hero(athlete_id)
+    hero_url, focus, _ = _hero(athlete_id, events)
     photo_mode = "action" if hero_url else "portrait"
     photo_url = hero_url or resolve_thumb_url(athlete_id, row.get("photo_url") or "")
 
@@ -576,7 +602,7 @@ def _era_tag(row: dict) -> str:
         label for label, count in (("FIN", fin), ("FOIL", foil)) if count)
 
 
-def _hero(athlete_id) -> tuple[str, str, object]:
+def _hero(athlete_id, events: tuple = SYLT_PHOTO_EVENTS) -> tuple[str, str, object]:
     """A rider's action shot, its crop anchor, and the folder both came from.
 
     Returns ("", "", None) when nothing landscape resolves, which is the signal
@@ -590,7 +616,7 @@ def _hero(athlete_id) -> tuple[str, str, object]:
     """
     if not athlete_id:
         return "", "", None
-    for event_id in SYLT_PHOTO_EVENTS:
+    for event_id in events:
         url = resolve_hero_url(athlete_id, event_id)
         # ``resolve_hero_url`` runs its own chain to h2h and the legacy flat
         # photo, so a url that is not inside this event's folder means this
@@ -613,7 +639,7 @@ def _hero(athlete_id) -> tuple[str, str, object]:
 TOUR_HANDLE = "@pwaworldtour"
 
 
-def sylt_photo_credits(rows: list[dict]) -> list[str]:
+def sylt_photo_credits(rows: list[dict], discipline: str = "Wave") -> list[str]:
     """Photographer handles for the rider cards, in slide order.
 
     Every rider on the list gets a card, so slide order is row order and every
@@ -631,9 +657,10 @@ def sylt_photo_credits(rows: list[dict]) -> list[str]:
     """
     credits = []
     used_sylt_photo = False
+    events = _photo_events(discipline)
     for row in rows:
         athlete_id = row.get("athlete_id")
-        _, _, event_id = _hero(athlete_id)
+        _, _, event_id = _hero(athlete_id, events)
         if not event_id:
             continue
         used_sylt_photo = True

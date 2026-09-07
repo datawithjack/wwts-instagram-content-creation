@@ -545,7 +545,7 @@ def fetch_live_data(template_name: str, args) -> dict:
             "sex": sex,
             "discipline": discipline,
             "editions": editions[0] if editions else None,
-            "photo_credits": sylt_photo_credits(rows),
+            "photo_credits": sylt_photo_credits(rows, discipline),
         }
 
     if template_name == "wave_count":
