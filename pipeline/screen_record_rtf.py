@@ -1,8 +1,9 @@
 """Screen-record the live Road to Finals predictor as portrait reel footage.
 
 Drives the production web app with Playwright and records four beats of the
-predictor: placing riders for an upcoming event, scoring the prediction, the title
-chart redrawing itself from those placings, and the counting matrix being edited.
+predictor: placing riders across the next two events, scoring the prediction, the
+title chart redrawing itself from those placings, and the counting matrix being
+edited.
 Output is B-roll intercut with rendered explainer cards by pipeline/rtf_reel_edit.py.
 
 Unlike pipeline/screen_record.py there is NO LOGIN: the predictor takes no account
@@ -78,26 +79,34 @@ HOLD_CHART = 5200     # the line-drawing animation is 1.5s; the rest is reading 
 HOLD_MATRIX = 3600    # the counting grid, before and after an edit
 HOLD_SCORE = 1400     # the finished order held before the tap that scores it
 
-# Who to place, in predicted finishing order. Names must match the pool's aria-labels.
-# Kept here rather than argparse'd: the prediction is an editorial choice about what
-# the reel argues, not a knob.
+# Who to place, in predicted finishing order: one list per event, in calendar order.
+# Names must match the pool's aria-labels. Kept here rather than argparse'd: the
+# prediction is an editorial choice about what the reel argues, not a knob.
 #
-# ⚠️ ONE event, and it is whichever the page opens on -- the first still to sail
-# (Wissant, as of 2026-09-07). The event rail the recorder used to tap is gone from
-# the phone layout: the event now lives in the pinned bottom bar behind "Choose a
-# different event", and the way forward is a "Predict {next} next" button. Nothing
-# here selects an event, so this follows the calendar on its own.
+# ⚠️ No event is NAMED here, only how many to predict. The event rail the recorder
+# used to tap is gone from the phone layout: the first event is whichever the page
+# opens on (the first still to sail), and the way forward is the bottom bar's
+# "Predict {next} next" button. So this list follows the calendar on its own, and
+# runs out gracefully when there are fewer events left than entries.
 #
 # Men: Koster and Pare are level at the top on 22,400 (2026-09-06), so the reel's
-# claim is "this is level, one event decides it". Pare wins it, Koster is 3rd, and
-# the projected table comes out 24,500 to 22,400.
+# claim is "this is level, and it swings". Pare wins the first event and goes clear;
+# Koster wins the 5-star behind it and takes the lead back. Two events, two leaders,
+# which is the whole point of watching the chart redraw.
 PREDICTIONS = {
-    "Men": ["Marc Paré Rico", "Marcilio Browne", "Philip Köster", "Bernd Roediger"],
-    "Women": ["Maria Behrens", "Lina Erpenstein", "Marine Hunter", "Sol Degrieck"],
+    "Men": [
+        ["Marc Paré Rico", "Marcilio Browne", "Philip Köster", "Bernd Roediger"],
+        ["Philip Köster", "Bernd Roediger", "Marc Paré Rico", "Marcilio Browne"],
+    ],
+    "Women": [
+        ["Maria Behrens", "Lina Erpenstein", "Marine Hunter", "Sol Degrieck"],
+        ["Lina Erpenstein", "Sol Degrieck", "Maria Behrens", "Marine Hunter"],
+    ],
 }
 
-# The matrix edit shown at the end: (rider, new place). The event is whichever one
-# was predicted, read off the page rather than named here.
+# The matrix edit shown at the end: (rider, new place), made in the LAST event
+# predicted -- read off the page rather than named here. Demoting the rider who won
+# that event is the edit worth filming: it hands the lead back and two rows move.
 #
 # ⚠️ A cell only offers the places that EXIST at that event -- one more than are
 # already filled -- so a four-rider prediction offers 1st to 4th and nothing beyond.
@@ -140,6 +149,23 @@ def _current_event(page) -> str:
         if found:
             return found.group(1)
     return ""
+
+
+def _next_event(page) -> bool:
+    """Move on to the next event via the bottom bar. False if there is no next one.
+
+    The bar's way-forward button reads "Pick Sylt" but is labelled "Predict {full
+    event name} next." -- matched on the label because the visible text is a two-word
+    shortening that collides with nothing useful. The trailing period is what keeps
+    this off the landing step's "Predict what happens next".
+    """
+    button = page.get_by_role("button", name=re.compile(r"^Predict .+ next\.$"))
+    if button.count() == 0:
+        return False
+    _slow_scroll_into_view(page, button.last)
+    _tap(page, button.last)
+    page.wait_for_timeout(SETTLE)
+    return True
 
 
 def _pool_button(page, athlete_name: str):
@@ -258,13 +284,19 @@ def record_rtf_flow(fleet: str, out_path: str) -> str:
             # own copy of this button and it is the one on screen.
             _tap(page, page.get_by_role("button", name="Predict what happens next").last)
             page.wait_for_timeout(1600)
-            event_label = _current_event(page)
-            print("Predicting:", event_label or "(event not named on the page)")
 
-            # --- Beat 1: place the riders -------------------------------------
-            # No event to choose: the page opens on the first one still to sail.
+            # --- Beat 1: place the riders, one event at a time -----------------
+            # No event is chosen by name: the page opens on the first one still to
+            # sail and the bottom bar walks forward from there.
             markers["predict_start"] = round(time.monotonic() - t0, 2)
-            placed += _place_riders(page, PREDICTIONS[fleet])
+            event_label = ""
+            for i, athletes in enumerate(PREDICTIONS[fleet]):
+                if i and not _next_event(page):
+                    print("  no further event to predict, stopping at", i)
+                    break
+                event_label = _current_event(page)
+                print("Predicting:", event_label or "(event not named on the page)")
+                placed += _place_riders(page, athletes)
             page.wait_for_timeout(SETTLE)
             markers["predict_end"] = round(time.monotonic() - t0, 2)
 
