@@ -666,3 +666,69 @@ def test_the_position_range_counts_rows_not_ranks():
     slides = sylt_kings._table_slides(table, "c")
     assert [s["label"] for s in slides] == ["Positions 1\u20138",
                                             "Positions 9\u201313"]
+
+
+def test_the_slalom_cover_carries_no_discipline_tag():
+    """FASTEST MEN IN SYLT already says which race this is, and a SLALOM tag
+    above it says it twice. KINGS OF SYLT does not, so the wave cover keeps
+    its tag. The inside slides keep theirs either way: the headline is gone
+    there and the eyebrow is all the reader has.
+    """
+    slalom = build_sylt_kings_slides(ROWS, "Men", EDITIONS, "Slalom")
+    wave = build_sylt_kings_slides(ROWS, "Men", EDITIONS, "Wave")
+    assert slalom[0]["eyebrow_discipline"] == ""
+    assert wave[0]["eyebrow_discipline"] == "Wave"
+    assert "Slalom" in slalom[-2]["eyebrow"]
+
+
+def test_the_fine_print_names_the_discipline_the_cover_dropped():
+    """The slalom cover has no tag, so the fine print is where the discipline
+    gets said.
+    """
+    slalom = build_sylt_kings_slides(ROWS, "Men", EDITIONS, "Slalom")
+    wave = build_sylt_kings_slides(ROWS, "Men", EDITIONS, "Wave")
+    assert slalom[0]["criteria_note"].startswith("Slalom sailors with at ")
+    assert wave[0]["criteria_note"].startswith("Riders with at ")
+
+
+def test_the_foil_era_gets_its_own_badge():
+    """The overall leader at Sylt will be a fin sailor for a long time yet:
+    four foil editions against twelve fin ones. Without a second badge the
+    newer era has no top and its riders are cards you pass on the way.
+    """
+    rows = [_era_row("Antoine Albeau", 700, 4, 0, fin_starts=12,
+                     foil_starts=1),
+            _era_row("Johan Soe", 1423, 0, 2, foil_starts=4)]
+    slides = build_sylt_kings_slides(rows, "Men", EDITIONS, "Slalom")
+    labels = {s["athlete_name"]: s["rank_label"]
+              for s in slides if s["type"] == "sylt_rider"}
+    assert labels["Antoine Albeau"] == "MOST SUCCESSFUL RIDER"
+    assert labels["Johan Soe"] == "MOST SUCCESSFUL ON FOIL"
+
+
+def test_riders_level_on_the_foil_era_share_the_badge():
+    """Johan Soe and Amado Vrieswijk have two foil titles each and neither has
+    beaten the other to anything.
+    """
+    rows = [_era_row("Antoine Albeau", 700, 4, 0, fin_starts=12),
+            _era_row("Johan Soe", 1423, 0, 2, foil_starts=4),
+            _era_row("Amado Vrieswijk", 113, 0, 2, fin_starts=4,
+                     foil_starts=4)]
+    assert sylt_kings._foil_leaders(rows) == {1, 2}
+
+
+def test_the_overall_badge_wins_a_clash():
+    """Two badges on one card is a card arguing with itself, and leading the
+    whole record is the more decorated of the two things.
+    """
+    rows = [_era_row("Johan Soe", 1423, 0, 2, foil_starts=4)]
+    slides = build_sylt_kings_slides(rows, "Men", EDITIONS, "Slalom")
+    card = [s for s in slides if s["type"] == "sylt_rider"][0]
+    assert card["rank_label"] == "MOST SUCCESSFUL RIDER"
+
+
+def test_a_record_with_no_foil_results_badges_nothing_extra():
+    """A wave post, and a slalom record from before 2022."""
+    slides = build_sylt_kings_slides(ROWS, "Men", EDITIONS, "Wave")
+    cards = [s for s in slides if s["type"] == "sylt_rider"]
+    assert not [c for c in cards if c["rank_label"] == "MOST SUCCESSFUL ON FOIL"]

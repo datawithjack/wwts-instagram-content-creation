@@ -42,8 +42,13 @@ DEFAULT_FOCUS = "center 30%"
 
 ACCENT_COLOR = "#9478B5"  # muted violet — the editorial accent, as canary_kings
 
-CRITERIA_NOTE = ("Riders with at least 1 win or 2 podiums \u00b7 "
+CRITERIA_NOTE = ("{subject} with at least 1 win or 2 podiums \u00b7 "
                  "Titles are wins, podiums are 2nd and 3rd places")
+
+# Who the fine print is counting. "Riders" is right for a wave or freestyle
+# record, where the cover already tags the discipline. The slalom cover drops
+# that tag, so the fine print is where the discipline gets said.
+CRITERIA_SUBJECT = {"Slalom": "Slalom sailors"}
 
 # Photo folders for Sylt, newest first, searched in order for a rider's action
 # shot. A venue post spans nearly twenty years, so unlike a single-event
@@ -206,7 +211,7 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
     sample = _sample_line(editions)
     shared = _shared_years(rows)
     foil = _foil_years(rows)
-    criteria = _criteria_note(shared, foil)
+    criteria = _criteria_note(shared, foil, discipline)
 
     slides = [{
         "type": "sylt_cover",
@@ -217,7 +222,13 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
         # The cover styles the discipline on its own, so it gets the two parts
         # separately as well as the joined line.
         "eyebrow_venue": VENUE,
-        "eyebrow_discipline": _discipline_label(discipline),
+        # No tag on the slalom cover: FASTEST MEN IN SYLT already says which
+        # race this is, and a SLALOM tag above it says it twice. KINGS OF
+        # SYLT does not, so the wave and freestyle covers keep theirs. The
+        # inside slides keep the tag either way, where the headline is gone
+        # and the eyebrow is all the reader has.
+        "eyebrow_discipline": ("" if discipline == "Slalom"
+                               else _discipline_label(discipline)),
         "sample_line": sample,
         "criteria_note": criteria,
         **common,
@@ -228,8 +239,10 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
     # payoff on slide two and leaves seven cards of diminishing interest after
     # it; ``rows`` stays in ranking order and only the walk is reversed.
     ranked = list(zip(_ranks(rows), rows))
-    for rank, row in reversed(ranked):
-        slides.append(_rider_slide(row, rank, sample, shared, foil, **common))
+    leaders = _foil_leaders(rows)
+    for i, (rank, row) in reversed(list(enumerate(ranked))):
+        slides.append(_rider_slide(row, rank, sample, shared, foil,
+                                   foil_leader=i in leaders, **common))
 
     slides.extend(_table_slides(
         _table_rows(rows, shared, foil), criteria,
@@ -374,9 +387,11 @@ def _card_note(win_years: list, best_years: list, shared: set, foil: set) -> str
     return " · ".join(n for n in notes if n)
 
 
-def _criteria_note(shared: set, foil: set = frozenset()) -> str:
+def _criteria_note(shared: set, foil: set = frozenset(),
+                   discipline: str = "Wave") -> str:
     """The fine print, with each mark explained only when one is in play."""
-    note = CRITERIA_NOTE
+    note = CRITERIA_NOTE.format(
+        subject=CRITERIA_SUBJECT.get(discipline, "Riders"))
     if foil:
         first = min(foil)
         note = f"{note} · {FOIL_PHRASE}, from {first}"
@@ -414,8 +429,34 @@ def _ranks(rows: list[dict]) -> list[int]:
     return ranks
 
 
+def _foil_leaders(rows: list[dict]) -> set:
+    """Row positions of the best record of the foil era.
+
+    The countdown badges its overall leader, and at Sylt that will be a fin
+    sailor for a long time yet: Antoine Albeau has four titles from twelve fin
+    starts against four foil editions in the whole record. Without a second
+    badge the newer era has no top, and the two riders who own it are cards
+    the reader passes on the way to him.
+
+    Ranked on foil titles then foil podiums, the two numbers the list itself
+    is ordered on. Ties share the badge rather than being broken on a third
+    key: Johan Soe and Amado Vrieswijk have two foil titles each and neither
+    has beaten the other to anything.
+
+    Empty when no one has won or placed on a foil, so a wave or freestyle
+    post, and a slalom record from before 2022, badges nothing.
+    """
+    scored = [(int(row.get("foil_wins") or 0),
+               int(row.get("foil_podiums") or 0)) for row in rows]
+    best = max(scored, default=(0, 0))
+    if best == (0, 0):
+        return set()
+    return {i for i, score in enumerate(scored) if score == best}
+
+
 def _rider_slide(row: dict, rank: int, sample: str, shared: set,
-                 foil: set = frozenset(), **common) -> dict:
+                 foil: set = frozenset(), foil_leader: bool = False,
+                 **common) -> dict:
     """One rider's card.
 
     ``photo_mode`` picks the layout: a landscape action shot goes full bleed,
@@ -442,9 +483,15 @@ def _rider_slide(row: dict, rank: int, sample: str, shared: set,
         "rank": rank,
         # A countdown does not need to number itself: the cards already run
         # last-to-first and every one carries the titles and podiums the order
-        # is built on. Naming only the top spot makes the climax land instead
+        # is built on. Naming only the top spots makes the climax land instead
         # of arriving as one more number in a sequence.
-        "rank_label": "MOST SUCCESSFUL RIDER" if rank == 1 else "",
+        #
+        # The overall badge wins a clash. A rider who leads the whole record
+        # and the foil era is the more decorated of the two things, and two
+        # badges on one card is a card arguing with itself.
+        "rank_label": ("MOST SUCCESSFUL RIDER" if rank == 1
+                       else "MOST SUCCESSFUL ON FOIL" if foil_leader
+                       else ""),
         "athlete_name": name,
         "first_name": first_name,
         "last_name": last_name,
