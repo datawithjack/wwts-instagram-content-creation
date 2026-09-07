@@ -132,14 +132,20 @@ def _nationality(row: dict) -> str:
     return row.get("nationality") or NATIONALITY_OVERRIDES.get(row.get("athlete_id"), "")
 
 
-def _title_lines(sex: str) -> tuple:
+def _title_lines(sex: str, discipline: str = "Wave") -> tuple:
     """The cover headline, as the three lines it is set on.
 
-    Every discipline gets the same headline for now; the eyebrow carries the
-    discipline. Set as lines rather than one string because the autofit only
-    shrinks on overflow, and a line long enough to wrap grows the block by a
-    whole line instead: "MOST STYLISH" took the cover from 898px to 1197px.
+    Slalom is the exception to the KINGS/QUEENS headline. A slalom record is
+    won on speed, and "fastest" says that where "kings" only says the venue
+    twice. The eyebrow still carries the discipline either way.
+
+    Set as lines rather than one string because the autofit only shrinks on
+    overflow, and a line long enough to wrap grows the block by a whole line
+    instead: "MOST STYLISH" took the cover from 898px to 1197px. SYLT stays
+    on its own last line in both headlines, so the venue lands the same way.
     """
+    if discipline == "Slalom":
+        return ("FASTEST", "MEN IN" if sex == "Men" else "WOMEN IN", "SYLT")
     return ("KINGS" if sex == "Men" else "QUEENS", "OF", "SYLT")
 
 
@@ -194,7 +200,7 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
         List of slide dicts: cover, one per rider, chart, cta.
     """
     title_word = "KINGS" if sex == "Men" else "QUEENS"
-    title_lines = _title_lines(sex)
+    title_lines = _title_lines(sex, discipline)
     eyebrow = _eyebrow(discipline)
     common = {"accent_color": ACCENT_COLOR}
     sample = _sample_line(editions)
@@ -243,38 +249,49 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
     return slides
 
 
-# The closing table was laid out for the eight riders a wave or freestyle
-# record produces. Slalom returns thirteen, and thirteen rows in the same
-# height is a table nobody reads on a phone. Above this many the table runs
-# over two slides instead of shrinking.
-MAX_TABLE_ROWS = 8
+# The rows the closing table was laid out for: eight is what a wave or
+# freestyle record produces. Slalom returns thirteen, and thirteen rows in the
+# same height is a table nobody reads on a phone.
+TABLE_ROWS_PER_SLIDE = 8
 
 
 def _table_slides(table: list[dict], criteria: str, **fields) -> list[dict]:
     """The closing table, over as many slides as its rows need.
 
-    Split near the middle rather than filling the first slide and leaving a
-    remainder: 7 and 6 read as one table continued, where 8 and 5 reads as a
-    table with an afterthought stuck to it.
+    Chunked at a fixed size and labelled with the positions it covers, the
+    way ``_build_perfect_10s_slides`` already splits a long top 10. The fixed
+    chunk is what keeps the rows one height across the pair: split thirteen
+    near the middle and you get 7 and 6, and because the rows share out
+    whatever space is left over, the six then stand taller than the seven and
+    the two halves of one table stop looking like one table.
+
+    Every chunk carries its range, not only the later ones. "Positions 1-8"
+    tells a reader the table runs on before they swipe; a mark on the second
+    slide only explains it afterwards.
+
+    The range counts rows, not ranks. Ranks tie: Micah Buzianis and Marco Lang
+    are both 8th on one title and no podium, so ranges read off the rank
+    column gave "Positions 1-8" followed by "Positions 8-12", which asks the
+    reader to work out why 8 is on both slides.
 
     The criteria footnote goes on the last slide only. It qualifies the whole
     ranking, and repeating it on both invites the reader to check whether the
     two are saying different things.
     """
-    if len(table) <= MAX_TABLE_ROWS:
-        chunks = [table]
-    else:
-        half = -(-len(table) // 2)
-        chunks = [table[:half], table[half:]]
+    size = TABLE_ROWS_PER_SLIDE
+    chunks = [table[i:i + size] for i in range(0, len(table), size)] or [[]]
 
     return [{
         "type": "sylt_table",
         "rows": chunk,
         "criteria_note": criteria if i == len(chunks) - 1 else "",
-        # Continued slides say so. Two slides carrying the same title and a
-        # different six rows, with nothing to tell them apart, reads as a
-        # rendering fault rather than a table running on.
-        "continued": i > 0,
+        # Rows are sized against the slide's capacity rather than their own
+        # count, so a short last chunk keeps full-slide row heights and
+        # leaves the space at the bottom instead of growing into it.
+        "table_capacity": size,
+        "label": (u"Positions {}\u2013{}".format(i * size + 1,
+                                                 i * size + len(chunk))
+                  if len(chunks) > 1 and chunk else ""),
         **fields,
     } for i, chunk in enumerate(chunks)]
 
@@ -446,10 +463,10 @@ def _rider_slide(row: dict, rank: int, sample: str, shared: set,
         "sample_line": sample,
         "stats": [
             {"value": str(wins), "label": "Titles",
-             "note": _era_note(row, "fin_wins", "foil_wins")},
+             "note": _era_note(row, "fin_wins", "foil_wins", drop_zero=True)},
             {"value": str(podiums), "label": "Podiums",
              "note": _era_note(row, "fin_podiums", "foil_podiums",
-                               "2nd or 3rd")},
+                               "2nd or 3rd", drop_zero=True)},
             {"value": str(int(row.get("starts") or 0)), "label": "Appearances",
              "note": _era_note(row, "fin_starts", "foil_starts")},
             # A best finish is worth more with its date on it: 2nd in 2008 and
@@ -464,7 +481,7 @@ def _rider_slide(row: dict, rank: int, sample: str, shared: set,
 
 
 def _era_note(row: dict, fin_key: str, foil_key: str,
-              fallback: str = "") -> str:
+              fallback: str = "", drop_zero: bool = False) -> str:
     """The fin/foil split under one counter, e.g. "4 FIN · 0 FOIL".
 
     Sylt ran its slalom on a fin from 2006 to 2023 and on a foil from 2024,
@@ -475,9 +492,12 @@ def _era_note(row: dict, fin_key: str, foil_key: str,
     of 120 with Antoine Albeau in them, and it is Johan Soe twice on a foil
     from two starts, and the number alone cannot tell them apart.
 
-    The zero is deliberate. Albeau's "0 FOIL" is a fact about his record,
-    not an empty cell, and dropping it would leave the split looking like a
-    footnote that applies to some riders and not others.
+    ``drop_zero`` cuts the empty half, so Albeau's titles read "4 FIN" and
+    Amado Vrieswijk's "2 FOIL". Titles and podiums use it: a rider who won in
+    one era only has a one-word record, and "0 FOIL" spends a line saying
+    nothing happened. Appearances keeps both halves, because there the split
+    is the point -- twelve fin starts against one foil start is how a reader
+    places an average finish that spans the boundary.
 
     Returns ``fallback`` when the row carries no era columns. The wave and
     freestyle records come from ``build_sylt_kings_query``, which returns
@@ -486,8 +506,11 @@ def _era_note(row: dict, fin_key: str, foil_key: str,
     """
     if row.get(fin_key) is None and row.get(foil_key) is None:
         return fallback
-    return (f"{int(row.get(fin_key) or 0)} FIN · "
-            f"{int(row.get(foil_key) or 0)} FOIL")
+    parts = [(int(row.get(fin_key) or 0), "FIN"),
+             (int(row.get(foil_key) or 0), "FOIL")]
+    if drop_zero:
+        parts = [part for part in parts if part[0]]
+    return " \u00b7 ".join(f"{count} {era}" for count, era in parts)
 
 
 def _era_tag(row: dict) -> str:

@@ -511,26 +511,41 @@ def _era_row(name, athlete_id, fin_wins, foil_wins, **kw):
 
 
 def test_every_counter_on_a_slalom_card_carries_the_era_split():
-    """Sylt ran slalom on a fin to 2023 and on a foil from 2024, and the post
-    ranks both. A bare "2 titles" is Bjorn Dunkerbeck twice on a fin against
-    fleets of 120 and Johan Soe twice on a foil from two starts, and the
-    number alone cannot tell them apart.
+    """Sylt raced on a fin to 2018 and on a foil from 2022, and the post ranks
+    both. A bare "2 titles" is Bjorn Dunkerbeck twice on a fin against fleets
+    of 120 and Johan Soe twice on a foil from four starts, and the number
+    alone cannot tell them apart.
     """
-    row = _era_row("Antoine Albeau", 700, 4, 0, fin_podiums=5, fin_starts=13)
+    row = _era_row("Matteo Iachino", 428, 2, 0, fin_podiums=0, foil_podiums=3,
+                   fin_starts=9, foil_starts=4)
+    card = sylt_kings._rider_slide(row, 2, "16 editions", frozenset())
+    notes = {stat["label"]: stat["note"] for stat in card["stats"]}
+    assert notes["Titles"] == "2 FIN"
+    assert notes["Podiums"] == "3 FOIL"
+    assert notes["Appearances"] == "9 FIN \u00b7 4 FOIL"
+
+
+def test_an_empty_era_is_dropped_from_titles_and_podiums():
+    """A rider who won in one era only has a one-word record. "0 FOIL" spends
+    a line saying nothing happened.
+    """
+    row = _era_row("Antoine Albeau", 700, 4, 0, fin_podiums=5, fin_starts=12,
+                   foil_starts=1)
     card = sylt_kings._rider_slide(row, 1, "16 editions", frozenset())
     notes = {stat["label"]: stat["note"] for stat in card["stats"]}
-    assert notes["Titles"] == "4 FIN \u00b7 0 FOIL"
-    assert notes["Podiums"] == "5 FIN \u00b7 0 FOIL"
-    assert notes["Appearances"] == "13 FIN \u00b7 0 FOIL"
+    assert notes["Titles"] == "4 FIN"
+    assert notes["Podiums"] == "5 FIN"
 
 
-def test_a_zero_era_is_written_out_rather_than_dropped():
-    """Albeau's "0 FOIL" is a fact about his record. Dropping it would leave
-    the split looking like a footnote that applies to some riders only.
+def test_appearances_keeps_both_halves_of_the_split():
+    """There the zero is the point: twelve fin starts against one foil start
+    is how a reader places an average finish that spans the boundary.
     """
-    row = _era_row("Johan Soe", 1423, 0, 2, fin_starts=2, foil_starts=2)
-    card = sylt_kings._rider_slide(row, 4, "16 editions", frozenset())
-    assert card["stats"][0]["note"] == "0 FIN \u00b7 2 FOIL"
+    row = _era_row("Bjorn Dunkerbeck", 128, 2, 0, fin_podiums=2,
+                   fin_starts=8, foil_starts=0)
+    card = sylt_kings._rider_slide(row, 3, "16 editions", frozenset())
+    notes = {stat["label"]: stat["note"] for stat in card["stats"]}
+    assert notes["Appearances"] == "8 FIN \u00b7 0 FOIL"
 
 
 def test_a_wave_card_keeps_its_own_notes():
@@ -583,17 +598,28 @@ def test_the_closing_table_runs_over_two_slides_when_it_is_too_long():
     table = [{"rank": i} for i in range(1, 14)]
     slides = sylt_kings._table_slides(table, "criteria")
     assert len(slides) == 2
-    # Split near the middle: 7 and 6 read as one table continued, where 8 and
-    # 5 reads as a table with an afterthought stuck to it.
-    assert [len(s["rows"]) for s in slides] == [7, 6]
-    assert slides[1]["continued"] is True
+    # A fixed chunk, the way the top 10 carousel already splits a long table.
+    assert [len(s["rows"]) for s in slides] == [8, 5]
+    assert [s["label"] for s in slides] == ["Positions 1\u20138",
+                                            "Positions 9\u201313"]
+
+
+def test_a_short_chunk_keeps_full_slide_row_heights():
+    """The rows share out whatever space is left, so five rows sized to their
+    own count stand taller than eight and one table reads as two. Capacity is
+    what the slide holds, not what this chunk was given.
+    """
+    slides = sylt_kings._table_slides([{"rank": i} for i in range(1, 14)], "c")
+    assert [s["table_capacity"] for s in slides] == [8, 8]
 
 
 def test_a_table_that_fits_stays_on_one_slide():
-    """The wave and freestyle records must be untouched by the split."""
+    """The wave and freestyle records must be untouched by the split, and a
+    single table has no range worth naming.
+    """
     slides = sylt_kings._table_slides([{"rank": i} for i in range(1, 9)], "c")
     assert len(slides) == 1
-    assert slides[0]["continued"] is False
+    assert slides[0]["label"] == ""
 
 
 def test_only_the_last_table_slide_carries_the_criteria_note():
@@ -617,3 +643,26 @@ def test_the_foil_years_are_named_not_inferred_from_the_discipline():
     sql, _ = build_sylt_slalom_query("Men")
     assert "__FOIL_YEARS__" not in sql
     assert "r.year IN (2022, 2023)" in sql
+
+
+def test_the_slalom_cover_is_about_speed_not_royalty():
+    """A slalom record is won on speed, and "fastest" says that where "kings"
+    only says the venue twice. SYLT stays on its own last line either way.
+    """
+    assert sylt_kings._title_lines("Men", "Slalom") == ("FASTEST", "MEN IN",
+                                                        "SYLT")
+    assert sylt_kings._title_lines("Men", "Wave") == ("KINGS", "OF", "SYLT")
+    assert sylt_kings._title_lines("Women", "Freestyle") == ("QUEENS", "OF",
+                                                             "SYLT")
+
+
+def test_the_position_range_counts_rows_not_ranks():
+    """Ranks tie: Micah Buzianis and Marco Lang are both 8th on one title and
+    no podium. Read off the rank column the ranges came out "Positions 1-8"
+    then "Positions 8-12", with 8 on both slides.
+    """
+    table = [{"rank": r} for r in
+             [1, 2, 3, 4, 4, 6, 6, 8, 8, 10, 11, 12, 12]]
+    slides = sylt_kings._table_slides(table, "c")
+    assert [s["label"] for s in slides] == ["Positions 1\u20138",
+                                            "Positions 9\u201313"]
