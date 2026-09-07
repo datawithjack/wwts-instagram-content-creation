@@ -28,7 +28,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
-from PIL import Image
+from PIL import Image, ImageFilter, ImageOps
 
 from pipeline.photo_adjust import crop_box
 
@@ -150,15 +150,49 @@ def collect_faces(source_dir, only=None) -> list:
                     "face", source_dir, only)
 
 
+BLUR_RADIUS = 28
+
+
+def _blurred_backdrop(im, frame):
+    """The whole photo, blurred, filling the frame.
+
+    What shows through wherever the crop has been dragged off the edge of the
+    photograph. A blur of the same shot rather than a flat colour because the
+    slide already sets its hero on a dark ground and a hard band reads as a
+    mistake, where a soft continuation of the same water reads as depth.
+    """
+    return ImageOps.fit(im, frame, method=Image.LANCZOS).filter(
+        ImageFilter.GaussianBlur(BLUR_RADIUS))
+
+
 def save_crop(rider: dict, zoom: float, dx: float, dy: float) -> str:
-    """Crop the rider's photo to the slide and install it."""
+    """Crop the rider's photo to the slide and install it.
+
+    The crop is not held inside the photo: at the widest framing a landscape
+    shot has no vertical slack, so a clamped box cannot be nudged up or down
+    at all. Whatever falls outside is filled from the blurred backdrop.
+    """
     src = Path(rider["display"])
     frame = FRAMES[rider["kind"]]
-    box = crop_box((rider["nw"], rider["nh"]), frame, zoom=zoom, offset=(dx, dy))
+    natural = (rider["nw"], rider["nh"])
+    box = crop_box(natural, frame, zoom=zoom, offset=(dx, dy), clamp=False)
+    left, top, right, bottom = box.as_tuple()
     with Image.open(src) as im:
         im = im.convert("RGB")
         exif = im.info.get("exif")
-        out = im.crop(box.as_tuple()).resize(frame, Image.LANCZOS)
+        out = _blurred_backdrop(im, frame)
+        # The part of the box that is actually on the photograph, placed where
+        # it belongs in the frame. Empty when the box has been dragged clear of
+        # the photo entirely, which leaves the backdrop alone.
+        ix0, iy0 = max(0, left), max(0, top)
+        ix1, iy1 = min(rider["nw"], right), min(rider["nh"], bottom)
+        if ix1 > ix0 and iy1 > iy0:
+            scale = frame[0] / (right - left)
+            region = im.crop((ix0, iy0, ix1, iy1)).resize(
+                (max(1, round((ix1 - ix0) * scale)),
+                 max(1, round((iy1 - iy0) * scale))), Image.LANCZOS)
+            out.paste(region, (round((ix0 - left) * scale),
+                               round((iy0 - top) * scale)))
         extra = {"exif": exif} if exif else {}
         out.save(rider["installed"], "JPEG", quality=JPEG_QUALITY,
                  optimize=True, **extra)
@@ -181,6 +215,10 @@ PAGE = """<!doctype html>
   .viewport.drag { cursor: grabbing; }
   .viewport img { position: absolute; transform-origin: 0 0;
                   user-select: none; -webkit-user-drag: none; }
+  /* Mirrors the fill save_crop writes, so what is dragged off the edge looks
+     on screen the way it will look on the slide. */
+  .viewport img.bg { inset: 0; width: 100%; height: 100%; object-fit: cover;
+                     filter: blur(14px); transform: scale(1.1); }
   .grad { position: absolute; inset: 0; pointer-events: none;
           background: linear-gradient(to bottom,
             rgba(8,20,40,0.20) 0%, rgba(10,14,26,0.42) 40%,
@@ -202,10 +240,9 @@ PAGE = """<!doctype html>
 </style>
 <h1>Adjust crops</h1>
 <div class="hint">Drag to place the shot, then zoom with the slider or the
-  wheel. Dragging never changes the zoom. Photos open just inside the frame so
-  there is room to move up and down from the start: at 1.00&times; a landscape
-  photo fills the slide's height exactly and can only slide sideways. The
-  gradient
+  wheel. Dragging never changes the zoom, and nothing stops at an edge:
+  anything taken past the edge of the photo fills with a blurred copy of it,
+  which is what you see behind. The gradient
 is where the slide's text sits. Headshots are the square thumbnails on the
   summary table and carry no gradient. Save re-crops from the original file.</div>
 <div id="bar">
@@ -224,6 +261,7 @@ function build(r) {
   const h = Math.round(288 * r.fh / r.fw);
   card.innerHTML = `
     <div class="viewport" id="vp-${r.key}" style="height:${h}px">
+      <img src="/photo/${r.key}" class="bg" id="bg-${r.key}" draggable="false">
       <img src="/photo/${r.key}" id="img-${r.key}" draggable="false">
       ${r.kind === 'hero' ? '<div class="grad"></div>' : ''}
     </div>
@@ -274,20 +312,20 @@ function render(key) {
   const base = Math.max(vw / r.nw, vh / r.nh) * Math.max(s.zoom, 1);
   const dw = r.nw * base, dh = r.nh * base;
   const mx = (dw - vw) / 2, my = (dh - vh) / 2;
-  s.dx = Math.max(-mx / vw, Math.min(mx / vw, s.dx));
-  s.dy = Math.max(-my / vh, Math.min(my / vh, s.dy));
   const img = document.getElementById('img-' + key);
   img.style.width = dw + 'px';
   img.style.height = dh + 'px';
   img.style.left = (-mx + s.dx * vw) + 'px';
   img.style.top = (-my + s.dy * vh) + 'px';
   const visible = (vw / base) / r.nw;
-  const room = Math.round(my / base);
+  // How far the frame has been taken past the edge of the photograph, as a
+  // share of its height. Worth saying: past the edge is backdrop, not photo.
+  const over = Math.max(0, Math.abs(s.dy * vh) - my) / vh;
   document.getElementById('w-' + key).textContent =
     'showing ' + Math.round(visible * 100) + '% of width'
     + '  \u00b7  zoom ' + s.zoom.toFixed(2) + '\u00d7'
-    + (room > 0 ? '  \u00b7  \u00b1' + room + 'px up/down'
-                : '  \u00b7  no vertical room at this zoom');
+    + (over > 0.005 ? '  \u00b7  ' + Math.round(over * 100)
+                      + '% blurred backdrop' : '');
 }
 
 function reset(key) {

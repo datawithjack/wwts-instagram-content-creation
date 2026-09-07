@@ -42,7 +42,7 @@ def cover_scale(natural: tuple, frame: tuple) -> float:
 
 
 def crop_box(natural: tuple, frame: tuple, zoom: float = 1.0,
-             offset: tuple = (0.0, 0.0)) -> CropBox:
+             offset: tuple = (0.0, 0.0), clamp: bool = True) -> CropBox:
     """The source rectangle shown by a viewport at ``zoom`` and ``offset``.
 
     ``zoom`` is relative to the cover scale, so 1.0 is the framing the slide
@@ -54,8 +54,16 @@ def crop_box(natural: tuple, frame: tuple, zoom: float = 1.0,
     frame -- positive x drags the photo right, which moves the box *left*,
     because the viewer is then looking further left in the source.
 
-    The box is clamped inside the photo. Dragging past an edge would otherwise
-    crop empty pixels into a published slide.
+    ``clamp`` keeps the box inside the photo. It is on by default because a
+    box that runs off the edge has no pixels there, and a caller that cannot
+    fill them would put a hard black band on a published slide.
+
+    The adjuster turns it off. At the widest framing a landscape photo has no
+    vertical slack at all, so a clamped box cannot move up or down by even a
+    pixel, and "move him up" is not an unreasonable thing to ask of a crop
+    tool. Off, the box goes where it is dragged and the caller is responsible
+    for whatever falls outside; ``save_crop`` fills it with a blurred cover of
+    the same photo, which is the backdrop the slide already sits the shot on.
     """
     nw, nh = natural
     fw, fh = frame
@@ -73,8 +81,9 @@ def crop_box(natural: tuple, frame: tuple, zoom: float = 1.0,
     left = (nw - width) / 2 - dx * width
     top = (nh - height) / 2 - dy * height
 
-    left = max(0.0, min(left, nw - width))
-    top = max(0.0, min(top, nh - height))
+    if clamp:
+        left = max(0.0, min(left, nw - width))
+        top = max(0.0, min(top, nh - height))
     return CropBox(left, top, width, height)
 
 

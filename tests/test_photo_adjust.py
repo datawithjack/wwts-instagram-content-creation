@@ -129,3 +129,33 @@ class TestSaveCrop:
         adjust_photos.save_crop(rider, zoom=1.0, dx=0.0, dy=0.0)
         with Image.open(rider["installed"]) as out:
             assert out.size == (600, 600)
+
+
+    def test_a_crop_can_be_dragged_past_the_edge_of_the_photo(self, tmp_path):
+        """At the widest framing a landscape shot has no vertical slack, so a
+        clamped box cannot be nudged up or down at all. The tool has to let go
+        of the edge for "move him up" to mean anything.
+        """
+        from PIL import Image
+        import adjust_photos
+        rider = self._rider(tmp_path)
+        adjust_photos.save_crop(rider, zoom=1.0, dx=0.0, dy=0.0)
+        with Image.open(rider["installed"]) as out:
+            centred = list(out.convert("RGB").getdata())[:64]
+        adjust_photos.save_crop(rider, zoom=1.0, dx=0.0, dy=0.5)
+        with Image.open(rider["installed"]) as out:
+            assert out.size == (1080, 1350)
+            assert list(out.convert("RGB").getdata())[:64] != centred
+
+    def test_what_falls_outside_is_filled_not_left_black(self, tmp_path):
+        """A hard band on a published slide reads as a mistake. The overflow
+        takes a blurred cover of the same photo instead.
+        """
+        from PIL import Image
+        import adjust_photos
+        rider = self._rider(tmp_path)
+        # Far enough that the top of the frame is entirely off the photo.
+        adjust_photos.save_crop(rider, zoom=1.0, dx=0.0, dy=0.9)
+        with Image.open(rider["installed"]) as out:
+            top_row = list(out.convert("RGB").crop((0, 0, 1080, 1)).getdata())
+        assert any(px != (0, 0, 0) for px in top_row)
