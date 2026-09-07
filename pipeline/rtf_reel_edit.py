@@ -72,12 +72,13 @@ REEL_SPINE = [
     ("card", "cta"),
 ]
 
-# Footage playback speed per segment. The predict segment is four taps' worth of
-# scrolling and reads as a montage sped up. The chart runs at 1x and nothing else
-# does: its draw animation is 1.5s of real time and speeding it up is speeding up
-# the one thing the reel is for.
+# Footage playback speed per segment. The predict segment is sixteen taps' worth of
+# scrolling across four events and only works as a montage: at 2.2x, which was right
+# when the reel predicted one event, it ran 23s and the reel went past a minute. The
+# chart runs at 1x and nothing else does: its draw animation is 1.5s of real time and
+# speeding it up is speeding up the one thing the reel is for.
 FOOTAGE_SPEED = {
-    "predict": 2.2,
+    "predict": 4.0,
     "score": 1.0,
     "chart": 1.0,
     "matrix": 1.5,

@@ -1,8 +1,8 @@
 """Screen-record the live Road to Finals predictor as portrait reel footage.
 
 Drives the production web app with Playwright and records four beats of the
-predictor: placing riders across the next two events, scoring the prediction, the
-title chart redrawing itself from those placings, and the counting matrix being
+predictor: placing riders across the events still to sail, scoring the prediction,
+the title chart redrawing itself from those placings, and the counting matrix being
 edited.
 Output is B-roll intercut with rendered explainer cards by pipeline/rtf_reel_edit.py.
 
@@ -74,39 +74,51 @@ PRESET = "slow"
 
 # Pacing (ms). Every beat here is something to READ, so these run slower than the
 # picks reel's.
-BEAT = 900            # between rider taps
+# 16 placements across four events, so the gap between taps is half what it was when
+# the reel predicted one: the predict beat is a montage, and at 900 it ran to 40s of
+# raw footage that no playback speed rescues.
+BEAT = 450            # between rider taps
 HOLD_CHART = 5200     # the line-drawing animation is 1.5s; the rest is reading it
 HOLD_MATRIX = 3600    # the counting grid, before and after an edit
 HOLD_SCORE = 1400     # the finished order held before the tap that scores it
 
 # Who to place, in predicted finishing order: one list per event, in calendar order.
-# Names must match the pool's aria-labels. Kept here rather than argparse'd: the
-# prediction is an editorial choice about what the reel argues, not a knob.
+# An EMPTY list walks past that event without predicting it. Names must match the
+# pool's aria-labels. Kept here rather than argparse'd: the prediction is an
+# editorial choice about what the reel argues, not a knob.
 #
-# ⚠️ No event is NAMED here, only how many to predict. The event rail the recorder
-# used to tap is gone from the phone layout: the first event is whichever the page
-# opens on (the first still to sail), and the way forward is the bottom bar's
-# "Predict {next} next" button. So this list follows the calendar on its own, and
-# runs out gracefully when there are fewer events left than entries.
+# ⚠️ No event is NAMED here, only its position in the calendar. The event rail the
+# recorder used to tap is gone from the phone layout: the first event is whichever
+# the page opens on (the first still to sail), and the way forward is the bottom
+# bar's "Predict {next} next" button. So this follows the calendar on its own and
+# runs out gracefully when there are fewer events left than entries. The order as of
+# 2026-09-07 is Wissant, Sylt, Tiree, Aloha, Chile -- Tiree is the skipped one.
 #
-# Men: Koster and Pare are level at the top on 22,400 (2026-09-06), so the reel's
-# claim is "this is level, and it swings". Pare wins the first event and goes clear;
-# Koster wins the 5-star behind it and takes the lead back. Two events, two leaders,
-# which is the whole point of watching the chart redraw.
+# The prediction is deliberately ROGUE. A sensible one barely moves the table, which
+# makes for a dull Score tap; this one has an outsider win the three 5-stars, so the
+# board tears itself up and a name from mid-table ends the season on top. It is a
+# predictor, not a forecast, and the reel is selling "go and play with it".
 PREDICTIONS = {
     "Men": [
+        # Wissant: the plausible opener, so there is a baseline to wreck.
         ["Marc Paré Rico", "Marcilio Browne", "Philip Köster", "Bernd Roediger"],
-        ["Philip Köster", "Bernd Roediger", "Marc Paré Rico", "Marcilio Browne"],
+        ["Lennart Neubauer", "Takuma Sugi", "Morgan Noireaux", "Philip Köster"],
+        [],  # Tiree, left unpredicted
+        ["Lennart Neubauer", "Morgan Noireaux", "Marcilio Browne", "Marc Paré Rico"],
+        ["Lennart Neubauer", "Antoine Martin", "Takuma Sugi", "Bernd Roediger"],
     ],
     "Women": [
         ["Maria Behrens", "Lina Erpenstein", "Marine Hunter", "Sol Degrieck"],
-        ["Lina Erpenstein", "Sol Degrieck", "Maria Behrens", "Marine Hunter"],
+        ["Sarah-Quita Offringa", "Pauline Katz", "Lina Erpenstein", "Maria Behrens"],
+        [],  # Tiree, left unpredicted
+        ["Sarah-Quita Offringa", "Marine Hunter", "Sol Degrieck", "Lina Erpenstein"],
+        ["Sarah-Quita Offringa", "Alexia Kiefer Quintana", "Pauline Katz", "Maria Behrens"],
     ],
 }
 
-# The matrix edit shown at the end: (rider, new place), made in the LAST event
-# predicted -- read off the page rather than named here. Demoting the rider who won
-# that event is the edit worth filming: it hands the lead back and two rows move.
+# The matrix edit shown at the end demotes the winner of the LAST event predicted to
+# this place. Both the rider and the event are taken from what actually got placed,
+# so the edit cannot drift out of step with PREDICTIONS.
 #
 # ⚠️ A cell only offers the places that EXIST at that event -- one more than are
 # already filled -- so a four-rider prediction offers 1st to 4th and nothing beyond.
@@ -114,13 +126,7 @@ PREDICTIONS = {
 # which lands as half a minute of dead footage in the middle of the beat. (The app
 # has a fix for this on feat/sparse-prediction-places, unmerged as of 2026-09-07 --
 # once it ships, any of the ten places is offered and this can open up.)
-#
-# Demoting the rider placed 3rd to 4th swaps them with whoever held 4th, so two rows
-# move and two totals change: enough to read as "you can edit this".
-MATRIX_EDIT = {
-    "Men": ("Philip Köster", "4th"),
-    "Women": ("Marine Hunter", "4th"),
-}
+MATRIX_DEMOTE_TO = "4th"
 
 
 def _select_fleet(page, fleet: str) -> None:
@@ -199,7 +205,7 @@ def _place_riders(page, athletes: list[str]) -> list[str]:
     return placed
 
 
-def _edit_matrix(page, fleet: str, event_label: str) -> bool:
+def _edit_matrix(page, athlete: str, place: str, event_label: str) -> bool:
     """Enter the matrix's edit mode, change one placing, and submit it.
 
     Returns False if any control is missing, so a page change costs the reel this
@@ -214,7 +220,6 @@ def _edit_matrix(page, fleet: str, event_label: str) -> bool:
     _tap(page, change)
     page.wait_for_timeout(1000)
 
-    athlete, place = MATRIX_EDIT[fleet]
     # One cell per (rider, event), so both halves are needed to name it: matching on
     # the surname alone finds the rider's FIRST event, which is not this one. The
     # labels read "{Name} at {Event}, predicted 3rd. Change place." -- matched on the
@@ -289,14 +294,21 @@ def record_rtf_flow(fleet: str, out_path: str) -> str:
             # No event is chosen by name: the page opens on the first one still to
             # sail and the bottom bar walks forward from there.
             markers["predict_start"] = round(time.monotonic() - t0, 2)
-            event_label = ""
+            event_label, last_winner = "", ""
             for i, athletes in enumerate(PREDICTIONS[fleet]):
                 if i and not _next_event(page):
                     print("  no further event to predict, stopping at", i)
                     break
-                event_label = _current_event(page)
-                print("Predicting:", event_label or "(event not named on the page)")
+                here = _current_event(page)
+                if not athletes:
+                    # Walked past on the way to the next one. Nothing is placed, so
+                    # this event keeps whatever the page projects for it.
+                    print("Skipping:", here)
+                    continue
+                print("Predicting:", here or "(event not named on the page)")
+                event_label = here
                 placed += _place_riders(page, athletes)
+                last_winner = athletes[0]
             page.wait_for_timeout(SETTLE)
             markers["predict_end"] = round(time.monotonic() - t0, 2)
 
@@ -335,7 +347,7 @@ def record_rtf_flow(fleet: str, out_path: str) -> str:
             markers["matrix_start"] = round(time.monotonic() - t0, 2)
             _slow_scroll_into_view(page, page.get_by_role("heading", name="WHAT COUNTS"))
             page.wait_for_timeout(HOLD_MATRIX)
-            _edit_matrix(page, fleet, event_label)
+            _edit_matrix(page, last_winner, MATRIX_DEMOTE_TO, event_label)
             page.wait_for_timeout(HOLD_MATRIX)
             markers["matrix_end"] = round(time.monotonic() - t0, 2)
 
