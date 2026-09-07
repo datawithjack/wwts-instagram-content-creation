@@ -103,6 +103,7 @@ def build_road_to_finals_reel_data(year: int = 2026) -> dict:
         "accent_warn": ACCENT_WARN,
 
         # Screen 1 — the mood. No numbers, no names: this is the "stop scrolling" beat.
+        "hook_eyebrow": f"{year} Wave World Tour",
         "hook_title": "THE WORLD\nTITLE RACE",
         "hook_kicker": "is heating up...",
 
