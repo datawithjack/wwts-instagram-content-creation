@@ -73,5 +73,47 @@
     "confirmed": true,
     "via": "user",
     "note": "Credited by name: Instagram handle not known. Replace handle with the @ if it is confirmed."
+  },
+  "700": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "S11_ls_F192_0846.jpg",
+    "confirmed": false,
+    "via": ""
+  },
+  "656": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "S11_ls_F71_0845.jpg",
+    "confirmed": false,
+    "via": ""
+  },
+  "468": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "S11_ls_GBR83_0860.jpg",
+    "confirmed": false,
+    "via": ""
+  },
+  "128": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "S11_ls_SUI11_0650.jpg",
+    "confirmed": false,
+    "via": ""
+  },
+  "667": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "S11_ls_US34_0847.jpg",
+    "confirmed": false,
+    "via": ""
+  },
+  "237": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "SY25_ls_POL23_00068 copy.jpg",
+    "confirmed": true,
+    "via": "exif"
   }
-}
+}

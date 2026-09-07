@@ -33,12 +33,29 @@ from PIL import Image
 from pipeline.photo_adjust import crop_box
 
 PHOTOS_DIR = Path(__file__).parent / "assets" / "photos"
-FRAME = (1080, 1350)
+# The two shapes a photo is cropped to. A hero fills the slide; a headshot is
+# the square thumbnail the summary table sets in a circle, and it needs the
+# same treatment for the same reason: a face that lands off-centre cannot be
+# fixed with an anchor, because a square crop of a square file has no slack.
+FRAMES = {"hero": (1080, 1350), "face": (600, 600)}
 JPEG_QUALITY = 90
 
 
 def _event_dir(event) -> Path:
     return PHOTOS_DIR / "events" / str(event)
+
+
+def _faces_dir() -> Path:
+    return PHOTOS_DIR / "faces"
+
+
+def _credits_at(path: Path) -> dict:
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except ValueError:
+        return {}
 
 
 def _credits(event) -> dict:
@@ -68,22 +85,28 @@ def _original_for(entry, source_dir: Path):
     return candidate if candidate.exists() else None
 
 
-def collect_riders(event, source_dir, only=None) -> list:
-    """Every installed hero in the event folder, newest info first."""
-    credits = _credits(event)
-    riders = []
-    for path in sorted(glob.glob(str(_event_dir(event) / "*.jpg"))):
+def _collect(folder: Path, credits: dict, kind: str, source_dir,
+             only=None) -> list:
+    """Every installed photo in one folder, as adjuster items."""
+    fw, fh = FRAMES[kind]
+    items = []
+    for path in sorted(glob.glob(str(folder / "*.jpg"))):
         athlete_id = Path(path).stem
         if not athlete_id.isdigit():
             continue
-        if only and int(athlete_id) not in only:
+        if only is not None and int(athlete_id) not in only:
             continue
         entry = credits.get(athlete_id) or {}
         original = _original_for(entry, source_dir)
         display = original or Path(path)
         with Image.open(display) as im:
             nw, nh = im.size
-        riders.append({
+        items.append({
+            # Heroes and headshots share athlete ids, so the page keys on
+            # kind + id. Keying on the id alone made one rider's two photos
+            # the same element and only the first was ever drawn.
+            "key": ("a" if kind == "hero" else "f") + athlete_id,
+            "kind": kind,
             "id": int(athlete_id),
             "installed": path,
             "display": str(display),
@@ -92,22 +115,43 @@ def collect_riders(event, source_dir, only=None) -> list:
             "handle": (entry.get("handle") if isinstance(entry, dict) else "") or "",
             "nw": nw,
             "nh": nh,
+            "fw": fw,
+            "fh": fh,
         })
-    return riders
+    return items
+
+
+def collect_riders(event, source_dir, only=None) -> list:
+    """Every installed hero in the event folder, newest info first."""
+    return _collect(_event_dir(event), _credits(event), "hero", source_dir,
+                    only)
+
+
+def collect_faces(source_dir, only=None) -> list:
+    """Every installed headshot, for the riders this post actually uses.
+
+    ``faces/`` is athlete-level and holds every headshot in the repo, so it is
+    filtered to the cast rather than shown whole: a slalom post has no use for
+    a wave rider's face and thirty extra cards make the ones that matter hard
+    to find.
+    """
+    return _collect(_faces_dir(), _credits_at(_faces_dir() / "credits.json"),
+                    "face", source_dir, only)
 
 
 def save_crop(rider: dict, zoom: float, dx: float, dy: float) -> str:
     """Crop the rider's photo to the slide and install it."""
     src = Path(rider["display"])
-    box = crop_box((rider["nw"], rider["nh"]), FRAME, zoom=zoom, offset=(dx, dy))
+    frame = FRAMES[rider["kind"]]
+    box = crop_box((rider["nw"], rider["nh"]), frame, zoom=zoom, offset=(dx, dy))
     with Image.open(src) as im:
         im = im.convert("RGB")
         exif = im.info.get("exif")
-        out = im.crop(box.as_tuple()).resize(FRAME, Image.LANCZOS)
+        out = im.crop(box.as_tuple()).resize(frame, Image.LANCZOS)
         extra = {"exif": exif} if exif else {}
         out.save(rider["installed"], "JPEG", quality=JPEG_QUALITY,
                  optimize=True, **extra)
-    return f"{rider['id']}: {box.as_tuple()} from {src.name}"
+    return f"{rider['id']} {rider['kind']}: {box.as_tuple()} from {src.name}"
 
 
 PAGE = """<!doctype html>
@@ -121,7 +165,7 @@ PAGE = """<!doctype html>
   .hint { color: #8b949e; margin-bottom: 20px; }
   .grid { display: flex; flex-wrap: wrap; gap: 24px; }
   .card { width: 288px; }
-  .viewport { position: relative; width: 288px; height: 360px; overflow: hidden;
+  .viewport { position: relative; width: 288px; overflow: hidden;
               border-radius: 6px; background: #161b22; cursor: grab; }
   .viewport.drag { cursor: grabbing; }
   .viewport img { position: absolute; transform-origin: 0 0;
@@ -145,9 +189,12 @@ PAGE = """<!doctype html>
          z-index: 5; display: flex; gap: 12px; align-items: center; }
   #status { color: #8b949e; }
 </style>
-<h1>Adjust hero crops</h1>
-<div class="hint">Drag to move, scroll or use the slider to zoom. The gradient
-is where the slide's text sits. Save re-crops from the original file.</div>
+<h1>Adjust crops</h1>
+<div class="hint">Drag to move in any direction, scroll or use the slider to
+  zoom. Dragging up or down zooms in only as far as the move needs, because a
+  landscape photo already fills the slide's height. The gradient
+is where the slide's text sits. Headshots are the square thumbnails on the
+  summary table and carry no gradient. Save re-crops from the original file.</div>
 <div id="bar">
   <button onclick="saveAll()">Save all</button>
   <span id="status"></span>
@@ -155,39 +202,40 @@ is where the slide's text sits. Save re-crops from the original file.</div>
 <div class="grid" id="grid"></div>
 <script>
 const RIDERS = __RIDERS__;
-const FRAME_W = 1080, FRAME_H = 1350;
 const state = {};
 
 function build(r) {
   const card = document.createElement('div');
   card.className = 'card';
+  const h = Math.round(288 * r.fh / r.fw);
   card.innerHTML = `
-    <div class="viewport" id="vp-${r.id}">
-      <img src="/photo/${r.id}" id="img-${r.id}" draggable="false">
-      <div class="grad"></div>
+    <div class="viewport" id="vp-${r.key}" style="height:${h}px">
+      <img src="/photo/${r.key}" id="img-${r.key}" draggable="false">
+      ${r.kind === 'hero' ? '<div class="grad"></div>' : ''}
     </div>
-    <row><input type="range" id="z-${r.id}" min="1" max="3" step="0.01" value="1">
-    <button class="ghost" onclick="reset(${r.id})">Reset</button></row>
-    <div class="meta">${r.id} &middot; ${r.source_file}${r.handle ? ' &middot; ' + r.handle : ''}</div>
+    <row><input type="range" id="z-${r.key}" min="1" max="3" step="0.01" value="1">
+    <button class="ghost" onclick="reset('${r.key}')">Reset</button></row>
+    <div class="meta">${r.id} &middot; ${r.kind === 'hero' ? 'action' : 'headshot'}
+      &middot; ${r.source_file}${r.handle ? ' &middot; ' + r.handle : ''}</div>
     <div class="meta ${r.from_original ? '' : 'lowres'}">
       ${r.from_original ? 'original ' + r.nw + '&times;' + r.nh
                         : 'ORIGINAL NOT FOUND \u2014 zoom limited (' + r.nw + '&times;' + r.nh + ')'}
     </div>
-    <div class="meta warn" id="w-${r.id}"></div>`;
+    <div class="meta warn" id="w-${r.key}"></div>`;
   document.getElementById('grid').appendChild(card);
-  state[r.id] = {zoom: 1, dx: 0, dy: 0, r};
-  const img = document.getElementById('img-' + r.id);
-  img.onload = () => render(r.id);
-  document.getElementById('z-' + r.id).oninput = e => {
-    state[r.id].zoom = parseFloat(e.target.value); render(r.id);
+  state[r.key] = {zoom: 1, dx: 0, dy: 0, r};
+  const img = document.getElementById('img-' + r.key);
+  img.onload = () => render(r.key);
+  document.getElementById('z-' + r.key).oninput = e => {
+    state[r.key].zoom = parseFloat(e.target.value); render(r.key);
   };
-  const vp = document.getElementById('vp-' + r.id);
+  const vp = document.getElementById('vp-' + r.key);
   vp.onwheel = e => {
     e.preventDefault();
-    const s = state[r.id];
+    const s = state[r.key];
     s.zoom = Math.min(3, Math.max(1, s.zoom * (e.deltaY < 0 ? 1.06 : 0.94)));
-    document.getElementById('z-' + r.id).value = s.zoom;
-    render(r.id);
+    document.getElementById('z-' + r.key).value = s.zoom;
+    render(r.key);
   };
   let dragging = false, px = 0, py = 0;
   vp.onmousedown = e => { dragging = true; px = e.clientX; py = e.clientY;
@@ -195,44 +243,57 @@ function build(r) {
   window.addEventListener('mouseup', () => { dragging = false; vp.classList.remove('drag'); });
   window.addEventListener('mousemove', e => {
     if (!dragging) return;
-    const s = state[r.id];
+    const s = state[r.key];
     s.dx += (e.clientX - px) / vp.clientWidth;
     s.dy += (e.clientY - py) / vp.clientHeight;
     px = e.clientX; py = e.clientY;
-    render(r.id);
+    // A drag past the edge zooms in by exactly as much as the drag needs.
+    // At zoom 1 a 3:2 photo fills the frame's height exactly, so there is no
+    // vertical slack and dy clamps to nothing: the photo would only ever move
+    // sideways, and "move him up" meant going to the slider first, guessing a
+    // zoom, then dragging. Now the drag is the whole gesture.
+    const vw = vp.clientWidth, vh = vp.clientHeight;
+    const b0 = Math.max(vw / r.nw, vh / r.nh);
+    const needed = Math.max(vh * (1 + 2 * Math.abs(s.dy)) / (r.nh * b0),
+                            vw * (1 + 2 * Math.abs(s.dx)) / (r.nw * b0));
+    if (needed > s.zoom) {
+      s.zoom = Math.min(3, needed);
+      document.getElementById('z-' + r.key).value = s.zoom;
+    }
+    render(r.key);
   });
 }
 
 // Mirrors pipeline/photo_adjust.crop_box so what you see is what is saved.
-function render(id) {
-  const s = state[id], r = s.r;
-  const vp = document.getElementById('vp-' + id);
+function render(key) {
+  const s = state[key], r = s.r;
+  const vp = document.getElementById('vp-' + key);
   const vw = vp.clientWidth, vh = vp.clientHeight;
   const base = Math.max(vw / r.nw, vh / r.nh) * Math.max(s.zoom, 1);
   const dw = r.nw * base, dh = r.nh * base;
   const mx = (dw - vw) / 2, my = (dh - vh) / 2;
   s.dx = Math.max(-mx / vw, Math.min(mx / vw, s.dx));
   s.dy = Math.max(-my / vh, Math.min(my / vh, s.dy));
-  const img = document.getElementById('img-' + id);
+  const img = document.getElementById('img-' + key);
   img.style.width = dw + 'px';
   img.style.height = dh + 'px';
   img.style.left = (-mx + s.dx * vw) + 'px';
   img.style.top = (-my + s.dy * vh) + 'px';
   const visible = (vw / base) / r.nw;
-  document.getElementById('w-' + id).textContent =
+  document.getElementById('w-' + key).textContent =
     'showing ' + Math.round(visible * 100) + '% of width' +
     (s.zoom > 1 ? '  \u00b7  zoom ' + s.zoom.toFixed(2) + '\u00d7' : '  \u00b7  fully zoomed out');
 }
 
-function reset(id) {
-  state[id].zoom = 1; state[id].dx = 0; state[id].dy = 0;
-  document.getElementById('z-' + id).value = 1;
-  render(id);
+function reset(key) {
+  state[key].zoom = 1; state[key].dx = 0; state[key].dy = 0;
+  document.getElementById('z-' + key).value = 1;
+  render(key);
 }
 
 async function saveAll() {
   const items = Object.values(state).map(s =>
-    ({id: s.r.id, zoom: s.zoom, dx: s.dx, dy: s.dy}));
+    ({key: s.r.key, zoom: s.zoom, dx: s.dx, dy: s.dy}));
   document.getElementById('status').textContent = 'Saving...';
   const res = await fetch('/save', {method: 'POST', body: JSON.stringify({items})});
   const out = await res.json();
@@ -266,7 +327,7 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/photo/"):
             wanted = path.rsplit("/", 1)[-1]
             for r in self.riders:
-                if str(r["id"]) == wanted:
+                if r["key"] == wanted:
                     data = Path(r["display"]).read_bytes()
                     return self._send(200, data, "image/jpeg")
         self._send(404, b"not found", "text/plain")
@@ -276,10 +337,10 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(404, b"not found", "text/plain")
         length = int(self.headers.get("Content-Length", 0))
         payload = json.loads(self.rfile.read(length) or "{}")
-        by_id = {r["id"]: r for r in self.riders}
+        by_key = {r["key"]: r for r in self.riders}
         saved = []
         for item in payload.get("items", []):
-            rider = by_id.get(item["id"])
+            rider = by_key.get(item["key"])
             if rider:
                 saved.append(save_crop(rider, float(item["zoom"]),
                                        float(item["dx"]), float(item["dy"])))
@@ -296,6 +357,8 @@ def main():
                         help="Event folder under assets/photos/events/")
     parser.add_argument("--source", help="Folder holding the original high-res files")
     parser.add_argument("--athletes", help="Comma-separated athlete IDs (default: all)")
+    parser.add_argument("--no-faces", action="store_true",
+                        help="Action shots only; leave the headshots alone")
     parser.add_argument("--port", type=int, default=8712)
     args = parser.parse_args()
 
@@ -308,6 +371,11 @@ def main():
         return 1
 
     riders = collect_riders(args.event, source_dir, only)
+    if not args.no_faces:
+        # The headshots belong to whoever is on this post, which is the cast
+        # the event folder already names, plus anything asked for by hand.
+        cast = {r["id"] for r in riders} | (only or set())
+        riders += collect_faces(source_dir, cast or None)
     if not riders:
         print(f"No installed photos in {_event_dir(args.event)}", file=sys.stderr)
         return 1
