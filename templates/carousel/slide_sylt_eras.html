@@ -9,9 +9,11 @@
   under one name. Establishing it here costs one slide and saves the fine
   print underneath every card that follows.
 
-  Deliberately two blocks and nothing else. The comparison the post wants a
-  reader to carry into the ranking is only "these are two different races",
-  and a timeline or a per-year table invites them to study it instead.
+  Three bands and nothing else. Sylt did not switch overnight -- 2017 and
+  2018 ran a fin slalom and a separate foil event -- so a straight FIN-then-
+  FOIL split would state a boundary the venue never had. A per-year table
+  would invite a reader to study it instead of carrying one fact into the
+  ranking.
 #}
 
 {% block carousel_head %}
@@ -42,45 +44,43 @@
         color: var(--color-text-primary);
     }
 
-    /* Equal tracks, so neither era reads as the important one. The fin
-       record is three times the size of the foil one and the ranking says
-       so on its own; the slide's job is only to name the two. */
+    /* Equal tracks, so no era reads as the important one. The fin record is
+       several times the size of the foil one and the ranking says so on its
+       own; the slide's job is only to name them. */
     .eras-body {
         display: grid;
-        grid-template-rows: repeat(var(--era-count, 2), 1fr);
-        gap: 28px;
+        grid-template-rows: repeat(var(--era-count, 3), 1fr);
         flex: 1;
         min-height: 0;
-        margin: 48px 0 0;
+        margin: 40px 0 0;
     }
 
+    /* No card around each era: three boxed panels read as three separate
+       records, when the point of the slide is that they are one venue
+       running on either side of a change. A hairline between them is
+       enough to keep the bands apart. */
     .era-block {
         display: flex;
         flex-direction: column;
         justify-content: center;
-        padding: 0 44px;
-        background: rgba(30, 41, 59, 0.30);
-        border-left: 6px solid rgba(255, 255, 255, 0.14);
-        border-radius: 10px;
+        padding: 8px 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.10);
     }
 
-    /* The foil era carries the accent because it is the one the dagger
-       marks, and a reader who meets the mark later should already have
-       seen this colour attached to the word. */
-    .era-block.foil {
-        border-left-color: var(--color-discipline);
+    .era-block:first-child {
+        border-top: none;
     }
 
+    /* The editorial purple, and on every band rather than on FOIL alone.
+       Accenting one era made the timeline argue for it; accenting all three
+       marks the whole thing as the piece of analysis it is, which is the
+       same job the purple does on the winner's row of the table. */
     .era-label {
         font-family: var(--font-display);
-        font-size: 110px;
+        font-size: 96px;
         line-height: 0.9;
         letter-spacing: 0.04em;
-        color: rgba(255, 255, 255, 0.42);
-    }
-
-    .era-block.foil .era-label {
-        color: var(--color-discipline);
+        color: var(--color-accent-editorial);
     }
 
     .era-years {
@@ -125,7 +125,7 @@
 
     <div class="eras-body" style="--era-count: {{ eras | length }}">
         {% for era in eras %}
-        <div class="era-block {{ era.label | lower }}">
+        <div class="era-block">
             <div class="era-label">{{ era.label }}</div>
             <div class="era-years">{{ era.years }}</div>
             <div class="era-detail">{{ era.detail }}</div>

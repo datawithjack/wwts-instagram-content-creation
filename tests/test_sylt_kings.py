@@ -873,3 +873,51 @@ def test_an_era_with_one_edition_reads_as_a_year_not_a_range():
     eras = sylt_kings._era_lines(rows, {2019})
     assert eras[1]["years"] == "2019"
     assert eras[1]["detail"] == "1 edition"
+
+
+def test_the_crossover_years_get_their_own_band():
+    """Sylt did not switch overnight. 2017 and 2018 each ran a fin slalom and
+    a separate foil event, so a clean FIN-then-FOIL split states a boundary
+    the venue never had.
+    """
+    rows = [_slalom_row("A", 1, "2006:1,2016:2,2017:1,2018:3,2019:1,2022:2",
+                        "2019,2022")]
+    eras = sylt_kings._era_lines(rows, {2019, 2022}, crossover=(2017, 2018))
+    assert [e["label"] for e in eras] == ["FIN", "FIN + FOIL", "FOIL"]
+    assert eras[0]["years"] == "2006–2016"
+    assert eras[1]["years"] == "2017–2018"
+    assert eras[2]["years"] == "2019–2022"
+
+
+def test_the_three_bands_add_up_to_the_edition_count_on_the_cover():
+    """A reader who sums the slide has to land on the number the cover gave
+    them, so the crossover band carries its own count rather than sitting
+    between the two that do.
+    """
+    rows = [_slalom_row("A", 1, "2006:1,2016:2,2017:1,2018:3,2019:1,2022:2",
+                        "2019,2022")]
+    eras = sylt_kings._era_lines(rows, {2019, 2022}, crossover=(2017, 2018))
+    assert [e["detail"] for e in eras] == ["2 editions", "2 editions",
+                                           "2 editions"]
+    assert sum(int(e["detail"].split()[0]) for e in eras) == 6
+
+
+def test_a_crossover_year_the_record_never_held_is_not_drawn():
+    """The band is only worth a third of the slide when it has years in it."""
+    rows = [_slalom_row("A", 1, "2006:1,2019:1", "2019")]
+    eras = sylt_kings._era_lines(rows, {2019}, crossover=(2017, 2018))
+    assert [e["label"] for e in eras] == ["FIN", "FOIL"]
+
+
+def test_the_crossover_years_are_named_not_inferred():
+    """Both 2017 foil editions are in neither table, so no query can find
+    them: the years have to be written down like the foil ones.
+    """
+    from pipeline.queries import SYLT_CROSSOVER_SLALOM_YEARS
+    assert SYLT_CROSSOVER_SLALOM_YEARS == (2017, 2018)
+
+
+def test_the_slalom_post_passes_its_crossover_years_through():
+    slides = build_sylt_kings_slides(SLALOM_ROWS, "Men", EDITIONS, "Slalom")
+    assert slides[1]["type"] == "sylt_eras"
+    assert all("label" in e and "years" in e for e in slides[1]["eras"])

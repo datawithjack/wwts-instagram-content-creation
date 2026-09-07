@@ -27,6 +27,7 @@ inside the same hero footprint, the way ``finals_recap`` does it.
 """
 
 from pipeline.helpers import nationality_to_iso
+from pipeline.queries import SYLT_CROSSOVER_SLALOM_YEARS
 from pipeline.templates import (
     resolve_face_credit,
     resolve_hero_focus,
@@ -263,12 +264,15 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
     # starts rather than explained in fine print underneath it. Slalom only:
     # Sylt's wave and freestyle have never split by equipment, and the slide
     # would draw a distinction those posts do not make.
-    eras = _era_lines(rows, foil) if discipline == "Slalom" else []
+    eras = (_era_lines(rows, foil, SYLT_CROSSOVER_SLALOM_YEARS)
+            if discipline == "Slalom" else [])
     if len(eras) > 1:
         slides.append({
             "type": "sylt_eras",
             "eyebrow": eyebrow,
-            "title": "TWO ERAS",
+            # Not "two eras": the crossover band makes three, and the
+            # slide's point is the change rather than a count of bands.
+            "title": "FIN TO FOIL",
             "eras": eras,
             "division_label": sex.upper(),
             **common,
@@ -380,22 +384,32 @@ def _foil_years(rows: list[dict]) -> set:
     return years
 
 
-def _era_lines(rows: list[dict], foil: set) -> list[dict]:
-    """The venue's two eras, split from the years the record actually holds.
+def _era_lines(rows: list[dict], foil: set, crossover=()) -> list[dict]:
+    """The venue's eras, split from the years the record actually holds.
 
-    Derived rather than written down, and split on the same foil set that
-    marks the daggers on the cards, so the slide and a card can never
-    disagree about which era a year belongs to.
+    Split on the same foil set that marks the daggers on the cards, so the
+    slide and a card can never disagree about which era a year belongs to.
 
-    The count is not the span. Sylt ran no slalom in 2011 and the 2020 and
-    2021 events were cancelled, so 2006-2018 is twelve editions, not
-    thirteen, and a reader who does the subtraction has to land on the
-    number the cover already gave them.
+    Three bands, not two. Sylt did not switch overnight: 2017 and 2018 each
+    ran a fin slalom and a separate foil event, and a clean FIN-then-FOIL
+    line states a boundary the venue never had. Those two foil editions are
+    in neither source, so the years come in written down rather than found.
+
+    Every band carries a count, the crossover one included. A reader who
+    sums the slide has to land on the number the cover already gave them,
+    and a band with no number between two that have one reads as a gap in
+    the record rather than a part of it.
+
+    The count is not the span: Sylt ran no slalom in 2011 and the 2020 and
+    2021 events were cancelled.
     """
     years = {year for row in rows for year, _ in _placings(row.get("placings"))}
+    both = years & set(crossover)
+    bands = (("FIN", sorted(years - foil - both)),
+             ("FIN + FOIL", sorted(both)),
+             ("FOIL", sorted(years & foil)))
     lines = []
-    for label, group in (("FIN", sorted(years - foil)),
-                         ("FOIL", sorted(years & foil))):
+    for label, group in bands:
         if not group:
             continue
         span = (str(group[0]) if len(group) == 1

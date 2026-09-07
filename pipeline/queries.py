@@ -762,6 +762,18 @@ FOIL_PREFIXES = ("Foil", "Slalom X")
 # say the same wrong thing -- so the correction has to be written down here.
 SYLT_FOIL_SLALOM_YEARS = (2022, 2023)
 
+# The years Sylt raced a fin slalom *and* a separate foil event. The venue did
+# not switch overnight, and a clean FIN-then-FOIL split states a boundary it
+# never had.
+#
+# Written down for the same reason as the line above: no query can find these.
+# Both foil editions are missing from PWA_RANKINGS and PWA_IWT_RESULTS alike,
+# so the record holds only the fin race for each year and looks from the
+# inside like a venue that raced one discipline until 2019. The PWA photo
+# archive is the evidence they happened -- 2018 Sylt has a Foil folder beside
+# its Slalom one.
+SYLT_CROSSOVER_SLALOM_YEARS = (2017, 2018)
+
 
 def build_sylt_slalom_query(sex: str = "Men") -> tuple[str, tuple]:
     """Build the Sylt slalom venue record, from ``PWA_RANKINGS``.
