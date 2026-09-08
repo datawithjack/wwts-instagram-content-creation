@@ -184,20 +184,35 @@ def _finalist_entry(side: dict, athlete_id: int, detailed: bool = False) -> dict
     return entry
 
 
-def fetch_heat_history(event_id: int, division: str) -> dict:
+def fetch_heat_history(event_id: int, division: str, discipline: str = None) -> dict:
     """Every sailed heat per athlete, oldest round first.
 
     Returns ``{athlete_id: [{"round", "heat", "place", "total", "advanced"}]}``.
     A commentator reads this as the rider's event so far, heat by heat.
+
+    ``discipline`` narrows a Grand Slam to one of the disciplines it ran. This
+    endpoint is the one place the filter is honoured -- see
+    ``fetch_freestyle_recap`` for the two that quietly are not.
     """
+    return _history_from_rounds(_fetch_rounds(event_id, division, discipline))
+
+
+def _fetch_rounds(event_id: int, division: str, discipline: str = None) -> dict:
+    """The raw heats response for one division, optionally one discipline."""
+    params = {"sex": division}
+    if discipline:
+        params["discipline"] = discipline
     resp = requests.get(
         f"{API_BASE_URL}/events/{event_id}/heats",
-        params={"sex": division},
+        params=params,
         timeout=30,
     )
     resp.raise_for_status()
-    raw = resp.json()
+    return resp.json()
 
+
+def _history_from_rounds(raw: dict) -> dict:
+    """Flatten a heats response into per-athlete history, oldest round first."""
     history = {}
     for round_ in sorted(raw.get("rounds", []), key=lambda r: r.get("round_order") or 0):
         for heat in sorted(round_.get("heats", []), key=lambda h: h.get("heat_order") or 0):
@@ -655,3 +670,162 @@ def fetch_top_finishers(event_id: int, division: str, top: int = 4) -> list:
         "photo_url": rider.get("profile_image", "") or "",
         "place": rider.get("overall_position"),
     } for rider in top_riders]
+
+
+FREESTYLE = "Freestyle"
+
+
+def fetch_freestyle_recap(event_id: int, division: str, top: int = 4) -> dict:
+    """A freestyle event's top riders, with everything the recap needs.
+
+    Returns ``{"round_order": int, "riders": [...]}``, the contract
+    ``fetch_final_heat`` has, except that each rider already carries their
+    event aggregates instead of them being fetched separately.
+
+    That difference is forced rather than chosen. The wave recap reads its
+    aggregates from the head-to-head endpoint, which accepts a ``discipline``
+    parameter and ignores it: ask it for Lennart Neubauer's freestyle stats at
+    Sylt 2025 and it answers with his wave stats, 25th off a best heat of
+    6.63, with a 200 and no warning, where his freestyle event was a win off a
+    best heat of 48.20. The athletes endpoint has the same split personality:
+    its ``overall_position`` does respect the discipline, the score fields
+    beside it do not. Neither failure is visible in the response, which is why
+    this path takes nothing from either.
+
+    The heats endpoint does filter properly, and it carries every move with
+    its score, name and counting flag, which is enough to derive the lot.
+    """
+    raw = _fetch_rounds(event_id, division, FREESTYLE)
+    history = _history_from_rounds(raw)
+    if not history:
+        raise ValueError(
+            f"No freestyle heats for event {event_id} ({division}): not one "
+            "heat came back. Either the event ran no freestyle discipline, or "
+            "its scores are missing from the API."
+        )
+
+    finishers = _freestyle_finishers(event_id, division, history)[:top]
+    podium = [f["athlete_id"] for f in finishers[:2]]
+    final_round, final_heat = _freestyle_final(raw, podium)
+    sailed_final = {a.get("athlete_id"): a for a in (final_heat.get("athletes") or [])}
+
+    # The wave path prints the heat it built from, because picking the wrong
+    # one renders as a normal carousel with the wrong riders in it.
+    print(f"  final heat: round {final_round.get('round_name', '?')!r} "
+          f"heat {final_heat.get('heat_number', '?')}, "
+          f"{len(sailed_final)} riders")
+
+    riders = []
+    for finisher in finishers:
+        entries = history.get(finisher["athlete_id"]) or []
+        riders.append({
+            **finisher,
+            **_freestyle_aggregates(entries),
+            **_freestyle_final_scores(sailed_final.get(finisher["athlete_id"])),
+            "history": entries,
+        })
+
+    return {"round_order": final_round.get("round_order") or 0, "riders": riders}
+
+
+def _freestyle_finishers(event_id: int, division: str, history: dict) -> list:
+    """The freestyle fleet in finishing order.
+
+    ``overall_position`` is the one field on this endpoint that is genuinely
+    per discipline, so it is the placing to trust. It is still restricted to
+    riders who sailed a freestyle heat: at a Grand Slam an entrant carries a
+    position whether or not they entered this discipline.
+    """
+    resp = requests.get(
+        f"{API_BASE_URL}/events/{event_id}/athletes",
+        params={"sex": division, "discipline": FREESTYLE},
+        timeout=30,
+    )
+    resp.raise_for_status()
+
+    riders = [a for a in resp.json().get("athletes", [])
+              if a.get("athlete_id") in history]
+    riders.sort(key=lambda a: a.get("overall_position") or 99)
+
+    return [{
+        "athlete_id": rider.get("athlete_id"),
+        "name": rider.get("name", ""),
+        "nationality": rider.get("country", ""),
+        "sail_number": rider.get("sail_number", ""),
+        "photo_url": rider.get("profile_image", "") or "",
+        "place": rider.get("overall_position"),
+    } for rider in riders]
+
+
+def _freestyle_final(raw: dict, podium: list) -> tuple:
+    """The heat the winner and runner-up sailed, and the round holding it.
+
+    A freestyle ladder settles third against fourth in a heat of its own,
+    which runs in the same round as the final: at Sylt 2025 both 16a and 17a
+    are in round "Final". Taking the round's last heat would therefore be a
+    coin toss between them, so the final is identified as the heat holding the
+    top two finishers.
+    """
+    rounds = sorted(raw.get("rounds", []), key=lambda r: r.get("round_order") or 0)
+    wanted = {aid for aid in podium if aid}
+
+    for round_ in reversed(rounds):
+        heats = sorted(round_.get("heats", []), key=lambda h: h.get("heat_order") or 0)
+        for heat in reversed(heats):
+            ids = {a.get("athlete_id") for a in (heat.get("athletes") or [])}
+            if wanted and wanted <= ids:
+                return round_, heat
+
+    # No heat held both, which means the placings and the ladder disagree.
+    # The last heat sailed is the best guess left, and the caller prints it.
+    last = rounds[-1] if rounds else {}
+    heats = sorted(last.get("heats", []), key=lambda h: h.get("heat_order") or 0)
+    return last, (heats[-1] if heats else {})
+
+
+def _freestyle_aggregates(entries: list) -> dict:
+    """One rider's freestyle event, reduced to the five numbers on their card.
+
+    Bests are the highest scored, counting or not, which is the default the
+    top 10 posts use. The average is over counting moves only, which is what
+    the wave recap's averages mean, so the two carousels say the same thing by
+    the same rule.
+    """
+    totals = [float(e["total"]) for e in entries if e.get("total") is not None]
+    moves = [s for e in entries for s in (e.get("scores") or [])
+             if s.get("score") is not None]
+    counting = [float(s["score"]) for s in moves if s.get("counting")]
+
+    return {
+        "best_heat": max(totals, default=None),
+        "avg_heat": round(sum(totals) / len(totals), 2) if totals else None,
+        "heat_wins": sum(1 for e in entries if e.get("place") == 1),
+        "best_move": max((float(s["score"]) for s in moves), default=None),
+        "avg_move": round(sum(counting) / len(counting), 2) if counting else None,
+    }
+
+
+def _freestyle_final_scores(athlete: dict) -> dict:
+    """A rider's scores in the final, or the empty shape where they missed it.
+
+    Third and fourth sailed each other, so they have no final score. That
+    absence is exactly what tells the carousel the final was man on man, and
+    it is the shape ``fetch_final_heat`` already leaves behind for them.
+    """
+    if not athlete:
+        return {"final_total": None, "final_moves": [], "final_best_move": ""}
+
+    moves, best, best_move = [], 0.0, ""
+    for score in athlete.get("scores") or []:
+        value = score.get("score")
+        if value is None:
+            continue
+        moves.append(float(value))
+        if float(value) > best:
+            best, best_move = float(value), score.get("move_type") or ""
+
+    return {
+        "final_total": athlete.get("result_total"),
+        "final_moves": sorted(moves, reverse=True),
+        "final_best_move": best_move,
+    }

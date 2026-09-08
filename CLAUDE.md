@@ -92,6 +92,10 @@ python generate.py --template finals_recap --dry-run --preview
 python generate.py --template finals_recap --event 124 --division Men --preview
 python generate.py --template finals_recap --event 124 --division Women --preview
 
+# Freestyle variant. --photo-event points at a photo folder that is not the event id.
+python generate.py --template finals_recap --event 16 --division Men \
+  --discipline Freestyle --photo-event syltfreestyle --preview
+
 # Round mode: cover + one 2x2 slide per drawn heat ("Quarter Final 1 — How they got here")
 # The draw is NOT in the API (pending heats come back with empty athlete lists), so pass it via --heats
 python generate.py --template finals_preview --event 124 --division Men \
@@ -117,6 +121,9 @@ python generate.py --template site_stats --dry-run --publish now --caption "Cust
 - `finals_recap` — "How the final unfolded" carousel, 6 slides: cover → 4th → 3rd → 2nd → 1st → summary card. The post-event companion to `finals_preview`, run once the final has sailed. Per-rider slides carry a hero shot plus the commentator brief's seven stats (best/avg heat, heats won, best/avg wave, best/avg jump) with sail number and the move behind the best jump. The summary card shows every stat in **two labelled groups**: "IN THE FINAL" (the one heat all four sailed together, so strictly like-for-like) and "AT THIS EVENT" (aggregates, which still carry the shape of each rider's ladder). No qualifying-route line — the ladder is history by the time this posts.
   - **Photos**: hero resolves `events/{event_id}/{id}` → `h2h/{id}` → flat `{id}` via `resolve_hero_url`. With no landscape source the slide keeps its hero footprint and sizes a headshot inside it. Drop shots into `assets/photos/events/{event_id}/` to switch a rider to full-bleed, no code change.
   - **Photo credits** live in `assets/photos/events/{event_id}/credits.json` and are appended to the caption, deduped in countdown order. **Crop anchors** live in `focus.json` beside them: a landscape shot loses about half its width at 1080x1350, so each needs its own `object-position`.
+  - **Freestyle** (`--discipline Freestyle`): the same six slides with the two stats a move has (best/avg move) in place of the four wave-and-jump ones, and the move name beside the best score. The cover and every event label name the discipline, because a Grand Slam runs three and a rider can place in more than one (Neubauer won the Sylt 2025 freestyle and came 25th in the wave).
+    - **The aggregate endpoints are wave-only and fail silently.** `/head-to-head` accepts a `discipline` param and ignores it; `/athletes` honours it for `overall_position` but not for the score fields beside it. Both answer a freestyle question with wave numbers, 200 and no warning. So the freestyle path derives everything from `/events/{id}/heats?discipline=Freestyle`, which is the one endpoint that filters properly.
+    - Third and fourth sail their own heat in the same round as the final, so the final is identified as the heat holding the top two, not the round's last heat. That leaves 3rd and 4th with no final score, which is what makes the summary card say "IN THE FINAL (1ST V 2ND)".
   - API-only: no DB or SSH tunnel needed.
 - `finals_preview` — "Road to the final" carousel, 2 slides (men's final, women's final). Each slide is a 2x2 grid of the four finalists: headshot, name, best heat (hero), avg counting wave, avg counting jump. Posted the night before finals day. Heat wins and avg heat score are deliberately excluded: both are distorted by the draw mid-event (a seeded rider has one heat, so their average equals their best).
 

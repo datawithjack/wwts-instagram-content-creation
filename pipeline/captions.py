@@ -437,11 +437,16 @@ def _caption_finals_recap(data: dict, site_url: str) -> str:
     division = (data.get("division") or "").lower()
     riders = data.get("riders") or []
 
+    # A Grand Slam runs several disciplines, so "the men's final" alone names
+    # three different heats. Wave is left unsaid, as it is everywhere else.
+    discipline = (data.get("discipline") or "").strip().lower()
+    whose = f"{division}'s {discipline}" if discipline and discipline != "wave" else f"{division}'s"
+
     winner = next((r for r in riders if r.get("place") == 1), None)
     name = (winner or {}).get("name", "")
     total = (winner or {}).get("final_total")
 
-    heading = f"\U0001f30a How the {where} {division}'s final unfolded."
+    heading = f"\U0001f30a How the {where} {whose} final unfolded."
     if name and total:
         heading += f"\n\n{name} took it with {float(total):.2f}."
     elif name:
