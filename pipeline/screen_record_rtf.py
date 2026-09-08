@@ -37,6 +37,12 @@ the 1.5s is a scroll across the one shot the reel exists for.
 This is screen-capture of the REAL app, NOT an HTML render, so it is inherently
 side-effectful (live site, real browser) and verified by running, not unit tests.
 
+⚠️ Do NOT call `_force_dark_bg` here. It paints html/body/#root a flat navy with
+`!important`, which is right for the picks page it was written for -- that one is
+SHORTER than the frame and leaves grey below it -- and wrong for every page in this
+flow, all of which are taller than 960 and carry the site's own background. All it
+did was replace that background with a slab of colour.
+
 ⚠️ Two separate things put a beat's first frame in the wrong place, and both had to
 be fixed before the cuts landed where the markers say:
 
@@ -68,11 +74,11 @@ from playwright.sync_api import sync_playwright
 
 from pipeline.screen_record import (
     CURSOR_JS,
+    GLIDE,
     MOBILE_CONTEXT,
     SCROLL_PAUSE,
     SCROLL_STEPS,
     SETTLE,
-    _force_dark_bg,
     _install_cursor,
     _slow_scroll_into_view,
     _tap,
@@ -220,6 +226,62 @@ def _select_fleet(page, fleet: str) -> None:
     page.wait_for_timeout(1200)
 
 
+def _tap_text(page, locator) -> None:
+    """Tap a wide element ON ITS WORDS, not in the middle of its box.
+
+    `_tap` aims at the bounding box's centre, which is right for a button whose label
+    is centred and wrong for everything else here: a full-width nav link's centre is
+    empty space to the right of the word, and a rider row's centre is the gap between
+    the name and the edge. With a circle cursor that read as sloppy; with an arrow it
+    reads as clicking nothing at all.
+
+    So the target is the union of the element's TEXT rects, found by walking its text
+    nodes -- which also skips the checkbox and the face photo in a rider row, because
+    neither is text. The real click is then sent to the same point rather than
+    Playwright's default centre, so the pointer never lies about what it hit.
+    """
+    handle = locator.element_handle()
+    if handle is None:
+        _tap(page, locator)
+        return
+    spot = page.evaluate(
+        """(el) => {
+            const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+            let box = null;
+            while (walker.nextNode()) {
+                const node = walker.currentNode;
+                if (!node.nodeValue.trim()) continue;
+                const range = document.createRange();
+                range.selectNodeContents(node);
+                const r = range.getBoundingClientRect();
+                if (!r.width || !r.height) continue;
+                box = box ? {
+                    left: Math.min(box.left, r.left), top: Math.min(box.top, r.top),
+                    right: Math.max(box.right, r.right),
+                    bottom: Math.max(box.bottom, r.bottom),
+                } : {left: r.left, top: r.top, right: r.right, bottom: r.bottom};
+            }
+            if (!box) return null;
+            const b = el.getBoundingClientRect();
+            // 45% across the words, so the arrow sits over them with the first
+            // letters still readable ahead of its tip.
+            const x = box.left + (box.right - box.left) * 0.45;
+            const y = box.top + (box.bottom - box.top) * 0.5;
+            return {x, y, dx: x - b.left, dy: y - b.top};
+        }""",
+        handle,
+    )
+    if not spot:
+        _tap(page, locator)
+        return
+    _install_cursor(page)
+    page.evaluate("([x, y]) => window.__cursor_move(x, y)", [spot["x"], spot["y"]])
+    page.wait_for_timeout(GLIDE)
+    page.evaluate("window.__cursor_tap && window.__cursor_tap()")
+    page.wait_for_timeout(180)
+    locator.click(position={"x": spot["dx"], "y": spot["dy"]})
+
+
 def _scroll_to_top(page) -> None:
     """Human-speed scroll back to the top of the page, if it is not already there.
 
@@ -245,7 +307,7 @@ def _navigate_from_home(page) -> None:
     page.wait_for_timeout(HOLD_HOME)
     _tap(page, page.get_by_role("button", name="Open navigation menu").first)
     page.wait_for_timeout(SETTLE + HOLD_MENU)
-    _tap(page, page.get_by_role("link", name="ROAD TO FINALS").first)
+    _tap_text(page, page.get_by_role("link", name="ROAD TO FINALS").first)
     try:
         page.wait_for_load_state("networkidle", timeout=20000)
     except Exception:
@@ -316,7 +378,7 @@ def _place_riders(page, athletes: list[str]) -> list[str]:
             print(f"  pool row not found, skipping: {name}")
             continue
         _slow_scroll_into_view(page, button)
-        _tap(page, button)
+        _tap_text(page, button)
         placed.append(name)
         page.wait_for_timeout(BEAT)
     return placed
@@ -346,7 +408,6 @@ def record_rtf_flow(fleet: str, out_path: str) -> str:
 
             page.goto(HOME_URL, wait_until="networkidle", timeout=60000)
             page.wait_for_timeout(2500)
-            _force_dark_bg(page)
             _install_cursor(page)
 
             # --- Beat 0: how you get there ------------------------------------
@@ -355,7 +416,6 @@ def record_rtf_flow(fleet: str, out_path: str) -> str:
             # answer is three taps.
             markers["nav_start"] = round(time.monotonic() - t0, 2)
             _navigate_from_home(page)
-            _force_dark_bg(page)
             _select_fleet(page, fleet)
 
             # Into the predict step, and this tap is INSIDE the nav beat on purpose.
