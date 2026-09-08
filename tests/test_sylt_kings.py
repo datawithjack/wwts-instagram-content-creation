@@ -944,6 +944,29 @@ def test_nicolas_goyard_is_bridged_across_the_two_id_spaces():
     assert SLALOM_ATHLETE_ID_FALLBACK[1538] == 1127
 
 
+def test_alexandre_cousin_is_bridged_too():
+    """Same split as Goyard's and it cost more. Cousin is in
+    ATHLETE_SOURCE_IDS only under the results table's name-sail key, so his
+    eleven rankings starts grouped away from his three results ones and his
+    card claimed 3 appearances against a real 14.
+    """
+    from pipeline.queries import SLALOM_ATHLETE_ID_FALLBACK
+    assert SLALOM_ATHLETE_ID_FALLBACK[1142] == 1079
+
+
+def test_a_rider_stored_twice_in_the_rankings_is_bridged_on_both_ids():
+    """Maciek Rutkowski is in PWA_RANKINGS under two pwa ids, 1184 and 590,
+    both sailing POL-23, the older one spelling him Maciej. Only 1184 has a
+    source row, so his 2010 start sat in a group of its own and his card was
+    one appearance short.
+
+    The bridge is keyed on the pwa id, not the rider, so a rider with two ids
+    needs an entry per id rather than one per person.
+    """
+    from pipeline.queries import SLALOM_ATHLETE_ID_FALLBACK
+    assert SLALOM_ATHLETE_ID_FALLBACK[590] == 237
+
+
 def test_riders_group_on_identity_not_on_the_source_key():
     """Grouping on pwa_athlete_id splits any rider who appears in both
     sources. Grouping on the resolved athlete id alone would be worse: 548
