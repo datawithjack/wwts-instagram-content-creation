@@ -27,7 +27,6 @@ inside the same hero footprint, the way ``finals_recap`` does it.
 """
 
 from pipeline.helpers import nationality_to_iso
-from pipeline.queries import SYLT_CROSSOVER_SLALOM_YEARS
 from pipeline.templates import (
     resolve_face_credit,
     resolve_hero_focus,
@@ -49,7 +48,12 @@ CRITERIA_NOTE = ("{subject} with at least 1 win or 2 podiums \u00b7 "
 # Who the fine print is counting. "Riders" is right for a wave or freestyle
 # record, where the cover already tags the discipline. The slalom cover drops
 # that tag, so the fine print is where the discipline gets said.
-CRITERIA_SUBJECT = {"Slalom": "Slalom sailors"}
+#
+# The slalom subject names both eras because the list mixes them: a reader who
+# takes "Slalom sailors" for the fin race alone reads Johan Soe's two titles as
+# two fin titles. Saying it here rather than in a trailing clause puts the scope
+# of the record in the same breath as who is being counted.
+CRITERIA_SUBJECT = {"Slalom": "Slalom sailors (Fin & Foil)"}
 
 # Photo folders for Sylt, newest first, searched in order for a rider's action
 # shot. A venue post spans nearly twenty years, so unlike a single-event
@@ -136,6 +140,7 @@ NATIONALITY_OVERRIDES = {
     656: "French",    # Cyril Moussilmani, F-71
     1085: "French",   # Pierre Mortefon, F-14
     1127: "French",   # Nicolas Goyard, F-465
+    1079: "French",   # Alexandre Cousin, FRA-752
     1423: "Danish",   # Johan Soe, DEN-37
     738: "Israeli",   # Arnon Dagan, ISR-1
     667: "American",  # Micah Buzianis, US-34
@@ -209,21 +214,18 @@ VENUE = "Sylt, Germany"
 # both of its eras: "Slalom" is the whole record and reads as it.
 DISCIPLINE_LABELS = {}
 
-# The mark against a year sailed on a foil, and the note that explains it.
+# Sylt's slalom has been two different races, and the post ranks them as one
+# venue record because the event is one event and the riders treat it as one
+# thing to win. A title is not comparable across the boundary, so every card
+# still has to say which race each number came from.
 #
-# Sylt's slalom has been two different races: fin to 2023, foil from 2024. The
-# post ranks them as one venue record, because the event is one event and the
-# riders treat it as one thing to win, but a title is not comparable across the
-# boundary and the slide has to say so. Johan Soe won both foil editions from
-# two starts; Bjorn Dunkerbeck won two fin editions from eight against fleets
-# of 120-132 with Albeau in them. Two titles each, and a reader can only weigh
-# them if the years carry which race they were.
-#
-# A dagger rather than a second asterisk: the asterisk already means a shared
-# title, and a women's wave post uses it. Both are set in Inter, which has the
-# glyph; the display face is not asked to render it.
-FOIL_MARK = "†"
-FOIL_PHRASE = "† sailed on a foil"
+# It used to say it with a dagger against the year and a "sailed on a foil"
+# footnote underneath. The era is now named outright on the best result --
+# "1ST / 2019 FOIL" -- which reads without a key, matches the FIN/FOIL wording
+# the other three stats on the card already use, and leaves most cards with no
+# footnote at all. The asterisk stays: a shared title has no such natural place
+# to be spelled out.
+ERA_LABELS = {"fin": "FIN", "foil": "FOIL"}
 
 
 def _eyebrow(discipline: str) -> str:
@@ -256,9 +258,15 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
     title_lines = _title_lines(sex, discipline)
     eyebrow = _eyebrow(discipline)
     common = {"accent_color": ACCENT_COLOR}
-    sample = _sample_line(editions)
-    shared = _shared_years(rows)
     foil = _foil_years(rows)
+    fin = _fin_years(rows)
+    # Slalom only: the wave and freestyle records have never split by
+    # equipment, and a fin/foil count on those posts draws a distinction they
+    # do not make.
+    slalom = discipline == "Slalom"
+    sample = (_sample_line(editions, fin, foil) if slalom
+              else _sample_line(editions))
+    shared = _shared_years(rows, fin & foil)
     criteria = _criteria_note(shared, foil, discipline)
 
     slides = [{
@@ -282,20 +290,21 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
         **common,
     }]
 
-    # Every card carries a FIN or FOIL note and every marked year wears a
-    # dagger, so the two eras have to be established before the countdown
-    # starts rather than explained in fine print underneath it. Slalom only:
+    # Every card names FIN or FOIL against its titles, its podiums, its
+    # appearances and its best result, so the two eras have to be established
+    # before the countdown starts rather than left to be inferred from the
+    # tags themselves. Slalom only:
     # Sylt's wave and freestyle have never split by equipment, and the slide
     # would draw a distinction those posts do not make.
-    eras = (_era_lines(rows, foil, SYLT_CROSSOVER_SLALOM_YEARS)
-            if discipline == "Slalom" else [])
+    eras = _era_lines(rows, foil, fin) if slalom else []
     if len(eras) > 1:
         slides.append({
             "type": "sylt_eras",
             "eyebrow": eyebrow,
-            # Not "two eras": the crossover band makes three, and the
-            # slide's point is the change rather than a count of bands.
-            "title": "FIN TO FOIL",
+            # Not "two eras": the crossover band makes three. Not "FIN TO
+            # FOIL" either, which reads as a clean handover on a date, and
+            # the middle band is there precisely because there wasn't one.
+            "title": "HISTORY",
             "eras": eras,
             "division_label": sex.upper(),
             **common,
@@ -378,88 +387,129 @@ def _table_slides(table: list[dict], criteria: str, **fields) -> list[dict]:
     } for i, chunk in enumerate(chunks)]
 
 
-def _sample_line(editions: dict) -> str:
+def _sample_line(editions: dict, fin=None, foil=None) -> str:
     """State the sample the ranking is drawn from, e.g. "10 editions, 2008-2025".
 
     Six Sylt editions are missing from the data and three more are unusable,
     so a bare "since 2005" would claim a completeness the numbers do not have.
+
+    ``fin`` and ``foil`` split it, for the slalom record only. The two eras
+    are the whole shape of that post -- the cover drops the discipline tag and
+    the next slide is nothing but the era bands -- so the count is worth
+    saying as "12 fin, 7 foil" rather than a bare nineteen. "since 2006"
+    rather than a range because 2006 is where the data starts, not where Sylt
+    started: the venue has run since 1984 and we hold none of it.
     """
     if not editions or not editions.get("editions"):
         return "Sylt, Germany"
+    total = int(editions["editions"])
     first, last = editions.get("first_year"), editions.get("last_year")
+    if fin is not None and foil is not None and first:
+        return (f"{total} editions since {first} \u00b7 "
+                f"{len(fin)} fin, {len(foil)} foil")
     span = f", {first}-{last}" if first and last else ""
-    return f"{int(editions['editions'])} editions{span}"
+    return f"{total} editions{span}"
 
 
-def _foil_years(rows: list[dict]) -> set:
-    """Every year at this venue that was sailed on a foil.
+def _era_years(rows: list[dict], key: str) -> set:
+    """Every year at this venue sailed in one era, from the rows themselves.
 
     Read from the rows rather than written down as a constant, so the set
-    follows the data: three Sylt foil editions from 2017 to 2019 are missing
-    from the scrape at the time of writing, and a hardcoded "2024 and after"
-    would keep marking them fin once they arrive.
+    follows the data. That is not hypothetical: the 2017 and 2018 foil
+    editions were missing from both source tables and had to be named by
+    hand, and when they were backfilled the named version would have gone on
+    asserting a crossover the record could by then describe itself.
     """
     years = set()
     for row in rows:
-        for chunk in str(row.get("foil_years") or "").split(","):
+        for chunk in str(row.get(key) or "").split(","):
             if chunk.strip().isdigit():
                 years.add(int(chunk))
     return years
 
 
-def _era_lines(rows: list[dict], foil: set, crossover=()) -> list[dict]:
+def _foil_years(rows: list[dict]) -> set:
+    """Every year at this venue that was sailed on a foil."""
+    return _era_years(rows, "foil_years")
+
+
+def _fin_years(rows: list[dict]) -> set:
+    """Every year at this venue that was sailed on a fin."""
+    return _era_years(rows, "fin_years")
+
+
+def _era_lines(rows: list[dict], foil: set, fin: set) -> list[dict]:
     """The venue's eras, split from the years the record actually holds.
 
-    Split on the same foil set that marks the daggers on the cards, so the
-    slide and a card can never disagree about which era a year belongs to.
+    Split on the same year sets the cards tag their stats from, so the slide
+    and a card can never disagree about which era a year belongs to.
 
     Three bands, not two. Sylt did not switch overnight: 2017 and 2018 each
     ran a fin slalom and a separate foil event, and a clean FIN-then-FOIL
-    line states a boundary the venue never had. Those two foil editions are
-    in neither source, so the years come in written down rather than found.
+    line states a boundary the venue never had. A crossover year is derived
+    rather than named -- it is a year the record holds in both eras, which is
+    what the two year sets answer between them. It used to be a constant,
+    because both foil editions were missing from every source; they were
+    backfilled on 2026-09-07 and the constant would now be asserting a
+    crossover the data can describe itself.
 
-    Every band carries a count, the crossover one included. A reader who
-    sums the slide has to land on the number the cover already gave them,
-    and a band with no number between two that have one reads as a gap in
-    the record rather than a part of it.
+    A year belongs to exactly one band, and this is what broke when those
+    editions arrived. With the foil band taken as every foil year, 2017 and
+    2018 sat in the crossover band *and* the foil band, and the slide read
+    "FIN + FOIL 2017-2018" directly above "FOIL 2017-2025".
+
+    Every band carries a count, the crossover one included, and the count is
+    editions rather than years: a crossover year ran two, so 2017 and 2018
+    are four editions between them and not two. A band with no number
+    between two that have one reads as a gap in the record rather than a
+    part of it.
 
     The count is not the span: Sylt ran no slalom in 2011 and the 2020 and
     2021 events were cancelled.
     """
-    years = {year for row in rows for year, _ in _placings(row.get("placings"))}
-    both = years & set(crossover)
-    bands = (("FIN", sorted(years - foil - both)),
-             ("FIN + FOIL", sorted(both)),
-             ("FOIL", sorted(years & foil)))
+    both = fin & foil
+    bands = (("FIN", sorted(fin - foil), 1),
+             ("FIN + FOIL", sorted(both), 2),
+             ("FOIL", sorted(foil - fin), 1))
     lines = []
-    for label, group in bands:
+    for label, group, per_year in bands:
         if not group:
             continue
         span = (str(group[0]) if len(group) == 1
-                else f"{group[0]}\u2013{group[-1]}")
+                else f"{group[0]}–{group[-1]}")
+        count = len(group) * per_year
         lines.append({
             "label": label,
             "years": span,
-            "detail": f"{len(group)} edition{'s' if len(group) > 1 else ''}",
+            "detail": f"{count} edition{'s' if count > 1 else ''}",
         })
     return lines
 
 
-def _shared_years(rows: list[dict]) -> set:
-    """Years more than one rider on the list won, from the placings.
+def _shared_years(rows: list[dict], crossover=frozenset()) -> set:
+    """Years more than one rider on the list won the same edition.
 
     Sylt 2008 Wave Women ended with Daida and Iballa Ruano Moreno joint first,
     so the titles on the slides add to one more than the editions counted. That
     looks like an arithmetic error unless the year is marked, and marking it
     from the data means the men's post, which has no shared edition, carries no
     asterisk it cannot explain.
+
+    ``crossover`` is how many winners a year is *entitled* to. 2017 and 2018
+    each ran a fin slalom and a separate foil event, so two riders won in each
+    of those years without either title being shared: Julien Quentel took the
+    2017 foil and Marco Lang the fin. Counting winners per year alone called
+    both years a tie and had the caption saying the two "both finished first",
+    which is exactly wrong -- they were never in the same race. Only a third
+    winner in a crossover year is a genuine tie.
     """
     won = {}
     for row in rows:
-        for year, place in _placings(row.get("placings")):
+        for year, place, _ in _placings(row.get("placings")):
             if place == 1:
                 won[year] = won.get(year, 0) + 1
-    return {year for year, n in won.items() if n > 1}
+    return {year for year, n in won.items()
+            if n > (2 if year in crossover else 1)}
 
 
 def _shared_phrase(years) -> str:
@@ -476,22 +526,19 @@ def _shared_phrase(years) -> str:
     return f"* {listed} title{'s' if len(years) > 1 else ''} shared"
 
 
-def _card_note(win_years: list, best_years: list, shared: set, foil: set) -> str:
-    """The footnote for one card: only the marks that card is actually showing.
+def _card_note(win_years: list, shared: set) -> str:
+    """The footnote for one card: only the mark that card is actually showing.
 
-    Driven by the years printed on the card, not by the rider's whole record.
-    Amado Vrieswijk raced Sylt on a foil but won it on a fin, so no year on his
-    card carries a dagger and explaining one would send a reader hunting for a
-    mark that is not there. Johan Soe won both his titles on a foil, so his
-    card needs it.
+    Driven by the years printed on the card, not by the rider's whole record,
+    so a card with no asterisk explains nothing and sends nobody hunting for a
+    mark that is not there.
+
+    The foil half of this is gone. It used to add "sailed on a foil" wherever a
+    dagger appeared; the era is now a word on the best result and needs no key.
     """
-    marked = list(win_years) + list(best_years)
-    notes = []
-    if any(y in shared for y in win_years):
-        notes.append(_shared_phrase([y for y in win_years if y in shared]))
-    if any(y in foil for y in marked):
-        notes.append(FOIL_PHRASE)
-    return " · ".join(n for n in notes if n)
+    if not any(y in shared for y in win_years):
+        return ""
+    return _shared_phrase([y for y in win_years if y in shared])
 
 
 def _criteria_note(shared: set, foil: set = frozenset(),
@@ -499,20 +546,22 @@ def _criteria_note(shared: set, foil: set = frozenset(),
     """The fine print, with each mark explained only when one is in play."""
     note = CRITERIA_NOTE.format(
         subject=CRITERIA_SUBJECT.get(discipline, "Riders"))
-    if foil:
-        first = min(foil)
-        note = f"{note} · {FOIL_PHRASE}, from {first}"
+    # No dagger clause here. The subject above already says the record spans
+    # both eras, the eras slide sets out which years were which, and every
+    # card that carries a marked year explains its own mark -- so spending a
+    # third of the cover's fine print on it said the same thing a third time.
     if not shared:
         return note
     return f"{note} · {_shared_phrase(shared)}"
 
 
-def _mark(year, shared: set, foil: set = frozenset()) -> str:
-    """A year, marked for a shared title and for a foil race.
+def _mark(year, shared: set) -> str:
+    """A year, marked if the title that year was shared.
 
-    Both can apply at once, so the marks append rather than choose.
+    Only the asterisk now. The foil dagger it used to carry as well is gone:
+    the era is named on the best result instead, where the word fits.
     """
-    return f"{year}{'*' if year in shared else ''}{FOIL_MARK if year in foil else ''}"
+    return f"{year}{'*' if year in shared else ''}"
 
 
 def _ranks(rows: list[dict]) -> list[int]:
@@ -583,7 +632,7 @@ def _rider_slide(row: dict, rank: int, sample: str, shared: set,
     podiums = int(row.get("podiums") or 0)
     placings = _placings(row.get("placings"))
     best_place, best_years = _best(placings, row.get("best_finish"))
-    win_years = [year for year, place in placings if place == 1]
+    win_years = [year for year, place, _ in placings if place == 1]
 
     return {
         "type": "sylt_rider",
@@ -610,10 +659,10 @@ def _rider_slide(row: dict, rank: int, sample: str, shared: set,
         "photo_focus": focus,
         "is_champion": wins > 0,
         "years_line": _years_line(win_years, podiums,
-                                  [y for y, _ in placings], shared, foil),
+                                  [y for y, _, _ in placings], shared),
         # Only the riders whose own years carry a mark explain it. A note on
         # all eight cards would raise a question seven of them do not answer.
-        "shared_note": _card_note(win_years, best_years, shared, foil),
+        "shared_note": _card_note(win_years, shared),
         "sample_line": sample,
         "stats": [
             {"value": str(wins), "label": "Titles",
@@ -626,9 +675,8 @@ def _rider_slide(row: dict, rank: int, sample: str, shared: set,
             # A best finish is worth more with its date on it: 2nd in 2008 and
             # 2nd across 2017, 2019 and 2024 are the same cell otherwise.
             {"value": _place_label(best_place), "label": "Best",
-             "note": ", ".join(
-                 _mark(y, shared if best_place == 1 else frozenset(), foil)
-                 for y in best_years)},
+             "note": _best_years_note(
+                 best_years, shared if best_place == 1 else frozenset())},
         ],
         **common,
     }
@@ -764,33 +812,74 @@ def sylt_photo_credits(rows: list[dict], discipline: str = "Wave") -> list[str]:
     return credits
 
 
-def _placings(raw) -> list[tuple[int, int]]:
-    """Parse the query's "2008:1,2012:3" column into (year, place) pairs.
+def _placings(raw) -> list[tuple[int, int, str]]:
+    """Parse "2008:1:fin,2012:3:foil" into (year, place, era) triples.
+
+    The era is optional and comes back as "" when absent, because the wave and
+    freestyle records are built by a query that does not split by equipment
+    and their placings are still "2008:1".
 
     Anything malformed is dropped rather than raised on: a bad placing costs
     one line of a card, and failing the render costs the post.
     """
-    pairs = []
+    out = []
     for chunk in str(raw or "").split(","):
-        year, _, place = chunk.partition(":")
+        parts = chunk.split(":")
+        year, place = (parts + ["", ""])[:2]
+        era = parts[2].strip().lower() if len(parts) > 2 else ""
         if year.strip().isdigit() and place.strip().isdigit():
-            pairs.append((int(year), int(place)))
-    return sorted(pairs)
+            out.append((int(year), int(place), era))
+    return sorted(out)
 
 
-def _best(placings: list[tuple[int, int]], fallback) -> tuple[int, list[int]]:
-    """The rider's best finish and every year they matched it."""
+def _best(placings: list[tuple[int, int, str]],
+          fallback) -> tuple[int, list[tuple[int, str]]]:
+    """The rider's best finish, and every (year, era) that matched it."""
     if not placings:
         try:
             return int(fallback), []
         except (TypeError, ValueError):
             return 0, []
-    best = min(place for _, place in placings)
-    return best, [year for year, place in placings if place == best]
+    best = min(place for _, place, _ in placings)
+    return best, [(year, era) for year, place, era in placings if place == best]
+
+
+def _best_year_label(year: int, era: str, shared: set) -> str:
+    """A best-result year with the race it was sailed in, e.g. "2019 FOIL".
+
+    The era is what lets a reader weigh one 1ST against another, and naming it
+    here is what let the dagger go: it sits on the one stat that already prints
+    the year, so there is nothing to look up.
+    """
+    tag = ERA_LABELS.get(era, "")
+    star = "*" if year in shared else ""
+    return f"{year}{star} {tag}".strip()
+
+
+def _best_years_note(best_years: list, shared: set) -> str:
+    """Every year the rider matched their best finish, with the race.
+
+    One tag at the end when they were all the same race, which is fourteen of
+    the fifteen riders: Antoine Albeau's four titles read "2007, 2009, 2012,
+    2013 FIN" rather than repeating FIN four times for no added fact.
+
+    Matteo Iachino is the exception the collapse cannot cover. He won the fin
+    slalom in 2015 and 2016 and the foil in 2018, so his years carry a tag
+    each -- and that card is the one place on the post where the split does
+    real work, which is worth the extra words.
+    """
+    if not best_years:
+        return ""
+    eras = {era for _, era in best_years}
+    if len(eras) == 1:
+        tag = ERA_LABELS.get(next(iter(eras)), "")
+        years = ", ".join(_mark(y, shared) for y, _ in best_years)
+        return f"{years} {tag}".strip()
+    return ", ".join(_best_year_label(y, era, shared) for y, era in best_years)
 
 
 def _years_line(win_years: list[int], podiums: int, years: list[int],
-                shared: set = frozenset(), foil: set = frozenset()) -> str:
+                shared: set = frozenset()) -> str:
     """The years won, or what the rider has instead, and the span behind it.
 
     A rider on the list without a title is there on podiums, so saying nothing
@@ -802,7 +891,7 @@ def _years_line(win_years: list[int], podiums: int, years: list[int],
     that distinction can be drawn. Champions get the same treatment, so the
     cards read as one series rather than two.
     """
-    head = ("Won " + ", ".join(_mark(y, shared, foil) for y in win_years)
+    head = ("Won " + ", ".join(_mark(y, shared) for y in win_years)
             if win_years else f"{podiums} podiums")
     if not years:
         return f"{head} at Sylt World Cup"
@@ -865,9 +954,8 @@ def _table_rows(rows: list[dict], shared: set = frozenset(),
             "titles_era": _era_tag(row),
             "starts": int(row.get("starts") or 0),
             "best_label": _place_label(best_place),
-            "best_years": ", ".join(
-                _mark(y, shared if best_place == 1 else frozenset(), foil)
-                for y in best_years),
+            "best_years": _best_years_note(
+                best_years, shared if best_place == 1 else frozenset()),
         })
 
     return table

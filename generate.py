@@ -1001,6 +1001,7 @@ def main():
                 data["rows"], data["sex"], carousel_dir,
                 base_name=f"sylt_kings_{data.get('discipline', 'wave').lower()}_{data['sex'].lower()}_{timestamp}",
                 editions=data.get("editions"),
+                discipline=data.get("discipline", "Wave"),
                 width=width, height=height, dpr=dpr,
             )
         elif template_name == "event_picks":

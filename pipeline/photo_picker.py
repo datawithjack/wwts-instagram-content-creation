@@ -332,7 +332,12 @@ def merge_json_entry(path, key: str, value, comment: str = "") -> dict:
         data["_comment"] = comment
     data[str(key)] = value
 
+    # Written LF, not os.linesep. In text mode Python translates every "\n"
+    # json.dumps produced into the platform ending, so on Windows one new
+    # entry rewrote all 200 lines of the file as CRLF and the diff buried
+    # the single line that changed. These files are hand-edited and their
+    # comments carry decisions, so the diff has to stay readable.
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + os.linesep,
-                    encoding="utf-8")
+    with open(path, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
     return data

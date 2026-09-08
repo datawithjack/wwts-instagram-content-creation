@@ -221,7 +221,13 @@ def _caption_canary_kings(data: dict, site_url: str) -> str:
     )
 
 
-def _shared_title_note(rows: list) -> str:
+def _crossover_years(rows: list) -> set:
+    """Years the record holds in both eras, so entitled to two winners."""
+    from pipeline.sylt_kings import _fin_years, _foil_years
+    return _fin_years(rows) & _foil_years(rows)
+
+
+def _shared_title_note(rows: list, crossover=frozenset()) -> str:
     """Name any edition two riders won, so the title counts add up on screen.
 
     Sylt 2008 Wave Women ended joint first, and both women are credited with
@@ -229,6 +235,13 @@ def _shared_title_note(rows: list) -> str:
     twelve-edition sample where eleven had a single winner, which reads as an
     error. Derived from the placings rather than hardcoded: no men's edition
     is shared, so the men's caption must not carry a note about one.
+
+    ``crossover`` names the years entitled to two winners, and the slalom post
+    is why. Sylt 2017 ran a fin slalom and a separate foil event, won by Marco
+    Lang and Julien Quentel; with no crossover set this said the two "both
+    finished first", which is the one thing that definitely did not happen.
+    Mirrors ``sylt_kings._shared_years``, and has to: the caption and the
+    asterisk on the slide are read seconds apart.
     """
     winners: dict = {}
     for row in rows:
@@ -237,7 +250,8 @@ def _shared_title_note(rows: list) -> str:
             if place.strip() == "1" and year.strip():
                 winners.setdefault(year.strip(), []).append(row.get("athlete") or "?")
 
-    shared = [(y, n) for y, n in sorted(winners.items()) if len(n) > 1]
+    shared = [(y, n) for y, n in sorted(winners.items())
+              if len(n) > (2 if int(y) in crossover else 1)]
     if not shared:
         return ""
 
@@ -294,7 +308,7 @@ def _caption_sylt_kings(data: dict, site_url: str) -> str:
         f"\U0001f3c6 {headline}\n\n"
         f"{wins_line}"
         f"{podiums_line}"
-        f"{_shared_title_note(rows)}"
+        f"{_shared_title_note(rows, _crossover_years(rows))}"
         f"Ranked by titles, then podiums, counting a podium as a 2nd or a "
         f"3rd. To make the list a rider needs at least 1 win or 2 podiums.\n\n"
         f"Swipe for every rider, then the full chart.\n\n"

@@ -115,5 +115,49 @@
     "source_file": "SY25_ls_POL23_00068 copy.jpg",
     "confirmed": true,
     "via": "exif"
+  },
+  "1423": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "SY25_ls_DEN37_00183 copy.jpg"
+  },
+  "428": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "SY25_ls_ITA140_00020 copy.jpg"
+  },
+  "1085": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY15_ls_F14_0002.jpg",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "738": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY15_ls_ISR1_0017.jpg",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "210": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY16_ls_SXM421_0922.jpg",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "1120": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY17_ls_AUT66_0883.jpg",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "1127": {
+    "photographer": "John Carter",
+    "handle": "@jcwindsurf",
+    "source_file": "SY19_ls_FRA465_1257.jpg"
+  },
+  "1079": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "SY25_ls_FRA752_00162.jpg"
   }
 }

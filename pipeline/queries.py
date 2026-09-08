@@ -762,17 +762,19 @@ FOIL_PREFIXES = ("Foil", "Slalom X")
 # say the same wrong thing -- so the correction has to be written down here.
 SYLT_FOIL_SLALOM_YEARS = (2022, 2023)
 
-# The years Sylt raced a fin slalom *and* a separate foil event. The venue did
-# not switch overnight, and a clean FIN-then-FOIL split states a boundary it
-# never had.
+# Sylt raced a fin slalom *and* a separate foil event in 2017 and 2018: the
+# venue did not switch overnight, and a clean FIN-then-FOIL split states a
+# boundary it never had.
 #
-# Written down for the same reason as the line above: no query can find these.
-# Both foil editions are missing from PWA_RANKINGS and PWA_IWT_RESULTS alike,
-# so the record holds only the fin race for each year and looks from the
-# inside like a venue that raced one discipline until 2019. The PWA photo
-# archive is the evidence they happened -- 2018 Sylt has a Foil folder beside
-# its Slalom one.
-SYLT_CROSSOVER_SLALOM_YEARS = (2017, 2018)
+# There is deliberately no constant for those years any more. Both editions
+# were missing from PWA_RANKINGS and PWA_IWT_RESULTS alike, so they had to be
+# written down; they were backfilled into the results table on 2026-09-07 and
+# are now ordinary rows. A crossover year is therefore whatever the record
+# says it is -- a year holding both a fin placing and a foil one -- which
+# ``fin_years`` and ``foil_years`` answer between them.
+#
+# Naming them again would be worse than redundant: it would keep asserting a
+# two-year crossover on a venue whose data can now contradict it.
 
 
 def build_sylt_slalom_query(sex: str = "Men") -> tuple[str, tuple]:
@@ -843,15 +845,18 @@ def build_sylt_slalom_query(sex: str = "Men") -> tuple[str, tuple]:
         (sql, params) for db.run_query(), in the column shape of
         ``build_sylt_kings_query`` plus the era split: athlete, nationality,
         athlete_id, photo_url, wins, podiums, starts, best_finish,
-        avg_finish, placings, foil_years, and fin_wins/foil_wins,
+        avg_finish, placings, fin_years/foil_years, and fin_wins/foil_wins,
         fin_podiums/foil_podiums, fin_starts/foil_starts.
 
-        The split columns are what the cards show. Every total on this list
-        is one era's total: no rider has won at Sylt on both a fin and a
-        foil, so a bare "2 titles" reads the same for Bjorn Dunkerbeck and
-        Johan Soe while the two records have nothing in common. The wave and
-        freestyle builders return no era columns and the slides fall back to
-        a single number, which is right: those disciplines never split.
+        The split columns are what the cards show, and Matteo Iachino is
+        why. He won the fin slalom in 2015 and 2016 and the foil event in
+        2018, so he is the one rider whose bare "3 titles" spans both races
+        -- and the only way to read that number honestly is split. The same
+        split keeps Bjorn Dunkerbeck's two fin titles, won from eight starts
+        against fleets of 120-132, legible beside Johan Soe's two foil ones
+        from four. The wave and freestyle builders return no era columns and
+        the slides fall back to a single number, which is right: those
+        disciplines never split.
     """
     sql = """
         WITH placed AS (
@@ -925,11 +930,25 @@ def build_sylt_slalom_query(sex: str = "Men") -> tuple[str, tuple]:
                SUM(p.era = 'foil') AS foil_starts,
                MIN(p.place) AS best_finish,
                ROUND(AVG(p.place), 1) AS avg_finish,
-               GROUP_CONCAT(DISTINCT CONCAT(p.year, ':', p.place)
+               -- The era travels with the placing, not just with the year.
+               -- 2017 and 2018 ran a fin race and a foil race each, so a year
+               -- alone cannot say which one a result came from: Matteo
+               -- Iachino was 5th and 1st in 2018 and only the second was the
+               -- foil. Reading the era off the year put "FIN" under a foil
+               -- title on his card.
+               GROUP_CONCAT(DISTINCT CONCAT(p.year, ':', p.place, ':', p.era)
                             ORDER BY p.year) AS placings,
                GROUP_CONCAT(DISTINCT CASE WHEN p.era = 'foil'
                                           THEN p.year END
-                            ORDER BY p.year) AS foil_years
+                            ORDER BY p.year) AS foil_years,
+               -- The mirror of the line above, and the eras slide needs both.
+               -- A year is a crossover year when it holds a fin placing *and*
+               -- a foil one, which is only answerable with the fin years in
+               -- hand; with foil alone the two eras look like a clean split on
+               -- a date, which Sylt never had.
+               GROUP_CONCAT(DISTINCT CASE WHEN p.era = 'fin'
+                                          THEN p.year END
+                            ORDER BY p.year) AS fin_years
         FROM placed p
         LEFT JOIN ATHLETE_SOURCE_IDS asi
             ON asi.source = 'PWA' AND asi.source_id = p.pwa_athlete_id

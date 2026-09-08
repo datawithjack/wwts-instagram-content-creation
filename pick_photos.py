@@ -414,7 +414,14 @@ def _serve(html, riders, event_id, plan=None, meta=None, faces=False):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--event", type=int, required=True, help="API event id")
+    # Not an int. The value is an API event id in the Drive-lookup path, but
+    # in --folder mode it is only ever the name of the folder photos install
+    # into, and some of those are named rather than numbered: the Sylt venue
+    # posts span years the API has no id for, so their photos live in
+    # "syltslalom" and "syltfreestyle".
+    parser.add_argument("--event", required=True,
+                        help="API event id, or a folder name under "
+                             "assets/photos/events/")
     parser.add_argument("--faces", action="store_true",
                         help="Install square headshots into assets/photos/faces/ "
                              "instead of an event folder")

@@ -177,6 +177,7 @@ def render_sylt_kings_carousel(
     output_dir: str,
     base_name: str = "sylt_kings",
     editions: dict = None,
+    discipline: str = "Wave",
     width: int = 1080,
     height: int = 1350,
     dpr: int = 2,
@@ -186,10 +187,16 @@ def render_sylt_kings_carousel(
     Slide count follows the roster, so it is not fixed: 10 for the men,
     11 for the women as the data stands.
 
+    ``discipline`` has to be passed on. Without it the slides were built as a
+    wave post whatever the data was: the slalom render came out with the wave
+    headline, the wave fine print, no era slide and no fin/foil on any card,
+    under a filename that said slalom. The preview path always passed it, so
+    every preview looked right and only the PNGs were wrong.
+
     Returns list of PNG file paths.
     """
     from pipeline.sylt_kings import build_sylt_kings_slides
-    slides = build_sylt_kings_slides(rows, sex, editions)
+    slides = build_sylt_kings_slides(rows, sex, editions, discipline)
     os.makedirs(output_dir, exist_ok=True)
     paths = []
     for i, slide in enumerate(slides, 1):

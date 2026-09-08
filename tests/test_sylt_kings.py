@@ -235,6 +235,134 @@ def test_sample_line_states_the_editions_counted():
     assert slides[-2]["sample_line"] == "10 editions, 2008-2025"
 
 
+def test_the_png_render_builds_the_discipline_it_was_asked_for():
+    """The slalom PNGs came out as a wave post: wave headline, wave fine
+    print, no era slide, no fin/foil on any card, under a filename that said
+    slalom. Only the preview path passed the discipline through, so every
+    preview looked right and nothing caught it until the render was opened.
+    """
+    import inspect
+    from pipeline import renderer
+    sig = inspect.signature(renderer.render_sylt_kings_carousel)
+    assert "discipline" in sig.parameters
+    src = inspect.getsource(renderer.render_sylt_kings_carousel)
+    assert "build_sylt_kings_slides(rows, sex, editions, discipline)" in src
+
+
+def test_the_best_result_names_the_race_it_was_sailed_in():
+    """The dagger and its "sailed on a foil" footnote are gone. The era is a
+    word on the stat that already prints the year, so it needs no key.
+    """
+    assert sylt_kings._best_year_label(2019, "foil", set()) == "2019 FOIL"
+    assert sylt_kings._best_year_label(2008, "fin", set()) == "2008 FIN"
+
+
+def test_a_placing_with_no_era_keeps_its_bare_year():
+    """Wave and freestyle come from a query that does not split by equipment,
+    so their placings are still "2008:1" and their cards must not grow a tag.
+    """
+    assert sylt_kings._best_year_label(2008, "", set()) == "2008"
+
+
+def test_a_shared_title_still_marks_alongside_the_era():
+    assert sylt_kings._best_year_label(2008, "fin", {2008}) == "2008* FIN"
+
+
+def test_one_era_tag_at_the_end_when_the_best_years_share_a_race():
+    """Antoine Albeau won four times, all on a fin. Repeating FIN after each
+    year spends four words to say one thing.
+    """
+    years = [(2007, "fin"), (2009, "fin"), (2012, "fin"), (2013, "fin")]
+    assert sylt_kings._best_years_note(years, set()) == "2007, 2009, 2012, 2013 FIN"
+
+
+def test_years_across_both_races_are_tagged_one_by_one():
+    """Matteo Iachino won the fin slalom in 2015 and 2016 and the foil in
+    2018, so a single trailing tag would put one of the two races wrong.
+    """
+    years = [(2015, "fin"), (2016, "fin"), (2018, "foil")]
+    assert sylt_kings._best_years_note(years, set()) == (
+        "2015 FIN, 2016 FIN, 2018 FOIL")
+
+
+def test_the_collapsed_note_still_marks_a_shared_title():
+    years = [(2008, "fin"), (2010, "fin")]
+    assert sylt_kings._best_years_note(years, {2008}) == "2008*, 2010 FIN"
+
+
+def test_a_wave_record_collapses_to_years_with_no_tag():
+    """No era on those placings, so nothing to name."""
+    years = [(2008, ""), (2012, "")]
+    assert sylt_kings._best_years_note(years, set()) == "2008, 2012"
+
+
+def test_the_era_is_read_from_the_placing_not_from_the_year():
+    """Matteo Iachino was 5th and 1st at Sylt in 2018, and only the second was
+    the foil event. 2018 holds both eras, so reading the era off the year put
+    a FIN tag under a foil title.
+    """
+    placings = sylt_kings._placings("2015:1:fin,2018:5:fin,2018:1:foil")
+    best, years = sylt_kings._best(placings, None)
+    assert best == 1
+    assert years == [(2015, "fin"), (2018, "foil")]
+    assert [sylt_kings._best_year_label(y, e, set()) for y, e in years] == [
+        "2015 FIN", "2018 FOIL"]
+
+
+def test_a_card_with_nothing_shared_carries_no_footnote():
+    """The foil half of the note is gone, so most cards now have none at all."""
+    assert sylt_kings._card_note([2019, 2022], set()) == ""
+
+
+def test_the_slalom_sample_line_splits_the_two_eras():
+    """The slalom cover drops the discipline tag and the next slide is nothing
+    but the era bands, so the count is worth saying as a split.
+    """
+    line = sylt_kings._sample_line(
+        {"editions": 19, "first_year": 2006, "last_year": 2025},
+        fin={2006, 2007}, foil={2019})
+    assert line == "19 editions since 2006 \u00b7 2 fin, 1 foil"
+
+
+def test_only_the_slalom_record_gets_the_era_split():
+    """Sylt's wave and freestyle have never split by equipment, and a fin/foil
+    count on those posts draws a distinction they do not make.
+    """
+    wave = build_sylt_kings_slides(ROWS, "Men", EDITIONS)
+    assert wave[0]["sample_line"] == "10 editions, 2008-2025"
+    assert "fin" not in wave[0]["sample_line"]
+
+
+def test_two_winners_in_a_crossover_year_are_not_a_shared_title():
+    """The regression the 2017 and 2018 foil backfill caused. Those years each
+    ran a fin slalom and a separate foil event, so two riders won in each
+    without either title being shared. Counting winners per year alone called
+    it a tie, and the caption said the two "both finished first" when they
+    were never in the same race.
+    """
+    rows = [_slalom_row("Foil winner", 1, "2017:1", "2017", fin_years=""),
+            _slalom_row("Fin winner", 2, "2017:1", "", fin_years="2017")]
+    assert sylt_kings._shared_years(rows, crossover={2017}) == set()
+    assert sylt_kings._shared_years(rows) == {2017}
+
+
+def test_a_third_winner_in_a_crossover_year_still_reads_as_shared():
+    """Two winners is what a crossover year is entitled to. Three means one of
+    its two editions genuinely ended level.
+    """
+    rows = [_slalom_row("A", 1, "2017:1", "2017", fin_years=""),
+            _slalom_row("B", 2, "2017:1", "", fin_years="2017"),
+            _slalom_row("C", 3, "2017:1", "", fin_years="2017")]
+    assert sylt_kings._shared_years(rows, crossover={2017}) == {2017}
+
+
+def test_a_genuine_tie_outside_a_crossover_year_is_still_marked():
+    """Sylt 2008 Wave Women ended with the Ruano Moreno twins joint first."""
+    rows = [_slalom_row("Daida", 1, "2008:1", ""),
+            _slalom_row("Iballa", 2, "2008:1", "")]
+    assert sylt_kings._shared_years(rows, crossover={2017, 2018}) == {2008}
+
+
 def test_sample_line_survives_missing_edition_counts():
     slides = build_sylt_kings_slides(ROWS, "Men", None)
     assert slides[0]["sample_line"] == "Sylt, Germany"
@@ -688,7 +816,7 @@ def test_the_fine_print_names_the_discipline_the_cover_dropped():
     """
     slalom = build_sylt_kings_slides(ROWS, "Men", EDITIONS, "Slalom")
     wave = build_sylt_kings_slides(ROWS, "Men", EDITIONS, "Wave")
-    assert slalom[0]["criteria_note"].startswith("Slalom sailors with at ")
+    assert slalom[0]["criteria_note"].startswith("Slalom sailors (Fin & Foil) with at ")
     assert wave[0]["criteria_note"].startswith("Riders with at ")
 
 
@@ -757,11 +885,21 @@ def test_reordering_drops_no_folder():
 
 # ── The 2019 foil edition, and the era slide ──
 
-def _slalom_row(name, athlete_id, placings, foil_years):
-    """A slalom row carrying the two columns the era split reads."""
+def _slalom_row(name, athlete_id, placings, foil_years, fin_years=None):
+    """A slalom row carrying the columns the era split reads.
+
+    ``fin_years`` defaults to every year in ``placings`` that is not a foil
+    year, which is what the query returns for a rider who sailed one era in
+    each of them. A crossover rider is built by naming both explicitly.
+    """
     row = _era_row(name, athlete_id, 1, 0)
     row["placings"] = placings
     row["foil_years"] = foil_years
+    if fin_years is None:
+        foil = {c for c in str(foil_years).split(",") if c.strip()}
+        years = [str(y) for y, _, _ in sylt_kings._placings(placings)]
+        fin_years = ",".join(y for y in dict.fromkeys(years) if y not in foil)
+    row["fin_years"] = fin_years
     return row
 
 
@@ -851,7 +989,7 @@ def test_the_era_slide_reads_its_years_from_the_record():
     card can never disagree about which era a year belongs to.
     """
     rows = [_slalom_row("A", 1, "2006:1,2018:2,2019:1,2022:3", "2019,2022")]
-    eras = sylt_kings._era_lines(rows, {2019, 2022})
+    eras = sylt_kings._era_lines(rows, {2019, 2022}, {2006, 2018})
     assert [e["label"] for e in eras] == ["FIN", "FOIL"]
     assert eras[0]["years"] == "2006–2018"
     assert eras[1]["years"] == "2019–2022"
@@ -862,7 +1000,7 @@ def test_the_era_slide_counts_editions_not_the_span():
     cancelled, so 2006-2018 is twelve editions and not thirteen.
     """
     rows = [_slalom_row("A", 1, "2006:1,2007:1,2010:1,2012:1", "")]
-    eras = sylt_kings._era_lines(rows, set())
+    eras = sylt_kings._era_lines(rows, set(), {2006, 2007, 2010, 2012})
     assert eras[0]["detail"] == "4 editions"
     assert len(eras) == 1
 
@@ -870,7 +1008,7 @@ def test_the_era_slide_counts_editions_not_the_span():
 def test_an_era_with_one_edition_reads_as_a_year_not_a_range():
     """"2019-2019" is a range with nothing in it."""
     rows = [_slalom_row("A", 1, "2006:1,2019:1", "2019")]
-    eras = sylt_kings._era_lines(rows, {2019})
+    eras = sylt_kings._era_lines(rows, {2019}, {2006})
     assert eras[1]["years"] == "2019"
     assert eras[1]["detail"] == "1 edition"
 
@@ -881,40 +1019,59 @@ def test_the_crossover_years_get_their_own_band():
     the venue never had.
     """
     rows = [_slalom_row("A", 1, "2006:1,2016:2,2017:1,2018:3,2019:1,2022:2",
-                        "2019,2022")]
-    eras = sylt_kings._era_lines(rows, {2019, 2022}, crossover=(2017, 2018))
+                        "2017,2018,2019,2022",
+                        fin_years="2006,2016,2017,2018")]
+    eras = sylt_kings._era_lines(rows, {2017, 2018, 2019, 2022},
+                                 {2006, 2016, 2017, 2018})
     assert [e["label"] for e in eras] == ["FIN", "FIN + FOIL", "FOIL"]
     assert eras[0]["years"] == "2006–2016"
     assert eras[1]["years"] == "2017–2018"
     assert eras[2]["years"] == "2019–2022"
 
 
-def test_the_three_bands_add_up_to_the_edition_count_on_the_cover():
-    """A reader who sums the slide has to land on the number the cover gave
-    them, so the crossover band carries its own count rather than sitting
-    between the two that do.
+def test_a_crossover_year_counts_the_two_editions_it_actually_ran():
+    """A reader who sums the slide has to land on the editions the venue
+    sailed. A crossover year ran a fin race and a foil race, so counting it
+    once loses half of what happened in 2017 and 2018.
     """
     rows = [_slalom_row("A", 1, "2006:1,2016:2,2017:1,2018:3,2019:1,2022:2",
-                        "2019,2022")]
-    eras = sylt_kings._era_lines(rows, {2019, 2022}, crossover=(2017, 2018))
-    assert [e["detail"] for e in eras] == ["2 editions", "2 editions",
+                        "2017,2018,2019,2022",
+                        fin_years="2006,2016,2017,2018")]
+    eras = sylt_kings._era_lines(rows, {2017, 2018, 2019, 2022},
+                                 {2006, 2016, 2017, 2018})
+    assert [e["detail"] for e in eras] == ["2 editions", "4 editions",
                                            "2 editions"]
-    assert sum(int(e["detail"].split()[0]) for e in eras) == 6
+    assert sum(int(e["detail"].split()[0]) for e in eras) == 8
 
 
 def test_a_crossover_year_the_record_never_held_is_not_drawn():
     """The band is only worth a third of the slide when it has years in it."""
     rows = [_slalom_row("A", 1, "2006:1,2019:1", "2019")]
-    eras = sylt_kings._era_lines(rows, {2019}, crossover=(2017, 2018))
+    eras = sylt_kings._era_lines(rows, {2019}, {2006})
     assert [e["label"] for e in eras] == ["FIN", "FOIL"]
 
 
-def test_the_crossover_years_are_named_not_inferred():
-    """Both 2017 foil editions are in neither table, so no query can find
-    them: the years have to be written down like the foil ones.
+def test_a_year_in_both_eras_is_not_also_drawn_in_the_foil_band():
+    """The regression the backfill caused. Once the 2017 and 2018 foil
+    editions were real rows, taking the foil band as every foil year put
+    those two in the crossover band and the foil band at once, and the slide
+    read "FIN + FOIL 2017-2018" above "FOIL 2017-2025".
     """
-    from pipeline.queries import SYLT_CROSSOVER_SLALOM_YEARS
-    assert SYLT_CROSSOVER_SLALOM_YEARS == (2017, 2018)
+    rows = [_slalom_row("A", 1, "2017:1,2018:1,2019:1", "2017,2018,2019",
+                        fin_years="2017,2018")]
+    eras = sylt_kings._era_lines(rows, {2017, 2018, 2019}, {2017, 2018})
+    assert [e["label"] for e in eras] == ["FIN + FOIL", "FOIL"]
+    assert eras[0]["years"] == "2017–2018"
+    assert eras[1]["years"] == "2019"
+
+
+def test_the_crossover_years_are_derived_not_written_down():
+    """They were a constant while both foil editions were missing from every
+    source. They are ordinary rows now, so the constant is gone and naming
+    them again would assert a crossover the data could contradict.
+    """
+    import pipeline.queries as queries
+    assert not hasattr(queries, "SYLT_CROSSOVER_SLALOM_YEARS")
 
 
 def test_the_slalom_post_passes_its_crossover_years_through():
