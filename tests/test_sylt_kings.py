@@ -785,16 +785,31 @@ def test_the_slalom_cover_is_about_speed_not_royalty():
                                                              "SYLT")
 
 
-def test_the_position_range_counts_rows_not_ranks():
-    """Ranks tie: Micah Buzianis and Marco Lang are both 8th on one title and
-    no podium. Read off the rank column the ranges came out "Positions 1-8"
-    then "Positions 8-12", with 8 on both slides.
+def test_the_position_range_reads_the_rank_column():
+    """The header has to agree with the numbers printed beside it. Counting
+    rows instead put "Positions 9-15" above a first row numbered 8, which is
+    the mismatch a reader actually sees.
     """
     table = [{"rank": r} for r in
-             [1, 2, 3, 4, 4, 6, 6, 8, 8, 10, 11, 12, 12]]
+             [1, 2, 3, 4, 4, 6, 6, 8, 10, 10, 12, 12, 12]]
     slides = sylt_kings._table_slides(table, "c")
     assert [s["label"] for s in slides] == ["Positions 1\u20138",
-                                            "Positions 9\u201313"]
+                                            "Positions 10\u201312"]
+
+
+def test_a_tie_split_by_the_chunk_puts_one_rank_on_both_slides():
+    """The cost of reading the rank column, and it is the right cost. Pierre
+    Mortefon and Arnon Dagan are both 8th at Sylt and the break falls between
+    them, so both slides say 8 -- which is true of both, and visible in the
+    rank column on each, where a row count never was.
+    """
+    table = [{"rank": r} for r in
+             [1, 2, 3, 4, 4, 6, 7, 8, 8, 10, 10, 12, 13, 13, 13]]
+    slides = sylt_kings._table_slides(table, "c")
+    assert [s["label"] for s in slides] == ["Positions 1\u20138",
+                                            "Positions 8\u201313"]
+    assert slides[0]["rows"][-1]["rank"] == 8
+    assert slides[1]["rows"][0]["rank"] == 8
 
 
 def test_the_slalom_cover_carries_no_discipline_tag():
