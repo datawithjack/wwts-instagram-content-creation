@@ -1,0 +1,104 @@
+{
+  "_comment": "Photographer per action shot, read from the file's own EXIF. Entries marked unconfirmed carry no credit tag anywhere: confirm before crediting them.",
+  "700": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY18_sl_FRA192_0309.jpg",
+    "confirmed": false,
+    "via": ""
+  },
+  "428": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY18_fl_ITA140_0165.jpg",
+    "confirmed": false,
+    "via": ""
+  },
+  "128": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "S11_sl_SUI11_0890.jpg",
+    "confirmed": false,
+    "via": ""
+  },
+  "1423": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "SY25_fl_DEN37_00784.jpg",
+    "confirmed": true,
+    "via": "exif"
+  },
+  "113": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "SY25_fl_NB20_00712.jpg",
+    "confirmed": true,
+    "via": "exif"
+  },
+  "1085": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY25_fl_FRA14_00509.jpg",
+    "confirmed": false,
+    "via": ""
+  },
+  "738": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY15_sl_ISR1_0065.jpg",
+    "confirmed": false,
+    "via": ""
+  },
+  "667": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY15_sl_US34_0079.jpg",
+    "confirmed": false,
+    "via": ""
+  },
+  "1120": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY17_sl_AUT66_0765.jpg",
+    "confirmed": false,
+    "via": ""
+  },
+  "210": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY17_fl_SXM421_0189.jpg",
+    "confirmed": false,
+    "via": ""
+  },
+  "468": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY15_sl_GBR83_0073.jpg",
+    "confirmed": false,
+    "via": ""
+  },
+  "237": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY25_fl_POL23_00542.jpg",
+    "confirmed": false,
+    "via": ""
+  },
+  "656": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY16_sl_FRA71_0431.jpg",
+    "confirmed": false,
+    "via": ""
+  },
+  "1127": {
+    "photographer": "John Carter",
+    "handle": "@jcwindsurf",
+    "source_file": "SY19_fl_FRA465_1005.jpg"
+  },
+  "1079": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "SY25_fl_FRA752_00766.jpg"
+  }
+}

@@ -712,3 +712,322 @@ def build_sylt_editions_query(sex: str, discipline: str = "Wave") -> tuple[str, 
         ) t
     """
     return sql, (f"{discipline} {sex}",)
+
+
+# Riders on the Sylt slalom list who are in ATHLETES but have no PWA row in
+# ATHLETE_SOURCE_IDS, so the join finds nothing. Both won the event, and an
+# unjoined rider loses their nationality and their photo as well as their name.
+# Mapped here rather than by inserting the missing source ids, which would be a
+# content change reaching into the app's own data; the insert is the better fix
+# if this list grows past a handful.
+SLALOM_ATHLETE_ID_FALLBACK = {
+    642: 1085,   # Pierre Mortefon, won 2018
+    1108: 1120,  # Marco Lang, won 2017
+    2009: 1423,  # Johan Soe, won the 2024 and 2025 foil editions
+    1538: 1127,  # Nicolas Goyard, won the 2019 foil edition
+}
+
+# Sylt's slalom in the order it was sailed: fin 2006-2018, foil 2019-2025. The
+# post ranks both together, so both spellings are read. "Slalom X" never came
+# to Sylt but is listed because it is the third name the tour gives a slalom
+# race, and leaving it out would make this query silently wrong the year it
+# does.
+SLALOM_DISCIPLINES = ("Slalom {sex}", "Foil Slalom {sex}", "Slalom X {sex}")
+
+# The same races as PWA_RANKINGS calls them in PWA_IWT_RESULTS, which spells
+# them differently again: "Foil Men" in 2019, "Slalom Foil Men" from 2024.
+# Matched exactly rather than with a wildcard on purpose -- "%Foil%Men" also
+# matches "Slalom Foil Women", because "Women" ends in "men" and the collation
+# is case-insensitive, which would silently put the women's fleet in the men's
+# record.
+SLALOM_RESULT_LABELS = ("Slalom {sex}", "Foil {sex}", "Slalom Foil {sex}",
+                        "Slalom X {sex}")
+
+# The disciplines that are not sailed on a fin. Kept as a prefix test rather
+# than a list so a fourth spelling of a foil race is caught by default: a foil
+# year wrongly marked as fin is a claim about the record, where an unfamiliar
+# name marked foil is only an unfamiliar name.
+FOIL_PREFIXES = ("Foil", "Slalom X")
+
+# The years Sylt raced its slalom on a foil while the PWA still called the
+# discipline "Slalom Men". The label lagged the equipment by two seasons: the
+# tour only renamed it "Foil Slalom" in 2024, so 2022 and 2023 are stored
+# under the fin spelling and are foil races.
+#
+# This is why the era cannot be read off the discipline string. Doing that put
+# Amado Vrieswijk's two Sylt titles in the fin column beside Bjorn
+# Dunkerbeck's, when he won both of them on a foil and has never won a fin
+# race at the venue. Every source we have repeats the label rather than the
+# equipment -- PWA_RANKINGS, PWA_IWT_RESULTS and the API's discipline code all
+# say the same wrong thing -- so the correction has to be written down here.
+SYLT_FOIL_SLALOM_YEARS = (2022, 2023)
+
+# Sylt raced a fin slalom *and* a separate foil event in 2017 and 2018: the
+# venue did not switch overnight, and a clean FIN-then-FOIL split states a
+# boundary it never had.
+#
+# There is deliberately no constant for those years any more. Both editions
+# were missing from PWA_RANKINGS and PWA_IWT_RESULTS alike, so they had to be
+# written down; they were backfilled into the results table on 2026-09-07 and
+# are now ordinary rows. A crossover year is therefore whatever the record
+# says it is -- a year holding both a fin placing and a foil one -- which
+# ``fin_years`` and ``foil_years`` answer between them.
+#
+# Naming them again would be worse than redundant: it would keep asserting a
+# two-year crossover on a venue whose data can now contradict it.
+
+
+def build_sylt_slalom_query(sex: str = "Men") -> tuple[str, tuple]:
+    """Build the Sylt slalom venue record, from ``PWA_RANKINGS``.
+
+    A separate builder from ``build_sylt_kings_query`` because it reads a
+    different table. That one reads ``PWA_IWT_RESULTS``, whose slalom rows
+    start at 2016: Sylt gets three editions, three different winners and
+    nobody with a second title, which is not a ranking. ``PWA_RANKINGS``
+    carries the venue every year from 2006 and turns the same post into a
+    fourteen-edition record with Antoine Albeau four times a champion.
+
+    **Both eras, marked.** Sylt raced on a fin to 2018 and on a foil from
+    2019, and the post ranks them as one venue record: the event is the same
+    event and the riders treat it as one thing to win. So the query reads
+    every slalom spelling and returns the era split beside the placings, and
+    the slides mark the foil years rather than the ranking hiding them.
+
+    The era comes from ``SYLT_FOIL_SLALOM_YEARS``, not from the discipline
+    name. The PWA only renamed the discipline in 2024, so 2022 and 2023 are
+    stored as ``Slalom Men`` and were sailed on foils.
+
+    Marking them is not decoration. Johan Soe won both his titles on a foil
+    from four starts, which puts him level with Bjorn Dunkerbeck, who won two
+    fin races from eight against fleets of 120-132 with Albeau in them; the
+    foil fields were the smallest in the run. The count is the count, but a
+    reader can only weigh it if the slide says which era each title came
+    from.
+
+    A zero-point row is not a start. The rankings list the whole season
+    fleet against every event, so a rider who skipped Sylt still gets a row
+    there scoring nothing: 54 to 94 of each edition's 87-152 "riders" never
+    sailed it. Counting them inflated the appearances column and put phantom
+    placings on the cards, all of them tied at the bottom of the fleet. Micah
+    Buzianis was shown as 54th in 2008, an edition he did not enter.
+
+    Places are ranked from ``event_points`` rather than read from
+    ``event_position``, which is NULL for every 2006-2009 row. The points are
+    an exact ladder (2100, 2067, 2034, step 33), so the finishing order is
+    fully recoverable, and deriving it for all years keeps one code path
+    instead of two. ``DENSE_RANK`` so a genuine tie on points shares a place.
+
+    The name falls back to ``PWA_RANKINGS.athlete_name`` because 548 of the 615
+    riders in this data have no ``ATHLETE_SOURCE_IDS`` row, and two of them,
+    Pierre Mortefon and Marco Lang, won the event. Grouping is on
+    ``pwa_athlete_id`` rather than the athlete id for the same reason: every
+    unmapped rider has a NULL athlete id, and grouping on that would collapse
+    them into a single row.
+
+    Two riders are joined through ``SLALOM_ATHLETE_ID_FALLBACK`` because the
+    source-id table has no PWA row for them. The name fallback below still
+    matters: it covers everyone else the table misses.
+
+    The fallback name is aggregated, not grouped on. ``athlete_name`` is not
+    stable across years for one rider: the scrape marks a youth entry with a
+    "(Y)" suffix, so Amado Vrieswijk is stored under two spellings and grouping
+    on the column split him into a 3-start row and a 4-start row that each
+    counted a title. ``MIN`` also picks the unsuffixed spelling, the suffix
+    sorting after the bare name.
+
+    Args:
+        sex: "Men". Sylt has never run a women's slalom event, only one Foil
+            Slalom Women edition in 2024, so there is no women's record to
+            rank. The argument exists to match the wave and freestyle
+            builders' signature.
+
+    Returns:
+        (sql, params) for db.run_query(), in the column shape of
+        ``build_sylt_kings_query`` plus the era split: athlete, nationality,
+        athlete_id, photo_url, wins, podiums, starts, best_finish,
+        avg_finish, placings, fin_years/foil_years, and fin_wins/foil_wins,
+        fin_podiums/foil_podiums, fin_starts/foil_starts.
+
+        The split columns are what the cards show, and Matteo Iachino is
+        why. He won the fin slalom in 2015 and 2016 and the foil event in
+        2018, so he is the one rider whose bare "3 titles" spans both races
+        -- and the only way to read that number honestly is split. The same
+        split keeps Bjorn Dunkerbeck's two fin titles, won from eight starts
+        against fleets of 120-132, legible beside Johan Soe's two foil ones
+        from four. The wave and freestyle builders return no era columns and
+        the slides fall back to a single number, which is right: those
+        disciplines never split.
+    """
+    sql = """
+        WITH placed AS (
+            SELECT r.year,
+                   r.pwa_athlete_id,
+                   r.athlete_name,
+                   r.discipline,
+                   CASE WHEN r.discipline LIKE 'Foil%%'
+                          OR r.discipline LIKE 'Slalom X%%'
+                          OR r.year IN __FOIL_YEARS__
+                        THEN 'foil' ELSE 'fin' END AS era,
+                   DENSE_RANK() OVER (PARTITION BY r.year, r.discipline
+                                      ORDER BY r.event_points DESC) AS place
+            FROM PWA_RANKINGS r
+            WHERE r.discipline IN (%s, %s, %s)
+              AND r.event_name LIKE '%%Sylt%%'
+              AND r.event_points > 0
+
+            UNION ALL
+
+            -- Editions the rankings never got. Sylt's 2019 foil race is in
+            -- the results table only, and it is the venue's first foil
+            -- edition and Nicolas Goyard's only Sylt title.
+            SELECT res.year,
+                   res.athlete_id,
+                   res.athlete_name,
+                   res.division_label,
+                   CASE WHEN res.division_label LIKE '%%Foil%%'
+                             OR res.division_label LIKE 'Slalom X%%'
+                             OR res.year IN __FOIL_YEARS__
+                           THEN 'foil' ELSE 'fin' END AS era,
+                   CAST(res.place AS UNSIGNED) AS place
+            FROM PWA_IWT_RESULTS res
+            WHERE res.division_label IN (%s, %s, %s, %s)
+              AND res.event_name LIKE '%%Sylt%%'
+              AND res.place REGEXP '^[0-9]+$'
+              -- Matched on the year *and* the era, not the year alone. 2017
+              -- and 2018 each ran a fin slalom and a separate foil event, and
+              -- the rankings hold only the fin one, so a year-level test
+              -- answers "already have it" and keeps both foil editions out
+              -- for good.
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM PWA_RANKINGS rk
+                  WHERE rk.discipline IN (%s, %s, %s)
+                    AND rk.event_name LIKE '%%Sylt%%'
+                    AND rk.event_points > 0
+                    AND rk.year = res.year
+                    AND (CASE WHEN rk.discipline LIKE 'Foil%%'
+                                   OR rk.discipline LIKE 'Slalom X%%'
+                                   OR rk.year IN __FOIL_YEARS__
+                              THEN 'foil' ELSE 'fin' END)
+                        = (CASE WHEN res.division_label LIKE '%%Foil%%'
+                                     OR res.division_label LIKE 'Slalom X%%'
+                                     OR res.year IN __FOIL_YEARS__
+                                THEN 'foil' ELSE 'fin' END)
+              )
+        )
+        SELECT COALESCE(MIN(a.primary_name), MIN(p.athlete_name)) AS athlete,
+               MIN(a.nationality) AS nationality,
+               MIN(a.id) AS athlete_id,
+               MIN(a.liveheats_image_url) AS photo_url,
+               SUM(p.place = 1) AS wins,
+               SUM(p.place BETWEEN 2 AND 3) AS podiums,
+               COUNT(*) AS starts,
+               SUM(p.place = 1 AND p.era = 'fin') AS fin_wins,
+               SUM(p.place = 1 AND p.era = 'foil') AS foil_wins,
+               SUM(p.place BETWEEN 2 AND 3 AND p.era = 'fin') AS fin_podiums,
+               SUM(p.place BETWEEN 2 AND 3 AND p.era = 'foil') AS foil_podiums,
+               SUM(p.era = 'fin') AS fin_starts,
+               SUM(p.era = 'foil') AS foil_starts,
+               MIN(p.place) AS best_finish,
+               ROUND(AVG(p.place), 1) AS avg_finish,
+               -- The era travels with the placing, not just with the year.
+               -- 2017 and 2018 ran a fin race and a foil race each, so a year
+               -- alone cannot say which one a result came from: Matteo
+               -- Iachino was 5th and 1st in 2018 and only the second was the
+               -- foil. Reading the era off the year put "FIN" under a foil
+               -- title on his card.
+               GROUP_CONCAT(DISTINCT CONCAT(p.year, ':', p.place, ':', p.era)
+                            ORDER BY p.year) AS placings,
+               GROUP_CONCAT(DISTINCT CASE WHEN p.era = 'foil'
+                                          THEN p.year END
+                            ORDER BY p.year) AS foil_years,
+               -- The mirror of the line above, and the eras slide needs both.
+               -- A year is a crossover year when it holds a fin placing *and*
+               -- a foil one, which is only answerable with the fin years in
+               -- hand; with foil alone the two eras look like a clean split on
+               -- a date, which Sylt never had.
+               GROUP_CONCAT(DISTINCT CASE WHEN p.era = 'fin'
+                                          THEN p.year END
+                            ORDER BY p.year) AS fin_years
+        FROM placed p
+        LEFT JOIN ATHLETE_SOURCE_IDS asi
+            ON asi.source = 'PWA' AND asi.source_id = p.pwa_athlete_id
+        LEFT JOIN ATHLETES a
+            ON a.id = COALESCE(asi.athlete_id, %s)
+        GROUP BY COALESCE(CAST(a.id AS CHAR),
+                          CONCAT('pwa:', p.pwa_athlete_id))
+        HAVING wins >= 1 OR podiums >= 2
+        ORDER BY wins DESC, podiums DESC, avg_finish ASC, athlete
+    """
+    # One CASE rather than a placeholder per rider, so the params stay two.
+    # Quoted: the UNION widens pwa_athlete_id to a varchar, and an
+    # unquoted integer here would coerce every name-sail key ("Goyard_F-465")
+    # to 0 and match the first rider whose pwa id is 0.
+    cases = " ".join(f"WHEN '{pwa}' THEN {aid}"
+                     for pwa, aid in SLALOM_ATHLETE_ID_FALLBACK.items())
+    fallback = f"CASE p.pwa_athlete_id {cases} END"
+    years = ", ".join(str(y) for y in SYLT_FOIL_SLALOM_YEARS)
+    ranked = tuple(d.format(sex=sex) for d in SLALOM_DISCIPLINES)
+    results = tuple(d.format(sex=sex) for d in SLALOM_RESULT_LABELS)
+    # In SQL order: the rankings branch, the results branch, then the
+    # anti-join back to the rankings.
+    params = ranked + results + ranked
+    sql = sql.replace("__FOIL_YEARS__", f"({years})")
+    return sql.replace("COALESCE(asi.athlete_id, %s)",
+                       f"COALESCE(asi.athlete_id, {fallback})"), params
+
+
+def build_sylt_slalom_editions_query(sex: str = "Men") -> tuple[str, tuple]:
+    """Count the Sylt slalom editions behind ``build_sylt_slalom_query``.
+
+    Same filter as the rows, so the sample line on the slides cannot drift
+    from the record it describes. Sylt ran no slalom in 2011 and the 2020 and
+    2021 events were cancelled, so the span is not the count: seventeen
+    editions across a twenty-year span.
+
+    Both sources, like the rows. The 2019 foil edition is in PWA_IWT_RESULTS
+    only, and an editions count that missed it would have the cover claiming
+    sixteen editions over a ranking built from seventeen. No anti-join is
+    needed here: COUNT(DISTINCT year, era) collapses the years both tables
+    hold on its own.
+
+    Counted on year and era rather than year alone, because 2017 and 2018
+    each ran a fin slalom and a separate foil event. Those two foil editions
+    are in neither table yet; counting years would report them as nothing
+    when they arrive.
+
+    Returns:
+        (sql, params) tuple. One row: editions, first_year, last_year.
+    """
+    sql = """
+        SELECT COUNT(DISTINCT year, era) AS editions,
+               MIN(year) AS first_year,
+               MAX(year) AS last_year
+        FROM (
+            SELECT rk.year,
+                   CASE WHEN rk.discipline LIKE 'Foil%%'
+                                  OR rk.discipline LIKE 'Slalom X%%'
+                                  OR rk.year IN __FOIL_YEARS__
+                                THEN 'foil' ELSE 'fin' END AS era
+            FROM PWA_RANKINGS rk
+            WHERE rk.discipline IN (%s, %s, %s)
+              AND rk.event_name LIKE '%%Sylt%%'
+              AND rk.event_points > 0
+
+            UNION ALL
+
+            SELECT res.year,
+                   CASE WHEN res.division_label LIKE '%%Foil%%'
+                             OR res.division_label LIKE 'Slalom X%%'
+                             OR res.year IN __FOIL_YEARS__
+                           THEN 'foil' ELSE 'fin' END AS era
+            FROM PWA_IWT_RESULTS res
+            WHERE res.division_label IN (%s, %s, %s, %s)
+              AND res.event_name LIKE '%%Sylt%%'
+              AND res.place REGEXP '^[0-9]+$'
+        ) e
+    """
+    years = ", ".join(str(y) for y in SYLT_FOIL_SLALOM_YEARS)
+    sql = sql.replace("__FOIL_YEARS__", f"({years})")
+    return sql, (tuple(d.format(sex=sex) for d in SLALOM_DISCIPLINES)
+                 + tuple(d.format(sex=sex) for d in SLALOM_RESULT_LABELS))

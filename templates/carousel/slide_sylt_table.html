@@ -82,17 +82,19 @@
         color: var(--color-text-label);
     }
 
+    /* One track per row the slide can hold, not per row it was given. A
+       wave record fills all eight; a slalom record runs 8 + 5 and the last
+       five keep the height the eight had, leaving the space at the bottom.
+       Sharing the leftover space instead made the short slide's rows stand
+       taller than the full one's, so one table read as two. */
     .sylt-body {
-        display: flex;
-        flex-direction: column;
+        display: grid;
+        grid-template-rows: repeat(var(--table-capacity, 8), 1fr);
         flex: 1;
         min-height: 0;
     }
 
-    /* Rows share the space left over, so the table fills the slide whether
-       the division has seven qualifiers or eight. */
     .sylt-body .sylt-row {
-        flex: 1;
         min-height: 0;
     }
 
@@ -193,6 +195,21 @@
         font-family: var(--font-display);
         font-size: 50px;
         color: var(--color-discipline);
+        line-height: 1;
+    }
+
+    /* Which era the titles came from, under the count. One word, because no
+       rider on this list has won at Sylt on both a fin and a foil. The cards
+       carry the full split; the table only needs to say which side of the
+       line a record sits on. */
+    .col-titles .era {
+        font-family: var(--font-body);
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        color: rgba(255, 255, 255, 0.36);
+        margin-top: 4px;
+        line-height: 1.2;
     }
 
     /* Wide enough for four years on one line: a rider who has won Sylt four
@@ -237,7 +254,7 @@
 {% block carousel_content %}
 <div class="container">
     <div class="table-head-block">
-        <div class="sylt-eyebrow">{{ eyebrow }}</div>
+        <div class="sylt-eyebrow">{{ eyebrow }}{% if label %} · {{ label }}{% endif %}</div>
         <div class="sylt-title">{{ slide_title }}</div>
         <div class="sylt-subtitle">{{ sample_line }}</div>
     </div>
@@ -253,7 +270,7 @@
             <span class="col-best">Best</span>
         </div>
 
-        <div class="sylt-body">
+        <div class="sylt-body" style="--table-capacity: {{ table_capacity or rows | length }}">
             {% for row in rows %}
             <div class="sylt-row rank-{{ row.rank }}">
                 <div class="col-rank">{{ row.rank }}</div>
@@ -268,7 +285,9 @@
                     {% if row.country %}<img class="flag" src="https://flagcdn.com/w40/{{ row.country }}.png" alt="{{ row.country }}">{% endif %}
                 </div>
                 <div class="col-athlete">{{ row.athlete | upper }}</div>
-                <div class="col-titles">{{ row.wins }}</div>
+                <div class="col-titles">{{ row.wins }}
+                    {% if row.titles_era %}<div class="era">{{ row.titles_era }}</div>{% endif %}
+                </div>
                 <div class="col-num">{{ row.podiums }}</div>
                 <div class="col-num col-apps">{{ row.starts }}</div>
                 <div class="col-best">
