@@ -725,6 +725,16 @@ SLALOM_ATHLETE_ID_FALLBACK = {
     1108: 1120,  # Marco Lang, won 2017
     2009: 1423,  # Johan Soe, won the 2024 and 2025 foil editions
     1538: 1127,  # Nicolas Goyard, won the 2019 foil edition
+    # Not a missing rider but a split one, and the only one on the list.
+    # ATHLETE_SOURCE_IDS carries him under the results table's name-sail
+    # key and not under his rankings id, so his eleven fin starts grouped
+    # away from his three foil ones and his card claimed 3 appearances
+    # against a real 14.
+    1142: 1079,  # Alexandre Cousin, FRA-752
+    # Same rider twice in the rankings under two ids, both POL-23, the
+    # older one spelling him Maciej. Only 1184 has a source row, so his
+    # 2010 start sat in a group of its own.
+    590: 237,    # Maciek Rutkowski, POL-23 (stored as Maciej under 590)
 }
 
 # Sylt's slalom in the order it was sailed: fin 2006-2018, foil 2019-2025. The
