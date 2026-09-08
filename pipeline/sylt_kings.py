@@ -360,10 +360,17 @@ def _table_slides(table: list[dict], criteria: str, **fields) -> list[dict]:
     tells a reader the table runs on before they swipe; a mark on the second
     slide only explains it afterwards.
 
-    The range counts rows, not ranks. Ranks tie: Micah Buzianis and Marco Lang
-    are both 8th on one title and no podium, so ranges read off the rank
-    column gave "Positions 1-8" followed by "Positions 8-12", which asks the
-    reader to work out why 8 is on both slides.
+    The range reads the rank column, so the header and the numbers beside it
+    always agree. It counted rows until now, which was one better tradeoff
+    and one worse: it never repeated a number across the two slides, but it
+    let the header say "Positions 9-15" above a first row numbered 8, which
+    is the mismatch a reader actually sees.
+
+    A tie split by the chunk boundary therefore puts one rank on both slides:
+    Pierre Mortefon and Arnon Dagan are both 8th, and the break falls between
+    them, so the pair reads "Positions 1-8" then "Positions 8-13". That is
+    the honest description of what each slide shows, and the shared 8 is
+    visible in the rank column on both, which the row count never was.
 
     The criteria footnote goes on the last slide only. It qualifies the whole
     ranking, and repeating it on both invites the reader to check whether the
@@ -380,8 +387,8 @@ def _table_slides(table: list[dict], criteria: str, **fields) -> list[dict]:
         # count, so a short last chunk keeps full-slide row heights and
         # leaves the space at the bottom instead of growing into it.
         "table_capacity": size,
-        "label": (u"Positions {}\u2013{}".format(i * size + 1,
-                                                 i * size + len(chunk))
+        "label": (u"Positions {}\u2013{}".format(chunk[0]["rank"],
+                                                 chunk[-1]["rank"])
                   if len(chunks) > 1 and chunk else ""),
         **fields,
     } for i, chunk in enumerate(chunks)]
