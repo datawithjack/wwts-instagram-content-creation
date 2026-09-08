@@ -159,5 +159,29 @@
     "photographer": "john carter",
     "handle": "@jcwindsurf",
     "source_file": "SY25_ls_FRA752_00162.jpg"
+  },
+  "5": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY16_ls_ARU91_1033.jpg",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "114": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY16_ls_H87_1035.jpg",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "147": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY16_ls_E64_0284.jpg",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "178": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "SY16_ls_E63_0111.jpg",
+    "note": "UNTAGGED - credit unconfirmed"
   }
 }

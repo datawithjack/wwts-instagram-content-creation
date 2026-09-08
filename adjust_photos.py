@@ -86,6 +86,16 @@ def _original_for(entry, source_dir: Path):
     to the original: the installed copy is capped at 1920px, so re-cropping
     from it would compound a downscale every time. Falls back to the installed
     copy, which still pans fine and only limits how far in you can zoom.
+
+    Searched recursively, because the folder a set of photos came from is not
+    always flat. A season folder on the PWA Drive is
+    ``<event>/wave/WOMEN/<frame>.jpg`` and the heroes and the headshots come
+    from two different subtrees of it, so a flat lookup found neither and
+    every card opened "ORIGINAL NOT FOUND", which is the state that limits how
+    far a crop can zoom.
+
+    The recursive walk is only reached when the flat path misses, so a folder
+    of already-downloaded frames still resolves in one stat call.
     """
     if not source_dir or not isinstance(entry, dict):
         return None
@@ -93,7 +103,9 @@ def _original_for(entry, source_dir: Path):
     if not name:
         return None
     candidate = source_dir / name
-    return candidate if candidate.exists() else None
+    if candidate.exists():
+        return candidate
+    return next(iter(Path(source_dir).rglob(name)), None)
 
 
 def _collect(folder: Path, credits: dict, kind: str, source_dir,

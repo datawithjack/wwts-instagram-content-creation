@@ -159,3 +159,38 @@ class TestSaveCrop:
         with Image.open(rider["installed"]) as out:
             top_row = list(out.convert("RGB").crop((0, 0, 1080, 1)).getdata())
         assert any(px != (0, 0, 0) for px in top_row)
+
+
+class TestOriginalLookup:
+    """Finding the high-res file a photo was installed from."""
+
+    def _adjust(self):
+        import importlib.util, pathlib
+        spec = importlib.util.spec_from_file_location(
+            "adjust_photos", pathlib.Path(__file__).parent.parent / "adjust_photos.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+
+    def test_a_flat_source_folder_resolves_directly(self, tmp_path):
+        (tmp_path / "SY16_wv_E63_0269.jpg").write_bytes(b"x")
+        found = self._adjust()._original_for(
+            {"source_file": "SY16_wv_E63_0269.jpg"}, tmp_path)
+        assert found == tmp_path / "SY16_wv_E63_0269.jpg"
+
+    def test_a_nested_source_folder_is_searched(self, tmp_path):
+        """The PWA Drive is <event>/wave/WOMEN/<frame>.jpg, and the heroes and
+        the headshots sit in two different subtrees of one event folder. A
+        flat lookup found neither, so every card opened with its zoom limited
+        to the downscaled copy already in the repo.
+        """
+        deep = tmp_path / "wave" / "WOMEN"
+        deep.mkdir(parents=True)
+        (deep / "SY16_wv_H87_0261.jpg").write_bytes(b"x")
+        found = self._adjust()._original_for(
+            {"source_file": "SY16_wv_H87_0261.jpg"}, tmp_path)
+        assert found == deep / "SY16_wv_H87_0261.jpg"
+
+    def test_a_missing_original_is_still_none(self, tmp_path):
+        assert self._adjust()._original_for(
+            {"source_file": "nope.jpg"}, tmp_path) is None
