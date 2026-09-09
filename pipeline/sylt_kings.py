@@ -316,11 +316,15 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
     # it; ``rows`` stays in ranking order and only the walk is reversed.
     ranked = list(zip(_ranks(rows), rows))
     leaders = _foil_leaders(rows)
+    dual = _dual_era_winners(rows)
+    dual_label = "ONLY {} TO WIN ON FIN AND FOIL".format(
+        "MAN" if sex == "Men" else "WOMAN")
     events = _photo_events(discipline)
     for i, (rank, row) in reversed(list(enumerate(ranked))):
         slides.append(_rider_slide(row, rank, sample, shared, foil,
-                                   foil_leader=i in leaders, events=events,
-                                   **common))
+                                   foil_leader=i in leaders,
+                                   dual_era_label=dual_label if i in dual else "",
+                                   events=events, **common))
 
     slides.extend(_table_slides(
         _table_rows(rows, shared, foil), criteria,
@@ -617,8 +621,22 @@ def _foil_leaders(rows: list[dict]) -> set:
     return {i for i, score in enumerate(scored) if score == best}
 
 
+def _dual_era_winners(rows: list[dict]) -> set:
+    """Row positions of riders who have won Sylt on a fin *and* on a foil.
+
+    Empty unless exactly one rider has done it. The badge this drives says
+    "only", and the moment a second rider crosses the boundary that claim is
+    false: better to lose the badge than to print it twice. Empty as well on
+    the wave and freestyle posts, whose rows carry no era columns at all.
+    """
+    both = {i for i, row in enumerate(rows)
+            if int(row.get("fin_wins") or 0) and int(row.get("foil_wins") or 0)}
+    return both if len(both) == 1 else set()
+
+
 def _rider_slide(row: dict, rank: int, sample: str, shared: set,
                  foil: set = frozenset(), foil_leader: bool = False,
+                 dual_era_label: str = "",
                  events: tuple = SYLT_PHOTO_EVENTS, **common) -> dict:
     """One rider's card.
 
@@ -651,8 +669,11 @@ def _rider_slide(row: dict, rank: int, sample: str, shared: set,
         #
         # The overall badge wins a clash. A rider who leads the whole record
         # and the foil era is the more decorated of the two things, and two
-        # badges on one card is a card arguing with itself.
+        # badges on one card is a card arguing with itself. Winning in both
+        # eras outranks leading one of them: it is the rarer thing, and it is
+        # the fact the fin/foil split on every other card exists to set up.
         "rank_label": ("MOST SUCCESSFUL RIDER" if rank == 1
+                       else dual_era_label if dual_era_label
                        else "MOST SUCCESSFUL ON FOIL" if foil_leader
                        else ""),
         "athlete_name": name,
@@ -696,10 +717,10 @@ def _era_note(row: dict, fin_key: str, foil_key: str,
     Sylt ran its slalom on a fin from 2006 to 2023 and on a foil from 2024,
     and sailed both in 2017 and 2018. The post ranks the two eras together
     because the event is one event, but a bare total hides the only thing a
-    reader needs to weigh it: not one rider on this list has won at Sylt in
-    both eras. "2 titles" is Bjorn Dunkerbeck twice on a fin against fleets
-    of 120 with Antoine Albeau in them, and it is Johan Soe twice on a foil
-    from two starts, and the number alone cannot tell them apart.
+    reader needs to weigh it: only Matteo Iachino has won at Sylt in both
+    eras. "2 titles" is Bjorn Dunkerbeck twice on a fin against fleets of 120
+    with Antoine Albeau in them, and it is Johan Soe twice on a foil from two
+    starts, and the number alone cannot tell them apart.
 
     ``drop_zero`` cuts the empty half, so Albeau's titles read "4 FIN" and
     Amado Vrieswijk's "2 FOIL". Titles and podiums use it: a rider who won in
@@ -727,8 +748,9 @@ def _era_tag(row: dict) -> str:
 
     The table has room for a number and one short line under it, not for
     three split counters, so it names the era rather than counting it. That
-    works precisely because the split is clean: every champion on the list
-    won in one era only, so this is one word per row.
+    works because the split is nearly clean: every champion on the list bar
+    Matteo Iachino won in one era only, so this is one word per row and
+    "FIN · FOIL" on his.
     """
     fin = int(row.get("fin_wins") or 0)
     foil = int(row.get("foil_wins") or 0)

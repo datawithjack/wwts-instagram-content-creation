@@ -871,6 +871,42 @@ def test_the_overall_badge_wins_a_clash():
     assert card["rank_label"] == "MOST SUCCESSFUL RIDER"
 
 
+def test_the_only_rider_to_win_in_both_eras_is_badged_for_it():
+    """The fin/foil split under every counter exists to say a title is not
+    comparable across the boundary. A rider who has won on both sides of it
+    is the one card where that setup pays off, so it gets said outright.
+    """
+    rows = [_era_row("Antoine Albeau", 700, 4, 0, fin_starts=12),
+            _era_row("Matteo Iachino", 428, 2, 1, foil_podiums=3,
+                     fin_starts=9, foil_starts=4)]
+    slides = build_sylt_kings_slides(rows, "Men", EDITIONS, "Slalom")
+    labels = {s["athlete_name"]: s["rank_label"]
+              for s in slides if s["type"] == "sylt_rider"}
+    assert labels["Matteo Iachino"] == "ONLY MAN TO WIN ON FIN AND FOIL"
+
+
+def test_a_second_rider_across_the_boundary_takes_the_badge_off_both():
+    """"Only" stops being true the moment a second rider does it, and a badge
+    printed on two cards is worse than no badge at all.
+    """
+    rows = [_era_row("Matteo Iachino", 428, 2, 1, fin_starts=9, foil_starts=4),
+            _era_row("Julien Quentel", 210, 1, 1, fin_starts=9, foil_starts=4)]
+    assert sylt_kings._dual_era_winners(rows) == set()
+
+
+def test_the_dual_era_badge_outranks_the_foil_one():
+    """Winning in both eras is the rarer thing, and two badges on one card is
+    a card arguing with itself.
+    """
+    rows = [_era_row("Antoine Albeau", 700, 4, 0, fin_starts=12),
+            _era_row("Matteo Iachino", 428, 2, 1, foil_podiums=3,
+                     fin_starts=9, foil_starts=4)]
+    assert sylt_kings._foil_leaders(rows) == {1}
+    slides = build_sylt_kings_slides(rows, "Men", EDITIONS, "Slalom")
+    card = [s for s in slides if s.get("athlete_name") == "Matteo Iachino"][0]
+    assert card["rank_label"] == "ONLY MAN TO WIN ON FIN AND FOIL"
+
+
 def test_a_record_with_no_foil_results_badges_nothing_extra():
     """A wave post, and a slalom record from before 2022."""
     slides = build_sylt_kings_slides(ROWS, "Men", EDITIONS, "Wave")
