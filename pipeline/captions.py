@@ -285,7 +285,17 @@ def _caption_sylt_kings(data: dict, site_url: str) -> str:
     leader = rows[0]["athlete"] if rows else "?"
     span = ""
     if editions.get("first_year") and editions.get("last_year"):
-        span = f" across {int(editions.get('editions', 0))} editions, {editions['first_year']} to {editions['last_year']}"
+        # Slalom ran a fin race and a foil race in 2017 and 2018, so its count
+        # is races and not years, and "editions" would read as calendar years.
+        total = int(editions.get("editions", 0))
+        if data.get("discipline") == "Slalom":
+            # "across 19 titles decided" collides with the "titles" the
+            # sentence already counts, so the slalom line makes it a fraction.
+            span = (f" of the {total} decided, "
+                    f"{editions['first_year']} to {editions['last_year']}")
+        else:
+            span = (f" across {total} editions, "
+                    f"{editions['first_year']} to {editions['last_year']}")
 
     wins_line = ""
     if rows:

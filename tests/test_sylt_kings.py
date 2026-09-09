@@ -197,8 +197,8 @@ def test_stats_lead_on_titles():
     slides = build_sylt_kings_slides(ROWS, "Men", EDITIONS)
     victor = _card(slides, "Victor Fernandez")
     labels = [s["label"] for s in victor["stats"]]
-    assert labels == ["Titles", "Podiums", "Appearances", "Best"]
-    assert [s["note"] for s in victor["stats"][:2]] == ["", "2nd or 3rd"]
+    assert labels == ["Titles", "2nd/3rd", "Appearances", "Best"]
+    assert [s["note"] for s in victor["stats"][:2]] == ["", ""]
     assert victor["stats"][0]["value"] == "2"
     assert victor["stats"][1]["value"] == "5"
     assert victor["stats"][3]["value"] == "1ST"
@@ -321,7 +321,7 @@ def test_the_slalom_sample_line_splits_the_two_eras():
     line = sylt_kings._sample_line(
         {"editions": 19, "first_year": 2006, "last_year": 2025},
         fin={2006, 2007}, foil={2019})
-    assert line == "19 editions since 2006 \u00b7 2 fin, 1 foil"
+    assert line == "19 titles decided since 2006 \u00b7 2 fin, 1 foil"
 
 
 def test_only_the_slalom_record_gets_the_era_split():
@@ -650,7 +650,7 @@ def test_every_counter_on_a_slalom_card_carries_the_era_split():
     card = sylt_kings._rider_slide(row, 2, "16 editions", frozenset())
     notes = {stat["label"]: stat["note"] for stat in card["stats"]}
     assert notes["Titles"] == "2 FIN"
-    assert notes["Podiums"] == "3 FOIL"
+    assert notes["2nd/3rd"] == "3 FOIL"
     assert notes["Appearances"] == "9 FIN \u00b7 4 FOIL"
 
 
@@ -663,7 +663,7 @@ def test_an_empty_era_is_dropped_from_titles_and_podiums():
     card = sylt_kings._rider_slide(row, 1, "16 editions", frozenset())
     notes = {stat["label"]: stat["note"] for stat in card["stats"]}
     assert notes["Titles"] == "4 FIN"
-    assert notes["Podiums"] == "5 FIN"
+    assert notes["2nd/3rd"] == "5 FIN"
 
 
 def test_appearances_keeps_both_halves_of_the_split():
@@ -685,7 +685,7 @@ def test_a_wave_card_keeps_its_own_notes():
                                    1, "10 editions", frozenset())
     notes = {stat["label"]: stat["note"] for stat in card["stats"]}
     assert notes["Titles"] == ""
-    assert notes["Podiums"] == "2nd or 3rd"
+    assert notes["2nd/3rd"] == ""
     assert notes["Appearances"] == ""
 
 

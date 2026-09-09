@@ -407,7 +407,10 @@ def _sample_line(editions: dict, fin=None, foil=None) -> str:
     ``fin`` and ``foil`` split it, for the slalom record only. The two eras
     are the whole shape of that post -- the cover drops the discipline tag and
     the next slide is nothing but the era bands -- so the count is worth
-    saying as "12 fin, 7 foil" rather than a bare nineteen. "since 2006"
+    saying as "12 fin, 7 foil" rather than a bare nineteen. "titles decided"
+    rather than "editions" because 2017 and 2018 each ran a fin race and a
+    foil race, so nineteen races span seventeen calendar years and
+    "editions" reads as years. "since 2006"
     rather than a range because 2006 is where the data starts, not where Sylt
     started: the venue has run since 1984 and we hold none of it.
     """
@@ -416,7 +419,7 @@ def _sample_line(editions: dict, fin=None, foil=None) -> str:
     total = int(editions["editions"])
     first, last = editions.get("first_year"), editions.get("last_year")
     if fin is not None and foil is not None and first:
-        return (f"{total} editions since {first} \u00b7 "
+        return (f"{total} titles decided since {first} \u00b7 "
                 f"{len(fin)} fin, {len(foil)} foil")
     span = f", {first}-{last}" if first and last else ""
     return f"{total} editions{span}"
@@ -695,9 +698,9 @@ def _rider_slide(row: dict, rank: int, sample: str, shared: set,
         "stats": [
             {"value": str(wins), "label": "Titles",
              "note": _era_note(row, "fin_wins", "foil_wins", drop_zero=True)},
-            {"value": str(podiums), "label": "Podiums",
+            {"value": str(podiums), "label": "2nd/3rd",
              "note": _era_note(row, "fin_podiums", "foil_podiums",
-                               "2nd or 3rd", drop_zero=True)},
+                               drop_zero=True)},
             {"value": str(int(row.get("starts") or 0)), "label": "Appearances",
              "note": _era_note(row, "fin_starts", "foil_starts")},
             # A best finish is worth more with its date on it: 2nd in 2008 and
