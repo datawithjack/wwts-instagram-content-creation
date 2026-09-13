@@ -305,6 +305,14 @@ def _compare_slide(riders: list, common: dict, event_label: str = "") -> dict:
         rows.append(_compare_row(label, riders, EVENT_GROUP,
                                  lambda r, k=key: r.get(k), fmt=fmt, note=note))
 
+    # The card has room for one name per column. Surname by default; where two
+    # riders share it (the Ruano Moreno twins) the first name tells them apart.
+    surnames = [(r.get("name", "").split(None, 1) + [""])[1].upper()
+                or r.get("name", "").upper() for r in riders]
+    labels = [(r.get("name", "").split() or [""])[0].upper()
+              if surnames.count(surname) > 1 else surname
+              for r, surname in zip(riders, surnames)]
+
     return {
         "type": "recap_compare",
         "title_lead": "THE FINALISTS" if shared_final else f"THE TOP {len(riders)}",
@@ -318,12 +326,11 @@ def _compare_slide(riders: list, common: dict, event_label: str = "") -> dict:
                 "place": r.get("place"),
                 "place_label": ordinal(int(r["place"])).upper() if r.get("place") else "",
                 "name": r.get("name", ""),
-                "last_name": (r.get("name", "").split(None, 1) + [""])[1].upper()
-                or r.get("name", "").upper(),
+                "last_name": label,
                 "country": nationality_to_iso(r.get("nationality", "")),
                 "photo_url": resolve_thumb_url(r.get("athlete_id"), r.get("photo_url") or ""),
             }
-            for r in riders
+            for r, label in zip(riders, labels)
         ],
         "rows": rows,
         **common,

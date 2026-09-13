@@ -283,6 +283,14 @@ class TestEdgeCases:
     def test_no_riders_returns_no_carousel(self):
         assert build_slides(_data(riders=[])) == []
 
+    def test_shared_surnames_fall_back_to_first_names_on_the_compare_card(self):
+        """Sylt 2016 women: the Ruano Moreno twins both read RUANO MORENO."""
+        riders = _riders()
+        riders[0]["name"] = "Iballa Ruano Moreno"
+        riders[1]["name"] = "Daida Ruano Moreno"
+        labels = [r["last_name"] for r in _compare_slide(build_slides(_data(riders=riders)))["riders"]]
+        assert labels == ["IBALLA", "DAIDA", "GIL GHERARDI", "NEUBAUER"]
+
     def test_long_surname_gets_a_size_class(self):
         riders = _riders()
         riders[0]["name"] = "Marino Ellefson Riemenschneider"
