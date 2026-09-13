@@ -489,6 +489,12 @@ def _wave_finishers(event_id: int, division: str, candidates: list) -> list:
     event whose double elimination was abandoned part-run, the last wave heat
     sailed is not the final, and ordering on depth would rank whoever sailed
     it above the winner.
+
+    A tie is where a borrowed position does give itself away: of two wave
+    riders sharing a position, one who went out in an earlier round than the
+    other holds it from another discipline, and is dropped. Julien Quentel is
+    3rd at Sylt 2016 alongside Jaeger Stone, out of the wave in round 1, and
+    kept he pushed Victor Fernandez off 4th.
     """
     resp = requests.get(
         f"{API_BASE_URL}/events/{event_id}/athletes",
@@ -500,6 +506,12 @@ def _wave_finishers(event_id: int, division: str, candidates: list) -> list:
     depth = _wave_depth(candidates)
     riders = [a for a in resp.json().get("athletes", [])
               if a.get("athlete_id") in depth]
+    furthest = {}
+    for a in riders:
+        position = a.get("overall_position")
+        furthest[position] = max(furthest.get(position, 0), depth[a["athlete_id"]][0])
+    riders = [a for a in riders
+              if depth[a["athlete_id"]][0] == furthest[a.get("overall_position")]]
     riders.sort(key=lambda a: (a.get("overall_position") or 99,
                                -depth[a["athlete_id"]][0]))
     return riders

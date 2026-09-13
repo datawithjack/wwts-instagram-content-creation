@@ -772,6 +772,12 @@ def _multi_discipline_heats():
     elimination leaves a later wave heat that is not the final."""
     return {
         "rounds": [
+            {"round_name": "Round 1", "round_order": 1, "heats": [
+                {"heat_number": "3a", "heat_order": 3, "athletes": [
+                    _wave_athlete(5, "Maaike Huvermann", 1),
+                    _wave_athlete(210, "Julien Quentel", 2),
+                ]},
+            ]},
             {"round_name": "Final", "round_order": 4, "heats": [
                 {"heat_number": "16", "heat_order": 16, "athletes": [
                     _slalom_athlete(900, "Pierre Mortefon", 1),
@@ -815,6 +821,10 @@ def _mock_multi_discipline_responses():
          "country": "Australian", "sail_number": "KA-120", "profile_image": "u3"},
         {"athlete_id": 4, "name": "Victor Fernandez", "overall_position": 4,
          "country": "Spanish", "sail_number": "E-42", "profile_image": "u4"},
+        # Shares 3rd with Stone off another discipline, as at Sylt 2016, but
+        # went out of the wave in round 1.
+        {"athlete_id": 210, "name": "Julien Quentel", "overall_position": 3,
+         "country": "French", "sail_number": "SXM-421", "profile_image": "u210"},
         {"athlete_id": 5, "name": "Maaike Huvermann", "overall_position": 7,
          "country": "Dutch", "sail_number": "H-1", "profile_image": "u5"},
         {"athlete_id": 6, "name": "Justyna Sniady", "overall_position": 7,
@@ -923,11 +933,12 @@ class TestTopFinishersFlagsABorrowedPlacing:
     """A rider entering two disciplines gets one row from the athletes
     endpoint, and the position on it need not be the wave one. Gollito
     Estredo sailed both at Sylt 2018, went out in wave round 2, and still
-    comes back as position 1. It cannot be corrected from this data, so it
-    has to be visible."""
+    comes back as position 1. Tied with the rider who went further, the
+    position gives itself away and is dropped; untied, it cannot be corrected
+    from this data, so it has to be visible."""
 
     @staticmethod
-    def _responses():
+    def _responses(estredo_position=1):
         heats = {"rounds": [
             {"round_name": "Round 2", "round_order": 2, "heats": [
                 {"heat_number": "9b", "heat_order": 9, "athletes": [
@@ -945,7 +956,7 @@ class TestTopFinishersFlagsABorrowedPlacing:
         athletes = {"athletes": [
             {"athlete_id": 1, "name": "Alex Mussolini", "overall_position": 1,
              "country": "Spanish", "sail_number": "E-30", "profile_image": "u1"},
-            {"athlete_id": 910, "name": "Gollito Estredo", "overall_position": 1,
+            {"athlete_id": 910, "name": "Gollito Estredo", "overall_position": estredo_position,
              "country": "Venezuelan", "sail_number": "V-10", "profile_image": "u910"},
             {"athlete_id": 2, "name": "Thomas Traversa", "overall_position": 2,
              "country": "French", "sail_number": "F-3", "profile_image": "u2"},
@@ -958,8 +969,18 @@ class TestTopFinishersFlagsABorrowedPlacing:
         ]
 
     @patch("pipeline.api.requests.get")
-    def test_warns_when_a_placing_contradicts_the_ladder(self, mock_get, capsys):
+    def test_drops_a_placing_tied_with_a_rider_who_went_further(self, mock_get):
         mock_get.side_effect = self._responses()
+
+        riders = fetch_top_finishers(event_id=98, division="Men", top=4)
+
+        assert [r["name"] for r in riders] == [
+            "Alex Mussolini", "Thomas Traversa", "Antony Ruenes",
+        ]
+
+    @patch("pipeline.api.requests.get")
+    def test_warns_when_an_untied_placing_contradicts_the_ladder(self, mock_get, capsys):
+        mock_get.side_effect = self._responses(estredo_position=3)
 
         fetch_top_finishers(event_id=98, division="Men", top=4)
 
