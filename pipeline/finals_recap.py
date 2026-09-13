@@ -186,7 +186,6 @@ def _rider_slides(riders: list, common: dict, event_label: str = "") -> list:
         last_name = parts[1].upper() if len(parts) > 1 else ""
         athlete_id = rider.get("athlete_id")
         history = rider.get("history") or []
-        sail_number = rider.get("sail_number") or ""
 
         stats = []
         for label, key, fmt in STAT_FIELDS:
@@ -210,7 +209,7 @@ def _rider_slides(riders: list, common: dict, event_label: str = "") -> list:
             "first_name": first_name,
             "last_name": last_name,
             "name_class": _name_class(last_name),
-            "sail_number": sail_number,
+            "country": nationality_to_iso(rider.get("nationality", "")),
             "photo_mode": "action" if action_url else "portrait",
             # Landscape sources crop hard to 4:5. Where the rider sits in the
             # frame varies per shot, so the crop anchor is per photo.

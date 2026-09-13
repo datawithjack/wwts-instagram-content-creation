@@ -115,11 +115,11 @@ class TestRiderSlide:
         assert winner["first_name"] == "MARC"
         assert winner["last_name"] == "PARE RICO"
 
-    def test_no_flag_data_on_the_card(self):
-        """Nationality is already in the sail number prefix (E-334, GRE-734),
-        and pale-striped flags bled into the photo behind them."""
+    def test_carries_the_flag_code(self):
+        """The flag follows the surname, on the solid lower block where a
+        pale-striped flag no longer bleeds into the photo."""
         winner = _rider_slides(build_slides(_data()))[-1]
-        assert "country" not in winner
+        assert winner["country"] == "es"
 
     def test_expanded_stats_are_present(self):
         winner = _rider_slides(build_slides(_data()))[-1]
@@ -357,9 +357,10 @@ class TestCommentaryStats:
         jump = next(s for s in winner["stats"] if s["label"] == "BEST JUMP")
         assert jump.get("note") == "Pushloop Forward"
 
-    def test_sail_number_reaches_the_slide(self):
+    def test_sail_number_is_not_shown(self):
+        """Dropped for the flag: a sail number means nothing to most readers."""
         winner = self._winner(sail_number="E-334")
-        assert winner["sail_number"] == "E-334"
+        assert "sail_number" not in winner
 
     def test_world_rank_is_not_shown(self):
         """Dropped from the recap: a rider's standing across the season says
@@ -592,12 +593,6 @@ class TestIdentityBlock:
         """The chip is padded, not fixed-width, so the labels must all be the
         same character count for the chip to stay visually consistent."""
         assert {len(s["place_label"]) for s in self._slides()} == {3}
-
-    def test_sail_number_survives_the_flag_removal(self):
-        riders = _riders()
-        riders[0]["sail_number"] = "E-334"
-        winner = _rider_slides(build_slides(_data(riders=riders)))[-1]
-        assert winner["sail_number"] == "E-334"
 
     def test_no_meta_class_now_the_row_cannot_overflow(self):
         assert "meta_class" not in self._slides()[-1]
