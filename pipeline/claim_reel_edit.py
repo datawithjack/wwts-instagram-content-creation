@@ -2,7 +2,8 @@
 
     pro:    HOOK -> WHO COUNTS -> CLAIM -> [profile, claim form] -> JOIN -> [Pros board]
             -> WHY -> CTA
-    coach:  HOOK -> [Coaches board] -> [listing form] -> WHAT HAPPENS -> CTA
+    coach:  HOOK -> WHO COUNTS -> GET LISTED -> [profile, listing form] -> CHECK OUT
+            -> [Coaches board] -> WHY -> CTA
 
 Footage comes from pipeline/screen_record_claim.py. The pro reel is one take; the coach
 reel is two (board signed out, form signed in), so each footage slot names the take it
@@ -58,25 +59,33 @@ CARDS = {
         "cta": True,
     },
     "coach_hook": {
-        "eyebrow": "Fantasy League",
-        "title": "RUN\nCLINICS?",
-        "sub": "Get listed on the Coaches board.",
+        "eyebrow": "Windsurf Fantasy League",
+        "title": "ARE YOU A\nCOACH?",
     },
-    "coach_next": {
-        "eyebrow": "What happens next",
-        "title": "WE CHECK\nIT BY HAND",
-        "sub": "Approved coaches are listed with a link to their site, in front of "
-               "players who want to get better.",
+    "coach_who": {
+        "lead": "Do you run clinics, camps or lessons?",
+    },
+    "coach_claim": {"eyebrow": "Step 1", "title": "GET\nLISTED"},
+    "coach_join": {"eyebrow": "Once approved", "title": "CHECK OUT THE\nLEADERBOARD"},
+    "coach_why": {
+        "eyebrow": "Why",
+        "points": [
+            "Your own spot on the Coaches board.",
+            "A link to your site or socials.",
+            "Players find you right after watching the comp.",
+            "Free, and it stays free.",
+        ],
     },
     "coach_cta": {
-        "eyebrow": "Free, and it stays free",
-        "title": "GET\nLISTED",
-        "sub": "Leaderboard, then Coaches, then \"Are you a coach?\"",
+        "eyebrow": "Get listed",
+        "title": "COACH THE FLEET",
+        "title_px": 165,
+        "sub": "Open your profile and click \"Get listed on the Coaches board\"",
         "cta": True,
     },
 }
 
-CARD_HOLD_MS = {"pro_who": 3800, "pro_why": 6000, "coach_next": 3600}
+CARD_HOLD_MS = {"pro_who": 3800, "pro_why": 6000, "coach_why": 6000}
 DEFAULT_HOLD_MS = 2600
 
 # ("card", screen) or ("footage", take, segment).
@@ -93,9 +102,12 @@ SPINES = {
     ],
     "coach": [
         ("card", "coach_hook"),
+        ("card", "coach_who"),
+        ("card", "coach_claim"),
+        ("footage", "coach-form", "profile"),
+        ("card", "coach_join"),
         ("footage", "coach-board", "board"),
-        ("footage", "coach-form", "form"),
-        ("card", "coach_next"),
+        ("card", "coach_why"),
         ("card", "coach_cta"),
     ],
 }

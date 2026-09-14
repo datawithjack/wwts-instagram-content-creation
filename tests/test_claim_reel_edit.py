@@ -18,20 +18,21 @@ def test_pro_reel_claims_on_the_profile_then_joins_the_board():
 def test_coach_reel_cuts_each_segment_from_its_own_take():
     plan = plan_reel("coach", {
         "coach-board": {"board_start": 2.5, "board_end": 10.6},
-        "coach-form": {"form_start": 6.0, "form_end": 14.0},
+        "coach-form": {"profile_start": 6.0, "profile_end": 14.0},
     })
     footage = [i for i in plan if i[0] == "footage"]
     assert footage == [
+        ("footage", "coach-form", 6.0, 14.0, "profile"),
         ("footage", "coach-board", 2.5, 10.6, "board"),
-        ("footage", "coach-form", 6.0, 14.0, "form"),
     ]
 
 
 def test_a_missing_take_drops_its_slot_and_keeps_the_rest():
-    """The coach form take cannot be filmed until the coach flag is removed."""
+    """The two coach takes need the coach flag in opposite states."""
     plan = plan_reel("coach", {"coach-board": {"board_start": 2.5, "board_end": 10.6}})
     assert [i[-1] if i[0] == "footage" else i[1] for i in plan] == [
-        "coach_hook", "board", "coach_next", "coach_cta",
+        "coach_hook", "coach_who", "coach_claim", "coach_join", "board",
+        "coach_why", "coach_cta",
     ]
 
 

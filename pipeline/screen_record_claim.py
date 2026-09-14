@@ -3,14 +3,14 @@
 Three takes, each a separate file, cut together by pipeline/claim_reel_edit.py:
 
     pro          signed in: the profile's "Are you a pro rider?" form, then the Pros board
-    coach-board  SIGNED OUT: the Coaches board with its listed coaches
-    coach-form   signed in: "Are you a coach?" and the listing form
+    coach-board  SIGNED OUT: the Coaches board, its coach's links boxed
+    coach-form   signed in: the profile's "Run clinics? Get listed" form
 
 The coach reel needs two takes because one account cannot show both halves: the
 claim link is hidden from anyone already listed, and the board's only coach is the
 owner's own account. The board is filmed signed out, so it reads as a player sees it
-with no "(you)" highlight. ⚠️ `coach-form` only works once the account's coach flag is
-removed, and the board is empty then, so its segment opens on the tap, not the board.
+with no "(you)" highlight. ⚠️ `coach-form` needs the account's coach flag OFF and
+`coach-board` needs it ON.
 
 NOTHING IS SUBMITTED. Each form is opened, its fields pointed at, and closed with
 Cancel. Nothing is typed either: the pro search box is highlighted, not searched, so
@@ -210,20 +210,20 @@ def _flow_coach_board(page, markers: dict, t0: float) -> None:
     _mark(markers, "board_start", t0)
     page.wait_for_timeout(HOLD_ARRIVE)
     _choose_players(page, "Coaches")
-    page.wait_for_timeout(HOLD_BOARD)
+    page.wait_for_timeout(1500)
+    # The coach's links, boxed: the listing is what the claim buys.
+    _box(page, page.locator('a[title="Website"]').first.locator("xpath=.."))
+    page.wait_for_timeout(HOLD_BOX)
+    _unbox(page)
+    page.wait_for_timeout(600)
     _mark(markers, "board_end", t0)
 
 
 def _flow_coach_form(page, markers: dict, t0: float) -> None:
-    # Off camera: the board is empty once the flag is removed, which would contradict
-    # the board take. The segment starts on the tap that opens the form.
-    _choose_players(page, "Coaches")
-    page.wait_for_timeout(SETTLE)
-    link = page.get_by_text("Are you a coach?", exact=True).first
-    link.wait_for(state="visible", timeout=10000)
-
-    _mark(markers, "form_start", t0)
-    _tap_text(page, link)
+    _mark(markers, "profile_start", t0)
+    page.wait_for_timeout(1000)
+    _open_profile(page)
+    _tap_text(page, page.get_by_text("Run clinics? Get listed on the Coaches board").first)
     # Prefilled from the recording account's own links, the brand's. Cleared so the
     # fields show their placeholders instead.
     for field in ("#coach-claim-website", "#coach-claim-instagram"):
@@ -232,7 +232,7 @@ def _flow_coach_form(page, markers: dict, t0: float) -> None:
     for field in ("#coach-claim-website", "#coach-claim-instagram"):
         _highlight(page, page.locator(field))
     _cancel(page)
-    _mark(markers, "form_end", t0)
+    _mark(markers, "profile_end", t0)
 
 
 def record_claim_flow(flow: str, out_path: str) -> str:
@@ -259,7 +259,7 @@ def record_claim_flow(flow: str, out_path: str) -> str:
                 page.add_init_script(HIDE_TEXT_JS % json.dumps(os.environ["FANTASY_EMAIL"]))
                 _login(page, os.environ["FANTASY_EMAIL"], os.environ["FANTASY_PASSWORD"],
                        LEADERBOARD_PATH)
-            start = "/fantasy" if flow == "pro" else LEADERBOARD_PATH
+            start = LEADERBOARD_PATH if flow == "coach-board" else "/fantasy"
             page.goto(BASE_URL + start, wait_until="networkidle", timeout=60000)
             page.wait_for_timeout(2000)
             _install_cursor(page)
