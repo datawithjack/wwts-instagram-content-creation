@@ -52,7 +52,8 @@ CARDS = {
     },
     "pro_cta": {
         "eyebrow": "Claim your profile",
-        "title": "PLAY THE\nPROS",
+        "title": "PLAY THE PROS",
+        "title_px": 165,  # one line: at the default 200 it wraps
         "sub": "Open your profile and click \"Claim your athlete profile\"",
         "cta": True,
     },
