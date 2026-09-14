@@ -40,7 +40,7 @@ CARDS = {
                 "or WWT event?",
     },
     "pro_claim": {"eyebrow": "Step 1", "title": "CLAIM YOUR\nPROFILE"},
-    "pro_join": {"eyebrow": "Step 2", "title": "JOIN THE\nLEADERBOARD"},
+    "pro_join": {"eyebrow": "Once approved", "title": "CHECK OUT THE\nLEADERBOARD"},
     "pro_why": {
         "eyebrow": "Why",
         "points": [
