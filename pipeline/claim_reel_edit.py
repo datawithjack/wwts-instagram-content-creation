@@ -78,8 +78,7 @@ CARDS = {
     },
     "coach_cta": {
         "eyebrow": "Get listed",
-        "title": "COACH THE FLEET",
-        "title_px": 165,
+        "title": "GET FOUND",
         "sub": "Open your profile and click \"Get listed on the Coaches board\"",
         "cta": True,
     },
