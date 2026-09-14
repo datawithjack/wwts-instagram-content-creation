@@ -1,0 +1,204 @@
+"""Screen-record the live profile-claim flows as portrait reel footage (#26, #27).
+
+Three takes, each a separate file, cut together by pipeline/claim_reel_edit.py:
+
+    pro          signed in: the Pros board, then "Are you a pro rider?" and its form
+    coach-board  SIGNED OUT: the Coaches board with its listed coaches
+    coach-form   signed in: "Are you a coach?" and the listing form
+
+The coach reel needs two takes because one account cannot show both halves: the
+claim link is hidden from anyone already listed, and the board's only coach is the
+owner's own account. The board is filmed signed out, so it reads as a player sees it
+with no "(you)" highlight. ⚠️ `coach-form` only works once the account's coach flag is
+removed, and the board is empty then, so its segment opens on the tap, not the board.
+
+NOTHING IS SUBMITTED. Each form is opened, its fields pointed at, and closed with
+Cancel. Nothing is typed either: the pro search box is highlighted, not searched, so
+the footage never reads as a particular rider claiming a profile.
+
+Reuses the Road to Finals recorder's arrow pointer, text-aimed taps and marker
+alignment. Verified by running, not unit tests: it drives the production site.
+
+Usage:
+    python -m pipeline.screen_record_claim --flow pro
+    python -m pipeline.screen_record_claim --flow coach-board
+    python -m pipeline.screen_record_claim --flow coach-form
+"""
+import argparse
+import json
+import os
+import shutil
+import subprocess
+import tempfile
+import time
+
+from playwright.sync_api import sync_playwright
+
+from pipeline.screen_record import (
+    BASE_URL,
+    CURSOR_JS,
+    SETTLE,
+    _install_cursor,
+    _login,
+    _tap,
+)
+from pipeline.screen_record_rtf import (
+    CRF,
+    HD_CONTEXT,
+    POINTER_CURSOR_JS,
+    PRESET,
+    VIDEO_SIZE,
+    _align_markers,
+    _tap_text,
+)
+
+LEADERBOARD_PATH = "/fantasy/leaderboard"
+
+# Pacing (ms).
+HOLD_ARRIVE = 1800   # the board as it opens, before the filter is touched
+HOLD_BOARD = 3200    # the filtered board, long enough to read who is on it
+HOLD_FIELD = 1500    # each highlighted form field
+HOLD_FORM = 1800     # the open form, read before the pointer moves into it
+
+FLOWS = ("pro", "coach-board", "coach-form")
+
+
+def _mark(markers: dict, key: str, t0: float) -> None:
+    markers[key] = round(time.monotonic() - t0, 2)
+
+
+def _choose_players(page, option: str) -> None:
+    """Switch the board's Everyone / Pros / Coaches dropdown.
+
+    A dropdown on the phone layout, not pills. The button's accessible name is
+    "Player filter" whatever it currently shows.
+    """
+    _tap(page, page.get_by_role("button", name="Player filter").first)
+    page.wait_for_timeout(SETTLE + 400)
+    _tap_text(page, page.get_by_role("option", name=option).first)
+    try:
+        page.wait_for_load_state("networkidle", timeout=10000)
+    except Exception:
+        pass
+
+
+def _highlight(page, locator) -> None:
+    """Point at a form field and focus it, so its border lights. Nothing is typed."""
+    locator.wait_for(state="visible", timeout=10000)
+    _tap(page, locator)
+    page.wait_for_timeout(HOLD_FIELD)
+
+
+def _cancel(page) -> None:
+    _tap(page, page.get_by_role("button", name="Cancel").last)
+    page.wait_for_timeout(900)
+
+
+def _flow_pro(page, markers: dict, t0: float) -> None:
+    _mark(markers, "board_start", t0)
+    page.wait_for_timeout(HOLD_ARRIVE)
+    _choose_players(page, "Pros")
+    page.wait_for_timeout(HOLD_BOARD)
+    _mark(markers, "board_end", t0)
+
+    _mark(markers, "form_start", t0)
+    _tap_text(page, page.get_by_text("Are you a pro rider?", exact=True).first)
+    # The form prefills Instagram from the recording account's profile, which is the
+    # brand's own handle: on camera it reads as the brand claiming to be a rider.
+    page.locator('input[placeholder^="Instagram handle"]').fill("")
+    page.wait_for_timeout(SETTLE + HOLD_FORM)
+    _highlight(page, page.locator("#rider-claim-search"))
+    page.wait_for_timeout(600)
+    _cancel(page)
+    _mark(markers, "form_end", t0)
+
+
+def _flow_coach_board(page, markers: dict, t0: float) -> None:
+    _mark(markers, "board_start", t0)
+    page.wait_for_timeout(HOLD_ARRIVE)
+    _choose_players(page, "Coaches")
+    page.wait_for_timeout(HOLD_BOARD)
+    _mark(markers, "board_end", t0)
+
+
+def _flow_coach_form(page, markers: dict, t0: float) -> None:
+    # Off camera: the board is empty once the flag is removed, which would contradict
+    # the board take. The segment starts on the tap that opens the form.
+    _choose_players(page, "Coaches")
+    page.wait_for_timeout(SETTLE)
+    link = page.get_by_text("Are you a coach?", exact=True).first
+    link.wait_for(state="visible", timeout=10000)
+
+    _mark(markers, "form_start", t0)
+    _tap_text(page, link)
+    page.wait_for_timeout(SETTLE + HOLD_FORM)
+    for field in ("#coach-claim-website", "#coach-claim-instagram"):
+        _highlight(page, page.locator(field))
+    _cancel(page)
+    _mark(markers, "form_end", t0)
+
+
+def record_claim_flow(flow: str, out_path: str) -> str:
+    """Record one claim take to a portrait mp4 with a markers sidecar. Returns the path."""
+    if flow not in FLOWS:
+        raise ValueError(f"flow must be one of {FLOWS}")
+    os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
+    video_dir = tempfile.mkdtemp()
+    markers: dict = {}
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            context = browser.new_context(
+                record_video_dir=video_dir,
+                record_video_size=VIDEO_SIZE,
+                **HD_CONTEXT,
+            )
+            page = context.new_page()
+            t0 = time.monotonic()
+            page.add_init_script(CURSOR_JS)
+            page.add_init_script(POINTER_CURSOR_JS)  # must come after CURSOR_JS
+
+            if flow != "coach-board":
+                _login(page, os.environ["FANTASY_EMAIL"], os.environ["FANTASY_PASSWORD"],
+                       LEADERBOARD_PATH)
+            page.goto(BASE_URL + LEADERBOARD_PATH, wait_until="networkidle", timeout=60000)
+            page.wait_for_timeout(2000)
+            _install_cursor(page)
+
+            {"pro": _flow_pro, "coach-board": _flow_coach_board,
+             "coach-form": _flow_coach_form}[flow](page, markers, t0)
+
+            page.close()
+            context.close()
+            browser.close()
+
+        videos = [f for f in os.listdir(video_dir) if f.endswith(".webm")]
+        if not videos:
+            raise RuntimeError("Playwright did not produce a video file")
+        subprocess.run(
+            ["ffmpeg", "-y", "-i", os.path.join(video_dir, videos[0]),
+             "-c:v", "libx264", "-crf", CRF, "-preset", PRESET,
+             "-pix_fmt", "yuv420p", "-movflags", "+faststart", out_path],
+            capture_output=True, check=True,
+        )
+    finally:
+        shutil.rmtree(video_dir, ignore_errors=True)
+
+    markers = _align_markers(markers, out_path)
+    with open(out_path + ".markers.json", "w", encoding="utf-8") as f:
+        json.dump(markers, f, indent=2)
+    print("Markers:", markers)
+    print("Saved:", out_path)
+    return out_path
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Record a profile-claim take to video")
+    parser.add_argument("--flow", required=True, choices=FLOWS)
+    parser.add_argument("--out", help="Output mp4 (default output/mp4/claim_{flow}_raw.mp4)")
+    args = parser.parse_args()
+    record_claim_flow(args.flow, args.out or f"output/mp4/claim_{args.flow}_raw.mp4")
+
+
+if __name__ == "__main__":
+    main()

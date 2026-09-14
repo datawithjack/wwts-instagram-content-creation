@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{# Profile-claim reels (#26, #27): one card per render, recorded to MP4 and intercut
+   with live footage by pipeline/claim_reel_edit.py, which also holds the copy.
+   Styling follows templates/road_to_finals_reel.html. #}
+
+{% block head %}
+<style>
+    :root { --tour-400: #22d3ee; --slate-400: #94a3b8; }
+    html, body { height: 1920px; }
+    .container { width: 100%; height: 100%; position: relative; }
+
+    .screen {
+        position: absolute; inset: 0;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        padding: 0 80px; text-align: center;
+        opacity: 0; transition: opacity 0.5s ease;
+    }
+    .screen.visible { opacity: 1; }
+
+    .eyebrow {
+        font-family: var(--font-body); font-size: 34px; font-weight: 600;
+        text-transform: uppercase; letter-spacing: 0.3em;
+        color: var(--color-text-muted); margin-bottom: 40px;
+    }
+    .cta .eyebrow { color: var(--tour-400); }
+    .title {
+        font-family: var(--font-display); font-size: 200px; line-height: 0.88;
+        letter-spacing: 0.03em; color: var(--color-text-primary);
+        text-transform: uppercase; white-space: pre-line;
+    }
+    .sub {
+        font-family: var(--font-body); font-size: 48px; line-height: 1.4;
+        color: var(--slate-400); margin-top: 56px; max-width: 860px;
+        opacity: 0; transform: translateY(20px);
+        transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1);
+    }
+    .handle {
+        font-family: var(--font-body); font-size: 38px; font-weight: 600;
+        color: var(--tour-400); margin-top: 52px;
+        opacity: 0; transform: translateY(18px);
+        transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .in { opacity: 1; transform: translateY(0); }
+
+    .watermark {
+        position: absolute; bottom: 40px; left: 0; right: 0; text-align: center;
+        font-family: var(--font-body); font-size: 24px; font-weight: 500;
+        color: rgba(255, 255, 255, 0.22); letter-spacing: 0.06em;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="screen{% if card.cta %} cta{% endif %}" id="screen">
+        <div class="eyebrow">{{ card.eyebrow }}</div>
+        <div class="title">{{ card.title }}</div>
+        {% if card.sub %}<div class="sub" id="sub">{{ card.sub }}</div>{% endif %}
+        {% if card.cta %}<div class="handle" id="handle">{{ handle }} · Link in bio</div>{% endif %}
+    </div>
+    <div class="watermark">{{ url }}</div>
+</div>
+
+<script>
+    const HOLD = {{ hold_ms | tojson }};
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+
+    async function run() {
+        const screen = document.getElementById('screen');
+        screen.classList.add('visible');
+        await wait(900);
+        for (const id of ['sub', 'handle']) {
+            const el = document.getElementById(id);
+            if (el) { el.classList.add('in'); await wait(300); }
+        }
+        await wait(HOLD);
+        screen.classList.remove('visible');
+        await wait(500);
+        document.body.dataset.animationComplete = 'true';
+    }
+
+    document.fonts.ready.then(() => setTimeout(run, 300));
+</script>
+{% endblock %}
