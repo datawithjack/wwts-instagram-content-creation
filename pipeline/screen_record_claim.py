@@ -227,8 +227,11 @@ def _flow_pro(page, markers: dict, t0: float) -> None:
 def _flow_coach_board(page, markers: dict, t0: float) -> None:
     _mark(markers, "board_start", t0)
     page.wait_for_timeout(HOLD_ARRIVE)
-    # The main board: a coach's badge, boxed.
-    _box(page, page.locator('span[title="Coach"]').first)
+    # The main board: a coach's badge, boxed. The pointer is parked first: it rests
+    # where the page load left it, right on top of where the label lands.
+    page.evaluate("window.__cursor_move && window.__cursor_move(470, 760)")
+    page.wait_for_timeout(700)
+    _box(page, page.locator('span[title="Coach"]').first, "Verified coach badge")
     page.wait_for_timeout(HOLD_BOX)
     _unbox(page)
     # The Coaches board: the website link, boxed and named.
