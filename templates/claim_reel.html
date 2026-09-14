@@ -35,6 +35,23 @@
         opacity: 0; transform: translateY(20px);
         transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1);
     }
+    .lead {
+        font-family: var(--font-body); font-size: 76px; font-weight: 600; line-height: 1.3;
+        color: var(--color-text-primary); max-width: 900px;
+    }
+    .points { width: 100%; max-width: 900px; margin-top: 12px; }
+    .point {
+        display: flex; align-items: baseline; gap: 36px; text-align: left;
+        font-family: var(--font-body); font-size: 60px; font-weight: 600; line-height: 1.3;
+        color: var(--color-text-primary);
+        opacity: 0; transform: translateY(20px);
+        transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1);
+    }
+    .point + .point { margin-top: 64px; }
+    .point-n {
+        flex: 0 0 auto; font-family: var(--font-display); font-size: 120px; line-height: 0.8;
+        color: var(--tour-400);
+    }
     .handle {
         font-family: var(--font-body); font-size: 38px; font-weight: 600;
         color: var(--tour-400); margin-top: 52px;
@@ -54,8 +71,14 @@
 {% block content %}
 <div class="container">
     <div class="screen{% if card.cta %} cta{% endif %}" id="screen">
-        <div class="eyebrow">{{ card.eyebrow }}</div>
-        <div class="title">{{ card.title }}</div>
+        {% if card.eyebrow %}<div class="eyebrow">{{ card.eyebrow }}</div>{% endif %}
+        {% if card.title %}<div class="title">{{ card.title }}</div>{% endif %}
+        {% if card.lead %}<div class="lead">{{ card.lead }}</div>{% endif %}
+        {% if card.points %}
+        <div class="points">
+            {% for point in card.points %}<div class="point"><span class="point-n">{{ loop.index }}</span><span>{{ point }}</span></div>{% endfor %}
+        </div>
+        {% endif %}
         {% if card.sub %}<div class="sub" id="sub">{{ card.sub }}</div>{% endif %}
         {% if card.cta %}<div class="handle" id="handle">{{ handle }} · Link in bio</div>{% endif %}
     </div>
@@ -70,6 +93,10 @@
         const screen = document.getElementById('screen');
         screen.classList.add('visible');
         await wait(900);
+        // The two reasons land one at a time, so each is read before the next arrives.
+        for (const el of document.querySelectorAll('.point')) {
+            el.classList.add('in'); await wait(900);
+        }
         for (const id of ['sub', 'handle']) {
             const el = document.getElementById(id);
             if (el) { el.classList.add('in'); await wait(300); }

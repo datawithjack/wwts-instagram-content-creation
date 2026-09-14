@@ -1,6 +1,7 @@
 """Cut the profile-claim reels (#26 pro, #27 coach): cards intercut with live footage.
 
-    pro:    HOOK -> WHO COUNTS -> [Pros board] -> [claim form] -> WHAT HAPPENS -> CTA
+    pro:    HOOK -> WHO COUNTS -> CLAIM -> [profile, claim form] -> JOIN -> [Pros board]
+            -> WHY -> CTA
     coach:  HOOK -> [Coaches board] -> [listing form] -> WHAT HAPPENS -> CTA
 
 Footage comes from pipeline/screen_record_claim.py. The pro reel is one take; the coach
@@ -31,23 +32,27 @@ HANDLE = "@windsurfworldtourstats"
 CARDS = {
     "pro_hook": {
         "eyebrow": "Fantasy League",
-        "title": "ARE YOU\nA PRO?",
-        "sub": "Get verified on the leaderboard.",
+        "title": "ARE YOU A\nPRO RIDER?",
     },
+    # No headline: the question IS the card.
     "pro_who": {
-        "eyebrow": "Who counts",
-        "title": "YOU'VE\nRACED THE\nTOUR",
-        "sub": "Competed at a PWA event, or at a recent 4 or 5-star PWA or WWT event.",
+        "lead": "Have you competed at a PWA event, or at a recent 4 or 5-star PWA "
+                "or WWT event?",
     },
-    "pro_next": {
-        "eyebrow": "What happens next",
-        "title": "WE CHECK\nIT BY HAND",
-        "sub": "Approved riders get a verified badge and a place on the Pros board.",
+    "pro_claim": {"eyebrow": "Step 1", "title": "CLAIM YOUR\nPROFILE"},
+    "pro_join": {"eyebrow": "Step 2", "title": "JOIN THE\nLEADERBOARD"},
+    "pro_why": {
+        "eyebrow": "Why",
+        "points": [
+            "Bragging rights among your peers.",
+            "Weekend warriors get to play against their heroes.",
+            "Your socials show on the leaderboard.",
+        ],
     },
     "pro_cta": {
         "eyebrow": "Claim your profile",
         "title": "PLAY THE\nPROS",
-        "sub": "Leaderboard, then Pros, then \"Are you a pro rider?\"",
+        "sub": "Open your profile, then \"Are you a pro rider?\"",
         "cta": True,
     },
     "coach_hook": {
@@ -69,7 +74,7 @@ CARDS = {
     },
 }
 
-CARD_HOLD_MS = {"pro_who": 3600, "pro_next": 3200, "coach_next": 3600}
+CARD_HOLD_MS = {"pro_who": 3800, "pro_why": 5000, "coach_next": 3600}
 DEFAULT_HOLD_MS = 2600
 
 # ("card", screen) or ("footage", take, segment).
@@ -77,9 +82,11 @@ SPINES = {
     "pro": [
         ("card", "pro_hook"),
         ("card", "pro_who"),
+        ("card", "pro_claim"),
+        ("footage", "pro", "profile"),
+        ("card", "pro_join"),
         ("footage", "pro", "board"),
-        ("footage", "pro", "form"),
-        ("card", "pro_next"),
+        ("card", "pro_why"),
         ("card", "pro_cta"),
     ],
     "coach": [
@@ -91,7 +98,7 @@ SPINES = {
     ],
 }
 
-FOOTAGE_SPEED = {"board": 1.25, "form": 1.0}
+FOOTAGE_SPEED = {"board": 1.25, "form": 1.0, "profile": 1.0}
 
 
 def plan_reel(reel: str, markers_by_take: dict) -> list:

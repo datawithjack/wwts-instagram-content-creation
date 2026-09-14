@@ -1,14 +1,18 @@
 """Claim reels: the pure spine planner. Render and ffmpeg passes are verified by running."""
+import json
+
 from pipeline.claim_reel_edit import CARDS, SPINES, plan_reel
 
-PRO = {"board_start": 4.5, "board_end": 12.6, "form_start": 12.6, "form_end": 20.9}
+PRO = {"profile_start": 4.5, "profile_end": 14.0, "board_start": 14.8, "board_end": 22.0}
 
 
-def test_pro_reel_cuts_both_segments_from_its_one_take():
+def test_pro_reel_claims_on_the_profile_then_joins_the_board():
     plan = plan_reel("pro", {"pro": PRO})
-    assert [i[0] for i in plan] == ["card", "card", "footage", "footage", "card", "card"]
-    assert plan[2] == ("footage", "pro", 4.5, 12.6, "board")
-    assert plan[3] == ("footage", "pro", 12.6, 20.9, "form")
+    assert [i[1] if i[0] == "card" else i[-1] for i in plan] == [
+        "pro_hook", "pro_who", "pro_claim", "profile", "pro_join", "board",
+        "pro_why", "pro_cta",
+    ]
+    assert ("footage", "pro", 4.5, 14.0, "profile") in plan
 
 
 def test_coach_reel_cuts_each_segment_from_its_own_take():
@@ -36,4 +40,4 @@ def test_every_card_in_a_spine_has_copy_without_em_dashes():
         for item in spine:
             if item[0] == "card":
                 card = CARDS[item[1]]
-                assert "—" not in " ".join(str(v) for v in card.values())
+                assert "—" not in json.dumps(card, ensure_ascii=False)

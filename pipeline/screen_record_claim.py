@@ -2,7 +2,7 @@
 
 Three takes, each a separate file, cut together by pipeline/claim_reel_edit.py:
 
-    pro          signed in: the Pros board, then "Are you a pro rider?" and its form
+    pro          signed in: the profile's "Are you a pro rider?" form, then the Pros board
     coach-board  SIGNED OUT: the Coaches board with its listed coaches
     coach-form   signed in: "Are you a coach?" and the listing form
 
@@ -27,6 +27,7 @@ Usage:
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -62,6 +63,26 @@ HOLD_FORM = 1800     # the open form, read before the pointer moves into it
 
 FLOWS = ("pro", "coach-board", "coach-form")
 
+# The profile prints the signed-in account's email under its name. Hidden before it
+# paints: a MutationObserver callback runs ahead of the next frame, so it never shows.
+HIDE_TEXT_JS = r"""
+(() => {
+  const target = %s;
+  const hide = (node) => {
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+      if (walker.currentNode.nodeValue.trim() === target) {
+        walker.currentNode.parentElement.style.visibility = 'hidden';
+      }
+    }
+  };
+  new MutationObserver((records) => records.forEach((r) => r.addedNodes.forEach((n) => {
+    if (n.nodeType === 1) hide(n);
+    else if (n.nodeType === 3 && n.parentElement) hide(n.parentElement);
+  }))).observe(document, {childList: true, subtree: true});
+})();
+"""
+
 
 def _mark(markers: dict, key: str, t0: float) -> None:
     markers[key] = round(time.monotonic() - t0, 2)
@@ -94,15 +115,30 @@ def _cancel(page) -> None:
     page.wait_for_timeout(900)
 
 
-def _flow_pro(page, markers: dict, t0: float) -> None:
-    _mark(markers, "board_start", t0)
-    page.wait_for_timeout(HOLD_ARRIVE)
-    _choose_players(page, "Pros")
-    page.wait_for_timeout(HOLD_BOARD)
-    _mark(markers, "board_end", t0)
+def _open_profile(page) -> None:
+    """Menu, then the profile: a ring avatar labelled "{name}, profile ... complete".
 
-    _mark(markers, "form_start", t0)
-    _tap_text(page, page.get_by_text("Are you a pro rider?", exact=True).first)
+    An incomplete profile opens a checklist first, whose "Complete profile" button
+    opens the editor; a complete one opens the editor directly.
+    """
+    _tap(page, page.get_by_role("button", name="Open navigation menu").first)
+    page.wait_for_timeout(SETTLE + 500)
+    trigger = page.get_by_role("button", name=re.compile(r", profile .*complete$")).last
+    _tap(page, trigger)
+    page.wait_for_timeout(SETTLE)
+    complete = page.get_by_role("button", name="Complete profile")
+    if complete.count():
+        page.wait_for_timeout(700)
+        _tap_text(page, complete.first)
+    page.wait_for_timeout(SETTLE + HOLD_FORM)
+
+
+def _flow_pro(page, markers: dict, t0: float) -> None:
+    # Step 1: claim, from the profile.
+    _mark(markers, "profile_start", t0)
+    page.wait_for_timeout(1000)
+    _open_profile(page)
+    _tap_text(page, page.get_by_text("Are you a pro rider? Claim your athlete profile").first)
     # The form prefills Instagram from the recording account's profile, which is the
     # brand's own handle: on camera it reads as the brand claiming to be a rider.
     page.locator('input[placeholder^="Instagram handle"]').fill("")
@@ -110,7 +146,17 @@ def _flow_pro(page, markers: dict, t0: float) -> None:
     _highlight(page, page.locator("#rider-claim-search"))
     page.wait_for_timeout(600)
     _cancel(page)
-    _mark(markers, "form_end", t0)
+    _mark(markers, "profile_end", t0)
+
+    # Step 2: the board it gets you onto. The route change happens between segments.
+    page.goto(BASE_URL + LEADERBOARD_PATH, wait_until="networkidle", timeout=60000)
+    page.wait_for_timeout(1500)
+    _install_cursor(page)
+    _mark(markers, "board_start", t0)
+    page.wait_for_timeout(HOLD_ARRIVE)
+    _choose_players(page, "Pros")
+    page.wait_for_timeout(HOLD_BOARD)
+    _mark(markers, "board_end", t0)
 
 
 def _flow_coach_board(page, markers: dict, t0: float) -> None:
@@ -159,9 +205,11 @@ def record_claim_flow(flow: str, out_path: str) -> str:
             page.add_init_script(POINTER_CURSOR_JS)  # must come after CURSOR_JS
 
             if flow != "coach-board":
+                page.add_init_script(HIDE_TEXT_JS % json.dumps(os.environ["FANTASY_EMAIL"]))
                 _login(page, os.environ["FANTASY_EMAIL"], os.environ["FANTASY_PASSWORD"],
                        LEADERBOARD_PATH)
-            page.goto(BASE_URL + LEADERBOARD_PATH, wait_until="networkidle", timeout=60000)
+            start = "/fantasy" if flow == "pro" else LEADERBOARD_PATH
+            page.goto(BASE_URL + start, wait_until="networkidle", timeout=60000)
             page.wait_for_timeout(2000)
             _install_cursor(page)
 
