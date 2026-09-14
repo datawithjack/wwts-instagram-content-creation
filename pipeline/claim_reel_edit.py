@@ -31,7 +31,7 @@ HANDLE = "@windsurfworldtourstats"
 # screen id -> card copy. `title` breaks on \n. No em dashes in any of it.
 CARDS = {
     "pro_hook": {
-        "eyebrow": "Fantasy League",
+        "eyebrow": "Windsurf Fantasy League",
         "title": "ARE YOU A\nPRO RIDER?",
     },
     # No headline: the question IS the card.
@@ -45,14 +45,15 @@ CARDS = {
         "eyebrow": "Why",
         "points": [
             "Bragging rights among your peers.",
-            "Weekend warriors get to play against their heroes.",
+            "A verified badge next to your name.",
             "Your socials show on the leaderboard.",
+            "Weekend warriors get to play against their heroes.",
         ],
     },
     "pro_cta": {
         "eyebrow": "Claim your profile",
         "title": "PLAY THE\nPROS",
-        "sub": "Open your profile, then \"Are you a pro rider?\"",
+        "sub": "Open your profile and click \"Claim your athlete profile\"",
         "cta": True,
     },
     "coach_hook": {
@@ -74,7 +75,7 @@ CARDS = {
     },
 }
 
-CARD_HOLD_MS = {"pro_who": 3800, "pro_why": 5000, "coach_next": 3600}
+CARD_HOLD_MS = {"pro_who": 3800, "pro_why": 6000, "coach_next": 3600}
 DEFAULT_HOLD_MS = 2600
 
 # ("card", screen) or ("footage", take, segment).

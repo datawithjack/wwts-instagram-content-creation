@@ -41,6 +41,7 @@ from pipeline.screen_record import (
     SETTLE,
     _install_cursor,
     _login,
+    _slow_scroll_into_view,
     _tap,
 )
 from pipeline.screen_record_rtf import (
@@ -50,6 +51,7 @@ from pipeline.screen_record_rtf import (
     PRESET,
     VIDEO_SIZE,
     _align_markers,
+    _scroll_to_top,
     _tap_text,
 )
 
@@ -60,6 +62,7 @@ HOLD_ARRIVE = 1800   # the board as it opens, before the filter is touched
 HOLD_BOARD = 3200    # the filtered board, long enough to read who is on it
 HOLD_FIELD = 1500    # each highlighted form field
 HOLD_FORM = 1800     # the open form, read before the pointer moves into it
+HOLD_BOX = 2600      # a highlight box, up
 
 FLOWS = ("pro", "coach-board", "coach-form")
 
@@ -110,6 +113,37 @@ def _highlight(page, locator) -> None:
     page.wait_for_timeout(HOLD_FIELD)
 
 
+def _box(page, locator) -> None:
+    """Draw a highlight box around an element. Fixed to the viewport, so do not scroll
+    while it is up."""
+    locator.wait_for(state="visible", timeout=10000)
+    page.evaluate(
+        """(el) => {
+            const r = el.getBoundingClientRect(), pad = 8;
+            const b = document.createElement('div');
+            b.id = '__highlight_box';
+            Object.assign(b.style, {
+                position: 'fixed', left: (r.left - pad) + 'px', top: (r.top - pad) + 'px',
+                width: (r.width + pad * 2) + 'px', height: (r.height + pad * 2) + 'px',
+                border: '3px solid #facc15', borderRadius: '10px',
+                boxShadow: '0 0 18px rgba(250, 204, 21, 0.55)',
+                zIndex: 2147483646, pointerEvents: 'none',
+                opacity: 0, transform: 'scale(1.35)',
+                transition: 'opacity 0.35s ease, transform 0.35s cubic-bezier(.22,.61,.36,1)',
+            });
+            document.body.appendChild(b);
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                b.style.opacity = 1; b.style.transform = 'scale(1)';
+            }));
+        }""",
+        locator.element_handle(),
+    )
+
+
+def _unbox(page) -> None:
+    page.evaluate("document.getElementById('__highlight_box')?.remove()")
+
+
 def _cancel(page) -> None:
     _tap(page, page.get_by_role("button", name="Cancel").last)
     page.wait_for_timeout(900)
@@ -154,8 +188,21 @@ def _flow_pro(page, markers: dict, t0: float) -> None:
     _install_cursor(page)
     _mark(markers, "board_start", t0)
     page.wait_for_timeout(HOLD_ARRIVE)
+    # The main board: a verified rider's badge, boxed.
+    badge = page.locator('button[title="Verified Rider"]').first
+    _slow_scroll_into_view(page, badge)
+    page.wait_for_timeout(500)
+    _box(page, badge)
+    page.wait_for_timeout(HOLD_BOX)
+    _unbox(page)
+    _scroll_to_top(page)
+    # The Pros board: a rider's socials, boxed.
     _choose_players(page, "Pros")
-    page.wait_for_timeout(HOLD_BOARD)
+    page.wait_for_timeout(1500)
+    _box(page, page.locator('a[href*="instagram.com"]').first)
+    page.wait_for_timeout(HOLD_BOX)
+    _unbox(page)
+    page.wait_for_timeout(600)
     _mark(markers, "board_end", t0)
 
 
@@ -177,6 +224,10 @@ def _flow_coach_form(page, markers: dict, t0: float) -> None:
 
     _mark(markers, "form_start", t0)
     _tap_text(page, link)
+    # Prefilled from the recording account's own links, the brand's. Cleared so the
+    # fields show their placeholders instead.
+    for field in ("#coach-claim-website", "#coach-claim-instagram"):
+        page.locator(field).fill("")
     page.wait_for_timeout(SETTLE + HOLD_FORM)
     for field in ("#coach-claim-website", "#coach-claim-instagram"):
         _highlight(page, page.locator(field))
