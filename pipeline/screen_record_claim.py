@@ -113,12 +113,12 @@ def _highlight(page, locator) -> None:
     page.wait_for_timeout(HOLD_FIELD)
 
 
-def _box(page, locator) -> None:
-    """Draw a highlight box around an element. Fixed to the viewport, so do not scroll
-    while it is up."""
+def _box(page, locator, label: str = "") -> None:
+    """Draw a highlight box around an element, with an optional label beneath it.
+    Fixed to the viewport, so do not scroll while it is up."""
     locator.wait_for(state="visible", timeout=10000)
     page.evaluate(
-        """(el) => {
+        """([el, label]) => {
             const r = el.getBoundingClientRect(), pad = 8;
             const b = document.createElement('div');
             b.id = '__highlight_box';
@@ -132,16 +132,34 @@ def _box(page, locator) -> None:
                 transition: 'opacity 0.35s ease, transform 0.35s cubic-bezier(.22,.61,.36,1)',
             });
             document.body.appendChild(b);
+            if (label) {
+                const t = document.createElement('div');
+                t.id = '__highlight_label';
+                t.textContent = label;
+                Object.assign(t.style, {
+                    // Under the box, right edges aligned: beside it, it covered the score.
+                    position: 'fixed', right: (window.innerWidth - r.right - pad) + 'px',
+                    top: (r.bottom + pad + 10) + 'px',
+                    padding: '6px 12px', borderRadius: '8px',
+                    background: '#facc15', color: '#0f172a',
+                    font: '700 15px Inter, system-ui, sans-serif', whiteSpace: 'nowrap',
+                    zIndex: 2147483646, pointerEvents: 'none',
+                    opacity: 0, transition: 'opacity 0.35s ease 0.2s',
+                });
+                document.body.appendChild(t);
+                requestAnimationFrame(() => requestAnimationFrame(() => { t.style.opacity = 1; }));
+            }
             requestAnimationFrame(() => requestAnimationFrame(() => {
                 b.style.opacity = 1; b.style.transform = 'scale(1)';
             }));
         }""",
-        locator.element_handle(),
+        [locator.element_handle(), label],
     )
 
 
 def _unbox(page) -> None:
-    page.evaluate("document.getElementById('__highlight_box')?.remove()")
+    page.evaluate("""['__highlight_box', '__highlight_label']
+        .forEach((id) => document.getElementById(id)?.remove())""")
 
 
 def _cancel(page) -> None:
@@ -209,10 +227,14 @@ def _flow_pro(page, markers: dict, t0: float) -> None:
 def _flow_coach_board(page, markers: dict, t0: float) -> None:
     _mark(markers, "board_start", t0)
     page.wait_for_timeout(HOLD_ARRIVE)
+    # The main board: a coach's badge, boxed.
+    _box(page, page.locator('span[title="Coach"]').first)
+    page.wait_for_timeout(HOLD_BOX)
+    _unbox(page)
+    # The Coaches board: the website link, boxed and named.
     _choose_players(page, "Coaches")
     page.wait_for_timeout(1500)
-    # The coach's links, boxed: the listing is what the claim buys.
-    _box(page, page.locator('a[title="Website"]').first.locator("xpath=.."))
+    _box(page, page.locator('a[title="Website"]').first, "Link to your website")
     page.wait_for_timeout(HOLD_BOX)
     _unbox(page)
     page.wait_for_timeout(600)
