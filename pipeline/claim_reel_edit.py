@@ -1,7 +1,7 @@
 """Cut the profile-claim reels (#26 pro, #27 coach): cards intercut with live footage.
 
     pro:    HOOK -> WHO COUNTS -> CLAIM -> [profile, claim form] -> JOIN -> [Pros board]
-            -> WHY -> CTA
+            -> WHY -> BONUS -> CTA
     coach:  HOOK -> WHO COUNTS -> GET LISTED -> [profile, listing form] -> CHECK OUT
             -> [Coaches board] -> WHY -> CTA
 
@@ -51,6 +51,14 @@ CARDS = {
             "Weekend warriors get to play against their heroes.",
         ],
     },
+    # The bonus sits on its own card: it is an offer, not another reason.
+    "pro_bonus": {
+        "eyebrow": "Bonus",
+        "title": "FREE END OF\nSEASON REPORT",
+        "title_px": 150,  # two lines: at the default 200 "SEASON REPORT" wraps
+        "sub": "Every claimed pro gets a full breakdown: results, heats, rankings, "
+               "moves, and video links where we have them.",
+    },
     "pro_cta": {
         "eyebrow": "Claim your profile",
         "title": "PLAY THE PROS",
@@ -84,7 +92,7 @@ CARDS = {
     },
 }
 
-CARD_HOLD_MS = {"pro_who": 3800, "pro_why": 6000, "coach_why": 6000}
+CARD_HOLD_MS = {"pro_who": 3800, "pro_why": 6000, "pro_bonus": 4200, "coach_why": 6000}
 DEFAULT_HOLD_MS = 2600
 
 # ("card", screen) or ("footage", take, segment).
@@ -97,6 +105,7 @@ SPINES = {
         ("card", "pro_join"),
         ("footage", "pro", "board"),
         ("card", "pro_why"),
+        ("card", "pro_bonus"),
         ("card", "pro_cta"),
     ],
     "coach": [
