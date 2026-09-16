@@ -2,8 +2,8 @@
 
     pro:    HOOK -> FANTASY -> WHO COUNTS -> CLAIM -> [profile, claim form] -> JOIN -> [Pros board]
             -> WHY -> BONUS -> CTA
-    coach:  HOOK -> WHO COUNTS -> GET LISTED -> [profile, listing form] -> CHECK OUT
-            -> [Coaches board] -> WHY -> CTA
+    coach:  HOOK -> FANTASY -> WHO COUNTS -> GET LISTED -> [profile, listing form] -> CHECK OUT
+            -> [Coaches board] -> WHY -> COMING SOON -> CTA
 
 Footage comes from pipeline/screen_record_claim.py. The pro reel is one take; the coach
 reel is two (board signed out, form signed in), so each footage slot names the take it
@@ -36,7 +36,7 @@ CARDS = {
         "title": "ARE YOU A\nPRO RIDER?",
     },
     # No headline: the question IS the card.
-    "pro_fantasy": {
+    "fantasy": {
         "lead": "Do you play (or want to play) Windsurf Fantasy League?",
     },
     "pro_who": {
@@ -87,6 +87,14 @@ CARDS = {
             "Free, and it stays free.",
         ],
     },
+    # The coach reel's answer to pro_bonus: what listing is worth by next season.
+    "coach_soon": {
+        "eyebrow": "Coming next season",
+        "title": "COACH BRANDED\nPRIVATE LEAGUES",
+        "title_px": 130,
+        "sub": "With a notice board for your clinic dates, messages and anything "
+               "else your riders should see.",
+    },
     "coach_cta": {
         "eyebrow": "Get listed",
         "title": "GET FOUND",
@@ -95,14 +103,14 @@ CARDS = {
     },
 }
 
-CARD_HOLD_MS = {"pro_fantasy": 3800, "pro_who": 3800, "pro_why": 6000, "pro_bonus": 4200, "coach_why": 6000}
+CARD_HOLD_MS = {"fantasy": 3800, "pro_who": 3800, "pro_why": 6000, "pro_bonus": 4200, "coach_soon": 4200, "coach_why": 6000}
 DEFAULT_HOLD_MS = 2600
 
 # ("card", screen) or ("footage", take, segment).
 SPINES = {
     "pro": [
         ("card", "pro_hook"),
-        ("card", "pro_fantasy"),
+        ("card", "fantasy"),
         ("card", "pro_who"),
         ("card", "pro_claim"),
         ("footage", "pro", "profile"),
@@ -114,12 +122,14 @@ SPINES = {
     ],
     "coach": [
         ("card", "coach_hook"),
+        ("card", "fantasy"),
         ("card", "coach_who"),
         ("card", "coach_claim"),
         ("footage", "coach-form", "profile"),
         ("card", "coach_join"),
         ("footage", "coach-board", "board"),
         ("card", "coach_why"),
+        ("card", "coach_soon"),
         ("card", "coach_cta"),
     ],
 }
