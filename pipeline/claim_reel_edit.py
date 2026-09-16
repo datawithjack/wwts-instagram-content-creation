@@ -106,6 +106,8 @@ CARDS = {
 CARD_HOLD_MS = {"pro_who": 3200, "pro_why": 5200, "pro_bonus": 3800,
                 "coach_soon": 3800, "coach_why": 5200}
 DEFAULT_HOLD_MS = 2600
+# Dead frames at the head of every card recording, measured: text lands at 0.8s.
+CARD_HEAD_S = 0.6
 
 # ("card", screen) or ("footage", take, segment).
 SPINES = {
@@ -165,8 +167,15 @@ def _render_card_clip(screen: str, out_path: str) -> str:
         "card": CARDS[screen], "handle": HANDLE, "url": URL,
         "width": DEFAULT_W, "height": DEFAULT_H, "hold_ms": hold,
     })
-    render_to_video(html, out_path, width=DEFAULT_W, height=DEFAULT_H, dpr=1,
+    raw = out_path + ".raw.mp4"
+    total_s = (hold + 1600) / 1000
+    render_to_video(html, raw, width=DEFAULT_W, height=DEFAULT_H, dpr=1,
                     duration_ms=hold + 1600)
+    # The recording opens on the empty background: the font wait plus most of the
+    # fade-in. Eight cards' worth of it was six seconds of the reel.
+    subprocess.run(_with_quality(trim_clip_cmd(raw, CARD_HEAD_S, total_s, out_path)),
+                   capture_output=True, check=True)
+    os.remove(raw)
     return out_path
 
 
