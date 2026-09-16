@@ -210,14 +210,17 @@ def _flow_pro(page, markers: dict, t0: float) -> None:
     badge = page.locator('button[title="Verified Rider"]').first
     _slow_scroll_into_view(page, badge)
     page.wait_for_timeout(500)
-    _box(page, badge)
+    # Park the pointer clear of where the label lands, as the coach board does.
+    page.evaluate("window.__cursor_move && window.__cursor_move(470, 760)")
+    page.wait_for_timeout(700)
+    _box(page, badge, "Verified rider badge")
     page.wait_for_timeout(HOLD_BOX)
     _unbox(page)
     _scroll_to_top(page)
-    # The Pros board: a rider's socials, boxed.
+    # The Pros board: a rider's socials, boxed and named.
     _choose_players(page, "Pros")
     page.wait_for_timeout(1500)
-    _box(page, page.locator('a[href*="instagram.com"]').first)
+    _box(page, page.locator('a[href*="instagram.com"]').first, "Link to your Instagram")
     page.wait_for_timeout(HOLD_BOX)
     _unbox(page)
     page.wait_for_timeout(600)
