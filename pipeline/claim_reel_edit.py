@@ -1,9 +1,9 @@
 """Cut the profile-claim reels (#26 pro, #27 coach): cards intercut with live footage.
 
-    pro:    HOOK -> WHO COUNTS -> CLAIM -> [profile, claim form] -> JOIN -> [Pros board]
-            -> WHY -> CTA
-    coach:  HOOK -> WHO COUNTS -> GET LISTED -> [profile, listing form] -> CHECK OUT
-            -> [Coaches board] -> WHY -> CTA
+    pro:    HOOK -> FANTASY -> WHO COUNTS -> CLAIM -> [profile, claim form] -> JOIN -> [Pros board]
+            -> WHY -> BONUS -> CTA
+    coach:  HOOK -> FANTASY -> WHO COUNTS -> GET LISTED -> [profile, listing form] -> CHECK OUT
+            -> [Coaches board] -> WHY -> COMING SOON -> CTA
 
 Footage comes from pipeline/screen_record_claim.py. The pro reel is one take; the coach
 reel is two (board signed out, form signed in), so each footage slot names the take it
@@ -36,11 +36,14 @@ CARDS = {
         "title": "ARE YOU A\nPRO RIDER?",
     },
     # No headline: the question IS the card.
+    "fantasy": {
+        "lead": "Do you play (or want to play) Windsurf Fantasy League?",
+    },
     "pro_who": {
         "lead": "Have you competed at a PWA event, or at a recent 4 or 5-star PWA "
                 "or WWT event?",
     },
-    "pro_claim": {"eyebrow": "Step 1", "title": "CLAIM YOUR\nPROFILE"},
+    "pro_claim": {"eyebrow": "Step 1", "title": "SIGN UP AND\nCLAIM YOUR\nPROFILE"},
     "pro_join": {"eyebrow": "Once approved", "title": "CHECK OUT THE\nLEADERBOARD"},
     "pro_why": {
         "eyebrow": "Why",
@@ -50,6 +53,14 @@ CARDS = {
             "Your socials show on the leaderboard.",
             "Weekend warriors get to play against their heroes.",
         ],
+    },
+    # The bonus sits on its own card: it is an offer, not another reason.
+    "pro_bonus": {
+        "eyebrow": "Bonus",
+        "title": "FREE END OF\nSEASON REPORT",
+        "title_px": 150,  # two lines: at the default 200 "SEASON REPORT" wraps
+        "sub": "Every claimed pro gets a full breakdown: results, heats, rankings, "
+               "moves, and video links where we have them.",
     },
     "pro_cta": {
         "eyebrow": "Claim your profile",
@@ -76,6 +87,14 @@ CARDS = {
             "Free, and it stays free.",
         ],
     },
+    # The coach reel's answer to pro_bonus: what listing is worth by next season.
+    "coach_soon": {
+        "eyebrow": "Coming next season",
+        "title": "COACH BRANDED\nPRIVATE LEAGUES",
+        "title_px": 130,
+        "sub": "With a notice board for your clinic dates, messages and anything "
+               "else your riders should see.",
+    },
     "coach_cta": {
         "eyebrow": "Get listed",
         "title": "GET FOUND",
@@ -84,34 +103,41 @@ CARDS = {
     },
 }
 
-CARD_HOLD_MS = {"pro_who": 3800, "pro_why": 6000, "coach_why": 6000}
+CARD_HOLD_MS = {"pro_who": 3200, "pro_why": 5200, "pro_bonus": 3800,
+                "coach_soon": 3800, "coach_why": 5200}
 DEFAULT_HOLD_MS = 2600
+# Dead frames at the head of every card recording, measured: text lands at 0.8s.
+CARD_HEAD_S = 0.6
 
 # ("card", screen) or ("footage", take, segment).
 SPINES = {
     "pro": [
         ("card", "pro_hook"),
+        ("card", "fantasy"),
         ("card", "pro_who"),
         ("card", "pro_claim"),
         ("footage", "pro", "profile"),
         ("card", "pro_join"),
         ("footage", "pro", "board"),
         ("card", "pro_why"),
+        ("card", "pro_bonus"),
         ("card", "pro_cta"),
     ],
     "coach": [
         ("card", "coach_hook"),
+        ("card", "fantasy"),
         ("card", "coach_who"),
         ("card", "coach_claim"),
         ("footage", "coach-form", "profile"),
         ("card", "coach_join"),
         ("footage", "coach-board", "board"),
         ("card", "coach_why"),
+        ("card", "coach_soon"),
         ("card", "coach_cta"),
     ],
 }
 
-FOOTAGE_SPEED = {"board": 1.25, "form": 1.0, "profile": 1.0}
+FOOTAGE_SPEED = {"board": 1.25, "form": 1.0, "profile": 1.25}
 
 
 def plan_reel(reel: str, markers_by_take: dict) -> list:
@@ -141,8 +167,15 @@ def _render_card_clip(screen: str, out_path: str) -> str:
         "card": CARDS[screen], "handle": HANDLE, "url": URL,
         "width": DEFAULT_W, "height": DEFAULT_H, "hold_ms": hold,
     })
-    render_to_video(html, out_path, width=DEFAULT_W, height=DEFAULT_H, dpr=1,
+    raw = out_path + ".raw.mp4"
+    total_s = (hold + 1600) / 1000
+    render_to_video(html, raw, width=DEFAULT_W, height=DEFAULT_H, dpr=1,
                     duration_ms=hold + 1600)
+    # The recording opens on the empty background: the font wait plus most of the
+    # fade-in. Eight cards' worth of it was six seconds of the reel.
+    subprocess.run(_with_quality(trim_clip_cmd(raw, CARD_HEAD_S, total_s, out_path)),
+                   capture_output=True, check=True)
+    os.remove(raw)
     return out_path
 
 
