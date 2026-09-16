@@ -103,7 +103,8 @@ CARDS = {
     },
 }
 
-CARD_HOLD_MS = {"fantasy": 3800, "pro_who": 3800, "pro_why": 6000, "pro_bonus": 4200, "coach_soon": 4200, "coach_why": 6000}
+CARD_HOLD_MS = {"pro_who": 3200, "pro_why": 5200, "pro_bonus": 3800,
+                "coach_soon": 3800, "coach_why": 5200}
 DEFAULT_HOLD_MS = 2600
 
 # ("card", screen) or ("footage", take, segment).
@@ -134,7 +135,7 @@ SPINES = {
     ],
 }
 
-FOOTAGE_SPEED = {"board": 1.25, "form": 1.0, "profile": 1.0}
+FOOTAGE_SPEED = {"board": 1.25, "form": 1.0, "profile": 1.25}
 
 
 def plan_reel(reel: str, markers_by_take: dict) -> list:
