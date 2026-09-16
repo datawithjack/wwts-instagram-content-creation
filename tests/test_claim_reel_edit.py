@@ -9,7 +9,7 @@ PRO = {"profile_start": 4.5, "profile_end": 14.0, "board_start": 14.8, "board_en
 def test_pro_reel_claims_on_the_profile_then_joins_the_board():
     plan = plan_reel("pro", {"pro": PRO})
     assert [i[1] if i[0] == "card" else i[-1] for i in plan] == [
-        "pro_hook", "pro_who", "pro_claim", "profile", "pro_join", "board",
+        "pro_hook", "pro_fantasy", "pro_who", "pro_claim", "profile", "pro_join", "board",
         "pro_why", "pro_bonus", "pro_cta",
     ]
     assert ("footage", "pro", 4.5, 14.0, "profile") in plan

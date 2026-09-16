@@ -1,6 +1,6 @@
 """Cut the profile-claim reels (#26 pro, #27 coach): cards intercut with live footage.
 
-    pro:    HOOK -> WHO COUNTS -> CLAIM -> [profile, claim form] -> JOIN -> [Pros board]
+    pro:    HOOK -> FANTASY -> WHO COUNTS -> CLAIM -> [profile, claim form] -> JOIN -> [Pros board]
             -> WHY -> BONUS -> CTA
     coach:  HOOK -> WHO COUNTS -> GET LISTED -> [profile, listing form] -> CHECK OUT
             -> [Coaches board] -> WHY -> CTA
@@ -36,11 +36,14 @@ CARDS = {
         "title": "ARE YOU A\nPRO RIDER?",
     },
     # No headline: the question IS the card.
+    "pro_fantasy": {
+        "lead": "Do you play (or want to play) Windsurf Fantasy League?",
+    },
     "pro_who": {
         "lead": "Have you competed at a PWA event, or at a recent 4 or 5-star PWA "
                 "or WWT event?",
     },
-    "pro_claim": {"eyebrow": "Step 1", "title": "CLAIM YOUR\nPROFILE"},
+    "pro_claim": {"eyebrow": "Step 1", "title": "SIGN UP AND\nCLAIM YOUR\nPROFILE"},
     "pro_join": {"eyebrow": "Once approved", "title": "CHECK OUT THE\nLEADERBOARD"},
     "pro_why": {
         "eyebrow": "Why",
@@ -92,13 +95,14 @@ CARDS = {
     },
 }
 
-CARD_HOLD_MS = {"pro_who": 3800, "pro_why": 6000, "pro_bonus": 4200, "coach_why": 6000}
+CARD_HOLD_MS = {"pro_fantasy": 3800, "pro_who": 3800, "pro_why": 6000, "pro_bonus": 4200, "coach_why": 6000}
 DEFAULT_HOLD_MS = 2600
 
 # ("card", screen) or ("footage", take, segment).
 SPINES = {
     "pro": [
         ("card", "pro_hook"),
+        ("card", "pro_fantasy"),
         ("card", "pro_who"),
         ("card", "pro_claim"),
         ("footage", "pro", "profile"),
