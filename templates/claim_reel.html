@@ -53,7 +53,10 @@
         color: var(--tour-400);
     }
     /* The podium card: each line centred, its place in the medal colour. */
-    .points.centered .point { justify-content: center; }
+    .points.centered { margin-top: 80px; }
+    .points.centered .point { justify-content: center; align-items: center; }
+    .points.centered .point + .point { margin-top: 56px; }
+    .points.centered .point-n { line-height: 1; padding-top: 0.08em; }
     .handle {
         font-family: var(--font-body); font-size: 38px; font-weight: 600;
         color: var(--tour-400); margin-top: 52px;
