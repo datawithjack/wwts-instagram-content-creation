@@ -5,7 +5,7 @@ Three takes, each a separate file, cut together by pipeline/claim_reel_edit.py:
     pro          signed in: the profile's "Are you a pro rider?" form, then the Pros board
     coach-board  SIGNED OUT: the Coaches board, its coach's links boxed
     coach-form   signed in: the profile's "Run clinics? Get listed" form
-    podium       signed in: Sylt wave Session, the men's podium called 1st to 3rd,
+    podium       signed in: Sylt wave Session, both podiums called 1st to 3rd,
                  then over to the Heat Team step (#29)
 
 The coach reel needs two takes because one account cannot show both halves: the
@@ -61,8 +61,9 @@ from pipeline.screen_record_rtf import (
 LEADERBOARD_PATH = "/fantasy/leaderboard"
 # Sylt 2026 (API id 126), wave. Its podium half is switched on.
 PODIUM_PATH = "/fantasy/session/126?discipline=wave"
-# The top three by world ranking, the order the sheet lists them in.
-PODIUM_CALLS = ("Marc Paré Rico", "Philip Köster", "Marcilio Browne")
+# A rider card in the podium sheet. Its aria-label is the rider's name; the
+# sheet's other labelled button is Close.
+SHEET_RIDER = "button[aria-label]:not([aria-label='Close'])"
 
 # Pacing (ms).
 HOLD_ARRIVE = 1800   # the board as it opens, before the filter is touched
@@ -70,7 +71,7 @@ HOLD_BOARD = 3200    # the filtered board, long enough to read who is on it
 HOLD_FIELD = 1500    # each highlighted form field
 HOLD_FORM = 1800     # the open form, read before the pointer moves into it
 HOLD_BOX = 2600      # a highlight box, up
-HOLD_SHEET = 1000    # the rider sheet, open, before a rider is tapped
+HOLD_SHEET = 600     # the rider sheet, open, before a rider is tapped
 HOLD_PODIUM = 2200   # the called podium, read before the cut
 HOLD_HEAT = 1000     # the Heat Team step, a glance before the blur
 HOLD_LABEL = 2400    # the "as normal" label over the blurred page
@@ -304,21 +305,28 @@ def _flow_coach_form(page, markers: dict, t0: float) -> None:
 
 
 def _flow_podium(page, markers: dict, t0: float) -> None:
-    """Call the men's podium. NOTHING IS SAVED: picks stay a local draft until
-    "Save Team", which is never tapped."""
+    """Call both podiums, each fleet's top three by world ranking: the order the
+    sheet lists them in, so the Nth call is the Nth card. NOTHING IS SAVED: picks
+    stay a local draft until "Save Team", which is never tapped."""
     _mark(markers, "podium_start", t0)
     page.wait_for_timeout(1200)
-    for name in PODIUM_CALLS:
+    for n in range(6):
         # Filled slots lose the prompt, so .first is always the next empty one.
-        _tap_text(page, page.get_by_role("button", name="Tap to choose your pick").first)
+        slot = page.get_by_role("button", name="Tap to choose your pick").first
+        if n == 3:
+            # The women's podium sits below the fold.
+            page.evaluate("window.__cursor_move && window.__cursor_move(470, 760)")
+            _slow_scroll_into_view(page, slot)
+            page.wait_for_timeout(500)
+        _tap_text(page, slot)
         # The first sheet opens before its rider photos have loaded.
         try:
             page.wait_for_load_state("networkidle", timeout=8000)
         except Exception:
             pass
         page.wait_for_timeout(HOLD_SHEET)
-        _tap_text(page, page.get_by_role("dialog").get_by_role("button", name=name, exact=True))
-        page.wait_for_timeout(SETTLE + 500)
+        _tap_text(page, page.get_by_role("dialog").locator(SHEET_RIDER).nth(n % 3))
+        page.wait_for_timeout(SETTLE)
     page.evaluate("window.__cursor_move && window.__cursor_move(470, 760)")
     page.wait_for_timeout(HOLD_PODIUM)
     _mark(markers, "podium_end", t0)

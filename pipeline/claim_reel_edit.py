@@ -125,8 +125,8 @@ CARDS = {
     },
     "podium_cta": {
         "eyebrow": "Sylt wave",
-        "title": "MAKE YOUR\nCALL",
-        "sub": "Picks lock 25 Sep",
+        "title": "START BUILDING\nYOUR TEAM",
+        "title_px": 150,
         "cta": True,
     },
 }
@@ -176,7 +176,7 @@ SPINES = {
     ],
 }
 
-FOOTAGE_SPEED = {"board": 1.25, "form": 1.0, "profile": 1.25, "podium": 1.5,
+FOOTAGE_SPEED = {"board": 1.25, "form": 1.0, "profile": 1.25, "podium": 2.0,
                  "heat": 1.0}
 
 
