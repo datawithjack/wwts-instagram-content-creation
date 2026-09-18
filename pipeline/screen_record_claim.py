@@ -72,7 +72,37 @@ HOLD_FORM = 1800     # the open form, read before the pointer moves into it
 HOLD_BOX = 2600      # a highlight box, up
 HOLD_SHEET = 1000    # the rider sheet, open, before a rider is tapped
 HOLD_PODIUM = 2200   # the called podium, read before the cut
-HOLD_HEAT = 1800     # the Heat Team step, a glance before the card says the rest
+HOLD_HEAT = 1000     # the Heat Team step, a glance before the blur
+HOLD_LABEL = 2400    # the "as normal" label over the blurred page
+
+# The Heat Team is the part players already know, so the page blurs under a label
+# rather than being walked through.
+BLUR_LABEL_JS = r"""
+(text) => {
+  const o = document.createElement('div');
+  Object.assign(o.style, {
+    position: 'fixed', inset: 0, zIndex: 2147483645, pointerEvents: 'none',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+    gap: '14px', padding: '0 40px', textAlign: 'center',
+    background: 'rgba(8, 12, 24, 0.55)', backdropFilter: 'blur(0px)',
+    opacity: 0, transition: 'opacity 0.5s ease, backdrop-filter 0.5s ease',
+  });
+  const line = (content, style) => {
+    const d = document.createElement('div');
+    d.textContent = content;
+    Object.assign(d.style, style);
+    o.appendChild(d);
+  };
+  line('Then', {font: '600 15px Inter, system-ui, sans-serif', letterSpacing: '0.3em',
+                textTransform: 'uppercase', color: '#94a3b8'});
+  line(text, {fontFamily: '"Bebas Neue", sans-serif', fontSize: '64px', lineHeight: 0.92,
+              color: '#fff', whiteSpace: 'pre-line'});
+  document.body.appendChild(o);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    o.style.opacity = 1; o.style.backdropFilter = 'blur(10px)';
+  }));
+}
+"""
 
 FLOWS = ("pro", "coach-board", "coach-form", "podium")
 
@@ -295,11 +325,11 @@ def _flow_podium(page, markers: dict, t0: float) -> None:
 
     _mark(markers, "heat_start", t0)
     _tap_text(page, page.get_by_role("button", name=re.compile(r"Step 2 Heat Team")).first)
-    # The app scrolls its step bar to the top, under the fixed header. Back up so
-    # the Heat Team step shows as the one now current.
-    page.wait_for_timeout(SETTLE)
-    _scroll_to_top(page)
-    page.wait_for_timeout(HOLD_HEAT)
+    page.wait_for_timeout(SETTLE + HOLD_HEAT)
+    # Off the frame: the pointer sits above the blur and would float on the label.
+    page.evaluate("window.__cursor_move && window.__cursor_move(620, 1100)")
+    page.evaluate(BLUR_LABEL_JS, "CONTINUE PICKING\nYOUR TEAM\nAS NORMAL")
+    page.wait_for_timeout(HOLD_LABEL)
     _mark(markers, "heat_end", t0)
 
 

@@ -4,7 +4,8 @@
             -> WHY -> BONUS -> CTA
     coach:  HOOK -> FANTASY -> WHO COUNTS -> GET LISTED -> [profile, listing form] -> CHECK OUT
             -> [Coaches board] -> WHY -> COMING SOON -> CTA
-    podium: HOOK -> [Sylt wave podium picked] -> BONUS -> [Heat Team step] -> AS USUAL -> CTA
+    podium: HOOK -> [Sylt wave podium picked] -> BONUS -> [Heat Team step, blurred
+            under 'continue as normal'] -> CTA
             (#29, short on purpose)
 
 Footage comes from pipeline/screen_record_claim.py. The pro reel is one take; the coach
@@ -109,19 +110,18 @@ CARDS = {
         "eyebrow": "New in Session mode",
         "title": "CALL THE\nPODIUM",
     },
-    # The numeral beside each line is the finishing place.
+    # Medal colours are the app's (utils/podiumMedal.ts: captain-400, slate-300, bronze-600).
     "podium_points": {
-        "eyebrow": "Call it right",
-        "title": "POINT BONUS",
+        "eyebrow": "Podium bonus",
+        "title": "CALL IT RIGHT",
         "title_px": 170,
-        "points": ["25 pts", "15 pts", "10 pts"],
-        "sub": "Right rider, wrong spot: 5 pts",
-    },
-    "podium_team": {
-        "eyebrow": "Then",
-        "title": "PICK YOUR\nSESSION TEAM",
-        "title_px": 170,
-        "sub": "As usual.",
+        "points_centered": True,
+        "points": [
+            {"n": "1ST", "text": "correct: +25 pts", "color": "#facc15"},
+            {"n": "2ND", "text": "correct: +15 pts", "color": "#cbd5e1"},
+            {"n": "3RD", "text": "correct: +10 pts", "color": "#cd7f32"},
+        ],
+        "sub": "Right rider, wrong spot: +5 pts",
     },
     "podium_cta": {
         "eyebrow": "Sylt wave",
@@ -135,7 +135,7 @@ CARD_HOLD_MS = {"pro_who": 3200, "pro_why": 5200, "pro_bonus": 3800,
                 "coach_soon": 3800, "coach_why": 5200,
                 "podium_hook": 1200,
                 # The three lines land 0.9s apart before the sub, so it needs the room.
-                "podium_points": 4400, "podium_team": 1400,
+                "podium_points": 4400,
                 "podium_cta": 2000}
 DEFAULT_HOLD_MS = 2600
 # Dead frames at the head of every card recording, measured: text lands at 0.8s.
@@ -172,7 +172,6 @@ SPINES = {
         ("footage", "podium", "podium"),
         ("card", "podium_points"),
         ("footage", "podium", "heat"),
-        ("card", "podium_team"),
         ("card", "podium_cta"),
     ],
 }

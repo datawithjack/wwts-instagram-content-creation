@@ -52,6 +52,5 @@ def test_podium_reel_calls_the_podium_then_hands_over_to_the_team():
         ("footage", "podium", 3.0, 15.0, "podium"),
         ("card", "podium_points"),
         ("footage", "podium", 15.0, 18.0, "heat"),
-        ("card", "podium_team"),
         ("card", "podium_cta"),
     ]
