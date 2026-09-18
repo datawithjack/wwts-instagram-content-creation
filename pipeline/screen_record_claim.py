@@ -332,6 +332,10 @@ def _flow_podium(page, markers: dict, t0: float) -> None:
     _mark(markers, "podium_end", t0)
 
     _mark(markers, "heat_start", t0)
+    # Up to the step bar on camera: tapped from below the fold, Playwright jumps
+    # to it and the tap is never seen.
+    _scroll_to_top(page)
+    page.wait_for_timeout(500)
     _tap_text(page, page.get_by_role("button", name=re.compile(r"Step 2 Heat Team")).first)
     page.wait_for_timeout(SETTLE + HOLD_HEAT)
     # Off the frame: the pointer sits above the blur and would float on the label.
