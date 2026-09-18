@@ -124,7 +124,7 @@ CARDS = {
         "sub": "Right rider, wrong spot: +5 pts",
     },
     "podium_cta": {
-        "eyebrow": "Sylt wave",
+        "eyebrow": "Sylt Grand Slam 2026",
         "title": "START BUILDING\nYOUR TEAM",
         "title_px": 150,
         "cta": True,
