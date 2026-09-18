@@ -4,6 +4,7 @@
             -> WHY -> BONUS -> CTA
     coach:  HOOK -> FANTASY -> WHO COUNTS -> GET LISTED -> [profile, listing form] -> CHECK OUT
             -> [Coaches board] -> WHY -> COMING SOON -> CTA
+    podium: HOOK -> [Sylt wave podium picked] -> POINTS -> CTA   (#29, short on purpose)
 
 Footage comes from pipeline/screen_record_claim.py. The pro reel is one take; the coach
 reel is two (board signed out, form signed in), so each footage slot names the take it
@@ -15,6 +16,7 @@ data to fetch.
 Usage:
     python -m pipeline.claim_reel_edit --reel pro
     python -m pipeline.claim_reel_edit --reel coach
+    python -m pipeline.claim_reel_edit --reel podium
 """
 import argparse
 import json
@@ -101,10 +103,28 @@ CARDS = {
         "sub": "Open your profile and click \"Get listed on the Coaches board\"",
         "cta": True,
     },
+    # Predict the podium (#29). Points from the app's utils/rankedPodiumScale.ts.
+    "podium_hook": {
+        "eyebrow": "New in Session mode",
+        "title": "CALL THE\nPODIUM",
+    },
+    "podium_points": {
+        "eyebrow": "1st · 2nd · 3rd",
+        "title": "25 · 15 · 10",
+        "title_px": 170,
+        "sub": "Right rider, wrong spot: 5 pts",
+    },
+    "podium_cta": {
+        "eyebrow": "Sylt wave",
+        "title": "MAKE YOUR\nCALL",
+        "sub": "Picks lock 25 Sep",
+        "cta": True,
+    },
 }
 
 CARD_HOLD_MS = {"pro_who": 3200, "pro_why": 5200, "pro_bonus": 3800,
-                "coach_soon": 3800, "coach_why": 5200}
+                "coach_soon": 3800, "coach_why": 5200,
+                "podium_hook": 1200, "podium_cta": 2000}
 DEFAULT_HOLD_MS = 2600
 # Dead frames at the head of every card recording, measured: text lands at 0.8s.
 CARD_HEAD_S = 0.6
@@ -135,9 +155,15 @@ SPINES = {
         ("card", "coach_soon"),
         ("card", "coach_cta"),
     ],
+    "podium": [
+        ("card", "podium_hook"),
+        ("footage", "podium", "podium"),
+        ("card", "podium_points"),
+        ("card", "podium_cta"),
+    ],
 }
 
-FOOTAGE_SPEED = {"board": 1.25, "form": 1.0, "profile": 1.25}
+FOOTAGE_SPEED = {"board": 1.25, "form": 1.0, "profile": 1.25, "podium": 1.5}
 
 
 def plan_reel(reel: str, markers_by_take: dict) -> list:

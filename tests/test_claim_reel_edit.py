@@ -42,3 +42,13 @@ def test_every_card_in_a_spine_has_copy_without_em_dashes():
             if item[0] == "card":
                 card = CARDS[item[1]]
                 assert "—" not in json.dumps(card, ensure_ascii=False)
+
+
+def test_podium_reel_is_hook_footage_points_cta():
+    plan = plan_reel("podium", {"podium": {"podium_start": 3.0, "podium_end": 15.0}})
+    assert plan == [
+        ("card", "podium_hook"),
+        ("footage", "podium", 3.0, 15.0, "podium"),
+        ("card", "podium_points"),
+        ("card", "podium_cta"),
+    ]
