@@ -52,6 +52,11 @@
         flex: 0 0 auto; font-family: var(--font-display); font-size: 120px; line-height: 0.8;
         color: var(--tour-400);
     }
+    /* The podium card: each line centred, its place in the medal colour. */
+    .points.centered { margin-top: 80px; }
+    .points.centered .point { justify-content: center; align-items: center; }
+    .points.centered .point + .point { margin-top: 56px; }
+    .points.centered .point-n { line-height: 1; padding-top: 0.08em; }
     .handle {
         font-family: var(--font-body); font-size: 38px; font-weight: 600;
         color: var(--tour-400); margin-top: 52px;
@@ -75,8 +80,8 @@
         {% if card.title %}<div class="title"{% if card.title_px %} style="font-size: {{ card.title_px }}px;{% if card.title.splitlines() | length == 1 %} white-space: nowrap{% endif %}"{% endif %}>{{ card.title }}</div>{% endif %}
         {% if card.lead %}<div class="lead">{{ card.lead }}</div>{% endif %}
         {% if card.points %}
-        <div class="points">
-            {% for point in card.points %}<div class="point"><span class="point-n">{{ loop.index }}</span><span>{{ point }}</span></div>{% endfor %}
+        <div class="points{% if card.points_centered %} centered{% endif %}">
+            {% for point in card.points %}{% if point is mapping %}<div class="point"><span class="point-n" style="color: {{ point.color }}">{{ point.n }}</span><span>{{ point.text }}</span></div>{% else %}<div class="point"><span class="point-n">{{ loop.index }}</span><span>{{ point }}</span></div>{% endif %}{% endfor %}
         </div>
         {% endif %}
         {% if card.sub %}<div class="sub" id="sub">{{ card.sub }}</div>{% endif %}

@@ -5,6 +5,8 @@ Three takes, each a separate file, cut together by pipeline/claim_reel_edit.py:
     pro          signed in: the profile's "Are you a pro rider?" form, then the Pros board
     coach-board  SIGNED OUT: the Coaches board, its coach's links boxed
     coach-form   signed in: the profile's "Run clinics? Get listed" form
+    podium       signed in: Sylt wave Session, both podiums called 1st to 3rd,
+                 then over to the Heat Team step (#29)
 
 The coach reel needs two takes because one account cannot show both halves: the
 claim link is hidden from anyone already listed, and the board's only coach is the
@@ -23,6 +25,7 @@ Usage:
     python -m pipeline.screen_record_claim --flow pro
     python -m pipeline.screen_record_claim --flow coach-board
     python -m pipeline.screen_record_claim --flow coach-form
+    python -m pipeline.screen_record_claim --flow podium
 """
 import argparse
 import json
@@ -56,6 +59,11 @@ from pipeline.screen_record_rtf import (
 )
 
 LEADERBOARD_PATH = "/fantasy/leaderboard"
+# Sylt 2026 (API id 126), wave. Its podium half is switched on.
+PODIUM_PATH = "/fantasy/session/126?discipline=wave"
+# A rider card in the podium sheet. Its aria-label is the rider's name; the
+# sheet's other labelled button is Close.
+SHEET_RIDER = "button[aria-label]:not([aria-label='Close'])"
 
 # Pacing (ms).
 HOLD_ARRIVE = 1800   # the board as it opens, before the filter is touched
@@ -63,8 +71,41 @@ HOLD_BOARD = 3200    # the filtered board, long enough to read who is on it
 HOLD_FIELD = 1500    # each highlighted form field
 HOLD_FORM = 1800     # the open form, read before the pointer moves into it
 HOLD_BOX = 2600      # a highlight box, up
+HOLD_SHEET = 600     # the rider sheet, open, before a rider is tapped
+HOLD_PODIUM = 2200   # the called podium, read before the cut
+HOLD_HEAT = 1000     # the Heat Team step, a glance before the blur
+HOLD_LABEL = 2400    # the "as normal" label over the blurred page
 
-FLOWS = ("pro", "coach-board", "coach-form")
+# The Heat Team is the part players already know, so the page blurs under a label
+# rather than being walked through.
+BLUR_LABEL_JS = r"""
+(text) => {
+  const o = document.createElement('div');
+  Object.assign(o.style, {
+    position: 'fixed', inset: 0, zIndex: 2147483645, pointerEvents: 'none',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+    gap: '14px', padding: '0 40px', textAlign: 'center',
+    background: 'rgba(8, 12, 24, 0.55)', backdropFilter: 'blur(0px)',
+    opacity: 0, transition: 'opacity 0.5s ease, backdrop-filter 0.5s ease',
+  });
+  const line = (content, style) => {
+    const d = document.createElement('div');
+    d.textContent = content;
+    Object.assign(d.style, style);
+    o.appendChild(d);
+  };
+  line('Then', {font: '600 15px Inter, system-ui, sans-serif', letterSpacing: '0.3em',
+                textTransform: 'uppercase', color: '#94a3b8'});
+  line(text, {fontFamily: '"Bebas Neue", sans-serif', fontSize: '64px', lineHeight: 0.92,
+              color: '#fff', whiteSpace: 'pre-line'});
+  document.body.appendChild(o);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    o.style.opacity = 1; o.style.backdropFilter = 'blur(10px)';
+  }));
+}
+"""
+
+FLOWS = ("pro", "coach-board", "coach-form", "podium")
 
 # The profile prints the signed-in account's email under its name. Hidden before it
 # paints: a MutationObserver callback runs ahead of the next frame, so it never shows.
@@ -263,6 +304,47 @@ def _flow_coach_form(page, markers: dict, t0: float) -> None:
     _mark(markers, "profile_end", t0)
 
 
+def _flow_podium(page, markers: dict, t0: float) -> None:
+    """Call both podiums, each fleet's top three by world ranking: the order the
+    sheet lists them in, so the Nth call is the Nth card. NOTHING IS SAVED: picks
+    stay a local draft until "Save Team", which is never tapped."""
+    _mark(markers, "podium_start", t0)
+    page.wait_for_timeout(1200)
+    for n in range(6):
+        # Filled slots lose the prompt, so .first is always the next empty one.
+        slot = page.get_by_role("button", name="Tap to choose your pick").first
+        if n == 3:
+            # The women's podium sits below the fold.
+            page.evaluate("window.__cursor_move && window.__cursor_move(470, 760)")
+            _slow_scroll_into_view(page, slot)
+            page.wait_for_timeout(500)
+        _tap_text(page, slot)
+        # The first sheet opens before its rider photos have loaded.
+        try:
+            page.wait_for_load_state("networkidle", timeout=8000)
+        except Exception:
+            pass
+        page.wait_for_timeout(HOLD_SHEET)
+        _tap_text(page, page.get_by_role("dialog").locator(SHEET_RIDER).nth(n % 3))
+        page.wait_for_timeout(SETTLE)
+    page.evaluate("window.__cursor_move && window.__cursor_move(470, 760)")
+    page.wait_for_timeout(HOLD_PODIUM)
+    _mark(markers, "podium_end", t0)
+
+    _mark(markers, "heat_start", t0)
+    # Up to the step bar on camera: tapped from below the fold, Playwright jumps
+    # to it and the tap is never seen.
+    _scroll_to_top(page)
+    page.wait_for_timeout(500)
+    _tap_text(page, page.get_by_role("button", name=re.compile(r"Step 2 Heat Team")).first)
+    page.wait_for_timeout(SETTLE + HOLD_HEAT)
+    # Off the frame: the pointer sits above the blur and would float on the label.
+    page.evaluate("window.__cursor_move && window.__cursor_move(620, 1100)")
+    page.evaluate(BLUR_LABEL_JS, "CONTINUE PICKING\nYOUR TEAM\nAS NORMAL")
+    page.wait_for_timeout(HOLD_LABEL)
+    _mark(markers, "heat_end", t0)
+
+
 def record_claim_flow(flow: str, out_path: str) -> str:
     """Record one claim take to a portrait mp4 with a markers sidecar. Returns the path."""
     if flow not in FLOWS:
@@ -287,13 +369,19 @@ def record_claim_flow(flow: str, out_path: str) -> str:
                 page.add_init_script(HIDE_TEXT_JS % json.dumps(os.environ["FANTASY_EMAIL"]))
                 _login(page, os.environ["FANTASY_EMAIL"], os.environ["FANTASY_PASSWORD"],
                        LEADERBOARD_PATH)
-            start = LEADERBOARD_PATH if flow == "coach-board" else "/fantasy"
+            start = {"coach-board": LEADERBOARD_PATH, "podium": PODIUM_PATH}.get(flow, "/fantasy")
             page.goto(BASE_URL + start, wait_until="networkidle", timeout=60000)
             page.wait_for_timeout(2000)
+            if flow == "podium":
+                # "How your picks score" opens on a first visit; closed before the cut.
+                close = page.get_by_role("dialog").get_by_role("button", name="Close")
+                if close.count():
+                    close.first.click()
+                    page.wait_for_timeout(800)
             _install_cursor(page)
 
             {"pro": _flow_pro, "coach-board": _flow_coach_board,
-             "coach-form": _flow_coach_form}[flow](page, markers, t0)
+             "coach-form": _flow_coach_form, "podium": _flow_podium}[flow](page, markers, t0)
 
             page.close()
             context.close()
