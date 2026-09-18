@@ -5,7 +5,8 @@ Three takes, each a separate file, cut together by pipeline/claim_reel_edit.py:
     pro          signed in: the profile's "Are you a pro rider?" form, then the Pros board
     coach-board  SIGNED OUT: the Coaches board, its coach's links boxed
     coach-form   signed in: the profile's "Run clinics? Get listed" form
-    podium       signed in: Sylt wave Session, the men's podium called 1st to 3rd (#29)
+    podium       signed in: Sylt wave Session, the men's podium called 1st to 3rd,
+                 then over to the Heat Team step (#29)
 
 The coach reel needs two takes because one account cannot show both halves: the
 claim link is hidden from anyone already listed, and the board's only coach is the
@@ -71,6 +72,7 @@ HOLD_FORM = 1800     # the open form, read before the pointer moves into it
 HOLD_BOX = 2600      # a highlight box, up
 HOLD_SHEET = 1000    # the rider sheet, open, before a rider is tapped
 HOLD_PODIUM = 2200   # the called podium, read before the cut
+HOLD_HEAT = 1800     # the Heat Team step, a glance before the card says the rest
 
 FLOWS = ("pro", "coach-board", "coach-form", "podium")
 
@@ -290,6 +292,15 @@ def _flow_podium(page, markers: dict, t0: float) -> None:
     page.evaluate("window.__cursor_move && window.__cursor_move(470, 760)")
     page.wait_for_timeout(HOLD_PODIUM)
     _mark(markers, "podium_end", t0)
+
+    _mark(markers, "heat_start", t0)
+    _tap_text(page, page.get_by_role("button", name=re.compile(r"Step 2 Heat Team")).first)
+    # The app scrolls its step bar to the top, under the fixed header. Back up so
+    # the Heat Team step shows as the one now current.
+    page.wait_for_timeout(SETTLE)
+    _scroll_to_top(page)
+    page.wait_for_timeout(HOLD_HEAT)
+    _mark(markers, "heat_end", t0)
 
 
 def record_claim_flow(flow: str, out_path: str) -> str:
