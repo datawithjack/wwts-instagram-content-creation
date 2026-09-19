@@ -1,0 +1,273 @@
+{
+  "_comment": "Headshot decisions per athlete id (#32). approve = faces/{id}.jpg is the photo to publish; suppress = the site's sail-number guess is the wrong person and should be hidden. Published by #33.",
+  "74": {
+    "name": "Jacopo Testa",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "faces/74.jpg (existing)"
+  },
+  "75": {
+    "name": "Lennart Neubauer",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "faces/75.jpg (existing)"
+  },
+  "113": {
+    "name": "Amado Vrieswijk",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "faces/113.jpg (existing)"
+  },
+  "174": {
+    "name": "Helena Derya Lale",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "FV25_ls_G288_Inna_Bru__01161.jpg",
+    "source_event_id": 375,
+    "source_event": "2025 Fuerteventura Grand Slam ******",
+    "photographer": "Inna Bru"
+  },
+  "237": {
+    "name": "Maciek Rutkowski",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "faces/237.jpg (existing)"
+  },
+  "428": {
+    "name": "Matteo Iachino",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "faces/428.jpg (existing)"
+  },
+  "503": {
+    "name": "Trine Gobisch",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "TF25_ls_G802_PHOTOMEDANO_00086.jpg",
+    "source_event_id": 376,
+    "source_event": "2025 Tenerife Grand Slam ******",
+    "photographer": "Photo Medano"
+  },
+  "884": {
+    "name": "Balz Muller",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_SUI21_00109 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter"
+  },
+  "981": {
+    "name": "Luka Stomp",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "FV25_ls_CUR9999_Inna_Bru__01466.jpg",
+    "source_event_id": 375,
+    "source_event": "2025 Fuerteventura Grand Slam ******",
+    "photographer": "Inna Bru"
+  },
+  "983": {
+    "name": "Cosmo Pezzetti",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_ITA117_00086 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter"
+  },
+  "1063": {
+    "name": "Jordy Vonk",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_NED69_00085 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter"
+  },
+  "1064": {
+    "name": "Bruno Martini",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_ITA160_00081 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter"
+  },
+  "1065": {
+    "name": "Cyril Evrard",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_BEL250_00076 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter"
+  },
+  "1066": {
+    "name": "Sem Stroosma",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_NED450_00092 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter"
+  },
+  "1067": {
+    "name": "Lars Poggemann",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_GER730_00016 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter"
+  },
+  "1071": {
+    "name": "Nico Prien",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_GER7_00165 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter"
+  },
+  "1072": {
+    "name": "William Huppert",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_FRA330_00163 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter"
+  },
+  "1073": {
+    "name": "John Soukos",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_GRE198_00094 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter"
+  },
+  "1074": {
+    "name": "Scotty Stallman",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_GBR68_00054 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter"
+  },
+  "1075": {
+    "name": "Bob van de Burgt",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_NED737_00174 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter"
+  },
+  "1076": {
+    "name": "Titouan Gernolle",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_FRA152_00102 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter"
+  },
+  "1081": {
+    "name": "Hugo Sjoberg",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_SWE45_00032 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter"
+  },
+  "1085": {
+    "name": "Pierre Mortefon",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "faces/1085.jpg (existing)"
+  },
+  "1087": {
+    "name": "Cedric Bordes",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_FRA91_00112 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter"
+  },
+  "1088": {
+    "name": "Benoit Merceur",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "FV25_ls_FRA1159_00194 copy.jpg",
+    "source_event_id": 375,
+    "source_event": "2025 Fuerteventura Grand Slam ******",
+    "photographer": "john carter"
+  },
+  "1090": {
+    "name": "Sacha Fortune",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_FRA655_00074 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter"
+  },
+  "1338": {
+    "name": "Fabian Wolf",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_GER404_00015 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter"
+  },
+  "1432": {
+    "name": "Sven Feuer",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_ITA86_00078 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter"
+  },
+  "1437": {
+    "name": "Noah Vinther",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_DEN7777_00167 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter"
+  },
+  "1508": {
+    "name": "Dominik Lewinski",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_POL636_00063 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter"
+  },
+  "1510": {
+    "name": "Thijs Hanemaaijer",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_NED107_00175 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter"
+  },
+  "1509": {
+    "name": "Jesse Richter",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_GER180_00612.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": ""
+  }
+}

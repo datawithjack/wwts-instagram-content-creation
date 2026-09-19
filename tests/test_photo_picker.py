@@ -131,6 +131,13 @@ class TestCreditFor:
         assert credit["handle"] == "@rafasoulart"
         assert credit["confirmed"] is True
 
+    def test_inna_bru_signs_her_filenames(self, tmp_path):
+        """Fuerteventura 2025 freestyle: '..._Inna_Bru__01161.jpg', no XMP."""
+        p = _jpeg_with_xmp(tmp_path / "FV25_ls_G288_Inna_Bru__01161.jpg")
+        credit = credit_for(p)
+        assert credit["photographer"] == "Inna Bru"
+        assert credit["confirmed"] is True
+
     def test_filename_marker_beats_a_conflicting_xmp_tag(self, tmp_path):
         p = _jpeg_with_xmp(tmp_path / "TF25_ls_E3_RAFASOULART_1.jpg",
                            creator="john carter")

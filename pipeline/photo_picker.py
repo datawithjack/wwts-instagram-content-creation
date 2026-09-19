@@ -48,6 +48,7 @@ FILENAME_MARKERS = {
     "RAFASOULART": ("Rafa Soulart", "@rafasoulart"),
     "PHOTOMEDANO": ("Photo Medano", ""),
     "JOHNCARTER": ("John Carter", "@jcwindsurf"),
+    "INNABRU": ("Inna Bru", ""),   # Fuerteventura 2025 freestyle, "_Inna_Bru__"
     "TOMBRENDT": ("Tom Brendt", ""),
 }
 
