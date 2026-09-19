@@ -93,9 +93,24 @@ def _folder_rank(folder: str) -> int:
     return len(_FOLDER_RANK)
 
 
+def _frame_key(name: str) -> str:
+    """``SY25_ls_GRE734_00036 copy.jpg`` and ``SY25_ls_GRE734_00036.jpg`` are one frame."""
+    stem = name.rsplit(".", 1)[0].lower()
+    return stem[:-5] if stem.endswith(" copy") else stem
+
+
 def rank_frames(frames, limit: int = 6) -> list[tuple[str, str]]:
-    """Best folders first, then by filename; at most ``limit``."""
-    return sorted(frames, key=lambda f: (_folder_rank(f[0]), f[1]))[:limit]
+    """Best folders first, then by filename, one copy per frame; at most ``limit``.
+
+    Where a frame sits in two folders, the better folder's copy is kept.
+    """
+    seen, out = set(), []
+    for folder, name in sorted(frames, key=lambda f: (_folder_rank(f[0]), f[1])):
+        key = _frame_key(name)
+        if key not in seen:
+            seen.add(key)
+            out.append((folder, name))
+    return out[:limit]
 
 
 def square_box(width: int, height: int, face, scale: float = DEFAULT_SCALE):

@@ -98,6 +98,19 @@ class TestRankFrames:
         assert [f for f, _ in rank_frames(frames)] == [
             "Rider Portraits", "SYLT HIGH RES/LIFESTYLE", "27 SEPT - DAY 2"]
 
+    def test_the_same_frame_in_two_folders_is_one_candidate(self):
+        """The Drive keeps SY25_ls_GRE734_00036.jpg in HIGH RES and
+        '..._00036 copy.jpg' in Rider Portraits: one frame, shown once."""
+        frames = [
+            ("SYLT HIGH RES/LIFESTYLE", "SY25_ls_GRE734_00036.jpg"),
+            ("Rider Portraits", "SY25_ls_GRE734_00036 copy.jpg"),
+            ("SYLT HIGH RES/LIFESTYLE", "SY25_ls_GRE734_00002.jpg"),
+        ]
+        assert rank_frames(frames) == [
+            ("Rider Portraits", "SY25_ls_GRE734_00036 copy.jpg"),
+            ("SYLT HIGH RES/LIFESTYLE", "SY25_ls_GRE734_00002.jpg"),
+        ]
+
     def test_caps_the_number_of_candidates(self):
         frames = [("Rider Portraits", f"SY25_ls_B16_{i}.jpg") for i in range(20)]
         assert len(rank_frames(frames, limit=6)) == 6
