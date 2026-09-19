@@ -260,5 +260,14 @@
     "source_event_id": 378,
     "source_event": "2025 Sylt, Germany Grand Slam *******",
     "photographer": "john carter"
+  },
+  "1509": {
+    "name": "Jesse Richter",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_GER180_00612.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": ""
   }
 }
