@@ -38,8 +38,8 @@
         top: 0; left: 0; right: 0; bottom: 0;
         background: linear-gradient(
             to bottom,
-            rgba(8, 20, 40, 0.20) 0%,
-            rgba(10, 14, 26, 0.42) 40%,
+            rgba(8, 20, 40, 0.00) 0%,
+            rgba(10, 14, 26, 0.18) 40%,
             rgba(10, 14, 26, 0.80) 62%,
             rgba(10, 14, 26, 0.97) 78%,
             rgba(10, 14, 26, 1.00) 100%
@@ -105,15 +105,18 @@
         z-index: 1;
     }
 
-    /* ── Meta row: rank chip + sail number ──
+    /* ── Meta row: rank chip ──
        The rank used to share a baseline with the surname, separated only by
        colour, so it read as one string ("1ST PARE") and its variable width
        shifted the surname's left edge between cards. On its own line as a
        chip, the rank is unmistakably a rank and the surname starts at the
        block's padding on every card, so the name locks while swiping.
 
-       No flag: nationality is already in the sail number prefix (E-334,
-       GRE-734), and pale-striped flags bled into the photo behind them. */
+       No sail number: the photographer's tag and the entry list disagree often
+       enough to be worth nothing on a card (Wissant 2026 filed Alice Arutkin's
+       frames under F193 against her registered F-111), and a wrong number is
+       worse than none. No flag either: pale-striped flags bled into the photo
+       behind them. */
     .rider-meta {
         display: flex;
         align-items: center;
@@ -303,7 +306,6 @@
     <div class="rider-block">
         <div class="rider-meta">
             <span class="rank place-{{ place }}">{{ place_label }}</span>
-            {% if sail_number %}<span class="sail">{{ sail_number }}</span>{% endif %}
         </div>
 
         <div class="rider-name {{ name_class }}">

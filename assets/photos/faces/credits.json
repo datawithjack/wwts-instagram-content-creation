@@ -73,5 +73,19 @@
     "confirmed": true,
     "via": "user",
     "note": "Credited by name: Instagram handle not known. Replace handle with the @ if it is confirmed."
+  },
+  "1725": {
+    "photographer": "olivier caenen",
+    "handle": "",
+    "source_file": "WI26_ls_F777_150-150.jpg",
+    "confirmed": true,
+    "via": "xmp"
+  },
+  "110": {
+    "photographer": "olivier caenen",
+    "handle": "",
+    "source_file": "WI26_ls_F193_149-149.jpg",
+    "confirmed": true,
+    "via": "xmp"
   }
 }
