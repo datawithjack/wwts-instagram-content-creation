@@ -39,9 +39,9 @@
         background: linear-gradient(
             to bottom,
             rgba(8, 20, 40, 0.00) 0%,
-            rgba(10, 14, 26, 0.18) 40%,
-            rgba(10, 14, 26, 0.80) 62%,
-            rgba(10, 14, 26, 0.97) 78%,
+            rgba(10, 14, 26, 0.00) 46%,
+            rgba(10, 14, 26, 0.62) 64%,
+            rgba(10, 14, 26, 0.94) 78%,
             rgba(10, 14, 26, 1.00) 100%
         );
         z-index: 1;
@@ -128,9 +128,10 @@
        base.html that were defined for this and never wired up. Padding, never
        a fixed width, so 1ST and 4TH both sit correctly.
 
-       Off the podium is hollow rather than a fourth filled grey: silver is
-       itself a pale grey, so a filled 4th collided with 2nd and blurred the
-       one distinction that matters most. */
+       Off the podium is white. It was a hollow outline, to keep it clear of
+       silver's pale grey, but the lighter hero gradient left nothing behind
+       the thin border and 4TH washed out against the photo. White is the one
+       fill that reads on any frame and still cannot be mistaken for a medal. */
     .rank {
         font-family: var(--font-display);
         font-size: 38px;
@@ -146,12 +147,7 @@
     .rank.place-2 { background: var(--color-rank-2nd); }
     .rank.place-3 { background: var(--color-rank-3rd); }
 
-    .rank.place-4 {
-        background: transparent;
-        border: 1px solid rgba(149, 165, 184, 0.65);
-        color: #95A5B8;
-        padding: 8px 21px 4px;
-    }
+    .rank.place-4 { background: #FFFFFF; }
 
 
     /* ── Lower content block ── */
