@@ -269,7 +269,7 @@ def match_event_folder(event_name: str, folder_names) -> str:
 
     best, best_len = "", 0
     for folder in folder_names:
-        stripped = _FOLDER_PREFIX.sub("", folder).strip().upper()
+        stripped = re.sub(r"[^A-Z ]", "", _FOLDER_PREFIX.sub("", folder).upper()).strip()
         if not stripped:
             continue
         if stripped in haystack and len(stripped) > best_len:

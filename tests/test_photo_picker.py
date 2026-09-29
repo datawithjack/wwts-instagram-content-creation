@@ -305,6 +305,13 @@ class TestMatchEventFolder:
         assert match_event_folder("2025 Sylt, Germany Grand Slam *******",
                                   folders) == "2025 - 10 - SYLT"
 
+    def test_ignores_a_trailing_star_rating(self):
+        """The 2026 Drive has "07 - WISSANT WAVE CLASSIC 4" (a 4-star, star lost)."""
+        from pipeline.photo_picker import match_event_folder
+        folders = ["06 - TENERIFE", "07 - WISSANT WAVE CLASSIC 4"]
+        assert match_event_folder("Wissant Wave Classic",
+                                  folders) == "07 - WISSANT WAVE CLASSIC 4"
+
     def test_no_match_returns_empty_rather_than_a_wrong_folder(self):
         from pipeline.photo_picker import match_event_folder
         assert match_event_folder("Sylt World Cup", self.TENERIFE) == ""

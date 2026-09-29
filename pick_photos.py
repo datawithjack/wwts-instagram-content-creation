@@ -57,6 +57,8 @@ FACE_CREDITS_COMMENT = ("Photographer per headshot, resolved from the filename "
                         "then the file's own XMP. Entries marked unconfirmed "
                         "carry no credit tag anywhere: confirm before "
                         "crediting them.")
+# Frames offered per rider, per slot. Each one streams off the Drive.
+MAX_FRAMES = 10
 
 
 def _athlete_index(event_id, sex):
@@ -161,8 +163,8 @@ def _collect(riders, event_dir, index):
     all_files = glob.glob(os.path.join(str(event_dir), "**", "*.jpg"), recursive=True)
     print(f"  scanning {len(all_files)} files in {event_dir.name}")
 
-    lifestyle = [_candidate(p, 0.0) for p in cheapest_copies(all_files)
-                 if _kind_of(p.name) == "ls"]
+    lifestyle = [_candidate(p, 0.0) for p in _spread(
+        [p for p in cheapest_copies(all_files) if _kind_of(p.name) == "ls"])]
 
     for rider in riders:
         record = index.get(rider["athlete_id"], {})
@@ -173,25 +175,36 @@ def _collect(riders, event_dir, index):
 
         hits = [f for f in all_files
                 if any(matches_token(f, t) for t in tokens)] if tokens else []
-        # A folder whose filenames carry no sail number (a photographer's own
-        # export rather than the PWA Drive's naming) matches nobody. Show the
-        # whole folder rather than nothing, and let the eye do the sorting.
-        if not hits:
-            hits = all_files
-        rider["candidates"] = [_candidate(p, rider["score"])
-                               for p in cheapest_copies(hits)]
+        # A rider whose sail matches no filename gets nothing. Offering the
+        # whole folder instead meant streaming ~2,000 frames off the Drive
+        # (Wissant 2026, Jules Denel registered FRA-41 but filed as F41).
         # Action shots first: a leaderboard slide wants the rider on the water.
-        rider["candidates"].sort(key=lambda c: (c["kind"] != "wv", c["name"]))
+        ordered = sorted(cheapest_copies(hits),
+                         key=lambda p: (_kind_of(p.name) != "wv", p.name))
+        rider["candidates"] = [_candidate(p, rider["score"]) for p in _spread(ordered)]
 
         # The headshot is a second slot, in a different folder, feeding the
         # summary-card thumbnail rather than the hero. Only offered where one
         # is missing: a face is timeless, so a rider who has one is not asked
         # about again. Lifestyle frames first -- that is where the faces are.
         if _face_missing(rider["athlete_id"]):
-            rider["face_candidates"] = _face_pool(rider["candidates"], lifestyle)
+            rider["face_candidates"] = _face_pool(rider["candidates"], lifestyle)[:MAX_FRAMES]
         else:
             rider["face_candidates"] = []
     return riders
+
+
+def _spread(items, n=None):
+    """At most ``n`` items, evenly spaced so the first and last both survive.
+
+    The first ten by filename are usually one heat; spacing them out reaches
+    across the event.
+    """
+    n = n or MAX_FRAMES
+    if len(items) <= n:
+        return list(items)
+    step = (len(items) - 1) / (n - 1)
+    return [items[round(i * step)] for i in range(n)]
 
 
 def _face_pool(candidates, lifestyle):

@@ -159,3 +159,32 @@ class TestSaveCrop:
         with Image.open(rider["installed"]) as out:
             top_row = list(out.convert("RGB").crop((0, 0, 1080, 1)).getdata())
         assert any(px != (0, 0, 0) for px in top_row)
+
+    def test_saving_twice_from_the_installed_copy_adds_no_black(self, tmp_path):
+        """Wissant 2026: the original was not found, so the installed copy was
+        the source. The second Save re-cropped the now 1080x1350 file with the
+        1920x1281 size read at startup, and filled the right third with black."""
+        from PIL import Image
+        import adjust_photos
+        rider = self._rider(tmp_path)
+        # Left half black, right half white: a crop taken off-centre shows.
+        im = Image.new("RGB", (1920, 1280), (0, 0, 0))
+        im.paste((255, 255, 255), (960, 0, 1920, 1280))
+        im.save(rider["installed"])
+        rider["display"] = rider["installed"]
+        rider["nw"], rider["nh"] = 1920, 1280
+        adjust_photos.save_crop(rider, zoom=1.0, dx=0.0, dy=0.0)
+        adjust_photos.save_crop(rider, zoom=1.0, dx=0.0, dy=0.0)
+        with Image.open(rider["installed"]) as out:
+            assert out.convert("L").getpixel((1070, 675)) > 230
+
+
+class TestOriginalFor:
+    def test_finds_the_original_in_a_photographer_subfolder(self, tmp_path):
+        """The Drive files an event by photographer: 07 - WISSANT/Olivier Caenen/..."""
+        import adjust_photos
+        sub = tmp_path / "Olivier Caenen" / "Day 3"
+        sub.mkdir(parents=True)
+        (sub / "WI26_wv_E334_143-143.jpg").write_bytes(b"x")
+        got = adjust_photos._original_for({"source_file": "WI26_wv_E334_143-143.jpg"}, tmp_path)
+        assert got == sub / "WI26_wv_E334_143-143.jpg"
