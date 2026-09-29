@@ -207,12 +207,14 @@ def _build_photo_slides(common: dict, rows: list[dict], event_id=None) -> list[d
         slides.append({
             "type": "wave_photo",
             "rank": rank,
-            "rank_label": ordinal(int(rank)).upper() if rank else "",
+            "rank_label": (f"BEST {common['title_metric'][:-1].upper()}" if rank == 1
+                           else ordinal(int(rank)).upper() if rank else ""),
             # "5TH BEST WAVE", not a bare "5TH". Mid-carousel the chip is the
             # only thing saying what is being counted, and a lone ordinal on a
             # photo reads as a placing (5th at the event) rather than a rank
             # among the scores.
-            "rank_suffix": f"BEST {common['title_metric'][:-1].upper()}",
+            # 1st reads "BEST WAVE" on its own: "1ST BEST" says it twice.
+            "rank_suffix": "" if rank == 1 else f"BEST {common['title_metric'][:-1].upper()}",
             "athlete_id": athlete_id,
             "name": name,
             "first_name": first_name,
