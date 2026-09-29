@@ -208,6 +208,36 @@ class TestInstallPhoto:
         dest = install_photo(src, tmp_path / "faces", 19, square=600)
         assert Image.open(dest).size == (600, 600)
 
+    def _striped(self, tmp_path):
+        """A frame whose left half is red and right half is blue."""
+        from PIL import Image
+        im = Image.new("RGB", (2000, 1000), (200, 0, 0))
+        im.paste(Image.new("RGB", (1000, 1000), (0, 0, 200)), (1000, 0))
+        p = tmp_path / "striped.jpg"
+        im.save(p, "JPEG", quality=95)
+        return p
+
+    def test_square_crop_follows_the_focus_anchor(self, tmp_path):
+        """A face is rarely centred, so the square has to be anchored."""
+        from PIL import Image
+        from pipeline.photo_picker import install_photo
+        src = self._striped(tmp_path)
+
+        left = install_photo(src, tmp_path / "l", 1, square=200, focus="0% 50%")
+        right = install_photo(src, tmp_path / "r", 2, square=200, focus="100% 50%")
+
+        assert Image.open(left).getpixel((100, 100))[0] > 150    # red half
+        assert Image.open(right).getpixel((100, 100))[2] > 150   # blue half
+
+    def test_a_missing_or_broken_focus_falls_back_to_centred(self, tmp_path):
+        from PIL import Image
+        from pipeline.photo_picker import install_photo
+        src = self._striped(tmp_path)
+        centred = Image.open(install_photo(src, tmp_path / "c", 3, square=200))
+        junk = Image.open(install_photo(src, tmp_path / "j", 4, square=200,
+                                        focus="not a position"))
+        assert junk.getpixel((100, 100)) == centred.getpixel((100, 100))
+
 
 class TestMergeJsonEntry:
     """focus.json and credits.json are hand-editable, so a write must not
@@ -274,6 +304,13 @@ class TestMatchEventFolder:
         folders = ["2025 - 08 - TENERIFE", "2025 - 10 - SYLT"]
         assert match_event_folder("2025 Sylt, Germany Grand Slam *******",
                                   folders) == "2025 - 10 - SYLT"
+
+    def test_ignores_a_trailing_star_rating(self):
+        """The 2026 Drive has "07 - WISSANT WAVE CLASSIC 4" (a 4-star, star lost)."""
+        from pipeline.photo_picker import match_event_folder
+        folders = ["06 - TENERIFE", "07 - WISSANT WAVE CLASSIC 4"]
+        assert match_event_folder("Wissant Wave Classic",
+                                  folders) == "07 - WISSANT WAVE CLASSIC 4"
 
     def test_no_match_returns_empty_rather_than_a_wrong_folder(self):
         from pipeline.photo_picker import match_event_folder

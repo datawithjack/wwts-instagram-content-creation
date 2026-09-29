@@ -93,7 +93,11 @@ def _original_for(entry, source_dir: Path):
     if not name:
         return None
     candidate = source_dir / name
-    return candidate if candidate.exists() else None
+    if candidate.exists():
+        return candidate
+    # The Drive files an event by photographer and day, so look below too.
+    hits = glob.glob(str(source_dir / "**" / glob.escape(name)), recursive=True)
+    return Path(hits[0]) if hits else None
 
 
 def _collect(folder: Path, credits: dict, kind: str, source_dir,
@@ -174,10 +178,12 @@ def save_crop(rider: dict, zoom: float, dx: float, dy: float) -> str:
     """
     src = Path(rider["display"])
     frame = FRAMES[rider["kind"]]
-    natural = (rider["nw"], rider["nh"])
-    box = crop_box(natural, frame, zoom=zoom, offset=(dx, dy), clamp=False)
-    left, top, right, bottom = box.as_tuple()
     with Image.open(src) as im:
+        # The file's own size, not the one read at startup: when the source is
+        # the installed copy, an earlier Save has already made it 1080x1350.
+        nw, nh = im.size
+        box = crop_box((nw, nh), frame, zoom=zoom, offset=(dx, dy), clamp=False)
+        left, top, right, bottom = box.as_tuple()
         im = im.convert("RGB")
         exif = im.info.get("exif")
         out = _blurred_backdrop(im, frame)
@@ -185,7 +191,7 @@ def save_crop(rider: dict, zoom: float, dx: float, dy: float) -> str:
         # it belongs in the frame. Empty when the box has been dragged clear of
         # the photo entirely, which leaves the backdrop alone.
         ix0, iy0 = max(0, left), max(0, top)
-        ix1, iy1 = min(rider["nw"], right), min(rider["nh"], bottom)
+        ix1, iy1 = min(nw, right), min(nh, bottom)
         if ix1 > ix0 and iy1 > iy0:
             scale = frame[0] / (right - left)
             region = im.crop((ix0, iy0, ix1, iy1)).resize(

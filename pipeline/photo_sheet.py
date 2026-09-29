@@ -59,6 +59,67 @@ def _card(rider, cand) -> str:
     </label>"""
 
 
+def _face_card(rider, cand) -> str:
+    """One headshot candidate: a square crop, no gradient, two anchors.
+
+    A face needs both anchors. The hero slide keeps the frame's full height and
+    only pans sideways, but a square taken out of a 3:2 frame has slack in both
+    directions, and a head sits near the top of the frame far more often than
+    it sits in the middle.
+    """
+    credit = cand["credit"]
+    who = credit["photographer"] or "no credit tag"
+    badge_cls = "ok" if credit["confirmed"] else "warn"
+
+    return f"""
+    <label class="card face" data-athlete="face-{rider['athlete_id']}"
+           data-file="{html.escape(cand['path'])}">
+      <input type="radio" name="pick-face-{rider['athlete_id']}"
+             value="{html.escape(cand['path'])}">
+      <div class="crop">
+        <img src="/thumbs/{cand['thumb']}" style="object-position:50% 50%">
+      </div>
+      <div class="meta">
+        <span class="kind">{html.escape(cand['kind'].upper() or 'FRAME')}</span>
+        <span class="badge {badge_cls}" title="{html.escape(who)}">
+          {'&#10003; ' + html.escape(who) if credit['confirmed'] else '&#9888; untagged'}
+        </span>
+      </div>
+      <div class="fname">{html.escape(cand['name'])}</div>
+      <div class="tools">
+        <span class="lbl">x</span>
+        <input class="focus" type="range" min="0" max="100" value="50">
+        <span class="val">50%</span>
+      </div>
+      <div class="tools">
+        <span class="lbl">y</span>
+        <input class="focusy" type="range" min="0" max="100" value="50">
+        <span class="val">50%</span>
+      </div>
+      <div class="full"><img src="/thumbs/{cand['thumb']}"></div>
+    </label>"""
+
+
+def _face_block(rider) -> str:
+    """The headshot section, shown only for a rider who has no headshot yet."""
+    if not rider.get("face_candidates"):
+        return ""
+
+    cards = "".join(_face_card(rider, c) for c in rider["face_candidates"])
+    return f"""
+  <section class="rider face-sec" id="rider-face-{rider['athlete_id']}">
+    <header>
+      <h2>{html.escape(rider['name'])} &middot; headshot</h2>
+      <span class="sub">no <code>faces/{rider['athlete_id']}.jpg</code> yet &middot;
+        square crop &middot; feeds the summary-card thumbnail</span>
+      <label class="skip"><input type="radio"
+             name="pick-face-{rider['athlete_id']}" value="" checked>
+        leave as is</label>
+    </header>
+    <div class="grid">{cards}</div>
+  </section>"""
+
+
 def _rider_block(rider) -> str:
     if not rider["candidates"]:
         note = (f"<p class='empty'>No frames found for sail "
@@ -336,8 +397,11 @@ document.getElementById('tobacklog').addEventListener('click', async () => {
 
 def render_sheet(riders, event_label: str) -> str:
     """The whole sheet as one HTML string."""
-    blocks = "".join(_rider_block(r) for r in riders)
-    counts = json.dumps({r["athlete_id"]: len(r["candidates"]) for r in riders})
+    blocks = "".join(_rider_block(r) + _face_block(r) for r in riders)
+    slots = {r["athlete_id"]: len(r["candidates"]) for r in riders}
+    slots.update({f"face-{r['athlete_id']}": len(r["face_candidates"])
+                  for r in riders if r.get("face_candidates")})
+    counts = json.dumps(slots)
 
     return f"""<!doctype html>
 <meta charset="utf-8">
@@ -385,7 +449,10 @@ def render_sheet(riders, event_label: str) -> str:
             overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }}
   .tools {{ display:flex; align-items:center; gap:7px; margin-top:6px; font-size:10px;
             color:var(--dim); }}
-  .tools .focus {{ flex:1; }}
+  .tools .focus, .tools .focusy {{ flex:1; }}
+  .face-sec {{ border-top-style:dashed; }}
+  .face-sec .grid {{ grid-template-columns:repeat(auto-fill,minmax(168px,1fr)); }}
+  .card.face .crop {{ aspect-ratio:1/1; }}
   .full {{ margin-top:7px; }}
   .full img {{ width:100%; border-radius:4px; display:block; opacity:.62; }}
   .bar {{ position:fixed; left:0; right:0; bottom:0; background:#0B1421;
@@ -422,15 +489,17 @@ a time, and it goes into the backlog.</p>
 const counts = {counts};
 
 function focusValue(card) {{
-  const slider = card.querySelector('.focus');
-  return slider ? slider.value + '% 50%' : '50% 50%';
+  const x = card.querySelector('.focus');
+  const y = card.querySelector('.focusy');
+  return (x ? x.value : '50') + '% ' + (y ? y.value : '50') + '%';
 }}
 
 document.addEventListener('input', e => {{
-  if (!e.target.classList.contains('focus')) return;
+  if (!e.target.classList.contains('focus') &&
+      !e.target.classList.contains('focusy')) return;
   const card = e.target.closest('.card');
   card.querySelector('.crop img').style.objectPosition = focusValue(card);
-  card.querySelector('.val').textContent = e.target.value + '%';
+  e.target.nextElementSibling.textContent = e.target.value + '%';
   // Dragging the crop is a clear statement of intent about this frame.
   card.querySelector('input[type=radio]').checked = true;
   refresh();
@@ -454,7 +523,7 @@ function refresh() {{
   document.getElementById('save').disabled = n === 0;
   document.getElementById('status').textContent =
     n === 0 ? 'Nothing selected yet.'
-            : n + ' of ' + Object.keys(counts).length + ' riders selected.';
+            : n + ' of ' + Object.keys(counts).length + ' slots picked.';
 }}
 
 document.addEventListener('change', refresh);
