@@ -37,7 +37,7 @@ _CLI_ARG_DEFAULTS = {
 
 def load_calendar(path: str) -> dict:
     """Load a content calendar YAML file."""
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
@@ -46,7 +46,7 @@ def load_config():
     config_path = os.path.join(
         os.path.dirname(os.path.dirname(__file__)), "config.yaml"
     )
-    with open(config_path, "r") as f:
+    with open(config_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
@@ -139,7 +139,7 @@ def mark_post_published(calendar_path: str, post_id: str) -> None:
     Uses line-level text insertion after the scheduled_date line to avoid
     ruamel.yaml placing fields at the end of the mapping.
     """
-    with open(calendar_path, "r") as f:
+    with open(calendar_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
     # Find the post by id, then find its scheduled_date line
@@ -165,7 +165,7 @@ def mark_post_published(calendar_path: str, post_id: str) -> None:
     ]
     lines[insert_after + 1:insert_after + 1] = new_lines
 
-    with open(calendar_path, "w") as f:
+    with open(calendar_path, "w", encoding="utf-8") as f:
         f.writelines(lines)
 
 
@@ -183,7 +183,7 @@ def mark_post_failure(
     skip the post on future runs. Uses line-level editing to preserve YAML
     comments and field ordering (same approach as mark_post_published).
     """
-    with open(calendar_path, "r") as f:
+    with open(calendar_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
     # Find post block bounds: from "- id: <post_id>" to next "- id:" or EOF
@@ -250,7 +250,7 @@ def mark_post_failure(
 
     lines[scheduled_date_idx + 1 : scheduled_date_idx + 1] = new_lines
 
-    with open(calendar_path, "w") as f:
+    with open(calendar_path, "w", encoding="utf-8") as f:
         f.writelines(lines)
 
     return new_attempts
