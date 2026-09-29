@@ -18,6 +18,7 @@ import glob
 import json
 import mimetypes
 import os
+import subprocess
 import sys
 import threading
 import webbrowser
@@ -52,6 +53,10 @@ FOCUS_COMMENT = ("object-position per athlete, set from the picker's crop slider
 CREDITS_COMMENT = ("Photographer per photo, resolved from the filename then the "
                    "file's own XMP. Entries marked unconfirmed carry no credit "
                    "tag anywhere: confirm before crediting them.")
+FACE_CREDITS_COMMENT = ("Photographer per headshot, resolved from the filename "
+                        "then the file's own XMP. Entries marked unconfirmed "
+                        "carry no credit tag anywhere: confirm before "
+                        "crediting them.")
 
 
 def _athlete_index(event_id, sex):
@@ -156,6 +161,9 @@ def _collect(riders, event_dir, index):
     all_files = glob.glob(os.path.join(str(event_dir), "**", "*.jpg"), recursive=True)
     print(f"  scanning {len(all_files)} files in {event_dir.name}")
 
+    lifestyle = [_candidate(p, 0.0) for p in cheapest_copies(all_files)
+                 if _kind_of(p.name) == "ls"]
+
     for rider in riders:
         record = index.get(rider["athlete_id"], {})
         sail = record.get("sail_number") or ""
@@ -165,31 +173,77 @@ def _collect(riders, event_dir, index):
 
         hits = [f for f in all_files
                 if any(matches_token(f, t) for t in tokens)] if tokens else []
-        rider["candidates"] = []
-        for path in cheapest_copies(hits):
-            parts = path.name.split("_")
-            rider["candidates"].append({
-                "path": str(path),
-                "name": path.name,
-                "kind": parts[1] if len(parts) > 1 else "",
-                "credit": credit_for(path),
-                "score_label": f"{rider['score']:.2f}",
-            })
+        # A folder whose filenames carry no sail number (a photographer's own
+        # export rather than the PWA Drive's naming) matches nobody. Show the
+        # whole folder rather than nothing, and let the eye do the sorting.
+        if not hits:
+            hits = all_files
+        rider["candidates"] = [_candidate(p, rider["score"])
+                               for p in cheapest_copies(hits)]
         # Action shots first: a leaderboard slide wants the rider on the water.
         rider["candidates"].sort(key=lambda c: (c["kind"] != "wv", c["name"]))
+
+        # The headshot is a second slot, in a different folder, feeding the
+        # summary-card thumbnail rather than the hero. Only offered where one
+        # is missing: a face is timeless, so a rider who has one is not asked
+        # about again. Lifestyle frames first -- that is where the faces are.
+        if _face_missing(rider["athlete_id"]):
+            rider["face_candidates"] = _face_pool(rider["candidates"], lifestyle)
+        else:
+            rider["face_candidates"] = []
     return riders
 
 
+def _face_pool(candidates, lifestyle):
+    """Frames worth showing as a headshot, best first.
+
+    A rider whose own frames are all water shots gets the folder's lifestyle
+    frames instead. Faces are photographed on the beach and on the podium, and
+    those land in the untagged MISC / PODIUM buckets that no sail lookup can
+    reach -- which is exactly the rider the headshot slot exists for.
+    """
+    mine = sorted(candidates, key=lambda c: (c["kind"] != "ls", c["name"]))
+    if any(c["kind"] == "ls" for c in mine):
+        return mine
+    picked = {c["path"] for c in mine}
+    return mine + [c for c in lifestyle if c["path"] not in picked]
+
+
+def _kind_of(filename: str) -> str:
+    """``WI26_ls_F777_150.jpg`` -> ``ls``: wave, lifestyle or slalom."""
+    parts = filename.split("_")
+    return parts[1] if len(parts) > 1 else ""
+
+
+def _candidate(path, score: float) -> dict:
+    return {
+        "path": str(path),
+        "name": path.name,
+        "kind": _kind_of(path.name),
+        "credit": credit_for(path),
+        "score_label": f"{score:.2f}",
+    }
+
+
+def _face_missing(athlete_id) -> bool:
+    """Whether this rider still has no headshot in ``assets/photos/faces``."""
+    return not any((PHOTOS_DIR / "faces" / f"{athlete_id}{ext}").exists()
+                   for ext in (".jpg", ".jpeg", ".png"))
+
+
 def _build_thumbs(riders):
-    total = sum(len(r["candidates"]) for r in riders)
-    done = 0
-    for rider in riders:
-        for cand in rider["candidates"]:
-            thumb = thumbnail_for(cand["path"], CACHE_DIR)
-            cand["thumb"] = thumb.name
-            done += 1
-            if done % 10 == 0 or done == total:
-                print(f"  thumbnails {done}/{total}", end="\r", flush=True)
+    cards = [c for r in riders
+             for c in r["candidates"] + r.get("face_candidates", [])]
+    total, done, built = len(cards), 0, {}
+    for cand in cards:
+        # The same frame can be offered in both slots, and the lifestyle pool
+        # is shared between riders. Build it once.
+        if cand["path"] not in built:
+            built[cand["path"]] = thumbnail_for(cand["path"], CACHE_DIR).name
+        cand["thumb"] = built[cand["path"]]
+        done += 1
+        if done % 10 == 0 or done == total:
+            print(f"  thumbnails {done}/{total}", end="\r", flush=True)
     print()
 
 
@@ -203,12 +257,18 @@ def _install(selection, event_id, faces: bool = False):
 
     ``faces`` installs athlete-level square headshots into ``faces/`` instead
     of an event folder. A headshot is timeless, so it is not event-keyed, and
-    the table slide reads it from there for every post.
+    the table slide reads it from there for every post. A key of
+    ``face-{id}`` is the headshot pick made beside a hero, which goes to
+    ``faces/`` too.
     """
     event_dir = (PHOTOS_DIR / "faces" if faces
                  else PHOTOS_DIR / "events" / str(event_id))
     installed = []
-    for athlete_id, choice in selection.items():
+    for key, choice in selection.items():
+        if str(key).startswith("face-"):
+            installed.append(_install_face(str(key)[5:], choice))
+            continue
+        athlete_id = key
         src = Path(choice["file"])
         dest = install_photo(src, event_dir, athlete_id,
                              square=FACE_PX if faces else 0)
@@ -230,6 +290,40 @@ def _install(selection, event_id, faces: bool = False):
         print(f"  installed {dest} ({dest.stat().st_size // 1024}KB) "
               f"from {src.name}")
     return installed
+
+
+def _install_face(athlete_id, choice):
+    """Write one headshot to ``assets/photos/faces`` and record its credit."""
+    faces_dir = PHOTOS_DIR / "faces"
+    src = Path(choice["file"])
+    dest = install_photo(src, faces_dir, athlete_id, square=FACE_PX,
+                         focus=choice.get("focus", "50% 50%"))
+
+    credit = credit_for(src)
+    if not credit["confirmed"]:
+        credit["note"] = "UNTAGGED - credit unconfirmed"
+    merge_json_entry(faces_dir / "credits.json", athlete_id, credit,
+                     comment=FACE_CREDITS_COMMENT)
+    print(f"  installed {dest} ({dest.stat().st_size // 1024}KB) "
+          f"from {src.name}")
+    return f"face {athlete_id} <- {src.name}"
+
+
+def _open_adjuster(event_id, source_dir):
+    """Start the crop adjuster on this event, in its own process.
+
+    It serves its own page on its own port and outlives this one, so a failure
+    to start is reported and ignored: the photos are already installed.
+    """
+    cmd = [sys.executable, str(REPO_ROOT / "adjust_photos.py"),
+           "--event", str(event_id)]
+    if source_dir:
+        cmd += ["--source", str(source_dir)]
+    try:
+        subprocess.Popen(cmd, cwd=str(REPO_ROOT))
+        print("  crop adjuster opening on its own tab")
+    except OSError as exc:
+        print(f"  adjuster did not start ({exc}); run adjust_photos.py yourself")
 
 
 def generation_plan(event_id, score_type, sex, athletes_mode: bool):
@@ -276,7 +370,8 @@ def generate_after_save(plan, installed, event_name="", year=None):
             "slides": len(post["slides"]), "post": post}
 
 
-def _serve(html, riders, event_id, plan=None, meta=None, faces=False):
+def _serve(html, riders, event_id, plan=None, meta=None, faces=False,
+           source_dir=None):
     """Serve the flow: pick, install, review, caption, schedule, save, stop.
 
     The server stays up past the photo install now, because the page still
@@ -352,6 +447,10 @@ def _serve(html, riders, event_id, plan=None, meta=None, faces=False):
                 print()
                 installed = _install(self._payload(), event_id, faces=faces)
                 result["installed"] = installed
+                # The card's slider only pans sideways. "Too much sky" and
+                # "move her up" need a real re-crop, so the adjuster opens on
+                # every save rather than being remembered as a second command.
+                _open_adjuster(event_id, source_dir)
                 # Building the post runs after the photos are safely written,
                 # and reports rather than raising: a failure here must not read
                 # as though the picking was lost.
@@ -493,7 +592,8 @@ def main():
     plan = generation_plan(args.event, args.score_type, args.sex,
                            athletes_mode=bool(args.athletes))
     _serve(render_sheet(riders, label), riders, args.event, plan,
-           meta={"event_name": event_name, "year": year}, faces=args.faces)
+           meta={"event_name": event_name, "year": year}, faces=args.faces,
+           source_dir=event_dir)
 
 
 if __name__ == "__main__":

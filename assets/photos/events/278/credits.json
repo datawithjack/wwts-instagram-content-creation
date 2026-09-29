@@ -1,9 +1,9 @@
 {
   "_comment": "Photographer per photo, resolved from the filename then the file's own XMP. Entries marked unconfirmed carry no credit tag anywhere: confirm before crediting them.",
-  "61": {
+  "49": {
     "photographer": "olivier caenen",
     "handle": "@oliviercaenen",
-    "source_file": "WI26_wv_F41_111-111.jpg"
+    "source_file": "Wissant Wave Classic 2026 Final Day © Olivier Caenen-28.jpg"
   },
   "52": {
     "photographer": "olivier caenen",
@@ -15,20 +15,40 @@
     "handle": "@oliviercaenen",
     "source_file": "WI26_wv_E334_143-143.jpg"
   },
-  "97-2": {
+  "1725": {
     "photographer": "olivier caenen",
-    "handle": "@oliviercaenen",
-    "source_file": "WI26_wv_E334_124-124.jpg"
-  },
-  "49": {
-    "photographer": "olivier caenen",
-    "handle": "@oliviercaenen",
-    "source_file": "Wissant Wave Classic 2026 Final Day © Olivier Caenen-28.jpg"
+    "handle": "",
+    "source_file": "Wissant Wave Classic 2026 Final Day © Olivier Caenen-141.jpg"
   },
   "10": {
     "photographer": "olivier caenen",
     "handle": "@oliviercaenen",
     "source_file": "WI26_wv_B5_93-93.jpg"
+  },
+  "14": {
+    "photographer": "olivier caenen",
+    "handle": "@oliviercaenen",
+    "source_file": "WI26_wv_F293_74-74.jpg"
+  },
+  "95": {
+    "photographer": "olivier caenen",
+    "handle": "",
+    "source_file": "WI26_wv_F181_82-82.jpg"
+  },
+  "110": {
+    "photographer": "olivier caenen",
+    "handle": "",
+    "source_file": "WI26_wv_F111_70-70.jpg"
+  },
+  "61": {
+    "photographer": "olivier caenen",
+    "handle": "@oliviercaenen",
+    "source_file": "WI26_wv_F41_111-111.jpg"
+  },
+  "97-2": {
+    "photographer": "olivier caenen",
+    "handle": "@oliviercaenen",
+    "source_file": "WI26_wv_E334_124-124.jpg"
   },
   "10-2": {
     "photographer": "NICOLAS PELTIER",
@@ -44,10 +64,5 @@
     "photographer": "olivier caenen",
     "handle": "@oliviercaenen",
     "source_file": "WI26_wv_B5_83-83.jpg"
-  },
-  "14": {
-    "photographer": "olivier caenen",
-    "handle": "@oliviercaenen",
-    "source_file": "WI26_wv_F293_74-74.jpg"
   }
 }

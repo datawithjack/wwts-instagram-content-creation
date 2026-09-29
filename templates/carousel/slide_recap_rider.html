@@ -38,10 +38,10 @@
         top: 0; left: 0; right: 0; bottom: 0;
         background: linear-gradient(
             to bottom,
-            rgba(8, 20, 40, 0.20) 0%,
-            rgba(10, 14, 26, 0.42) 40%,
-            rgba(10, 14, 26, 0.80) 62%,
-            rgba(10, 14, 26, 0.97) 78%,
+            rgba(8, 20, 40, 0.00) 0%,
+            rgba(10, 14, 26, 0.00) 46%,
+            rgba(10, 14, 26, 0.62) 64%,
+            rgba(10, 14, 26, 0.94) 78%,
             rgba(10, 14, 26, 1.00) 100%
         );
         z-index: 1;
@@ -105,15 +105,18 @@
         z-index: 1;
     }
 
-    /* ── Meta row: rank chip + sail number ──
+    /* ── Meta row: rank chip ──
        The rank used to share a baseline with the surname, separated only by
        colour, so it read as one string ("1ST PARE") and its variable width
        shifted the surname's left edge between cards. On its own line as a
        chip, the rank is unmistakably a rank and the surname starts at the
        block's padding on every card, so the name locks while swiping.
 
-       No flag: nationality is already in the sail number prefix (E-334,
-       GRE-734), and pale-striped flags bled into the photo behind them. */
+       No sail number: the photographer's tag and the entry list disagree often
+       enough to be worth nothing on a card (Wissant 2026 filed Alice Arutkin's
+       frames under F193 against her registered F-111), and a wrong number is
+       worse than none. No flag either: pale-striped flags bled into the photo
+       behind them. */
     .rider-meta {
         display: flex;
         align-items: center;
@@ -125,9 +128,10 @@
        base.html that were defined for this and never wired up. Padding, never
        a fixed width, so 1ST and 4TH both sit correctly.
 
-       Off the podium is hollow rather than a fourth filled grey: silver is
-       itself a pale grey, so a filled 4th collided with 2nd and blurred the
-       one distinction that matters most. */
+       Off the podium is white. It was a hollow outline, to keep it clear of
+       silver's pale grey, but the lighter hero gradient left nothing behind
+       the thin border and 4TH washed out against the photo. White is the one
+       fill that reads on any frame and still cannot be mistaken for a medal. */
     .rank {
         font-family: var(--font-display);
         font-size: 38px;
@@ -143,12 +147,7 @@
     .rank.place-2 { background: var(--color-rank-2nd); }
     .rank.place-3 { background: var(--color-rank-3rd); }
 
-    .rank.place-4 {
-        background: transparent;
-        border: 1px solid rgba(149, 165, 184, 0.65);
-        color: #95A5B8;
-        padding: 8px 21px 4px;
-    }
+    .rank.place-4 { background: #FFFFFF; }
 
 
     /* ── Lower content block ── */
@@ -303,7 +302,6 @@
     <div class="rider-block">
         <div class="rider-meta">
             <span class="rank place-{{ place }}">{{ place_label }}</span>
-            {% if sail_number %}<span class="sail">{{ sail_number }}</span>{% endif %}
         </div>
 
         <div class="rider-name {{ name_class }}">

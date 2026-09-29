@@ -277,12 +277,26 @@ def match_event_folder(event_name: str, folder_names) -> str:
     return best
 
 
+def _focus_fractions(focus: str) -> tuple[float, float]:
+    """``"70% 20%"`` -> ``(0.7, 0.2)``, clamped, falling back to the centre."""
+    parts = str(focus).replace("%", "").split()
+    out = []
+    for part in (parts + ["50", "50"])[:2]:
+        try:
+            out.append(min(max(float(part), 0.0), 100.0) / 100)
+        except ValueError:
+            out.append(0.5)
+    return out[0], out[1]
+
+
 def install_photo(src, dest_dir, athlete_id, max_px: int = REPO_MAX_PX,
-                  square: int = 0) -> Path:
+                  square: int = 0, focus: str = "50% 50%") -> Path:
     """Copy a chosen frame into the repo as ``{athlete_id}.jpg``, downscaled.
 
-    ``square`` crops a centred square first, for the headshot that feeds the
-    slide's portrait mode when a rider has no landscape action shot.
+    ``square`` crops a square first, for the headshot that feeds the slide's
+    portrait mode when a rider has no landscape action shot. ``focus`` anchors
+    that square the way ``object-position`` would: a face is rarely in the
+    middle of the frame, so a centred crop takes the chin off as often as not.
 
     Never upscales: a source already smaller than ``max_px`` is written at its
     own size rather than interpolated up to look like something it is not.
@@ -299,8 +313,9 @@ def install_photo(src, dest_dir, athlete_id, max_px: int = REPO_MAX_PX,
         im = im.convert("RGB")
         if square:
             side = min(im.size)
-            left = (im.width - side) // 2
-            top = (im.height - side) // 2
+            fx, fy = _focus_fractions(focus)
+            left = round((im.width - side) * fx)
+            top = round((im.height - side) * fy)
             im = im.crop((left, top, left + side, top + side)).resize(
                 (square, square), Image.LANCZOS)
         elif max(im.size) > max_px:
