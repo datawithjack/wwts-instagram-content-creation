@@ -280,7 +280,8 @@
 
         <div class="score-line">
             <span class="score-value">{{ "%.2f" | format(score) }}</span>
-            <span class="score-label">{{ title_metric[:-1] | upper }} SCORE</span>
+            {# A jump names its move here, not in the line below: "JUMP SCORE" says nothing the chip does not. #}
+            <span class="score-label">{% if show_trick_type and trick_type %}{{ trick_type | trick_type_label | upper }}{% if modifier %} {{ modifier | modifier_label | upper }}{% endif %}{% else %}{{ title_metric[:-1] | upper }} SCORE{% endif %}</span>
         </div>
 
         <div class="rider-name {{ name_class }}">
@@ -296,10 +297,6 @@
             {% if event_name and round %}<span class="sep">&middot;</span>{% endif %}
             {% if round %}<span>{{ round }}</span>{% endif %}
             {% if heat %}<span class="sep">&middot;</span><span>{{ heat }}</span>{% endif %}
-            {% if show_trick_type and trick_type %}
-            <span class="sep">&middot;</span>
-            <span class="trick">{{ trick_type | trick_type_label }}{% if modifier %} {{ modifier | modifier_label }}{% endif %}</span>
-            {% endif %}
         </div>
 
         {% if not counting %}
