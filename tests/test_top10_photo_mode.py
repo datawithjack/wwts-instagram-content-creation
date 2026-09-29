@@ -274,3 +274,14 @@ def test_the_cover_shows_a_two_letter_event_country_as_a_flag():
     cover = next(s for s in build_slides(_data(event_country="FR")) if s["type"] == "cover")
     html = render_template("carousel/slide_cover", cover)
     assert 'flagcdn.com/w80/fr.png' in html
+
+
+def test_a_jump_card_names_the_move_beside_the_score():
+    from pipeline.templates import render_template
+    entries = [_entry(i, f"Rider {i}", 10.0 - i, athlete_id=i, trick_type="Double Forward")
+               for i in range(1, 11)]
+    data = _data(entries, title_metric="Jumps", show_trick_type=True)
+    card = [s for s in build_slides(data) if s["type"] == "wave_photo"][-1]
+    html = render_template("carousel/slide_wave_photo", card)
+    assert "JUMP SCORE" not in html
+    assert html.count("DOUBLE FORWARD") + html.count("Double Forward") == 1
