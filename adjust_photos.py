@@ -106,12 +106,14 @@ def _collect(folder: Path, credits: dict, kind: str, source_dir,
     fw, fh = FRAMES[kind]
     items = []
     for path in sorted(glob.glob(str(folder / "*.jpg"))):
-        athlete_id = Path(path).stem
-        if not athlete_id.isdigit():
+        # "{id}" or "{id}-2": a rider's second card in the top five has its own frame.
+        stem = Path(path).stem
+        athlete_id, _, frame = stem.partition("-")
+        if not athlete_id.isdigit() or (frame and not frame.isdigit()):
             continue
         if only is not None and int(athlete_id) not in only:
             continue
-        entry = credits.get(athlete_id) or {}
+        entry = credits.get(stem) or {}
         original = _original_for(entry, source_dir)
         display = original or Path(path)
         with Image.open(display) as im:
@@ -120,9 +122,10 @@ def _collect(folder: Path, credits: dict, kind: str, source_dir,
             # Heroes and headshots share athlete ids, so the page keys on
             # kind + id. Keying on the id alone made one rider's two photos
             # the same element and only the first was ever drawn.
-            "key": ("a" if kind == "hero" else "f") + athlete_id,
+            "key": ("a" if kind == "hero" else "f") + stem,
             "kind": kind,
             "id": int(athlete_id),
+            "label": stem,
             "installed": path,
             "display": str(display),
             "from_original": original is not None,
@@ -274,7 +277,7 @@ function build(r) {
     <row><input type="range" id="z-${r.key}" min="1" max="3" step="0.01"
       value="${DEFAULT_ZOOM}">
     <button class="ghost" onclick="reset('${r.key}')">Reset</button></row>
-    <div class="meta">${r.id} &middot; ${r.kind === 'hero' ? 'action' : 'headshot'}
+    <div class="meta">${r.label} &middot; ${r.kind === 'hero' ? 'action' : 'headshot'}
       &middot; ${r.source_file}${r.handle ? ' &middot; ' + r.handle : ''}</div>
     <div class="meta ${r.from_original ? '' : 'lowres'}">
       ${r.from_original ? 'original ' + r.nw + '&times;' + r.nh

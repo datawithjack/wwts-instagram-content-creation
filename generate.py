@@ -49,6 +49,8 @@ def _fetch_freestyle_top10(args) -> dict:
         entries.append({
             "rank": i + 1,
             "athlete": r["athlete"],
+            "athlete_id": r.get("athlete_id"),
+            "photo_url": r.get("photo_url") or "",
             # Several freestyle-only riders have every country column NULL in
             # ATHLETES; resolve_country_iso falls back to a sail-derived map.
             "country": resolve_country_iso(

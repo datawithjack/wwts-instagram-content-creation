@@ -228,7 +228,7 @@ def _build_photo_slides(common: dict, rows: list[dict], event_id=None) -> list[d
             "trick_type": row.get("trick_type", ""),
             "modifier": row.get("modifier", ""),
             "photo_mode": "action" if action_url else "portrait",
-            "photo_url": action_url or resolve_thumb_url(athlete_id, ""),
+            "photo_url": action_url or resolve_thumb_url(athlete_id, row.get("photo_url", "")),
             "photo_focus": resolve_hero_focus(photo_key, event_id),
             **common,
         })
@@ -238,7 +238,7 @@ def _build_photo_slides(common: dict, rows: list[dict], event_id=None) -> list[d
     slides.append({
         "type": "table",
         # A headshot per row, so the recap reads as faces as well as names.
-        "rows": [{**r, "thumb_url": resolve_thumb_url(r.get("athlete_id"), "")}
+        "rows": [{**r, "thumb_url": resolve_thumb_url(r.get("athlete_id"), r.get("photo_url", ""))}
                  for r in rows],
         "label": f"Positions {rows[0]['rank']}–{rows[-1]['rank']}",
         "compact": True,

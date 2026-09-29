@@ -188,3 +188,15 @@ class TestOriginalFor:
         (sub / "WI26_wv_E334_143-143.jpg").write_bytes(b"x")
         got = adjust_photos._original_for({"source_file": "WI26_wv_E334_143-143.jpg"}, tmp_path)
         assert got == sub / "WI26_wv_E334_143-143.jpg"
+
+
+class TestCollect:
+    def test_a_riders_second_and_third_frames_are_listed(self, tmp_path):
+        """{id}-2 and {id}-3 are the same rider's other cards in the top five."""
+        import adjust_photos
+        from PIL import Image
+        for stem in ("75", "75-2", "75-3", "cover"):
+            Image.new("RGB", (30, 20)).save(tmp_path / f"{stem}.jpg")
+        items = adjust_photos._collect(tmp_path, {}, "hero", None, only={75})
+        assert sorted(i["key"] for i in items) == ["a75", "a75-2", "a75-3"]
+        assert {i["id"] for i in items} == {75}

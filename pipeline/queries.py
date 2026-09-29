@@ -305,6 +305,7 @@ def build_freestyle_top10_query(
             a.nationality AS country,
             a.country_code AS country_code,
             asi.athlete_id AS athlete_id,
+            a.liveheats_image_url AS photo_url,
             f.score,
             f.counting AS counting,
             COALESCE(m.name, f.move_name) AS move,

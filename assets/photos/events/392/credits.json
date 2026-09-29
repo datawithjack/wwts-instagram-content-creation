@@ -1,0 +1,38 @@
+{
+  "_comment": "Photographer per photo, resolved from the filename then the file's own XMP. Entries marked unconfirmed carry no credit tag anywhere: confirm before crediting them.",
+  "75": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "SY26_fs_GRE734_0763 copy.jpg",
+    "confirmed": true,
+    "via": "xmp"
+  },
+  "75-2": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "SY26_fs_GRE734_0764 copy.jpg",
+    "confirmed": true,
+    "via": "xmp"
+  },
+  "75-3": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "SY26_fs_GRE734_0765 copy.jpg",
+    "confirmed": true,
+    "via": "xmp"
+  },
+  "892": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "SY26_fs_B16_0730 copy.jpg",
+    "confirmed": true,
+    "via": "xmp"
+  },
+  "75-4": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "SY26_fs_GRE734_0775 copy.jpg",
+    "confirmed": true,
+    "via": "xmp"
+  }
+}
