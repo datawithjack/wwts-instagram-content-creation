@@ -1,0 +1,53 @@
+{
+  "_comment": "Photographer per photo, resolved from the filename then the file's own XMP. Entries marked unconfirmed carry no credit tag anywhere: confirm before crediting them.",
+  "61": {
+    "photographer": "olivier caenen",
+    "handle": "@oliviercaenen",
+    "source_file": "WI26_wv_F41_111-111.jpg"
+  },
+  "52": {
+    "photographer": "olivier caenen",
+    "handle": "@oliviercaenen",
+    "source_file": "WI26_wv_HI101_12-12.jpg"
+  },
+  "97": {
+    "photographer": "olivier caenen",
+    "handle": "@oliviercaenen",
+    "source_file": "WI26_wv_E334_143-143.jpg"
+  },
+  "97-2": {
+    "photographer": "olivier caenen",
+    "handle": "@oliviercaenen",
+    "source_file": "WI26_wv_E334_124-124.jpg"
+  },
+  "49": {
+    "photographer": "olivier caenen",
+    "handle": "@oliviercaenen",
+    "source_file": "Wissant Wave Classic 2026 Final Day © Olivier Caenen-28.jpg"
+  },
+  "10": {
+    "photographer": "olivier caenen",
+    "handle": "@oliviercaenen",
+    "source_file": "WI26_wv_B5_93-93.jpg"
+  },
+  "10-2": {
+    "photographer": "NICOLAS PELTIER",
+    "handle": "@nicolaspeltierphotographie",
+    "source_file": "WI26_wv_B5_5357.jpg"
+  },
+  "10-3": {
+    "photographer": "olivier caenen",
+    "handle": "@oliviercaenen",
+    "source_file": "WI26_wv_B5_84-84.jpg"
+  },
+  "10-4": {
+    "photographer": "olivier caenen",
+    "handle": "@oliviercaenen",
+    "source_file": "WI26_wv_B5_83-83.jpg"
+  },
+  "14": {
+    "photographer": "olivier caenen",
+    "handle": "@oliviercaenen",
+    "source_file": "WI26_wv_F293_74-74.jpg"
+  }
+}

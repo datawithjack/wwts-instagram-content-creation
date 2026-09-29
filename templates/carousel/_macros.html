@@ -1,12 +1,12 @@
 {# ── Shared Jinja2 macros for carousel slides ── #}
 
-{% macro table_component(rows, show_trick_type, is_per_event, row_height='192px', show_round=false, show_year_sex=false) %}
+{% macro table_component(rows, show_trick_type, is_per_event, row_height='192px', show_round=false, show_year_sex=false, show_thumbs=false) %}
 <div class="table{% if show_year_sex %} table-perfect-10s{% endif %}">
     <div class="table-header">
         {% if not show_year_sex %}
         <span class="col-rank">#</span>
         {% endif %}
-        <span class="col-flag"></span>
+        {% if show_thumbs %}<span class="col-thumb"></span>{% else %}<span class="col-flag"></span>{% endif %}
         <span class="col-athlete">ATHLETE</span>
         {% if show_year_sex %}
         <span class="col-year">YEAR</span>
@@ -27,7 +27,11 @@
             {% if not show_year_sex %}
             <div class="col-rank"{% if row.rank == 2 %} style="color: var(--color-rank-2nd)"{% elif row.rank == 3 %} style="color: var(--color-rank-3rd)"{% endif %}>{{ row.rank }}</div>
             {% endif %}
+            {% if show_thumbs %}
+            <div class="col-thumb">{% if row.thumb_url %}<img src="{{ row.thumb_url }}" alt="{{ row.athlete }}">{% else %}<div class="thumb-placeholder">{{ row.athlete[:1] }}</div>{% endif %}{% if row.country %}<img class="thumb-flag" src="https://flagcdn.com/w40/{{ row.country | lower }}.png" alt="{{ row.country }}">{% endif %}</div>
+            {% else %}
             <div class="col-flag"><img src="https://flagcdn.com/w40/{{ row.country | lower }}.png" alt="{{ row.country }}"></div>
+            {% endif %}
             <div class="col-athlete">{{ row.athlete }}</div>
             {% if show_year_sex %}
             <div class="col-year">{{ row.year }}</div>

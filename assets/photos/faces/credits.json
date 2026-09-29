@@ -342,5 +342,51 @@
     "confirmed": false,
     "via": "",
     "note": "UNTAGGED - credit unconfirmed"
+  },
+  "61": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "https://res.cloudinary.com/liveheats-com/image/facebook/w_600,h_600/10159541704376089.webp",
+    "confirmed": false,
+    "via": "api profile_image",
+    "note": "UNTAGGED - LiveHeats profile photo, photographer unknown"
+  },
+  "64": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "https://liveheats.com/images/9de1f746-39af-42d4-a029-62c0eb635e17.webp",
+    "confirmed": false,
+    "via": "api profile_image",
+    "note": "UNTAGGED - LiveHeats profile photo, photographer unknown"
+  },
+  "1725": {
+    "photographer": "olivier caenen",
+    "handle": "",
+    "source_file": "WI26_ls_F777_150-150.jpg",
+    "confirmed": true,
+    "via": "xmp"
+  },
+  "10": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "https://www.liveheats.com/images/89b1d351-8692-403f-9337-f070db4cc631.webp",
+    "confirmed": false,
+    "via": "api profile_image",
+    "note": "UNTAGGED - LiveHeats profile photo, photographer unknown"
+  },
+  "14": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "https://liveheats.com/images/088aae2f-aec0-4d54-8476-14402167e326.webp",
+    "confirmed": false,
+    "via": "api profile_image",
+    "note": "UNTAGGED - LiveHeats profile photo, photographer unknown"
+  },
+  "110": {
+    "photographer": "olivier caenen",
+    "handle": "",
+    "source_file": "WI26_ls_F193_149-149.jpg",
+    "confirmed": true,
+    "via": "xmp"
   }
 }
