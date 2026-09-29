@@ -50,7 +50,7 @@ def test_photo_slides_count_down_so_number_one_lands_last():
     slides = build_slides(_data())
     photos = [s for s in slides if s["type"] == "wave_photo"]
     assert [s["rank"] for s in photos] == [5, 4, 3, 2, 1]
-    assert [s["rank_label"] for s in photos] == ["5TH", "4TH", "3RD", "2ND", "1ST"]
+    assert [s["rank_label"] for s in photos] == ["5TH", "4TH", "3RD", "2ND", "BEST WAVE"]
 
 
 def test_photo_slides_are_literal_top_five_not_deduped_by_rider():
@@ -77,12 +77,14 @@ def test_photo_slides_are_literal_top_five_not_deduped_by_rider():
 
 def test_rank_chip_names_what_is_being_counted():
     """A bare "5TH" on a photo of a rider reads as their event placing."""
+    chip = lambda s: f"{s['rank_label']} {s['rank_suffix']}".strip()
     photos = [s for s in build_slides(_data()) if s["type"] == "wave_photo"]
-    assert all(s["rank_suffix"] == "BEST WAVE" for s in photos)
+    assert [chip(s) for s in photos] == [
+        "5TH BEST WAVE", "4TH BEST WAVE", "3RD BEST WAVE", "2ND BEST WAVE", "BEST WAVE"]
 
     jumps = _data(title_metric="Jumps")
     photos = [s for s in build_slides(jumps) if s["type"] == "wave_photo"]
-    assert all(s["rank_suffix"] == "BEST JUMP" for s in photos)
+    assert chip(photos[-1]) == "BEST JUMP"
 
 
 def test_photo_mode_title_drops_the_ten():
