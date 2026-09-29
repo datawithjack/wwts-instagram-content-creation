@@ -300,6 +300,13 @@ def fetch_athlete_event_stats(event_id: int, athlete_id: int, division: str) -> 
     return data
 
 
+# Riders whose API country is missing ("Unknown"). The fix belongs in the DB's
+# ATHLETES row; drop an entry once it is populated.
+COUNTRY_OVERRIDES = {
+    1725: "fr",  # Kilian Couedic, F-777
+}
+
+
 def fetch_event_top_scores(event_id: int, score_type: str, sex: str = None, limit: int = 10) -> dict:
     """Fetch top scores for a specific event from the /events/{id}/stats API.
 
@@ -349,7 +356,8 @@ def fetch_event_top_scores(event_id: int, score_type: str, sex: str = None, limi
             # here. Photo mode resolves a rider's hero shot from it, and
             # pick_photos finds their candidate frames; table slides ignore it.
             "athlete_id": r.get("athlete_id"),
-            "country": nationality_to_iso(country_map.get(r.get("athlete_id"), "")),
+            "country": (nationality_to_iso(country_map.get(r.get("athlete_id"), ""))
+                        or COUNTRY_OVERRIDES.get(r.get("athlete_id"), "")),
             "score": float(r.get("score", 0)),
             "event": event_name,
             "round": r.get("round_name", ""),

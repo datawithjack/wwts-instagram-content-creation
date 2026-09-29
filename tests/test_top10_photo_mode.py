@@ -211,3 +211,64 @@ class TestCoverPhoto:
         default = _data()
         default["photo_mode"] = False
         assert build_slides(default)[0]["show_count"] is True
+
+
+def test_table_rows_carry_a_headshot_in_photo_mode(monkeypatch):
+    import pipeline.carousel as carousel
+    monkeypatch.setattr(carousel, "resolve_thumb_url",
+                        lambda aid, url: f"faces/{aid}.jpg" if aid == 3 else "")
+    table = next(s for s in build_slides(_data()) if s["type"] == "table")
+    assert table["rows"][2]["thumb_url"] == "faces/3.jpg"
+    assert table["rows"][0]["thumb_url"] == ""
+
+
+def test_the_table_renders_a_headshot_or_an_initial(monkeypatch):
+    import pipeline.carousel as carousel
+    from pipeline.templates import render_template
+    monkeypatch.setattr(carousel, "resolve_thumb_url",
+                        lambda aid, url: "faces/3.jpg" if aid == 3 else "")
+    table = next(s for s in build_slides(_data()) if s["type"] == "table")
+    html = render_template("carousel/slide_table", table)
+    assert 'src="faces/3.jpg"' in html
+    assert 'class="thumb-placeholder">R<' in html
+
+
+def test_a_riders_second_card_uses_their_second_hero_shot(monkeypatch):
+    """Wissant 2026 men: Pare holds 3rd and 5th, one photo twice reads as a repeat."""
+    import pipeline.carousel as carousel
+    monkeypatch.setattr(carousel, "resolve_hero_url",
+                        lambda aid, eid: {"7": "a.jpg", "7-2": "b.jpg"}.get(str(aid), ""))
+    entries = [_entry(i, f"Rider {i}", 10.0 - i, athlete_id=7 if i in (3, 5) else i)
+               for i in range(1, 11)]
+    photos = {s["rank"]: s for s in build_slides(_data(entries)) if s["type"] == "wave_photo"}
+    assert photos[3]["photo_url"] == "a.jpg"
+    assert photos[5]["photo_url"] == "b.jpg"
+
+
+def test_without_a_second_shot_the_first_is_reused(monkeypatch):
+    import pipeline.carousel as carousel
+    monkeypatch.setattr(carousel, "resolve_hero_url",
+                        lambda aid, eid: "a.jpg" if str(aid) == "7" else "")
+    entries = [_entry(i, f"Rider {i}", 10.0 - i, athlete_id=7 if i in (3, 5) else i)
+               for i in range(1, 11)]
+    photos = {s["rank"]: s for s in build_slides(_data(entries)) if s["type"] == "wave_photo"}
+    assert photos[5]["photo_url"] == "a.jpg"
+    assert photos[5]["photo_mode"] == "action"
+
+
+def test_the_flag_sits_on_the_headshot_not_in_its_own_column(monkeypatch):
+    """Same treatment as the Sylt Kings table: face and flag read as one unit."""
+    import pipeline.carousel as carousel
+    from pipeline.templates import render_template
+    monkeypatch.setattr(carousel, "resolve_thumb_url", lambda aid, url: "faces/x.jpg")
+    table = next(s for s in build_slides(_data()) if s["type"] == "table")
+    html = render_template("carousel/slide_table", table)
+    assert 'class="col-flag"' not in html
+    assert html.count('class="thumb-flag"') == 10
+
+
+def test_the_cover_shows_a_two_letter_event_country_as_a_flag():
+    from pipeline.templates import render_template
+    cover = next(s for s in build_slides(_data(event_country="FR")) if s["type"] == "cover")
+    html = render_template("carousel/slide_cover", cover)
+    assert 'flagcdn.com/w80/fr.png' in html
