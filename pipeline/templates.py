@@ -130,6 +130,17 @@ def resolve_hero_url(athlete_id, event_id) -> str:
     return _subfolder_photo(athlete_id, "h2h") or _local_photo(athlete_id)
 
 
+def resolve_cover_url(athlete_id, event_id) -> str:
+    """A rider's crop for the recap cover grid, ``events/{event_id}/{id}-cover``, or "".
+
+    Cut separately from the hero by ``adjust_photos.py --cover``, because a
+    quarter of the cover wants a different framing to a full rider card.
+    """
+    if not athlete_id or not event_id:
+        return ""
+    return _subfolder_photo(f"{athlete_id}-cover", "events", event_id)
+
+
 def resolve_hero_focus(athlete_id, event_id, default: str = "center 35%") -> str:
     """CSS object-position for a rider's hero shot, from a per-event map.
 

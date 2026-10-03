@@ -451,7 +451,11 @@ def _caption_finals_recap(data: dict, site_url: str) -> str:
     name = (winner or {}).get("name", "")
     total = (winner or {}).get("final_total")
 
-    heading = f"\U0001f30a How the {where} {division}'s final unfolded."
+    if data.get("discipline") == "Freestyle":
+        division += "'s freestyle"
+    else:
+        division += "'s"
+    heading = f"\U0001f30a How the {where} {division} final unfolded."
     if name and total:
         heading += f"\n\n{name} took it with {float(total):.2f}."
     elif name:

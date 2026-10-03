@@ -1,0 +1,7 @@
+{
+  "_comment": "object-position per athlete, set from the picker's crop slider. A landscape frame keeps its full height at 1080x1350 and loses about half its width, so the X value is what matters.",
+  "75": "50% 50%",
+  "492": "50% 50%",
+  "884": "50% 50%",
+  "70": "50% 50%"
+}
