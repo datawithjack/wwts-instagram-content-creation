@@ -311,13 +311,15 @@ function build(r) {
   const img = document.getElementById('img-' + r.key);
   img.onload = () => render(r.key);
   document.getElementById('z-' + r.key).oninput = e => {
-    state[r.key].zoom = parseFloat(e.target.value); render(r.key);
+    state[r.key].zoom = parseFloat(e.target.value); state[r.key].touched = true;
+    render(r.key);
   };
   const vp = document.getElementById('vp-' + r.key);
   vp.onwheel = e => {
     e.preventDefault();
     const s = state[r.key];
     s.zoom = Math.min(3, Math.max(MIN_ZOOM, s.zoom * (e.deltaY < 0 ? 1.06 : 0.94)));
+    s.touched = true;
     document.getElementById('z-' + r.key).value = s.zoom;
     render(r.key);
   };
@@ -330,6 +332,7 @@ function build(r) {
     const s = state[r.key];
     s.dx += (e.clientX - px) / vp.clientWidth;
     s.dy += (e.clientY - py) / vp.clientHeight;
+    s.touched = true;
     px = e.clientX; py = e.clientY;
     render(r.key);
   });
@@ -363,13 +366,20 @@ function render(key) {
 
 function reset(key) {
   state[key].zoom = DEFAULT_ZOOM; state[key].dx = 0; state[key].dy = 0;
+  state[key].touched = true;
   document.getElementById('z-' + key).value = DEFAULT_ZOOM;
   render(key);
 }
 
 async function saveAll() {
-  const items = Object.values(state).map(s =>
+  // Only the cards that were moved. Saving every card re-cut the untouched
+  // ones at the opening framing, so a cover-only pass reset the rider cards.
+  const items = Object.values(state).filter(s => s.touched).map(s =>
     ({key: s.r.key, zoom: s.zoom, dx: s.dx, dy: s.dy}));
+  if (!items.length) {
+    document.getElementById('status').textContent = 'Nothing moved, nothing saved.';
+    return;
+  }
   document.getElementById('status').textContent = 'Saving...';
   const res = await fetch('/save', {method: 'POST', body: JSON.stringify({items})});
   const out = await res.json();
