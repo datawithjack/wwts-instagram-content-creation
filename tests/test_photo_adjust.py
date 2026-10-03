@@ -196,3 +196,49 @@ class TestOriginalFor:
         (sub / "WI26_wv_E334_143-143.jpg").write_bytes(b"x")
         got = adjust_photos._original_for({"source_file": "WI26_wv_E334_143-143.jpg"}, tmp_path)
         assert got == sub / "WI26_wv_E334_143-143.jpg"
+
+
+class TestCoverCrops:
+    def _event(self, tmp_path, monkeypatch):
+        from PIL import Image
+        import adjust_photos
+        monkeypatch.setattr(adjust_photos, "PHOTOS_DIR", tmp_path)
+        folder = tmp_path / "events" / "126"
+        folder.mkdir(parents=True)
+        Image.new("RGB", (1080, 1350)).save(folder / "75.jpg")
+        src = tmp_path / "src"
+        src.mkdir()
+        Image.new("RGB", (1920, 1280)).save(src / "SY26_fs_GRE734_0764.jpg")
+        (folder / "credits.json").write_text(
+            '{"75": {"source_file": "SY26_fs_GRE734_0764.jpg"}}', encoding="utf-8")
+        return adjust_photos, folder, src
+
+    def test_a_cover_crop_is_its_own_file_from_the_same_original(self, tmp_path, monkeypatch):
+        """The recap cover sets four riders in a grid; its crop is separate
+        from the rider card's, so saving one never moves the other."""
+        adjust_photos, folder, src = self._event(tmp_path, monkeypatch)
+
+        (cover,) = adjust_photos.collect_covers("126", src)
+
+        assert cover["kind"] == "cover" and cover["key"] == "c75"
+        assert cover["installed"] == str(folder / "75-cover.jpg")
+        assert cover["from_original"] and cover["nw"] == 1920
+
+    def test_saving_a_cover_leaves_the_card_photo_alone(self, tmp_path, monkeypatch):
+        from PIL import Image
+        adjust_photos, folder, src = self._event(tmp_path, monkeypatch)
+        before = (folder / "75.jpg").read_bytes()
+
+        (cover,) = adjust_photos.collect_covers("126", src)
+        adjust_photos.save_crop(cover, zoom=0.8, dx=0.0, dy=0.1)
+
+        assert (folder / "75.jpg").read_bytes() == before
+        with Image.open(folder / "75-cover.jpg") as out:
+            assert out.size == (1080, 1350)
+
+    def test_a_saved_cover_is_not_mistaken_for_a_rider(self, tmp_path, monkeypatch):
+        adjust_photos, folder, src = self._event(tmp_path, monkeypatch)
+        (cover,) = adjust_photos.collect_covers("126", src)
+        adjust_photos.save_crop(cover, zoom=1.0, dx=0.0, dy=0.0)
+
+        assert [r["id"] for r in adjust_photos.collect_riders("126", src)] == [75]

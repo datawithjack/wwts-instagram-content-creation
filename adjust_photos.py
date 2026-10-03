@@ -52,7 +52,9 @@ MIN_ZOOM = 0.5
 # the square thumbnail the summary table sets in a circle, and it needs the
 # same treatment for the same reason: a face that lands off-centre cannot be
 # fixed with an anchor, because a square crop of a square file has no slack.
-FRAMES = {"hero": (1080, 1350), "face": (600, 600)}
+# A cover is the recap cover's crop of the same shot: a quarter of the grid,
+# still 4:5, saved at full slide size so it stays sharp at 2x.
+FRAMES = {"hero": (1080, 1350), "face": (600, 600), "cover": (1080, 1350)}
 JPEG_QUALITY = 90
 
 
@@ -144,6 +146,24 @@ def collect_riders(event, source_dir, only=None) -> list:
     """Every installed hero in the event folder, newest info first."""
     return _collect(_event_dir(event), _credits(event), "hero", source_dir,
                     only)
+
+
+def collect_covers(event, source_dir, only=None) -> list:
+    """A cover crop for every rider with a hero, saved as ``{id}-cover.jpg``.
+
+    Cut from the same original as the hero, so the cover grid and the rider
+    card can frame one shot differently. Until a cover is saved the recap
+    falls back to the hero, so this starts from whichever exists.
+    """
+    covers = []
+    for hero in collect_riders(event, source_dir, only):
+        installed = _event_dir(event) / f"{hero['id']}-cover.jpg"
+        item = {**hero, "key": f"c{hero['id']}", "kind": "cover",
+                "installed": str(installed)}
+        if not hero["from_original"] and installed.exists():
+            item["display"] = str(installed)
+        covers.append(item)
+    return covers
 
 
 def collect_faces(source_dir, only=None) -> list:
@@ -279,7 +299,7 @@ function build(r) {
     <row><input type="range" id="z-${r.key}" min="${MIN_ZOOM}" max="3" step="0.01"
       value="${DEFAULT_ZOOM}">
     <button class="ghost" onclick="reset('${r.key}')">Reset</button></row>
-    <div class="meta">${r.id} &middot; ${r.kind === 'hero' ? 'action' : 'headshot'}
+    <div class="meta">${r.id} &middot; ${{hero: 'action', face: 'headshot', cover: 'cover grid'}[r.kind]}
       &middot; ${r.source_file}${r.handle ? ' &middot; ' + r.handle : ''}</div>
     <div class="meta ${r.from_original ? '' : 'lowres'}">
       ${r.from_original ? 'original ' + r.nw + '&times;' + r.nh
@@ -417,6 +437,8 @@ def main():
     parser.add_argument("--athletes", help="Comma-separated athlete IDs (default: all)")
     parser.add_argument("--no-faces", action="store_true",
                         help="Action shots only; leave the headshots alone")
+    parser.add_argument("--cover", action="store_true",
+                        help="Also crop each rider for the recap cover grid")
     parser.add_argument("--port", type=int, default=8712)
     args = parser.parse_args()
 
@@ -429,11 +451,13 @@ def main():
         return 1
 
     riders = collect_riders(args.event, source_dir, only)
+    covers = collect_covers(args.event, source_dir, only) if args.cover else []
     if not args.no_faces:
         # The headshots belong to whoever is on this post, which is the cast
         # the event folder already names, plus anything asked for by hand.
         cast = {r["id"] for r in riders} | (only or set())
         riders += collect_faces(source_dir, cast or None)
+    riders += covers
     if not riders:
         print(f"No installed photos in {_event_dir(args.event)}", file=sys.stderr)
         return 1
