@@ -341,6 +341,13 @@ def _percent_cell(value, best, label: str = "") -> dict:
     }
 
 
+def _jump_name(move) -> str:
+    """A jump's move name, blank where it was only ever logged as "Jump"
+    (Mayo 2026 logs every jump that way, which is no name)."""
+    move = move or ""
+    return "" if move.strip().lower() == "jump" else move
+
+
 def _counting_note(freestyle: bool, show_jumps: bool) -> str:
     if freestyle:
         return FREESTYLE_COUNTING_NOTE
@@ -349,6 +356,7 @@ def _counting_note(freestyle: bool, show_jumps: bool) -> str:
 
 def _attach_jump_move(stats: list, move: str) -> None:
     """Hang the move name off the best-jump cell, when there is one."""
+    move = _jump_name(move)
     if not move:
         return
     for stat in stats:
@@ -396,7 +404,7 @@ def _compare_slide(riders: list, common: dict, event_label: str = "",
                 lambda r: _best(r.get("final_jumps")),
                 # The move is half the story of a jump score, so it travels with
                 # the number onto the summary as well as the rider slide.
-                note=lambda r: r.get("final_best_jump_move") or "",
+                note=lambda r: _jump_name(r.get("final_best_jump_move")),
             ))
 
     for label, key, fmt in (FREESTYLE_STAT_FIELDS if freestyle else STAT_FIELDS):
@@ -404,7 +412,7 @@ def _compare_slide(riders: list, common: dict, event_label: str = "",
             continue
         note = None
         if key == "best_jump":
-            note = lambda r: _best_jump_move(r.get("history") or "")
+            note = lambda r: _jump_name(_best_jump_move(r.get("history") or ""))
         elif freestyle and key == "best_move":
             note = lambda r: r.get("best_move_name") or ""
         rows.append(_compare_row(label, riders, EVENT_GROUP,

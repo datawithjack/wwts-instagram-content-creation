@@ -574,7 +574,8 @@ def _wave_event(event_id: int, division: str, score_type: str = "wave"):
     return candidates, _wave_finishers(event_id, division, candidates, score_type)
 
 
-def fetch_final_heat(event_id: int, division: str, discipline: str = "Wave") -> dict:
+def fetch_final_heat(event_id: int, division: str, discipline: str = "Wave",
+                     finalists: list = None) -> dict:
     """Fetch the final heat itself: who placed where, and every score in it.
 
     Returns ``{"round_order": int, "riders": [...]}`` with riders in finishing
@@ -600,6 +601,11 @@ def fetch_final_heat(event_id: int, division: str, discipline: str = "Wave") -> 
     highest they scored, whether or not it made their counting total -- the
     same default the top 10 posts use.
 
+    ``finalists`` names the riders outright, for an event whose placings
+    cannot pick them: Mayo 2026 runs a pro and an amateur fleet in one men's
+    division, so two riders are placed 1st and the amateur final, sailed last,
+    wins. The heat is then the last one holding all of them.
+
     With ``discipline="Freestyle"`` the freestyle ladder is read instead, and
     each rider carries ``final_moves`` and ``final_best_move_name`` in place
     of the wave and jump split.
@@ -607,6 +613,18 @@ def fetch_final_heat(event_id: int, division: str, discipline: str = "Wave") -> 
     score_type = discipline.lower()
     candidates, finishers = _wave_event(event_id, division, score_type)
     podium = [rider["athlete_id"] for rider in finishers[:2]]
+
+    if finalists:
+        wanted = set(finalists)
+        matches = [c for c in candidates
+                   if wanted <= {a.get("athlete_id")
+                                 for a in (c[3].get("athletes") or [])}]
+        if not matches:
+            raise ValueError(
+                f"No {score_type} heat at event {event_id} ({division}) holds "
+                f"all of {', '.join(str(i) for i in sorted(wanted))}. "
+                "Check the finalist ids.")
+        candidates, podium = matches, []
 
     # The top two, then the winner alone, then whatever sailed last: enough to
     # stay right on an event whose placings are missing or tied.

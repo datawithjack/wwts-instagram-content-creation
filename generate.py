@@ -344,7 +344,10 @@ def fetch_live_data(template_name: str, args) -> dict:
         discipline = getattr(args, "discipline", None) or "Wave"
         freestyle = discipline == "Freestyle"
         try:
-            final = fetch_final_heat(args.event, args.division, discipline)
+            # Named finalists win over placings, which cannot tell fleets apart.
+            finalists = _parse_ids(getattr(args, "men" if args.division == "Men" else "women", None))
+            final = fetch_final_heat(args.event, args.division, discipline,
+                                     finalists=finalists or None)
         except ValueError as exc:
             print(exc)
             sys.exit(1)
@@ -836,8 +839,8 @@ def main():
                         help="Discipline for sylt_kings and finals_recap (default Wave)")
     parser.add_argument("--location", help="Location pattern for athlete rise (e.g. 'Gran Canaria')")
     parser.add_argument("--picks-data", help="Path to event picks JSON file (event_picks template)")
-    parser.add_argument("--men", help="Finals preview: comma-separated men's finalist athlete IDs, in draw order")
-    parser.add_argument("--women", help="Finals preview: comma-separated women's finalist athlete IDs, in draw order")
+    parser.add_argument("--men", help="Finals preview: comma-separated men's finalist athlete IDs, in draw order. Finals recap: the final's riders, where placings cannot pick them")
+    parser.add_argument("--women", help="Finals preview: comma-separated women's finalist athlete IDs, in draw order. Finals recap: as --men")
     parser.add_argument("--heats", help="Finals preview: one slide per drawn heat, e.g. '46,69,68,205|135,64,49,61' (needs --division)")
     parser.add_argument("--round-label", help="Finals preview: heat slide label prefix (default 'Quarter Final')")
     parser.add_argument("--score-type", choices=["Wave", "Jump", "Freestyle"], help="Score type for top 10")

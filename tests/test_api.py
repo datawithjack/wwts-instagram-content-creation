@@ -1047,3 +1047,54 @@ class TestFreestyleFinal:
                                      discipline="Freestyle")
 
         assert [r["athlete_id"] for r in riders] == [910, 911]
+
+
+class TestFinalByFinalists:
+    """Mayo 2026: the pro and amateur fleets share one men's division, so two
+    riders are placed 1st and the amateur final is the last heat sailed."""
+
+    def _raw(self):
+        return {"rounds": [
+            {"round_name": "Semi Finals", "round_order": 4, "heats": [
+                {"heat_number": "Final", "heat_order": 2, "athletes": [
+                    _wave_athlete(10, "Baptiste Cloarec", 1),
+                    _wave_athlete(11, "Lucas Meldrum", 2),
+                    _wave_athlete(12, "Nicolas Quemener", 3),
+                    _wave_athlete(13, "Julius Byrne", 4),
+                ]},
+            ]},
+            {"round_name": "Final", "round_order": 5, "heats": [
+                {"heat_number": "Final", "heat_order": 1, "athletes": [
+                    _wave_athlete(20, "Mark Henderson", 1),
+                    _wave_athlete(21, "Pav Jankowski", 2),
+                ]},
+            ]},
+        ]}
+
+    def _responses(self):
+        athletes = {"athletes": [
+            {"athlete_id": 20, "name": "Mark Henderson", "overall_position": 1},
+            {"athlete_id": 10, "name": "Baptiste Cloarec", "overall_position": 1},
+            {"athlete_id": 21, "name": "Pav Jankowski", "overall_position": 2},
+            {"athlete_id": 11, "name": "Lucas Meldrum", "overall_position": 2},
+        ]}
+        raw = self._raw()
+        return [MagicMock(status_code=200, json=lambda: raw),
+                MagicMock(status_code=200, json=lambda: athletes)]
+
+    @patch("pipeline.api.requests.get")
+    def test_named_finalists_pick_the_heat_they_sailed_together(self, mock_get):
+        mock_get.side_effect = self._responses()
+
+        final = fetch_final_heat(event_id=281, division="Men",
+                                 finalists=[10, 11, 12, 13])
+
+        assert [r["athlete_id"] for r in final["riders"]] == [10, 11, 12, 13]
+        assert final["round_order"] == 4
+
+    @patch("pipeline.api.requests.get")
+    def test_finalists_who_never_shared_a_heat_raise(self, mock_get):
+        mock_get.side_effect = self._responses()
+
+        with pytest.raises(ValueError, match="10, 20"):
+            fetch_final_heat(event_id=281, division="Men", finalists=[10, 20])

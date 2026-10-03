@@ -881,3 +881,15 @@ class TestCoverCrop:
         photos = build_slides(_data(riders=self._riders()))[0]["hero_photos"]
 
         assert photos[1]["url"].endswith("/49.jpg")
+
+
+def test_a_jump_logged_without_a_move_name_carries_no_label():
+    """Mayo 2026 logs every jump as plain "Jump", which says nothing the cell
+    label does not."""
+    riders = _riders()
+    for r in riders:
+        r["history"] = [{"round": "QF", "heat": "1", "place": 1, "total": 20.0,
+                         "scores": [{"type": "Jump", "move_type": "Jump", "score": 9.5}]}]
+    rider = _rider_slides(build_slides(_data(riders=riders)))[0]
+
+    assert next(s for s in rider["stats"] if s["label"] == "BEST JUMP")["note"] == ""
