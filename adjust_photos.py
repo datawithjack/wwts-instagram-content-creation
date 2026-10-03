@@ -44,11 +44,17 @@ PHOTOS_DIR = Path(__file__).parent / "assets" / "photos"
 # reached for when a shot genuinely wants to be tighter. The slider still goes
 # down to 1.0 for the widest framing a photo has.
 DEFAULT_ZOOM = 1.12
+# How far out the slider goes. Below 1.0 the photo no longer fills the slide
+# and the rest is the blurred backdrop, which is what lets a tight action shot
+# show the whole rider and sail.
+MIN_ZOOM = 0.5
 # The two shapes a photo is cropped to. A hero fills the slide; a headshot is
 # the square thumbnail the summary table sets in a circle, and it needs the
 # same treatment for the same reason: a face that lands off-centre cannot be
 # fixed with an anchor, because a square crop of a square file has no slack.
-FRAMES = {"hero": (1080, 1350), "face": (600, 600)}
+# A cover is the recap cover's crop of the same shot: a quarter of the grid,
+# still 4:5, saved at full slide size so it stays sharp at 2x.
+FRAMES = {"hero": (1080, 1350), "face": (600, 600), "cover": (1080, 1350)}
 JPEG_QUALITY = 90
 
 
@@ -140,6 +146,24 @@ def collect_riders(event, source_dir, only=None) -> list:
     """Every installed hero in the event folder, newest info first."""
     return _collect(_event_dir(event), _credits(event), "hero", source_dir,
                     only)
+
+
+def collect_covers(event, source_dir, only=None) -> list:
+    """A cover crop for every rider with a hero, saved as ``{id}-cover.jpg``.
+
+    Cut from the same original as the hero, so the cover grid and the rider
+    card can frame one shot differently. Until a cover is saved the recap
+    falls back to the hero, so this starts from whichever exists.
+    """
+    covers = []
+    for hero in collect_riders(event, source_dir, only):
+        installed = _event_dir(event) / f"{hero['id']}-cover.jpg"
+        item = {**hero, "key": f"c{hero['id']}", "kind": "cover",
+                "installed": str(installed)}
+        if not hero["from_original"] and installed.exists():
+            item["display"] = str(installed)
+        covers.append(item)
+    return covers
 
 
 def collect_faces(source_dir, only=None) -> list:
@@ -259,6 +283,7 @@ is where the slide's text sits. Headshots are the square thumbnails on the
 <script>
 const RIDERS = __RIDERS__;
 const DEFAULT_ZOOM = __DEFAULT_ZOOM__;
+const MIN_ZOOM = __MIN_ZOOM__;
 const state = {};
 
 function build(r) {
@@ -271,10 +296,10 @@ function build(r) {
       <img src="/photo/${r.key}" id="img-${r.key}" draggable="false">
       ${r.kind === 'hero' ? '<div class="grad"></div>' : ''}
     </div>
-    <row><input type="range" id="z-${r.key}" min="1" max="3" step="0.01"
+    <row><input type="range" id="z-${r.key}" min="${MIN_ZOOM}" max="3" step="0.01"
       value="${DEFAULT_ZOOM}">
     <button class="ghost" onclick="reset('${r.key}')">Reset</button></row>
-    <div class="meta">${r.id} &middot; ${r.kind === 'hero' ? 'action' : 'headshot'}
+    <div class="meta">${r.id} &middot; ${{hero: 'action', face: 'headshot', cover: 'cover grid'}[r.kind]}
       &middot; ${r.source_file}${r.handle ? ' &middot; ' + r.handle : ''}</div>
     <div class="meta ${r.from_original ? '' : 'lowres'}">
       ${r.from_original ? 'original ' + r.nw + '&times;' + r.nh
@@ -286,13 +311,15 @@ function build(r) {
   const img = document.getElementById('img-' + r.key);
   img.onload = () => render(r.key);
   document.getElementById('z-' + r.key).oninput = e => {
-    state[r.key].zoom = parseFloat(e.target.value); render(r.key);
+    state[r.key].zoom = parseFloat(e.target.value); state[r.key].touched = true;
+    render(r.key);
   };
   const vp = document.getElementById('vp-' + r.key);
   vp.onwheel = e => {
     e.preventDefault();
     const s = state[r.key];
-    s.zoom = Math.min(3, Math.max(1, s.zoom * (e.deltaY < 0 ? 1.06 : 0.94)));
+    s.zoom = Math.min(3, Math.max(MIN_ZOOM, s.zoom * (e.deltaY < 0 ? 1.06 : 0.94)));
+    s.touched = true;
     document.getElementById('z-' + r.key).value = s.zoom;
     render(r.key);
   };
@@ -305,6 +332,7 @@ function build(r) {
     const s = state[r.key];
     s.dx += (e.clientX - px) / vp.clientWidth;
     s.dy += (e.clientY - py) / vp.clientHeight;
+    s.touched = true;
     px = e.clientX; py = e.clientY;
     render(r.key);
   });
@@ -315,7 +343,7 @@ function render(key) {
   const s = state[key], r = s.r;
   const vp = document.getElementById('vp-' + key);
   const vw = vp.clientWidth, vh = vp.clientHeight;
-  const base = Math.max(vw / r.nw, vh / r.nh) * Math.max(s.zoom, 1);
+  const base = Math.max(vw / r.nw, vh / r.nh) * s.zoom;
   const dw = r.nw * base, dh = r.nh * base;
   const mx = (dw - vw) / 2, my = (dh - vh) / 2;
   const img = document.getElementById('img-' + key);
@@ -323,10 +351,12 @@ function render(key) {
   img.style.height = dh + 'px';
   img.style.left = (-mx + s.dx * vw) + 'px';
   img.style.top = (-my + s.dy * vh) + 'px';
-  const visible = (vw / base) / r.nw;
-  // How far the frame has been taken past the edge of the photograph, as a
-  // share of its height. Worth saying: past the edge is backdrop, not photo.
-  const over = Math.max(0, Math.abs(s.dy * vh) - my) / vh;
+  const visible = Math.min(1, (vw / base) / r.nw);
+  // How much of the frame is past the edge of the photograph, by area.
+  // Worth saying: past the edge is backdrop, not photo.
+  const x0 = Math.max(0, -mx + s.dx * vw), x1 = Math.min(vw, -mx + s.dx * vw + dw);
+  const y0 = Math.max(0, -my + s.dy * vh), y1 = Math.min(vh, -my + s.dy * vh + dh);
+  const over = 1 - Math.max(0, x1 - x0) * Math.max(0, y1 - y0) / (vw * vh);
   document.getElementById('w-' + key).textContent =
     'showing ' + Math.round(visible * 100) + '% of width'
     + '  \u00b7  zoom ' + s.zoom.toFixed(2) + '\u00d7'
@@ -336,13 +366,20 @@ function render(key) {
 
 function reset(key) {
   state[key].zoom = DEFAULT_ZOOM; state[key].dx = 0; state[key].dy = 0;
+  state[key].touched = true;
   document.getElementById('z-' + key).value = DEFAULT_ZOOM;
   render(key);
 }
 
 async function saveAll() {
-  const items = Object.values(state).map(s =>
+  // Only the cards that were moved. Saving every card re-cut the untouched
+  // ones at the opening framing, so a cover-only pass reset the rider cards.
+  const items = Object.values(state).filter(s => s.touched).map(s =>
     ({key: s.r.key, zoom: s.zoom, dx: s.dx, dy: s.dy}));
+  if (!items.length) {
+    document.getElementById('status').textContent = 'Nothing moved, nothing saved.';
+    return;
+  }
   document.getElementById('status').textContent = 'Saving...';
   const res = await fetch('/save', {method: 'POST', body: JSON.stringify({items})});
   const out = await res.json();
@@ -372,7 +409,8 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         if path == "/":
             page = (PAGE.replace("__RIDERS__", json.dumps(self.riders))
-                        .replace("__DEFAULT_ZOOM__", str(DEFAULT_ZOOM)))
+                        .replace("__DEFAULT_ZOOM__", str(DEFAULT_ZOOM))
+                        .replace("__MIN_ZOOM__", str(MIN_ZOOM)))
             return self._send(200, page.encode("utf-8"))
         if path.startswith("/photo/"):
             wanted = path.rsplit("/", 1)[-1]
@@ -409,6 +447,8 @@ def main():
     parser.add_argument("--athletes", help="Comma-separated athlete IDs (default: all)")
     parser.add_argument("--no-faces", action="store_true",
                         help="Action shots only; leave the headshots alone")
+    parser.add_argument("--cover", action="store_true",
+                        help="Also crop each rider for the recap cover grid")
     parser.add_argument("--port", type=int, default=8712)
     args = parser.parse_args()
 
@@ -421,11 +461,13 @@ def main():
         return 1
 
     riders = collect_riders(args.event, source_dir, only)
+    covers = collect_covers(args.event, source_dir, only) if args.cover else []
     if not args.no_faces:
         # The headshots belong to whoever is on this post, which is the cast
         # the event folder already names, plus anything asked for by hand.
         cast = {r["id"] for r in riders} | (only or set())
         riders += collect_faces(source_dir, cast or None)
+    riders += covers
     if not riders:
         print(f"No installed photos in {_event_dir(args.event)}", file=sys.stderr)
         return 1
