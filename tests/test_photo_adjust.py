@@ -51,6 +51,14 @@ class TestCropBox:
         box = crop_box((1920, 1280), FRAME, zoom=0.4, offset=(0.0, 0.0))
         assert box.height == pytest.approx(1280)
 
+    def test_unclamped_zoom_below_one_takes_a_box_bigger_than_the_photo(self):
+        """The adjuster fills past the edge with backdrop, so it can zoom out
+        beyond the full height and show the whole rider."""
+        box = crop_box((1920, 1280), FRAME, zoom=0.5, offset=(0.0, 0.0), clamp=False)
+        assert box.height == pytest.approx(2560)
+        assert box.width == pytest.approx(2048)
+        assert box.top == pytest.approx(-640)
+
     def test_the_box_keeps_the_frame_aspect(self):
         """Any other ratio would be squashed when it is resized to the slide."""
         for zoom in (1.0, 1.5, 2.5):

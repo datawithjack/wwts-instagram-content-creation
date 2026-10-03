@@ -48,7 +48,8 @@ def crop_box(natural: tuple, frame: tuple, zoom: float = 1.0,
     ``zoom`` is relative to the cover scale, so 1.0 is the framing the slide
     gives by default and 2.0 shows half as much of the photo in each axis.
     Below 1.0 the box would be larger than the photo and the crop would need
-    padding, so it is clamped: fully zoomed out is as far out as a photo goes.
+    padding, so when clamped, fully zoomed out is as far out as a photo goes.
+    Unclamped, the box keeps growing and the caller fills the padding.
 
     ``offset`` is how far the photo has been dragged, as a fraction of the
     frame -- positive x drags the photo right, which moves the box *left*,
@@ -67,13 +68,13 @@ def crop_box(natural: tuple, frame: tuple, zoom: float = 1.0,
     """
     nw, nh = natural
     fw, fh = frame
-    scale = cover_scale(natural, frame) * max(zoom, 1.0)
+    scale = cover_scale(natural, frame) * (max(zoom, 1.0) if clamp else zoom)
 
     width = fw / scale
     height = fh / scale
     # Clamp to the photo, keeping the frame's aspect: shrink both axes by the
     # same factor, or a photo narrower than the box would come out squashed.
-    shrink = min(1.0, nw / width, nh / height)
+    shrink = min(1.0, nw / width, nh / height) if clamp else 1.0
     width *= shrink
     height *= shrink
 
