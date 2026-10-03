@@ -993,3 +993,57 @@ class TestTopFinishersFlagsABorrowedPlacing:
         fetch_top_finishers(event_id=98, division="Men", top=4)
 
         assert "WARNING" not in capsys.readouterr().out
+
+
+def _mock_freestyle_responses():
+    """The multi-discipline heats, with the freestyle pair placed 1st and 2nd."""
+    raw = _multi_discipline_heats()
+    estredo = next(a for r in raw["rounds"] for h in r["heats"]
+                   for a in h["athletes"] if a["athlete_id"] == 910)
+    estredo["scores"] = [
+        {"type": "Freestyle", "score": 7.01, "move_type": "Air Bob Culo", "counting": True},
+        {"type": "Freestyle", "score": 0, "move_type": "Shaka", "counting": False},
+    ]
+    athletes = {"athletes": [
+        {"athlete_id": 910, "name": "Gollito Estredo", "overall_position": 1,
+         "country": "Venezuelan", "sail_number": "V-1", "profile_image": "u910"},
+        {"athlete_id": 911, "name": "Amado Vrieswijk", "overall_position": 2,
+         "country": "Dutch", "sail_number": "B-91", "profile_image": "u911"},
+        {"athlete_id": 1, "name": "Alex Mussolini", "overall_position": 1,
+         "country": "Spanish", "sail_number": "E-30", "profile_image": "u1"},
+    ]}
+    return [
+        MagicMock(status_code=200, json=lambda: raw),
+        MagicMock(status_code=200, json=lambda: athletes),
+    ]
+
+
+class TestFreestyleFinal:
+    @patch("pipeline.api.requests.get")
+    def test_finds_the_freestyle_final_and_ignores_the_wave_one(self, mock_get):
+        mock_get.side_effect = _mock_freestyle_responses()
+
+        final = fetch_final_heat(event_id=98, division="Men", discipline="Freestyle")
+
+        assert [r["athlete_id"] for r in final["riders"]] == [910, 911]
+        assert final["round_order"] == 5
+
+    @patch("pipeline.api.requests.get")
+    def test_carries_the_moves_and_the_best_ones_name(self, mock_get):
+        mock_get.side_effect = _mock_freestyle_responses()
+
+        winner = fetch_final_heat(event_id=98, division="Men",
+                                  discipline="Freestyle")["riders"][0]
+
+        assert winner["final_moves"] == [7.01, 0.0]
+        assert winner["final_best_move_name"] == "Air Bob Culo"
+
+    @patch("pipeline.api.requests.get")
+    def test_top_finishers_are_the_freestyle_riders_only(self, mock_get):
+        """Mussolini shares position 1 off his wave win and must not appear."""
+        mock_get.side_effect = _mock_freestyle_responses()
+
+        riders = fetch_top_finishers(event_id=98, division="Men", top=4,
+                                     discipline="Freestyle")
+
+        assert [r["athlete_id"] for r in riders] == [910, 911]
