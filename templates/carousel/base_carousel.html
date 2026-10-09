@@ -270,6 +270,26 @@
         z-index: 10;
     }
 
+    /* "Prizes by" lockup, small and centred in the footer so it never competes with the title */
+    .partner-badge {
+        position: absolute;
+        bottom: 64px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-family: var(--font-body);
+        font-size: 18px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.45);
+        z-index: 10;
+    }
+
+    .partner-badge img { height: 34px; }
+
     .source-note {
         position: absolute;
         bottom: 24px;
@@ -290,6 +310,9 @@
 {% block carousel_content %}{% endblock %}
 {% if perfect_10s_mode %}
 <div class="source-note">* Based on all PWA/IWT 5★ events since 2016</div>
+{% endif %}
+{% if partner_badge %}
+<div class="partner-badge">Prizes by {% if partner_badge.logo_url %}<img src="{{ partner_badge.logo_url }}" alt="{{ partner_badge.name }}">{% else %}{{ partner_badge.name }}{% endif %}</div>
 {% endif %}
 {% if not hide_footer %}
 <div class="carousel-footer">windsurfworldtourstats.com</div>

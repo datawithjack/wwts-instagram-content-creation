@@ -20,6 +20,27 @@ from pipeline.helpers import nationality_to_iso, country_code_to_iso2
 # and the mode's colour everywhere it appears in the web app.
 SESSION_COLOR = "#2dd4bf"
 
+# Events with a prize partner, keyed on app/DB event id. The CTA thanks them in
+# place of the "next event" push. `logo` is a file in assets/logos/; until it is
+# there the CTA sets the partner's name in type instead.
+PRIZE_PARTNERS = {
+    126: {"name": "SURF Magazin", "logo": "surf-magazin.svg", "scope": "Sylt"},
+}
+
+# What calling a rider's exact podium place was worth, from the app's
+# fantasy_ranked_scoring.PODIUM_POINTS. Keep in step with it.
+PODIUM_POINTS = {1: 25, 2: 15, 3: 10}
+
+# Men's freestyle tiers, in slide order: FANTASY_TIERS value, then the slide
+# title in two parts (white, accent), then the slot label on the optimal team. A man with no tier row is 'outside' and can only fill a wildcard
+# slot, where the app multiplies his points by WILDCARD_MULTIPLIER.
+MEN_TIERS = [
+    ("top5", "TOP 5", "TIER", "Top 5"),
+    ("6to15", "6-15", "TIER", "6-15"),
+    ("outside", "WILD", "CARDS", "Wildcard"),
+]
+WILDCARD_MULTIPLIER = 1.25
+
 # Freestyle-only riders whose ATHLETES row has EVERY country column NULL — an
 # upstream data gap. Keyed on the unified ATHLETES.id (athlete_id), ISO2 values
 # derived from each rider's PWA sail-number prefix (Ryoma Sugi has no sail → JP
@@ -97,6 +118,7 @@ def assemble_mvp_data(
     pct_rows: list[dict],
     event_meta: dict,
     top_n: int = 10,
+    podium_rows: list[dict] | None = None,
 ) -> dict:
     """Pivot the raw query rows into a {"event", "men", "women"} view model.
 
@@ -108,6 +130,8 @@ def assemble_mvp_data(
             athlete_id (VARCHAR), pick_count, total_entries.
         event_meta: dict describing the event (name, location, year, ...).
         top_n: max rows per fleet.
+        podium_rows: rows from build_event_podium_query (athlete_id, place).
+            Only for events that ran podium picks; omitted, no rider gets one.
 
     Returns:
         {"event": event_meta, "men": [...], "women": [...]} where each row is
@@ -122,6 +146,8 @@ def assemble_mvp_data(
             continue
         aid = int(r["athlete_id"])
         pct_map[aid] = round(_num(r["pick_count"]) / _num(total) * 100)
+
+    podium_map = {int(r["athlete_id"]): PODIUM_POINTS[int(r["place"])] for r in podium_rows or []}
 
     # Pivot points by athlete, summing per elimination.
     athletes: dict[int, dict] = {}
@@ -151,7 +177,8 @@ def assemble_mvp_data(
     def _fleet(sex: str) -> list[dict]:
         rows = [a for a in athletes.values() if a["sex"] == sex]
         for a in rows:
-            a["total_pts"] = round(a["single_pts"] + a["double_pts"], 2)
+            a["podium_pts"] = podium_map.get(a["athlete_id"], 0)
+            a["total_pts"] = round(a["single_pts"] + a["double_pts"] + a["podium_pts"], 2)
         # An MVP board is a list of point-scorers — drop anyone who scored zero.
         rows = [a for a in rows if a["total_pts"] > 0]
         rows.sort(key=lambda a: a["total_pts"], reverse=True)
@@ -167,6 +194,7 @@ def assemble_mvp_data(
                     "double_pts": a["double_pts"],
                     "total_pts": a["total_pts"],
                     "pct_picked": pct_map.get(a["athlete_id"], 0),
+                    "podium_pts": a["podium_pts"],
                 }
             )
         return out
@@ -178,29 +206,134 @@ def assemble_mvp_data(
     }
 
 
+def assemble_tier_view(
+    men: list[dict],
+    tiers: dict[int, str],
+    team_pct: dict[int, int],
+    slot_counts: dict[str, int],
+    top_n: int = 5,
+) -> dict:
+    """The men's field split by fantasy tier, plus the best team that could be picked.
+
+    Args:
+        men: every scoring man from assemble_mvp_data (podium_pts filled in).
+        tiers: athlete_id -> FANTASY_TIERS tier for the event's season.
+        team_pct: athlete_id -> % of players with him in a team slot (podium
+            calls excluded, so the number means "had him on their team").
+        slot_counts: tier -> how many team slots that tier had.
+
+    Returns:
+        {"tiers": [{tier, title, rows}], "optimal": {...}}. Wildcard rows carry
+        their points with the multiplier applied, as the app scores them.
+    """
+    view, team = [], []
+    for tier, title, accent, slot_label in MEN_TIERS:
+        mult = WILDCARD_MULTIPLIER if tier == "outside" else 1.0
+        rows = []
+        for a in men:
+            if tiers.get(a["athlete_id"], "outside") != tier:
+                continue
+            heat_pts = round(a["single_pts"] + a["double_pts"], 2)
+            team_pts = round(heat_pts * mult, 2)
+            rows.append({**a, "heat_pts": heat_pts, "team_pts": team_pts,
+                         "total_pts": round(team_pts + a["podium_pts"], 2),
+                         "pct_picked": team_pct.get(a["athlete_id"], 0)})
+        # The optimal team fills each slot on team points; the podium is its own pick.
+        for a in sorted(rows, key=lambda r: r["team_pts"], reverse=True)[: slot_counts.get(tier, 0)]:
+            team.append({"athlete": a["athlete"], "country": a["country"], "thumb_url": a.get("thumb_url", ""), "tier": slot_label,
+                         "multiplier": mult, "heat_pts": a["heat_pts"], "points": a["team_pts"]})
+        rows.sort(key=lambda r: r["total_pts"], reverse=True)
+        for i, r in enumerate(rows[:top_n], 1):
+            r["rank"] = i
+        view.append({"tier": tier, "title": title, "accent": accent, "rows": rows[:top_n]})
+
+    podium = sorted((a for a in men if a["podium_pts"]), key=lambda a: -a["podium_pts"])
+    team_total = round(sum(t["points"] for t in team), 2)
+    podium_total = sum(a["podium_pts"] for a in podium)
+    return {
+        "tiers": view,
+        "optimal": {
+            "team": team,
+            "podium": [{"athlete": a["athlete"], "country": a["country"], "thumb_url": a.get("thumb_url", ""),
+                        "points": a["podium_pts"]} for a in podium],
+            "team_total": team_total,
+            "podium_total": podium_total,
+            "total": round(team_total + podium_total, 2),
+        },
+    }
+
+
+def _partner(partner: dict | None) -> dict | None:
+    """Attach the logo's file URL, or leave it off while the file isn't in assets/logos/."""
+    if not partner:
+        return None
+    import os
+    from pipeline.fourstar_session import LOGOS_DIR, logo_url
+    out = dict(partner)
+    if os.path.exists(os.path.join(LOGOS_DIR, partner["logo"])):
+        out["logo_url"] = logo_url(partner["logo"])
+    return out
+
+
+def _fleet_tables(data: dict, event: dict, common: dict) -> list[dict]:
+    """One top-10 table per fleet that ran (the pre-tier layout)."""
+    slides = []
+    for sex_label, key in (("MEN", "men"), ("WOMEN", "women")):
+        rows = data.get(key, [])
+        if not rows:
+            continue  # the event ran no fleet for this sex (Sylt: no women's freestyle)
+        table = {"type": "mvp_table", "sex_label": sex_label, "event": event, "rows": rows, **common}
+        if not any(r["double_pts"] for r in rows):
+            # Single elimination only: the split would just repeat Total.
+            table["col_1_label"] = ""
+            table["col_2_label"] = ""
+        slides.append(table)
+    return slides
+
+
 def build_slides(data: dict) -> list[dict]:
-    """Build the 4-slide MVP carousel: cover → men table → women table → cta."""
+    """Build the MVP carousel.
+
+    With a tier view: cover → one table per men's tier → optimal team → cta.
+    Without: cover → men table → women table → cta (empty fleets dropped).
+    """
     common = {"accent_color": SESSION_COLOR}
     event = data.get("event", {})
 
-    slides = [
-        {"type": "mvp_cover", "event": event, **common},
-        {
-            "type": "mvp_table",
-            "sex_label": "MEN",
-            "event": event,
-            "rows": data.get("men", []),
-            **common,
-        },
-        {
-            "type": "mvp_table",
-            "sex_label": "WOMEN",
-            "event": event,
-            "rows": data.get("women", []),
-            **common,
-        },
-        {"type": "mvp_cta", "event": event, **common},
-    ]
+    partner = _partner(event.get("partner"))
+    badge = {"partner_badge": partner} if partner else {}
+    slides = [{"type": "mvp_cover", "event": event, "partner": partner, **common}]
+    if data.get("tier_view"):
+        for t in data["tier_view"]["tiers"]:
+            wildcard = t["tier"] == "outside"
+            table = {
+                "type": "mvp_table", "event": event, "rows": t["rows"],
+                "title": t["title"], "title_accent": t["accent"], "subtitle": "Top 5 riders in the tier, ranked by total",
+                "col_1_label": "Points", "col_3_label": "Total", "show_thumbs": True,
+                **badge, **common,
+            }
+            if wildcard:
+                # Show what the rider scored, then the bonus the wildcard slot
+                # added on top, so the x1.25 is visible rather than baked in.
+                table["col_2_label"] = "x1.25"
+                table["footnote"] = ("Points = total heat scores &middot; x1.25 = wildcard bonus"
+                                     " &middot; Picked = % who had them on their team")
+            else:
+                table["col_2_label"] = "Podium"
+                table["footnote"] = ("Points = total heat scores &middot; Podium = bonus for calling"
+                                     " their exact place &middot; Picked = % who had them on their team")
+            for r in t["rows"]:
+                r["col_1"] = "%.1f" % r["heat_pts"]
+                if wildcard:
+                    r["col_2"] = "+%.1f" % (r["team_pts"] - r["heat_pts"])
+                else:
+                    r["col_2"] = f"+{r['podium_pts']}" if r["podium_pts"] else ""
+            slides.append(table)
+        slides.append({"type": "mvp_optimal", "event": event,
+                       "optimal": data["tier_view"]["optimal"], **badge, **common})
+    else:
+        slides += _fleet_tables(data, event, common)
+    slides.append({"type": "mvp_cta", "event": event, "partner": partner, **common})
 
     total = len(slides)
     for i, slide in enumerate(slides, 1):

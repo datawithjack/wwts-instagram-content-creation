@@ -1,0 +1,133 @@
+{% extends "carousel/base_carousel.html" %}
+{% from "carousel/_macros.html" import thumb_cell, thumb_styles %}
+
+{% block carousel_head %}
+{{ thumb_styles() }}
+<style>
+    .container { padding: 48px 48px 64px; }
+
+    .opt-eyebrow {
+        font-family: var(--font-body);
+        font-size: 24px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.1em;
+        color: rgba(255, 255, 255, 0.30);
+        margin-bottom: 4px;
+    }
+
+    .opt-title {
+        font-family: var(--font-display);
+        font-size: 76px; letter-spacing: 0.02em; line-height: 1;
+        color: var(--color-text-primary);
+        margin-bottom: 6px;
+    }
+
+    .opt-title .accent { color: var(--color-discipline); }
+
+    .opt-subtitle {
+        font-family: var(--font-body);
+        font-size: 24px; font-weight: 500;
+        color: var(--color-text-muted);
+        letter-spacing: 0.04em;
+        margin-bottom: 20px;
+    }
+
+    .opt-row {
+        display: flex; align-items: center;
+        height: 80px; padding: 0 18px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .opt-row:nth-child(odd) { background: rgba(30, 41, 59, 0.3); }
+    .opt-row:nth-child(even) { background: rgba(30, 41, 59, 0.1); }
+
+    .opt-group {
+        font-family: var(--font-body);
+        font-size: 20px; font-weight: 600;
+        text-transform: uppercase; letter-spacing: 0.08em;
+        color: var(--color-text-label);
+        margin: 18px 0 8px;
+    }
+
+    .col-slot {
+        width: 170px; flex-shrink: 0;
+        font-family: var(--font-body); font-size: 22px; font-weight: 600;
+        text-transform: uppercase; letter-spacing: 0.06em;
+        color: var(--color-text-muted);
+    }
+
+    .col-flag { width: 52px; flex-shrink: 0; }
+    .col-flag img { width: 40px; height: 30px; object-fit: cover; border-radius: 2px; vertical-align: middle; }
+
+    .col-athlete {
+        flex: 1;
+        font-family: var(--font-body); font-size: 30px; font-weight: 500;
+        color: var(--color-text-primary);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .col-pts {
+        width: 300px; flex-shrink: 0; text-align: right;
+        font-family: var(--font-body); font-size: 32px; font-weight: 700;
+        color: var(--color-text-primary);
+    }
+
+    .col-pts .mult { font-size: 18px; font-weight: 600; color: var(--color-discipline); margin-right: 6px; }
+
+    .opt-total {
+        display: flex; align-items: baseline; justify-content: space-between;
+        margin-top: 24px; padding: 0 18px;
+    }
+
+    .opt-total-label {
+        font-family: var(--font-display);
+        font-size: 56px; color: var(--color-text-primary);
+    }
+
+    .opt-total-value {
+        font-family: var(--font-display);
+        font-size: 96px; line-height: 1;
+        color: var(--color-discipline);
+    }
+
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="opt-eyebrow">{{ event.location }} {{ event.year | default('') }} &middot; Freestyle Fantasy</div>
+    <div class="opt-title">OPTIMAL <span class="accent">TEAM</span></div>
+    <div class="opt-subtitle">Every point that was on offer</div>
+
+    <div class="opt-group">Team</div>
+    <div>
+    {% for p in optimal.team %}
+        <div class="opt-row">
+            <div class="col-slot">{{ p.tier }}</div>
+            {{ thumb_cell(p) }}
+            <div class="col-athlete">{{ p.athlete }}</div>
+            <div class="col-pts">{% if p.multiplier != 1 %}<span class="mult">{{ "%.1f" | format(p.heat_pts) }} x{{ p.multiplier }} =</span>{% endif %}{{ "%.1f" | format(p.points) }}</div>
+        </div>
+    {% endfor %}
+    </div>
+
+    {% if optimal.podium %}
+    <div class="opt-group">Podium</div>
+    <div>
+    {% for p in optimal.podium %}
+        <div class="opt-row">
+            <div class="col-slot">{{ loop.index | ordinal }}</div>
+            {{ thumb_cell(p) }}
+            <div class="col-athlete">{{ p.athlete }}</div>
+            <div class="col-pts">+{{ p.points }}</div>
+        </div>
+    {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="opt-total">
+        <div class="opt-total-label">TOTAL</div>
+        <div class="opt-total-value">{{ "%.1f" | format(optimal.total) }}</div>
+    </div>
+
+</div>
+{% endblock %}

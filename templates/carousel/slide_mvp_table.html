@@ -1,6 +1,8 @@
 {% extends "carousel/base_carousel.html" %}
+{% from "carousel/_macros.html" import thumb_cell, thumb_styles %}
 
 {% block carousel_head %}
+{{ thumb_styles() }}
 <style>
     .container {
         padding: 48px 48px 56px;
@@ -108,6 +110,10 @@
         color: var(--color-discipline);
     }
 
+    /* A headshot column takes the flag's place and 44px more; give it back from the name. */
+    .with-thumbs .col-thumb { width: 84px; }
+    .with-thumbs .col-athlete { font-size: 31px; }
+
     .table-footnote {
         font-family: var(--font-body);
         font-size: 20px; font-weight: 400; font-style: italic;
@@ -123,15 +129,21 @@
     {% if event.location %}
     <div class="mvp-eyebrow">{{ event.location }} {{ event.year | default('') }} &middot; {{ discipline_label | default('Freestyle') }} Fantasy</div>
     {% endif %}
+    {% if title %}
+    <div class="mvp-title">{{ title }} <span class="accent">{{ title_accent }}</span></div>
+    {% else %}
     <div class="mvp-title">{{ sex_label }}<span class="accent">'S MVPS</span></div>
-    <div class="mvp-subtitle">Top 10 fantasy point scorers</div>
+    {% endif %}
+    <div class="mvp-subtitle">{{ subtitle | default('Top 10 fantasy point scorers') }}</div>
 
-    <div class="mvp-table">
+    <div class="mvp-table{% if show_thumbs %} with-thumbs{% endif %}">
         <div class="mvp-row head">
             <span class="col-rank">#</span>
-            <span class="col-flag"></span>
+            {% if show_thumbs %}<span class="col-thumb"></span>{% else %}<span class="col-flag"></span>{% endif %}
             <span class="col-athlete">Athlete</span>
+            {% if col_1_label is not defined or col_1_label %}
             <span class="col-num">{{ col_1_label | default('Single') }}</span>
+            {% endif %}
             {# An explicitly empty col_2_label hides the column (slalom shows
                Wins / Total / Picked); freestyle leaves it undefined and keeps
                its default. #}
@@ -145,9 +157,13 @@
         {% for row in rows %}
             <div class="mvp-row{% if row.rank == 1 %} rank-1{% endif %}">
                 <div class="col-rank">{{ row.rank }}</div>
+                {% if show_thumbs %}{{ thumb_cell(row) }}{% else %}
                 <div class="col-flag">{% if row.country %}<img src="https://flagcdn.com/w40/{{ row.country | lower }}.png" alt="{{ row.country }}">{% endif %}</div>
+                {% endif %}
                 <div class="col-athlete">{{ row.athlete }}</div>
+                {% if col_1_label is not defined or col_1_label %}
                 <div class="col-num">{% if row.col_1 is defined %}{{ row.col_1 }}{% else %}{{ "%.1f" | format(row.single_pts) }}{% endif %}</div>
+                {% endif %}
                 {% if col_2_label is not defined or col_2_label %}
                 <div class="col-num">{% if row.col_2 is defined %}{{ row.col_2 }}{% else %}{{ "%.1f" | format(row.double_pts) }}{% endif %}</div>
                 {% endif %}

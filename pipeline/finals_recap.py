@@ -99,6 +99,112 @@ FREESTYLE_ROW_START = "best_move"
 FREESTYLE_COUNTING_NOTE = ("Difficulty averages counting moves. "
                            "Make rate is moves landed of moves attempted")
 
+# Slalom has no judged scores: the finish place is the result, so every stat
+# is a count of finishes or a place. "count" ranks high, "place" ranks low,
+# "of_elims" and "of_heats" print as fractions of each rider's own total.
+SLALOM_STAT_FIELDS = (
+    ("ELIM WINS", "elim_wins", "count"),
+    ("TOP 3s", "top3s", "count"),
+    ("FINALS MADE", "finals_made", "of_elims"),
+    ("HEATS WON", "heat_wins", "of_heats"),
+    ("AVG FINISH", "avg_finish", "place"),
+    ("NET TOTAL", "net_total", "net"),
+)
+
+# Low-point scoring: a win scores 0.7, every other place its number.
+SLALOM_WIN_POINTS = 0.7
+
+SLALOM_ROW_START = "avg_finish"
+
+
+# Sylt 2026 foil: dropping each rider's two worst eliminations (1st scored as
+# 0.7) reproduces the official top 13 in order, so the event ran two discards.
+SLALOM_DISCARDS = 2
+
+
+def slalom_aggregates(places: list, heats_sailed: int = 0, heat_wins: int = 0,
+                      discards: int = SLALOM_DISCARDS) -> dict:
+    """A rider's slalom stats from their place in each completed elimination.
+
+    ``places`` is in elimination order, None where the rider did not start.
+    A winners' final holds places 1-8, so "finals made" is a top-8 finish.
+    The ``discards`` worst results are flagged on the strip; a missed
+    elimination counts as the worst.
+    """
+    done = [p for p in places if p]
+    worst_first = sorted(range(len(places)), key=lambda i: -(places[i] or 999))
+    dropped = set(worst_first[:discards])
+    strip = [
+        {
+            "place": p,
+            "suffix": ordinal(p)[len(str(p)):] if p else "",
+            "discarded": i in dropped,
+        }
+        for i, p in enumerate(places)
+    ]
+    return {
+        "elim_places": strip,
+        "elims": len(places),
+        "elim_wins": sum(p == 1 for p in done),
+        "top3s": sum(p <= 3 for p in done),
+        "finals_made": sum(p <= 8 for p in done),
+        "avg_finish": round(sum(done) / len(done), 1) if done else None,
+        "net_total": _net_total(places, dropped),
+        "heats_sailed": heats_sailed,
+        "heat_wins": heat_wins,
+    }
+
+
+def _net_total(places: list, dropped: set):
+    """Low-point total after discards, or None if a kept result is missing."""
+    kept = [p for i, p in enumerate(places) if i not in dropped]
+    if not kept or any(p is None for p in kept):
+        return None
+    return round(sum(SLALOM_WIN_POINTS if p == 1 else p for p in kept), 1)
+
+
+def _slalom_cell(label: str, key: str, fmt: str, rider: dict, riders: list) -> dict:
+    """One slalom stat, flagged where it leads the top four."""
+    value = rider.get(key)
+    if value is None:
+        return {"label": label, "value": NO_VALUE, "raw": 0, "is_leader": False,
+                "bar_pct": 0, "note": ""}
+
+    if fmt in ("of_elims", "of_heats"):
+        denom_key = "elims" if fmt == "of_elims" else "heats_sailed"
+        denom = rider.get(denom_key) or 0
+        rate = value / denom if denom else 0
+        best = max((r.get(key) or 0) / (r.get(denom_key) or 1) for r in riders)
+        return {"label": label, "value": f"{int(value)}/{denom}", "raw": rate,
+                "is_leader": rate > 0 and rate >= best,
+                "bar_pct": round(rate * 100), "note": ""}
+
+    values = [r.get(key) for r in riders if r.get(key) is not None]
+    if fmt == "net":
+        best = min(values)
+        gap = value - best
+        return {"label": label, "value": f"{value:.1f}", "raw": value,
+                "is_leader": value <= best,
+                "bar_pct": round(best / value * 100) if value else 0,
+                "note": f"+{gap:.1f} to 1st" if gap > 0 else ""}
+    if fmt == "place":
+        best = min(values)
+        text = f"{value:.1f}" if isinstance(value, float) else ordinal(int(value)).upper()
+        return {"label": label, "value": text, "raw": value,
+                "is_leader": value <= best,
+                "bar_pct": round(best / value * 100) if value else 0, "note": ""}
+
+    best = max(values)
+    return {"label": label, "value": str(int(value)), "raw": value,
+            "is_leader": value > 0 and value >= best,
+            "bar_pct": round(value / best * 100) if best else 0, "note": ""}
+
+
+def _slalom_note(riders: list) -> str:
+    elims = max((r.get("elims") or 0 for r in riders), default=0)
+    return (f"{elims} eliminations. Finals made = top 8. "
+            f"Net total: {SLALOM_DISCARDS} discards, a win scores {SLALOM_WIN_POINTS}, lowest wins")
+
 
 def _move_name(score) -> str:
     """The move's name. An unnamed trick is logged against a slot such as
@@ -165,9 +271,14 @@ def build_slides(data: dict) -> list[dict]:
     event_label = _event_label(meta)
     freestyle = data.get("discipline") == "Freestyle"
 
-    slides = [_cover(division, riders, common, freestyle)]
-    slides.extend(_rider_slides(riders, common, event_label, freestyle))
-    slides.append(_compare_slide(riders, common, event_label, freestyle))
+    if data.get("discipline") == "Slalom":
+        slides = [_cover(division, riders, common, discipline_label="FOIL SLALOM")]
+        slides.extend(_slalom_rider_slides(riders, common, event_label))
+        slides.append(_slalom_compare_slide(riders, common, event_label))
+    else:
+        slides = [_cover(division, riders, common, freestyle)]
+        slides.extend(_rider_slides(riders, common, event_label, freestyle))
+        slides.append(_compare_slide(riders, common, event_label, freestyle))
 
     # The shared CTA the other carousels close on. hide_footer because the
     # slide carries the URL itself, so the watermark would say it twice.
@@ -191,7 +302,8 @@ def _event_label(meta: dict) -> str:
     return f"{name} {year}".strip().upper()
 
 
-def _cover(division: str, riders: list, common: dict, freestyle: bool = False) -> dict:
+def _cover(division: str, riders: list, common: dict, freestyle: bool = False,
+           discipline_label: str = "") -> dict:
     """Cover slide, backed by a grid of the four riders' own hero shots.
 
     Only riders with a real landscape shot count towards the grid: a headshot
@@ -202,6 +314,8 @@ def _cover(division: str, riders: list, common: dict, freestyle: bool = False) -
     # "Finalists" is only true where they all sailed the final. Elsewhere the
     # carousel is a placings countdown and has to say so.
     subject = "FINALISTS" if _shared_final(riders) else f"TOP {len(riders)}"
+    if freestyle:
+        discipline_label = "FREESTYLE"
     # A rider's cover crop is cut to the grid cell, so it needs no anchor;
     # without one the cell borrows the rider card's photo and its anchor.
     hero_photos = [
@@ -221,7 +335,8 @@ def _cover(division: str, riders: list, common: dict, freestyle: bool = False) -
         "type": "recap_cover",
         # A Grand Slam runs wave and freestyle at one event, so the
         # freestyle post names its discipline or reads as the wave result.
-        "title_lines": ([f"{division}'S FREESTYLE".strip(), subject] if freestyle
+        "title_lines": ([f"{division}'S {discipline_label}".strip(), subject]
+                        if discipline_label
                         else [f"{division}'S {subject}".strip()]),
         "title_accent": "THE STATS",
         "hero_photos": hero_photos,
@@ -293,6 +408,80 @@ def _rider_slides(riders: list, common: dict, event_label: str = "",
         })
 
     return slides
+
+
+def _slalom_rider_slides(riders: list, common: dict, event_label: str) -> list:
+    """Slalom rider cards: the recap card with place-based stats and a strip
+    of the rider's finish in every elimination."""
+    slides = []
+    for rider in reversed(riders):
+        stats = []
+        for label, key, fmt in SLALOM_STAT_FIELDS:
+            cell = _slalom_cell(label, key, fmt, rider, riders)
+            cell["row_break"] = key == SLALOM_ROW_START
+            stats.append(cell)
+
+        place = rider.get("place")
+        name = rider.get("name", "")
+        parts = name.split(None, 1) if name else [""]
+        last_name = parts[1].upper() if len(parts) > 1 else ""
+        athlete_id = rider.get("athlete_id")
+        action_url = rider.get("action_url") or ""
+        slides.append({
+            "type": "recap_rider",
+            "place": place,
+            "place_label": ordinal(int(place)).upper() if place else "",
+            "is_winner": place == 1,
+            "athlete_id": athlete_id,
+            "name": name,
+            "first_name": parts[0].upper(),
+            "last_name": last_name,
+            "name_class": _name_class(last_name),
+            "photo_mode": "action" if action_url else "portrait",
+            "photo_focus": rider.get("hero_focus") or DEFAULT_FOCUS,
+            "photo_url": action_url or resolve_thumb_url(athlete_id, rider.get("photo_url") or ""),
+            "stats": stats,
+            "elim_strip": rider.get("elim_places") or [],
+            "raise_gradient": rider.get("raise_gradient", False),
+            "source_note": f"AT {event_label}" if event_label else RIDER_NOTE,
+            "counting_note": _slalom_note(riders),
+            **common,
+        })
+    return slides
+
+
+def _slalom_compare_slide(riders: list, common: dict, event_label: str) -> dict:
+    """The top four across every slalom stat, one group."""
+    rows = []
+    for label, key, fmt in SLALOM_STAT_FIELDS:
+        rows.append({
+            "label": label,
+            "sublabel": "Incl. discards" if key == "avg_finish" else "",
+            "group": "ACROSS THE EVENT",
+            "cells": [_slalom_cell(label, key, fmt, r, riders) for r in riders],
+        })
+    return {
+        "type": "recap_compare",
+        "title_lead": f"THE TOP {len(riders)}",
+        "title_accent": "COMPARED",
+        "subtitle": event_label,
+        "counting_note": _slalom_note(riders),
+        "riders": [
+            {
+                "athlete_id": r.get("athlete_id"),
+                "place": r.get("place"),
+                "place_label": ordinal(int(r["place"])).upper() if r.get("place") else "",
+                "name": r.get("name", ""),
+                "last_name": (r.get("name", "").split(None, 1) + [""])[1].upper()
+                or r.get("name", "").upper(),
+                "country": nationality_to_iso(r.get("nationality", "")),
+                "photo_url": resolve_thumb_url(r.get("athlete_id"), r.get("photo_url") or ""),
+            }
+            for r in riders
+        ],
+        "rows": rows,
+        **common,
+    }
 
 
 def _recap_stat(label, value, best, bar_max, fmt: str, heats_sailed: int) -> dict:
