@@ -36,6 +36,14 @@
         margin-bottom: 64px;
     }
 
+    /* A two-letter country code reads better as its flag */
+    .event-meta .event-flag {
+        height: 0.9em;
+        width: auto;
+        border-radius: 3px;
+        vertical-align: -0.1em;
+    }
+
     .event-meta .stars {
         color: var(--color-gold);
         letter-spacing: 0.02em;
@@ -196,7 +204,7 @@
     <div class="event-year">{{ year }}</div>
     <div class="event-name">{{ event_name | upper }}</div>
     <div class="event-meta">
-        {% if event_country %}{{ event_country }}{% endif %}
+        {% if event_country and event_country | length == 2 %}<img class="event-flag" src="https://flagcdn.com/w80/{{ event_country | lower }}.png" alt="{{ event_country }}">{% elif event_country %}{{ event_country }}{% endif %}
         {% if event_date_start and event_date_end %}
         {% if event_country %}&middot;{% endif %} {{ event_date_start }} – {{ event_date_end }}
         {% endif %}

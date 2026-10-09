@@ -701,6 +701,54 @@ posts:
       falls back to a dark gradient). Add a scheduled_date (ISO UTC) once the event
       finishes (after Jun 14) and data is final, then push to main to publish.
 
+  - id: wissant2026-mens-waves-top10
+    template: top_10_carousel
+    params:
+      score_type: Wave
+      sex: Men
+      event: 278
+      photos: true
+    caption: |-
+      🌊 While we wait for the wind in Sylt, here are the top 10 waves from Wissant.
+
+      Jules Denel set the high mark in the very first round: a 9.00 in Seeding R1 that nobody touched for the rest of the event. Marc Paré Rico put four waves in the top 10, two of them in the final.
+
+      Swipe for the countdown.
+
+      Full stats → windsurfworldtourstats.com
+
+      📸 @oliviercaenen | @pwaworldtour
+    category: seasonal
+    scheduled_date: "2026-09-29T17:55:00"
+    published: true
+    published_at: "2026-09-29T18:09:08"
+    notes: >
+      Top 10 waves, Wissant Wave Classic 2026 (API id 278), photo mode. Sylt wind-wait filler. Heroes in assets/photos/events/278/, a rider's second card uses {id}-2 etc. Photos Olivier Caenen and Nicolas Peltier; headshots for 10, 14, 61, 64 are LiveHeats profile photos. Published manually via schedule.py --publish now (poller blocked by a GitHub billing lock), media ID 18152448691481980. The local run read the backlog as cp1252 and garbled the emoji, so the caption was fixed by hand on Instagram and differs from the one above (riders and @wissantwaveclassic tagged).
+
+  - id: wissant2026-womens-waves-top10
+    template: top_10_carousel
+    params:
+      score_type: Wave
+      sex: Women
+      event: 278
+      photos: true
+    caption: |-
+      🌊 While we wait for the wind in Sylt, here are the top 10 waves from Wissant.
+
+      Sol Degrieck owned the list: six of the top 10, including the best wave of the event, a 6.50 in the final. Lisa Wermeister and Alice Arutkin took the other four.
+
+      Swipe for the countdown.
+
+      Full stats → windsurfworldtourstats.com
+
+      📸 @oliviercaenen | @nicolaspeltierphotographie | @pwaworldtour
+    category: seasonal
+    scheduled_date: "2026-09-29T18:00:00"
+    published: true
+    published_at: "2026-09-29T18:33:32"
+    notes: >
+      Top 10 waves, Wissant Wave Classic 2026 (API id 278), photo mode. Sylt wind-wait filler. Heroes in assets/photos/events/278/, a rider's second card uses {id}-2 etc. Photos Olivier Caenen and Nicolas Peltier; headshots for 10, 14, 61, 64 are LiveHeats profile photos. Published manually via schedule.py --publish now with PYTHONUTF8=1 (poller blocked by a GitHub billing lock), media ID 18083124881324452.
+
   # ── Week of April 7 ─────────────────────────────────────────
   # - id:
   #   template:

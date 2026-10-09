@@ -1,0 +1,138 @@
+{% extends "carousel/base_carousel.html" %}
+
+{#
+  The second slide, before the countdown starts.
+
+  Every card that follows carries a FIN or FOIL note on its counters and
+  wears a dagger on its marked years, and none of that means anything to a
+  reader who does not yet know the venue raced two different disciplines
+  under one name. Establishing it here costs one slide and saves the fine
+  print underneath every card that follows.
+
+  Three bands and nothing else. Sylt did not switch overnight -- 2017 and
+  2018 ran a fin slalom and a separate foil event -- so a straight FIN-then-
+  FOIL split would state a boundary the venue never had. A per-year table
+  would invite a reader to study it instead of carrying one fact into the
+  ranking.
+#}
+
+{% block carousel_head %}
+<style>
+    .container {
+        padding: 64px 56px;
+    }
+
+    .eras-head {
+        flex-shrink: 0;
+    }
+
+    .sylt-eyebrow {
+        font-family: var(--font-body);
+        font-size: 24px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgba(255, 255, 255, 0.30);
+        margin-bottom: 4px;
+    }
+
+    .sylt-title {
+        font-family: var(--font-display);
+        font-size: 96px;
+        letter-spacing: 0.02em;
+        line-height: 1;
+        color: var(--color-text-primary);
+    }
+
+    /* Equal tracks, so no era reads as the important one. The fin record is
+       several times the size of the foil one and the ranking says so on its
+       own; the slide's job is only to name them. */
+    .eras-body {
+        display: grid;
+        grid-template-rows: repeat(var(--era-count, 3), 1fr);
+        flex: 1;
+        min-height: 0;
+        margin: 40px 0 0;
+    }
+
+    /* No card around each era: three boxed panels read as three separate
+       records, when the point of the slide is that they are one venue
+       running on either side of a change. A hairline between them is
+       enough to keep the bands apart. */
+    .era-block {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 8px 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.10);
+    }
+
+    .era-block:first-child {
+        border-top: none;
+    }
+
+    /* The editorial purple, and on every band rather than on FOIL alone.
+       Accenting one era made the timeline argue for it; accenting all three
+       marks the whole thing as the piece of analysis it is, which is the
+       same job the purple does on the winner's row of the table. */
+    .era-label {
+        font-family: var(--font-display);
+        font-size: 96px;
+        line-height: 0.9;
+        letter-spacing: 0.04em;
+        color: var(--color-accent-editorial);
+    }
+
+    .era-years {
+        font-family: var(--font-display);
+        font-size: 68px;
+        line-height: 1.1;
+        letter-spacing: 0.03em;
+        color: var(--color-text-primary);
+        margin-top: 10px;
+    }
+
+    .era-detail {
+        font-family: var(--font-body);
+        font-size: 26px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--color-text-muted);
+        margin-top: 8px;
+    }
+
+    .eras-footnote {
+        flex-shrink: 0;
+        font-family: var(--font-body);
+        font-size: 20px;
+        font-weight: 400;
+        font-style: italic;
+        letter-spacing: 0.03em;
+        color: rgba(255, 255, 255, 0.36);
+        text-align: center;
+        margin-top: 26px;
+    }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="eras-head">
+        <div class="sylt-eyebrow">{{ eyebrow }}</div>
+        <div class="sylt-title">{{ title }}</div>
+    </div>
+
+    <div class="eras-body" style="--era-count: {{ eras | length }}">
+        {% for era in eras %}
+        <div class="era-block">
+            <div class="era-label">{{ era.label }}</div>
+            <div class="era-years">{{ era.years }}</div>
+            <div class="era-detail">{{ era.detail }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="eras-footnote">One venue, ranked as one record</div>
+</div>
+{% endblock %}

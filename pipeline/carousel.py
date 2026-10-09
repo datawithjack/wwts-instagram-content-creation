@@ -176,8 +176,18 @@ def _build_photo_slides(common: dict, rows: list[dict], event_id=None) -> list[d
     Countdown order (5th first, #1 last) so the carousel builds rather than
     opening on its own punchline.
     """
+    # A rider's second card in the top five uses ``{id}-2`` where one exists,
+    # so the same photo is not shown twice. Counted in rank order: the better
+    # score keeps the main shot.
+    seen, photo_keys = {}, {}
+    for i, row in enumerate(rows[:5]):
+        aid = row.get("athlete_id")
+        seen[aid] = seen.get(aid, 0) + 1
+        photo_keys[i] = aid if seen[aid] == 1 else f"{aid}-{seen[aid]}"
+
     slides = []
-    for row in reversed(rows[:5]):
+    for i in reversed(range(len(rows[:5]))):
+        row = rows[i]
         name = row.get("athlete", "")
         parts = name.split(None, 1) if name else [""]
         first_name = parts[0].upper()
@@ -187,18 +197,24 @@ def _build_photo_slides(common: dict, rows: list[dict], event_id=None) -> list[d
         # Landscape only. A face crop blown up to 1080x1350 looks broken, so
         # with nothing landscape the slide switches layout rather than
         # stretching a headshot into the same footprint.
-        action_url = resolve_hero_url(athlete_id, event_id)
+        photo_key = photo_keys[i]
+        action_url = resolve_hero_url(photo_key, event_id)
+        if not action_url and photo_key != athlete_id:
+            photo_key = athlete_id
+            action_url = resolve_hero_url(athlete_id, event_id)
         rank = row.get("rank")
 
         slides.append({
             "type": "wave_photo",
             "rank": rank,
-            "rank_label": ordinal(int(rank)).upper() if rank else "",
+            "rank_label": (f"BEST {common['title_metric'][:-1].upper()}" if rank == 1
+                           else ordinal(int(rank)).upper() if rank else ""),
             # "5TH BEST WAVE", not a bare "5TH". Mid-carousel the chip is the
             # only thing saying what is being counted, and a lone ordinal on a
             # photo reads as a placing (5th at the event) rather than a rank
             # among the scores.
-            "rank_suffix": f"BEST {common['title_metric'][:-1].upper()}",
+            # 1st reads "BEST WAVE" on its own: "1ST BEST" says it twice.
+            "rank_suffix": "" if rank == 1 else f"BEST {common['title_metric'][:-1].upper()}",
             "athlete_id": athlete_id,
             "name": name,
             "first_name": first_name,
@@ -213,7 +229,7 @@ def _build_photo_slides(common: dict, rows: list[dict], event_id=None) -> list[d
             "modifier": row.get("modifier", ""),
             "photo_mode": "action" if action_url else "portrait",
             "photo_url": action_url or resolve_thumb_url(athlete_id, ""),
-            "photo_focus": resolve_hero_focus(athlete_id, event_id),
+            "photo_focus": resolve_hero_focus(photo_key, event_id),
             **common,
         })
 
@@ -221,7 +237,9 @@ def _build_photo_slides(common: dict, rows: list[dict], event_id=None) -> list[d
     # time, so this is the recap, not the reveal.
     slides.append({
         "type": "table",
-        "rows": rows,
+        # A headshot per row, so the recap reads as faces as well as names.
+        "rows": [{**r, "thumb_url": resolve_thumb_url(r.get("athlete_id"), "")}
+                 for r in rows],
         "label": f"Positions {rows[0]['rank']}–{rows[-1]['rank']}",
         "compact": True,
         **common,

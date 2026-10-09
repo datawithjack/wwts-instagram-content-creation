@@ -1,0 +1,345 @@
+{
+  "_comment": "Headshot decisions per athlete id (#32). approve = faces/{id}.jpg is the photo to publish; suppress = the site's sail-number guess is the wrong person and should be hidden. Published by #33.",
+  "74": {
+    "name": "Jacopo Testa",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "faces/74.jpg (existing)",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/74_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "75": {
+    "name": "Lennart Neubauer",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "faces/75.jpg (existing)",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/75_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "113": {
+    "name": "Amado Vrieswijk",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "faces/113.jpg (existing)",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/113_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "174": {
+    "name": "Helena Derya Lale",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "FV25_ls_G288_Inna_Bru__01161.jpg",
+    "source_event_id": 375,
+    "source_event": "2025 Fuerteventura Grand Slam ******",
+    "photographer": "Inna Bru",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/174_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "237": {
+    "name": "Maciek Rutkowski",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "faces/237.jpg (existing)",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/237_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "428": {
+    "name": "Matteo Iachino",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "faces/428.jpg (existing)",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/428_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "503": {
+    "name": "Trine Gobisch",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "TF25_ls_G802_PHOTOMEDANO_00086.jpg",
+    "source_event_id": 376,
+    "source_event": "2025 Tenerife Grand Slam ******",
+    "photographer": "Photo Medano",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/503_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "884": {
+    "name": "Balz Muller",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_SUI21_00109 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/884_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "981": {
+    "name": "Luka Stomp",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "FV25_ls_CUR9999_Inna_Bru__01466.jpg",
+    "source_event_id": 375,
+    "source_event": "2025 Fuerteventura Grand Slam ******",
+    "photographer": "Inna Bru",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/981_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "983": {
+    "name": "Cosmo Pezzetti",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_ITA117_00086 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/983_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "1063": {
+    "name": "Jordy Vonk",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_NED69_00085 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/1063_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "1064": {
+    "name": "Bruno Martini",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_ITA160_00081 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/1064_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "1065": {
+    "name": "Cyril Evrard",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_BEL250_00076 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/1065_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "1066": {
+    "name": "Sem Stroosma",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_NED450_00092 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/1066_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "1067": {
+    "name": "Lars Poggemann",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_GER730_00016 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/1067_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "1071": {
+    "name": "Nico Prien",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_GER7_00165 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/1071_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "1072": {
+    "name": "William Huppert",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_FRA330_00163 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/1072_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "1073": {
+    "name": "John Soukos",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_GRE198_00094 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/1073_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "1074": {
+    "name": "Scotty Stallman",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_GBR68_00054 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/1074_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "1075": {
+    "name": "Bob van de Burgt",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_NED737_00174 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/1075_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "1076": {
+    "name": "Titouan Gernolle",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_FRA152_00102 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/1076_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "1081": {
+    "name": "Hugo Sjoberg",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_SWE45_00032 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/1081_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "1085": {
+    "name": "Pierre Mortefon",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "faces/1085.jpg (existing)",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/1085_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "1087": {
+    "name": "Cedric Bordes",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_FRA91_00112 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/1087_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "1088": {
+    "name": "Benoit Merceur",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "FV25_ls_FRA1159_00194 copy.jpg",
+    "source_event_id": 375,
+    "source_event": "2025 Fuerteventura Grand Slam ******",
+    "photographer": "john carter",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/1088_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "1090": {
+    "name": "Sacha Fortune",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_FRA655_00074 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/1090_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "1338": {
+    "name": "Fabian Wolf",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_GER404_00015 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/1338_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "1432": {
+    "name": "Sven Feuer",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_ITA86_00078 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/1432_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "1437": {
+    "name": "Noah Vinther",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_DEN7777_00167 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/1437_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "1508": {
+    "name": "Dominik Lewinski",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_POL636_00063 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/1508_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "1510": {
+    "name": "Thijs Hanemaaijer",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_NED107_00175 copy.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "john carter",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/1510_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "1509": {
+    "name": "Jesse Richter",
+    "action": "approve",
+    "decided": "2026-09-19",
+    "source_file": "SY25_ls_GER180_00612.jpg",
+    "source_event_id": 378,
+    "source_event": "2025 Sylt, Germany Grand Slam *******",
+    "photographer": "",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/1509_1789802734.jpg",
+    "published": "2026-09-19"
+  },
+  "951": {
+    "name": "Eugenio Marconi",
+    "action": "approve",
+    "decided": "2026-10-08",
+    "source_file": "SY26_ls_ITA312_0068 copy.jpg (owner-supplied)",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/951_1791458429.jpg",
+    "published": "2026-10-08"
+  }
+}

@@ -51,6 +51,14 @@ class TestCropBox:
         box = crop_box((1920, 1280), FRAME, zoom=0.4, offset=(0.0, 0.0))
         assert box.height == pytest.approx(1280)
 
+    def test_unclamped_zoom_below_one_takes_a_box_bigger_than_the_photo(self):
+        """The adjuster fills past the edge with backdrop, so it can zoom out
+        beyond the full height and show the whole rider."""
+        box = crop_box((1920, 1280), FRAME, zoom=0.5, offset=(0.0, 0.0), clamp=False)
+        assert box.height == pytest.approx(2560)
+        assert box.width == pytest.approx(2048)
+        assert box.top == pytest.approx(-640)
+
     def test_the_box_keeps_the_frame_aspect(self):
         """Any other ratio would be squashed when it is resized to the slide."""
         for zoom in (1.0, 1.5, 2.5):
@@ -70,7 +78,7 @@ class TestFitsFrame:
 
 
 class TestSaveCrop:
-    def _rider(self, tmp_path, size=(1920, 1280)):
+    def _rider(self, tmp_path, size=(1920, 1280), kind="hero"):
         from PIL import Image
         src = tmp_path / "SRC_fs_V10_0001.jpg"
         im = Image.new("RGB", size)
@@ -81,8 +89,8 @@ class TestSaveCrop:
         im.save(src, "JPEG", quality=95)
         installed = tmp_path / "74.jpg"
         im.save(installed, "JPEG", quality=95)
-        return {"id": 74, "installed": str(installed), "display": str(src),
-                "nw": size[0], "nh": size[1]}
+        return {"id": 74, "kind": kind, "installed": str(installed),
+                "display": str(src), "nw": size[0], "nh": size[1]}
 
     def test_the_saved_file_is_the_slide_size(self, tmp_path):
         """Anything else would be resized again at render, losing sharpness."""
@@ -117,3 +125,120 @@ class TestSaveCrop:
         tight = crop_box((rider["nw"], rider["nh"]), (1080, 1350), zoom=2.0)
         assert tight.width < wide.width
         adjust_photos.save_crop(rider, zoom=2.0, dx=0.0, dy=0.0)  # must not raise
+
+
+    def test_a_headshot_is_saved_square(self, tmp_path):
+        """The table sets the thumbnail in a circle, so a hero-shaped crop
+        would be squashed into it. The kind picks the frame.
+        """
+        from PIL import Image
+        import adjust_photos
+        rider = self._rider(tmp_path, kind="face")
+        adjust_photos.save_crop(rider, zoom=1.0, dx=0.0, dy=0.0)
+        with Image.open(rider["installed"]) as out:
+            assert out.size == (600, 600)
+
+
+    def test_a_crop_can_be_dragged_past_the_edge_of_the_photo(self, tmp_path):
+        """At the widest framing a landscape shot has no vertical slack, so a
+        clamped box cannot be nudged up or down at all. The tool has to let go
+        of the edge for "move him up" to mean anything.
+        """
+        from PIL import Image
+        import adjust_photos
+        rider = self._rider(tmp_path)
+        adjust_photos.save_crop(rider, zoom=1.0, dx=0.0, dy=0.0)
+        with Image.open(rider["installed"]) as out:
+            centred = list(out.convert("RGB").getdata())[:64]
+        adjust_photos.save_crop(rider, zoom=1.0, dx=0.0, dy=0.5)
+        with Image.open(rider["installed"]) as out:
+            assert out.size == (1080, 1350)
+            assert list(out.convert("RGB").getdata())[:64] != centred
+
+    def test_what_falls_outside_is_filled_not_left_black(self, tmp_path):
+        """A hard band on a published slide reads as a mistake. The overflow
+        takes a blurred cover of the same photo instead.
+        """
+        from PIL import Image
+        import adjust_photos
+        rider = self._rider(tmp_path)
+        # Far enough that the top of the frame is entirely off the photo.
+        adjust_photos.save_crop(rider, zoom=1.0, dx=0.0, dy=0.9)
+        with Image.open(rider["installed"]) as out:
+            top_row = list(out.convert("RGB").crop((0, 0, 1080, 1)).getdata())
+        assert any(px != (0, 0, 0) for px in top_row)
+
+    def test_saving_twice_from_the_installed_copy_adds_no_black(self, tmp_path):
+        """Wissant 2026: the original was not found, so the installed copy was
+        the source. The second Save re-cropped the now 1080x1350 file with the
+        1920x1281 size read at startup, and filled the right third with black."""
+        from PIL import Image
+        import adjust_photos
+        rider = self._rider(tmp_path)
+        # Left half black, right half white: a crop taken off-centre shows.
+        im = Image.new("RGB", (1920, 1280), (0, 0, 0))
+        im.paste((255, 255, 255), (960, 0, 1920, 1280))
+        im.save(rider["installed"])
+        rider["display"] = rider["installed"]
+        rider["nw"], rider["nh"] = 1920, 1280
+        adjust_photos.save_crop(rider, zoom=1.0, dx=0.0, dy=0.0)
+        adjust_photos.save_crop(rider, zoom=1.0, dx=0.0, dy=0.0)
+        with Image.open(rider["installed"]) as out:
+            assert out.convert("L").getpixel((1070, 675)) > 230
+
+
+class TestOriginalFor:
+    def test_finds_the_original_in_a_photographer_subfolder(self, tmp_path):
+        """The Drive files an event by photographer: 07 - WISSANT/Olivier Caenen/..."""
+        import adjust_photos
+        sub = tmp_path / "Olivier Caenen" / "Day 3"
+        sub.mkdir(parents=True)
+        (sub / "WI26_wv_E334_143-143.jpg").write_bytes(b"x")
+        got = adjust_photos._original_for({"source_file": "WI26_wv_E334_143-143.jpg"}, tmp_path)
+        assert got == sub / "WI26_wv_E334_143-143.jpg"
+
+
+class TestCoverCrops:
+    def _event(self, tmp_path, monkeypatch):
+        from PIL import Image
+        import adjust_photos
+        monkeypatch.setattr(adjust_photos, "PHOTOS_DIR", tmp_path)
+        folder = tmp_path / "events" / "126"
+        folder.mkdir(parents=True)
+        Image.new("RGB", (1080, 1350)).save(folder / "75.jpg")
+        src = tmp_path / "src"
+        src.mkdir()
+        Image.new("RGB", (1920, 1280)).save(src / "SY26_fs_GRE734_0764.jpg")
+        (folder / "credits.json").write_text(
+            '{"75": {"source_file": "SY26_fs_GRE734_0764.jpg"}}', encoding="utf-8")
+        return adjust_photos, folder, src
+
+    def test_a_cover_crop_is_its_own_file_from_the_same_original(self, tmp_path, monkeypatch):
+        """The recap cover sets four riders in a grid; its crop is separate
+        from the rider card's, so saving one never moves the other."""
+        adjust_photos, folder, src = self._event(tmp_path, monkeypatch)
+
+        (cover,) = adjust_photos.collect_covers("126", src)
+
+        assert cover["kind"] == "cover" and cover["key"] == "c75"
+        assert cover["installed"] == str(folder / "75-cover.jpg")
+        assert cover["from_original"] and cover["nw"] == 1920
+
+    def test_saving_a_cover_leaves_the_card_photo_alone(self, tmp_path, monkeypatch):
+        from PIL import Image
+        adjust_photos, folder, src = self._event(tmp_path, monkeypatch)
+        before = (folder / "75.jpg").read_bytes()
+
+        (cover,) = adjust_photos.collect_covers("126", src)
+        adjust_photos.save_crop(cover, zoom=0.8, dx=0.0, dy=0.1)
+
+        assert (folder / "75.jpg").read_bytes() == before
+        with Image.open(folder / "75-cover.jpg") as out:
+            assert out.size == (1080, 1350)
+
+    def test_a_saved_cover_is_not_mistaken_for_a_rider(self, tmp_path, monkeypatch):
+        adjust_photos, folder, src = self._event(tmp_path, monkeypatch)
+        (cover,) = adjust_photos.collect_covers("126", src)
+        adjust_photos.save_crop(cover, zoom=1.0, dx=0.0, dy=0.0)
+
+        assert [r["id"] for r in adjust_photos.collect_riders("126", src)] == [75]

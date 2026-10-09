@@ -57,7 +57,8 @@ FACE_CREDITS_COMMENT = ("Photographer per headshot, resolved from the filename "
                         "then the file's own XMP. Entries marked unconfirmed "
                         "carry no credit tag anywhere: confirm before "
                         "crediting them.")
-FACE_PX = 600
+# Frames offered per rider, per slot. Each one streams off the Drive.
+MAX_FRAMES = 10
 
 
 def _athlete_index(event_id, sex):
@@ -72,39 +73,52 @@ def _athlete_index(event_id, sex):
     return {a["athlete_id"]: a for a in resp.json().get("athletes", [])}
 
 
-def _slalom_index(event_id, athlete_ids):
-    """Sail and name for slalom riders, which the API's athlete list omits.
+def _db_sails(athlete_ids) -> dict:
+    """athlete_id -> {sail_number, country} read from the results table.
 
-    Read off the event's own elimination results, so it is the sail used on
-    the water. Needs the DB tunnel; returns {} without it.
+    The API only rosters the disciplines it covers, which at Sylt is the wave
+    event: none of the historic slalom fleet is in it, so every one of them
+    came back without a sail and matched no frame. The results table has
+    them, keyed through ATHLETE_SOURCE_IDS.
+
+    Most-used sail per rider, not the latest. A sail changes hands and a
+    rider's own number changes over a career; the one they raced under most
+    is the one most of the archive is filed under.
     """
     if not athlete_ids:
         return {}
-    try:
-        from pipeline.db import run_query
-        marks = ",".join(["%s"] * len(athlete_ids))
-        rows = run_query(
-            f"SELECT DISTINCT v.athlete_id, v.athlete_name, v.sail_number, a.country_code "
-            f"FROM SLALOM_ELIMINATION_VIEW v JOIN ATHLETES a ON a.id = v.athlete_id "
-            f"WHERE v.event_id = %s AND v.athlete_id IN ({marks})",
-            (event_id, *athlete_ids))
-    except Exception as exc:
-        print(f"  slalom sail lookup unavailable ({exc})")
-        return {}
-    return {r["athlete_id"]: {"name": r["athlete_name"], "sail_number": r["sail_number"],
-                              "country": r["country_code"] or _sail_country(r["sail_number"])}
-            for r in rows}
+    from pipeline.db import run_query
 
+    holes = ", ".join(["%s"] * len(athlete_ids))
+    rows = run_query(f"""
+        SELECT asi.athlete_id AS aid,
+               r.sail_number  AS sail,
+               a.nationality  AS country,
+               COUNT(*)       AS n
+        FROM PWA_IWT_RESULTS r
+        JOIN ATHLETE_SOURCE_IDS asi
+          ON asi.source = 'PWA' AND asi.source_id = r.athlete_id
+        LEFT JOIN ATHLETES a ON a.id = asi.athlete_id
+        WHERE asi.athlete_id IN ({holes})
+          AND r.sail_number IS NOT NULL AND r.sail_number <> ''
+        GROUP BY asi.athlete_id, r.sail_number, a.nationality
+        ORDER BY aid, n DESC
+    """, tuple(athlete_ids))
 
-# Single-letter PWA sail prefixes, for riders with no country on record.
-# Photographers file them under the three-letter code (Mortefon F-14 -> FRA14).
-_SAIL_LETTER_COUNTRY = {"F": "France", "E": "Spain", "I": "Italy",
-                        "G": "Germany", "H": "Netherlands", "K": "United Kingdom"}
+    # The country is only here to expand the sail token: "F-465" has to reach
+    # FRA465, which is how every one of Nicolas Goyard's frames is filed. The
+    # same riders missing a nationality in ATHLETES are the ones the slide
+    # overrides, so read it from there rather than leaving the token short.
+    from pipeline.sylt_kings import NATIONALITY_OVERRIDES
 
-
-def _sail_country(sail):
-    prefix = (sail or "").split("-")[0].upper()
-    return _SAIL_LETTER_COUNTRY.get(prefix, "")
+    best = {}
+    for row in rows:
+        best.setdefault(row["aid"], {
+            "sail_number": row["sail"],
+            "country": (row["country"]
+                        or NATIONALITY_OVERRIDES.get(row["aid"], "")),
+        })
+    return best
 
 
 def _event_dir(event_id):
@@ -149,8 +163,8 @@ def _collect(riders, event_dir, index):
     all_files = glob.glob(os.path.join(str(event_dir), "**", "*.jpg"), recursive=True)
     print(f"  scanning {len(all_files)} files in {event_dir.name}")
 
-    lifestyle = [_candidate(p, 0.0) for p in cheapest_copies(all_files)
-                 if _kind_of(p.name) == "ls"]
+    lifestyle = [_candidate(p, 0.0) for p in _spread(
+        [p for p in cheapest_copies(all_files) if _kind_of(p.name) == "ls"])]
 
     for rider in riders:
         record = index.get(rider["athlete_id"], {})
@@ -161,25 +175,36 @@ def _collect(riders, event_dir, index):
 
         hits = [f for f in all_files
                 if any(matches_token(f, t) for t in tokens)] if tokens else []
-        # A folder whose filenames carry no sail number (a photographer's own
-        # export rather than the PWA Drive's naming) matches nobody. Show the
-        # whole folder rather than nothing, and let the eye do the sorting.
-        if not hits:
-            hits = all_files
-        rider["candidates"] = [_candidate(p, rider["score"])
-                               for p in cheapest_copies(hits)]
+        # A rider whose sail matches no filename gets nothing. Offering the
+        # whole folder instead meant streaming ~2,000 frames off the Drive
+        # (Wissant 2026, Jules Denel registered FRA-41 but filed as F41).
         # Action shots first: a leaderboard slide wants the rider on the water.
-        rider["candidates"].sort(key=lambda c: (c["kind"] != "wv", c["name"]))
+        ordered = sorted(cheapest_copies(hits),
+                         key=lambda p: (_kind_of(p.name) != "wv", p.name))
+        rider["candidates"] = [_candidate(p, rider["score"]) for p in _spread(ordered)]
 
         # The headshot is a second slot, in a different folder, feeding the
         # summary-card thumbnail rather than the hero. Only offered where one
         # is missing: a face is timeless, so a rider who has one is not asked
         # about again. Lifestyle frames first -- that is where the faces are.
         if _face_missing(rider["athlete_id"]):
-            rider["face_candidates"] = _face_pool(rider["candidates"], lifestyle)
+            rider["face_candidates"] = _face_pool(rider["candidates"], lifestyle)[:MAX_FRAMES]
         else:
             rider["face_candidates"] = []
     return riders
+
+
+def _spread(items, n=None):
+    """At most ``n`` items, evenly spaced so the first and last both survive.
+
+    The first ten by filename are usually one heat; spacing them out reaches
+    across the event.
+    """
+    n = n or MAX_FRAMES
+    if len(items) <= n:
+        return list(items)
+    step = (len(items) - 1) / (n - 1)
+    return [items[round(i * step)] for i in range(n)]
 
 
 def _face_pool(candidates, lifestyle):
@@ -235,14 +260,22 @@ def _build_thumbs(riders):
     print()
 
 
-def _install(selection, event_id):
+# The square headshot the summary table sets in a circle. 640px matches what
+# the existing faces are stored at.
+FACE_PX = 640
+
+
+def _install(selection, event_id, faces: bool = False):
     """Write the chosen frames and their json into the repo.
 
-    A key of ``face-{id}`` is the headshot pick, which goes to the athlete-level
-    ``faces`` folder rather than this event's: a face is timeless, the hero shot
-    is not.
+    ``faces`` installs athlete-level square headshots into ``faces/`` instead
+    of an event folder. A headshot is timeless, so it is not event-keyed, and
+    the table slide reads it from there for every post. A key of
+    ``face-{id}`` is the headshot pick made beside a hero, which goes to
+    ``faces/`` too.
     """
-    event_dir = PHOTOS_DIR / "events" / str(event_id)
+    event_dir = (PHOTOS_DIR / "faces" if faces
+                 else PHOTOS_DIR / "events" / str(event_id))
     installed = []
     for key, choice in selection.items():
         if str(key).startswith("face-"):
@@ -250,9 +283,14 @@ def _install(selection, event_id):
             continue
         athlete_id = key
         src = Path(choice["file"])
-        dest = install_photo(src, event_dir, athlete_id)
-        merge_json_entry(event_dir / "focus.json", athlete_id,
-                         choice.get("focus", "50% 50%"), comment=FOCUS_COMMENT)
+        dest = install_photo(src, event_dir, athlete_id,
+                             square=FACE_PX if faces else 0)
+        if not faces:
+            # object-position only means something on a full-bleed hero. A
+            # square crop of a square file has no slack to shift.
+            merge_json_entry(event_dir / "focus.json", athlete_id,
+                             choice.get("focus", "50% 50%"),
+                             comment=FOCUS_COMMENT)
 
         credit = credit_for(src)
         entry = {"photographer": credit["photographer"], "handle": credit["handle"],
@@ -345,7 +383,8 @@ def generate_after_save(plan, installed, event_name="", year=None):
             "slides": len(post["slides"]), "post": post}
 
 
-def _serve(html, riders, event_id, plan=None, meta=None, source_dir=None):
+def _serve(html, riders, event_id, plan=None, meta=None, faces=False,
+           source_dir=None):
     """Serve the flow: pick, install, review, caption, schedule, save, stop.
 
     The server stays up past the photo install now, because the page still
@@ -419,7 +458,7 @@ def _serve(html, riders, event_id, plan=None, meta=None, source_dir=None):
 
             try:
                 print()
-                installed = _install(self._payload(), event_id)
+                installed = _install(self._payload(), event_id, faces=faces)
                 result["installed"] = installed
                 # The card's slider only pans sideways. "Too much sky" and
                 # "move her up" need a real re-crop, so the adjuster opens on
@@ -487,7 +526,20 @@ def _serve(html, riders, event_id, plan=None, meta=None, source_dir=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--event", type=int, required=True, help="API event id")
+    # Not an int. The value is an API event id in the Drive-lookup path, but
+    # in --folder mode it is only ever the name of the folder photos install
+    # into, and some of those are named rather than numbered: the Sylt venue
+    # posts span years the API has no id for, so their photos live in
+    # "syltslalom" and "syltfreestyle".
+    parser.add_argument("--event", required=True,
+                        help="API event id, or a folder name under "
+                             "assets/photos/events/")
+    parser.add_argument("--faces", action="store_true",
+                        help="Install square headshots into assets/photos/faces/ "
+                             "instead of an event folder")
+    parser.add_argument("--folder",
+                        help="Photo folder to read instead of the Drive lookup, "
+                             "e.g. a PWA archive directory like '2018 Sylt'")
     parser.add_argument("--athletes", help="Comma-separated athlete ids")
     parser.add_argument("--score-type", choices=["Wave", "Jump"], default="Wave")
     parser.add_argument("--sex", choices=["Men", "Women"])
@@ -499,17 +551,38 @@ def main():
     if args.drive_root:
         os.environ["PWA_DRIVE_ROOT"] = args.drive_root
 
-    event_dir, event_name, year = _event_dir(args.event)
-    if not event_dir:
-        print(f"No Drive folder found for event {args.event} ({event_name!r}).")
-        print("Check the season shortcut is in My Drive, or pass --drive-root.")
-        sys.exit(1)
+    if args.folder:
+        # The archive is flat -- "2018 Sylt", "Sylt Archive Individual Riders"
+        # -- so find_year_root, which wants {root}/{year}/{event}, resolves
+        # none of it. Naming the folder skips the lookup entirely.
+        event_dir = Path(args.folder)
+        if not event_dir.is_dir():
+            print(f"No such folder: {event_dir}")
+            sys.exit(1)
+        event_name, year = event_dir.name, None
+    else:
+        event_dir, event_name, year = _event_dir(args.event)
+        if not event_dir:
+            print(f"No Drive folder found for event {args.event} ({event_name!r}).")
+            print("Check the season shortcut is in My Drive, or pass --drive-root.")
+            sys.exit(1)
     print(f"Event: {event_name}\nPhotos: {event_dir}")
 
-    index = _athlete_index(args.event, args.sex)
+    try:
+        index = _athlete_index(args.event, args.sex)
+    except Exception as exc:
+        # A folder named directly does not need the event to roster anyone.
+        print(f"  no API roster ({type(exc).__name__}); falling back to the DB")
+        index = {}
     if args.athletes:
         wanted = [int(x) for x in args.athletes.split(",")]
-        index.update(_slalom_index(args.event, [a for a in wanted if a not in index]))
+        gaps = [a for a in wanted if not index.get(a, {}).get("sail_number")]
+        if gaps:
+            found = _db_sails(gaps)
+            print(f"  {len(found)}/{len(gaps)} sails from the DB "
+                  f"(not in the API roster)")
+            for aid, rec in found.items():
+                index[aid] = {**index.get(aid, {}), **rec}
         riders = [{"athlete_id": a, "name": index.get(a, {}).get("name", str(a)),
                    "score": 0.0, "rank_label": "", "metric": args.score_type.upper()}
                   for a in wanted]
@@ -532,7 +605,8 @@ def main():
     plan = generation_plan(args.event, args.score_type, args.sex,
                            athletes_mode=bool(args.athletes))
     _serve(render_sheet(riders, label), riders, args.event, plan,
-           meta={"event_name": event_name, "year": year}, source_dir=event_dir)
+           meta={"event_name": event_name, "year": year}, faces=args.faces,
+           source_dir=event_dir)
 
 
 if __name__ == "__main__":

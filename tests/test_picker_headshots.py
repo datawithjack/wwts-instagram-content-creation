@@ -101,6 +101,39 @@ class TestTheHeadshotPool:
         assert len(pool) == 1
 
 
+class TestTenFramesPerRider:
+    """Every frame offered streams off the Drive, so offer ten, not a hundred."""
+
+    def _collect(self, tmp_path, names, sail="E-334", country="Spain"):
+        for name in names:
+            _frame(tmp_path, name)
+        riders = [{"athlete_id": 1, "name": "Marc", "score": 7.88}]
+        index = {1: {"sail_number": sail, "country": country}}
+        return pick_photos._collect(riders, tmp_path, index)[0]
+
+    def test_a_rider_gets_at_most_ten(self, tmp_path):
+        rider = self._collect(tmp_path, [f"WI26_wv_E334_{i}.jpg" for i in range(30)])
+        assert len(rider["candidates"]) == 10
+
+    def test_the_ten_are_spread_across_the_set(self, tmp_path):
+        """The first ten by filename are one heat; the spread reaches the last."""
+        rider = self._collect(tmp_path, [f"WI26_wv_E334_{i:02d}.jpg" for i in range(30)])
+        names = [c["name"] for c in rider["candidates"]]
+        assert "WI26_wv_E334_00.jpg" in names
+        assert "WI26_wv_E334_29.jpg" in names
+
+    def test_an_unmatched_rider_gets_none_not_the_whole_folder(self, tmp_path):
+        rider = self._collect(tmp_path, [f"WI26_wv_F41_{i}.jpg" for i in range(5)])
+        assert rider["candidates"] == []
+
+    def test_the_headshot_pool_is_capped_too(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(pick_photos, "PHOTOS_DIR", tmp_path)
+        names = ([f"WI26_wv_E334_{i}.jpg" for i in range(3)]
+                 + [f"WI26_ls_MISC_{i}.jpg" for i in range(30)])
+        rider = self._collect(tmp_path, names)
+        assert len(rider["face_candidates"]) == 10
+
+
 class TestWhereThePicksLand:
     """The routing is the whole point: two slots, two folders."""
 
