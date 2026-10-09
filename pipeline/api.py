@@ -424,7 +424,7 @@ def fetch_site_stats() -> dict:
     return result
 
 
-def _wave_heats(raw: dict) -> list:
+def _wave_heats(raw: dict, score_type: str = "wave") -> list:
     """Every heat carrying a wave score, ordered as they were sailed.
 
     The score type is what separates the disciplines; the round name is not.
@@ -434,13 +434,16 @@ def _wave_heats(raw: dict) -> list:
     a wave heat carries ``Wave`` alongside jump move codes (``B ``, ``2xF``),
     a freestyle heat carries ``Freestyle``, and a slalom heat carries none.
 
+    ``score_type`` picks the discipline: "wave" by default, "freestyle" for
+    the freestyle ladder.
+
     Returns ``[(round_order, heat_order, round, heat), ...]``.
     """
     found = []
     for round_ in raw.get("rounds", []):
         for heat in round_.get("heats") or []:
             athletes = heat.get("athletes") or []
-            if any((score.get("type") or "").strip().lower() == "wave"
+            if any((score.get("type") or "").strip().lower() == score_type
                    for athlete in athletes
                    for score in (athlete.get("scores") or [])):
                 found.append((round_.get("round_order") or 0,
@@ -449,7 +452,7 @@ def _wave_heats(raw: dict) -> list:
     return found
 
 
-def _wave_depth(candidates: list) -> dict:
+def _wave_depth(candidates: list, score_type: str = "wave") -> dict:
     """How far each rider got in the wave ladder.
 
     ``{athlete_id: (last_round_order, place_in_that_heat)}``, counting only
@@ -468,7 +471,7 @@ def _wave_depth(candidates: list) -> dict:
             athlete_id = athlete.get("athlete_id")
             if athlete_id is None:
                 continue
-            if not any((score.get("type") or "").strip().lower() == "wave"
+            if not any((score.get("type") or "").strip().lower() == score_type
                        for score in (athlete.get("scores") or [])):
                 continue
             previous = depth.get(athlete_id)
@@ -477,7 +480,8 @@ def _wave_depth(candidates: list) -> dict:
     return depth
 
 
-def _wave_finishers(event_id: int, division: str, candidates: list) -> list:
+def _wave_finishers(event_id: int, division: str, candidates: list,
+                    score_type: str = "wave") -> list:
     """The event's wave riders in finishing order.
 
     Ordered on ``overall_position``, restricted to riders who actually scored
@@ -497,7 +501,7 @@ def _wave_finishers(event_id: int, division: str, candidates: list) -> list:
     )
     resp.raise_for_status()
 
-    depth = _wave_depth(candidates)
+    depth = _wave_depth(candidates, score_type)
     riders = [a for a in resp.json().get("athletes", [])
               if a.get("athlete_id") in depth]
     riders.sort(key=lambda a: (a.get("overall_position") or 99,
@@ -525,7 +529,7 @@ def _warn_shallow(riders: list, depth: dict) -> None:
                   "belong to another discipline.")
 
 
-def _wave_event(event_id: int, division: str):
+def _wave_event(event_id: int, division: str, score_type: str = "wave"):
     """The event's wave heats and its wave finishing order, or raise.
 
     Both placings and the final are read off the same two calls, so they are
@@ -538,19 +542,19 @@ def _wave_event(event_id: int, division: str):
     )
     resp.raise_for_status()
 
-    candidates = _wave_heats(resp.json())
+    candidates = _wave_heats(resp.json(), score_type)
     if not candidates:
         raise ValueError(
-            f"No wave heat found for event {event_id} ({division}): not one "
-            "heat came back carrying a wave score. Either the event ran no "
-            "wave discipline, or its scores are missing from the API (Sylt "
+            f"No {score_type} heat found for event {event_id} ({division}): not one "
+            f"heat came back carrying a {score_type} score. Either the event ran no "
+            f"{score_type} discipline, or its scores are missing from the API (Sylt "
             "2024 is one such event)."
         )
 
-    return candidates, _wave_finishers(event_id, division, candidates)
+    return candidates, _wave_finishers(event_id, division, candidates, score_type)
 
 
-def fetch_final_heat(event_id: int, division: str) -> dict:
+def fetch_final_heat(event_id: int, division: str, discipline: str = "Wave") -> dict:
     """Fetch the final heat itself: who placed where, and every score in it.
 
     Returns ``{"round_order": int, "riders": [...]}`` with riders in finishing
@@ -575,8 +579,13 @@ def fetch_final_heat(event_id: int, division: str) -> dict:
     Non-counting scores are kept. A rider's highest wave in the final is the
     highest they scored, whether or not it made their counting total -- the
     same default the top 10 posts use.
+
+    With ``discipline="Freestyle"`` the freestyle ladder is read instead, and
+    each rider carries ``final_moves`` and ``final_best_move_name`` in place
+    of the wave and jump split.
     """
-    candidates, finishers = _wave_event(event_id, division)
+    score_type = discipline.lower()
+    candidates, finishers = _wave_event(event_id, division, score_type)
     podium = [rider["athlete_id"] for rider in finishers[:2]]
 
     # The top two, then the winner alone, then whatever sailed last: enough to
@@ -598,6 +607,11 @@ def fetch_final_heat(event_id: int, division: str) -> dict:
     print(f"  final heat: round {round_.get('round_name', '?')!r} "
           f"heat {heat.get('heat_number', '?')}, "
           f"{len(heat.get('athletes') or [])} riders")
+
+    if score_type == "freestyle":
+        riders = [_freestyle_final_rider(a) for a in heat.get("athletes") or []]
+        riders.sort(key=lambda r: r.get("place") or 99)
+        return {"round_order": round_.get("round_order") or 0, "riders": riders}
 
     riders = []
     for athlete in heat.get("athletes") or []:
@@ -632,7 +646,31 @@ def fetch_final_heat(event_id: int, division: str) -> dict:
     return {"round_order": round_.get("round_order") or 0, "riders": riders}
 
 
-def fetch_top_finishers(event_id: int, division: str, top: int = 4) -> list:
+def _freestyle_final_rider(athlete: dict) -> dict:
+    """One rider's freestyle final: total, every move scored, the best one's name."""
+    moves, best, best_name = [], 0.0, ""
+    for score in athlete.get("scores") or []:
+        if score.get("score") is None:
+            continue
+        value = float(score["score"])
+        moves.append(value)
+        if value > best:
+            best, best_name = value, score.get("move_type") or ""
+    if best_name.startswith("New Move"):  # "New Move high 1" is a slot, not a name
+        best_name = "New Move"
+    return {
+        "athlete_id": athlete.get("athlete_id"),
+        "name": athlete.get("athlete_name", ""),
+        "photo_url": athlete.get("profile_picture_url", "") or "",
+        "place": athlete.get("place"),
+        "final_total": athlete.get("result_total"),
+        "final_moves": sorted(moves, reverse=True),
+        "final_best_move_name": best_name,
+    }
+
+
+def fetch_top_finishers(event_id: int, division: str, top: int = 4,
+                        discipline: str = "Wave") -> list:
     """The event's top ``top`` wave riders, by finishing position.
 
     A placings post is not a recap: it does not care which heat anyone sailed.
@@ -643,9 +681,10 @@ def fetch_top_finishers(event_id: int, division: str, top: int = 4) -> list:
     Each entry carries ``place``, ``name``, ``nationality``, ``sail_number``
     and ``photo_url``. Per-rider stats come from ``fetch_finalist_stats``.
     """
-    candidates, finishers = _wave_event(event_id, division)
+    score_type = discipline.lower()
+    candidates, finishers = _wave_event(event_id, division, score_type)
     top_riders = finishers[:top]
-    _warn_shallow(top_riders, _wave_depth(candidates))
+    _warn_shallow(top_riders, _wave_depth(candidates, score_type))
 
     return [{
         "athlete_id": rider.get("athlete_id"),

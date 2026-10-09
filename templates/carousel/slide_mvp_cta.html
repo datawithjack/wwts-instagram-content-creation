@@ -1,7 +1,31 @@
 {% extends "carousel/base_carousel.html" %}
 
+{% block carousel_head %}
+<style>
+    /* The SVG has no intrinsic size, so it needs an explicit one or it renders at zero. */
+    .partner-logo img { height: 140px; width: auto; }
+    .partner-name {
+        font-family: var(--font-display);
+        font-size: 120px;
+        letter-spacing: 0.02em;
+        line-height: 1;
+        color: var(--color-discipline);
+    }
+</style>
+{% endblock %}
+
 {% block carousel_content %}
 <div class="container cta-container">
+    {% if partner %}
+    <div class="cta-subtitle">Thank you to our {{ partner.scope }} prize partner</div>
+    {% if partner.logo_url %}
+    <div class="partner-logo"><img src="{{ partner.logo_url }}" alt="{{ partner.name }}"></div>
+    {% else %}
+    <div class="partner-name">{{ partner.name }}</div>
+    {% endif %}
+    <div class="cta-accent-line"></div>
+    <div class="cta-follow">Play free &middot; Link in bio &middot; @windsurfworldtourstats</div>
+    {% else %}
     <div class="cta-accent-line"></div>
     <div class="cta-headline">TENERIFE IS NEXT</div>
     <div class="cta-subtitle">
@@ -9,5 +33,6 @@
     </div>
     <div class="cta-accent-line"></div>
     <div class="cta-follow">Play free &middot; Link in bio &middot; @windsurfworldtourstats</div>
+    {% endif %}
 </div>
 {% endblock %}

@@ -1,5 +1,6 @@
 """Main entry point for Instagram content generation pipeline."""
 import argparse
+import json
 import os
 import re
 import sys
@@ -18,7 +19,7 @@ from pipeline.db import run_query
 from pipeline.helpers import nationality_to_iso, clean_event_name, heat_label_from_id, short_round_name, full_round_name
 from pipeline.queries import build_top10_query, build_freestyle_top10_query, build_canary_kings_query, build_athlete_rise_query, build_wave_count_query, build_fantasy_mvp_points_query, build_fantasy_session_pick_pct_query, build_sylt_kings_query, build_sylt_editions_query
 from pipeline.post_options import apply_post_options
-from pipeline.templates import render_template, get_dummy_data, resolve_action_url, resolve_hero_url, resolve_hero_focus, resolve_photo_credit
+from pipeline.templates import render_template, get_dummy_data, resolve_action_url, resolve_hero_url, resolve_hero_focus, resolve_cover_url, resolve_photo_credit
 from pipeline.renderer import render_to_png, render_to_video, render_carousel, render_h2h_carousel, render_rp_carousel, render_analysis_carousel, render_athlete_rise_carousel, render_picks_carousel, render_wave_count_carousel, render_fuerte_fantasy_mvps_carousel, render_slalom_mvps_carousel, render_finals_preview_carousel, render_finals_recap_carousel, render_sylt_kings_carousel
 
 
@@ -99,6 +100,99 @@ def _fetch_freestyle_top10(args) -> dict:
                 data["title_year"] = start.year
 
     return data
+
+
+def _fetch_slalom_recap(args) -> dict:
+    """Top four of the foil slalom at an event, from the DB (needs the tunnel).
+
+    The API has no slalom placings, so the riders, their place in every
+    completed elimination and their heat wins all come off MySQL.
+    """
+    from pipeline.finals_recap import slalom_aggregates
+    from pipeline.queries import (build_event_podium_query, build_slalom_recap_query,
+                                  build_slalom_heat_wins_query)
+
+    division_label = f"Slalom Foil {args.division}"
+    top = run_query(*build_event_podium_query(args.event, division_label, top=4))
+    if not top:
+        print(f"No {division_label} result for event {args.event}.")
+        sys.exit(1)
+
+    elims = run_query(*build_slalom_recap_query(args.event, division_label))
+    elim_nos = sorted({e["elimination_no"] for e in elims})
+    places, names = {}, {}
+    for e in elims:
+        places.setdefault(e["athlete_id"], {})[e["elimination_no"]] = e["place"]
+        names[e["athlete_id"]] = e["athlete_name"]
+    heats = {h["athlete_id"]: h for h in
+             run_query(*build_slalom_heat_wins_query(args.event, division_label))}
+
+    ids = [t["athlete_id"] for t in top]
+    nationality, site_img = {}, {}
+    if ids:
+        marks = ",".join(["%s"] * len(ids))
+        for a in run_query(
+                f"SELECT id, country_code, pwa_nationality FROM ATHLETES WHERE id IN ({marks})",
+                tuple(ids)):
+            nationality[a["id"]] = a["country_code"] or a["pwa_nationality"] or ""
+        # Headshots for the comparison card: the site's own photo (R2 first).
+        site_img = {
+            r["athlete_id"]: r["profile_picture_url"]
+            for r in run_query(
+                f"SELECT DISTINCT athlete_id, profile_picture_url FROM ATHLETE_RESULTS_VIEW "
+                f"WHERE athlete_id IN ({marks}) AND profile_picture_url IS NOT NULL",
+                tuple(ids))
+        }
+
+    # Riders whose frame is busy behind the name get a taller fade, listed by
+    # id under "_raised_gradient" in the event's focus.json.
+    focus_path = os.path.join("assets", "photos", "events", str(args.event), "focus.json")
+    try:
+        with open(focus_path, encoding="utf-8") as fh:
+            raised = set(json.load(fh).get("_raised_gradient", []))
+    except (OSError, ValueError):
+        raised = set()
+
+    riders = []
+    for t in top:
+        aid = t["athlete_id"]
+        own = places.get(aid, {})
+        h = heats.get(aid, {})
+        rider = {
+            "athlete_id": aid,
+            "name": names.get(aid, ""),
+            "place": int(t["place"]),
+            "nationality": nationality.get(aid, ""),
+            "photo_url": site_img.get(aid, ""),
+            **slalom_aggregates([own.get(n) for n in elim_nos],
+                                int(h.get("heats_sailed") or 0),
+                                int(h.get("heat_wins") or 0)),
+        }
+        rider["action_url"] = resolve_hero_url(aid, args.event)
+        rider["hero_focus"] = resolve_hero_focus(aid, args.event)
+        rider["cover_url"] = resolve_cover_url(aid, args.event)
+        rider["photo_credit"] = (resolve_photo_credit(aid, args.event)
+                                 if rider["action_url"] else "")
+        rider["raise_gradient"] = str(aid) in raised
+        riders.append(rider)
+
+    event = fetch_event(args.event)
+    from datetime import date as dt_date
+    event_meta = {
+        "event_name": clean_event_name(event.get("event_name", "")),
+        "year": event.get("year", ""),
+        "country": event.get("country_code", ""),
+        "stars": event.get("stars", 0),
+        "event_id": args.event,
+    }
+    for api_key in ("start_date", "end_date"):
+        if event.get(api_key):
+            event_meta[api_key] = dt_date.fromisoformat(str(event[api_key]))
+
+    credits = [r["photo_credit"] for r in sorted(riders, key=lambda r: -r["place"])
+               if r["photo_credit"]]
+    return {"riders": riders, "division": args.division, "discipline": "Slalom",
+            "event_meta": event_meta, "photo_credits": credits}
 
 
 def fetch_live_data(template_name: str, args) -> dict:
@@ -341,8 +435,12 @@ def fetch_live_data(template_name: str, args) -> dict:
             print("Finals recap requires: --event (API id) and --division (Men or Women)")
             sys.exit(1)
 
+        discipline = getattr(args, "discipline", None) or "Wave"
+        freestyle = discipline == "Freestyle"
+        if discipline == "Slalom":
+            return _fetch_slalom_recap(args)
         try:
-            final = fetch_final_heat(args.event, args.division)
+            final = fetch_final_heat(args.event, args.division, discipline)
         except ValueError as exc:
             print(exc)
             sys.exit(1)
@@ -357,16 +455,20 @@ def fetch_live_data(template_name: str, args) -> dict:
         # the rest come off the event placings and carry no final scores.
         if len(riders) < 4:
             have = {r["athlete_id"] for r in riders}
-            for finisher in fetch_top_finishers(args.event, args.division, top=4):
+            for finisher in fetch_top_finishers(args.event, args.division, top=4,
+                                                discipline=discipline):
                 if finisher["athlete_id"] not in have:
                     riders.append({**finisher, "final_total": None,
                                    "final_waves": [], "final_jumps": [],
-                                   "final_best_jump_move": ""})
+                                   "final_best_jump_move": "",
+                                   "final_moves": [], "final_best_move_name": ""})
 
         # Event-wide aggregates for the individual rider slides. The final's
         # own scores already came back with the heat.
         ids = [r["athlete_id"] for r in riders]
-        aggregates = {
+        # Freestyle has no head-to-head aggregates; its stats are built from
+        # the heat history further down.
+        aggregates = {} if freestyle else {
             a["athlete_id"]: a
             for a in fetch_finalist_stats(args.event, ids, args.division, detailed=True)
         }
@@ -386,6 +488,7 @@ def fetch_live_data(template_name: str, args) -> dict:
             rider["route_place"] = route.get("place")
             rider["action_url"] = resolve_hero_url(rider["athlete_id"], args.event)
             rider["hero_focus"] = resolve_hero_focus(rider["athlete_id"], args.event)
+            rider["cover_url"] = resolve_cover_url(rider["athlete_id"], args.event)
             rider["photo_credit"] = (
                 resolve_photo_credit(rider["athlete_id"], args.event)
                 if rider["action_url"] else ""
@@ -395,8 +498,24 @@ def fetch_live_data(template_name: str, args) -> dict:
         # WON) and names the move behind each rider's best jump.
         history = fetch_heat_history(args.event, args.division)
         by_id = {r["athlete_id"]: r for r in riders}
+        if freestyle:
+            from pipeline.finals_recap import freestyle_aggregates
+            from pipeline.hsp_moves import load_snapshot
+            # Rated by name off the dated dictionary snapshot; placeholders
+            # and Crash (0.00) are not difficulties of a real trick.
+            difficulty = {
+                m["name"]: m["difficulty"]
+                for m in load_snapshot()["categories"]["FREESTYLE"]["moves"]
+                if m.get("difficulty") and not m["name"].startswith("New Move")
+            }
         for aid, entries in history.items():
             if aid in by_id:
+                if freestyle:
+                    # A Grand Slam rider can sail wave or slalom too.
+                    entries = [h for h in entries if any(
+                        (sc.get("type") or "").strip() == "Freestyle"
+                        for sc in h.get("scores") or [])]
+                    by_id[aid].update(freestyle_aggregates(entries, difficulty))
                 by_id[aid]["history"] = entries
 
         # Sail numbers come off the event athlete list (used on the water).
@@ -411,6 +530,8 @@ def fetch_live_data(template_name: str, args) -> dict:
                 for a in resp.json().get("athletes", []):
                     if a["athlete_id"] in by_id:
                         by_id[a["athlete_id"]]["sail_number"] = a.get("sail_number", "")
+                        # Wave riders get nationality off the H2H aggregates.
+                        by_id[a["athlete_id"]].setdefault("nationality", a.get("country", ""))
         except Exception as exc:
             print(f"Sail numbers unavailable ({exc}); continuing without them.")
 
@@ -433,7 +554,7 @@ def fetch_live_data(template_name: str, args) -> dict:
         credits = [r.get("photo_credit") for r in sorted(
             riders, key=lambda r: -(r.get("place") or 0)) if r.get("photo_credit")]
 
-        return {"riders": riders, "division": args.division,
+        return {"riders": riders, "division": args.division, "discipline": discipline,
                 "event_meta": event_meta, "photo_credits": credits}
 
     if template_name == "commentator_brief":
@@ -641,13 +762,74 @@ def fetch_live_data(template_name: str, args) -> dict:
         if event_row:
             ev = event_row[0]
             event_meta["name"] = clean_event_name(ev.get("event_name", ""))
+            # "Sylt, Germany Grand Slam" -> "Sylt"
+            event_meta["location"] = event_meta["name"].split(",")[0].strip() or event_meta["location"]
             start = ev.get("start_date")
             if isinstance(start, str):
                 from datetime import date as dt_date
                 start = dt_date.fromisoformat(start)
             if start:
                 event_meta["year"] = start.year
-        return assemble_mvp_data(points_rows, pct_rows, event_meta)
+        from pipeline.fuerte_fantasy_mvps import PRIZE_PARTNERS
+        from pipeline.queries import build_event_podium_query
+        event_meta["partner"] = PRIZE_PARTNERS.get(event_id)
+        podium_rows = None
+        if run_query(
+            "SELECT 1 FROM FANTASY_SESSION_PICKS WHERE event_id = %s AND discipline = 'freestyle' AND LEFT(slot, 3) = 'rp_' LIMIT 1",
+            (event_id,),
+        ):
+            podium_rows = run_query(*build_event_podium_query(event_id, "Freestyle"))
+        tier_rows = run_query(
+            "SELECT ft.athlete_id, ft.tier FROM FANTASY_TIERS ft "
+            "JOIN FANTASY_SEASONS fs ON fs.id = ft.season_id "
+            "WHERE fs.year = %s AND fs.discipline = 'freestyle' AND ft.sex = 'Men'",
+            (event_meta["year"],),
+        )
+        if not tier_rows:
+            return assemble_mvp_data(points_rows, pct_rows, event_meta, podium_rows=podium_rows)
+
+        # Tier view: the whole men's field, split by the tier the app seeded.
+        from pipeline.fuerte_fantasy_mvps import assemble_tier_view
+        data = assemble_mvp_data(points_rows, pct_rows, event_meta, top_n=1000, podium_rows=podium_rows)
+        picks = run_query(
+            "SELECT slot, athlete_id, user_id FROM FANTASY_SESSION_PICKS "
+            "WHERE event_id = %s AND discipline = 'freestyle' AND confirmed = TRUE",
+            (event_id,),
+        )
+        players = len({p["user_id"] for p in picks})
+        # Team slots only (s_fm_*): a podium call is not having him on the team.
+        team = [p for p in picks if p["slot"].startswith("s_fm_")]
+        team_pct = {}
+        for aid in {int(p["athlete_id"]) for p in team}:
+            n = len({p["user_id"] for p in team if int(p["athlete_id"]) == aid})
+            team_pct[aid] = round(n / players * 100)
+        slots = {p["slot"] for p in team}
+        slot_counts = {
+            "top5": sum("_top" in s for s in slots),
+            "6to15": sum("_mid" in s for s in slots),
+            "outside": sum("_wc" in s for s in slots),
+        }
+        # Headshots: local faces/ first, then whatever the site shows. The view
+        # carries the site's own chain (R2 athlete-photos, LiveHeats, PWA).
+        from pipeline.templates import resolve_thumb_url
+        ids = [r["athlete_id"] for r in data["men"]]
+        site_img = {
+            r["athlete_id"]: r["profile_picture_url"] or ""
+            for r in run_query(
+                "SELECT DISTINCT athlete_id, profile_picture_url FROM ATHLETE_RESULTS_VIEW "
+                "WHERE athlete_id IN (%s)" % ",".join(["%s"] * len(ids)),
+                tuple(ids),
+            )
+        } if ids else {}
+        for r in data["men"]:
+            r["thumb_url"] = resolve_thumb_url(r["athlete_id"], site_img.get(r["athlete_id"], ""))
+        data["tier_view"] = assemble_tier_view(
+            data["men"],
+            {int(r["athlete_id"]): r["tier"] for r in tier_rows},
+            team_pct,
+            slot_counts,
+        )
+        return data
 
     if template_name == "slalom_mvps":
         from pipeline.slalom_mvps import assemble_slalom_mvp_data, verify_against_app_scores
@@ -677,6 +859,8 @@ def fetch_live_data(template_name: str, args) -> dict:
         if event_row:
             ev = event_row[0]
             event_meta["name"] = clean_event_name(ev.get("event_name", ""))
+            # "Sylt, Germany Grand Slam" -> "Sylt"
+            event_meta["location"] = event_meta["name"].split(",")[0].strip() or event_meta["location"]
             start = ev.get("start_date")
             if isinstance(start, str):
                 from datetime import date as dt_date
@@ -799,8 +983,8 @@ def main():
     parser.add_argument("--event", type=int, help="Event ID")
     parser.add_argument("--division", choices=["Men", "Women"], help="Division for H2H")
     parser.add_argument("--sex", choices=["Men", "Women"], help="Sex filter for top 10 / athlete rise / sylt kings")
-    parser.add_argument("--discipline", choices=["Wave", "Freestyle"], default="Wave",
-                        help="Discipline for sylt_kings (default Wave)")
+    parser.add_argument("--discipline", choices=["Wave", "Freestyle", "Slalom"], default="Wave",
+                        help="Discipline for sylt_kings and finals_recap (default Wave)")
     parser.add_argument("--location", help="Location pattern for athlete rise (e.g. 'Gran Canaria')")
     parser.add_argument("--picks-data", help="Path to event picks JSON file (event_picks template)")
     parser.add_argument("--men", help="Finals preview: comma-separated men's finalist athlete IDs, in draw order")

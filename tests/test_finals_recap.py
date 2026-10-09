@@ -738,3 +738,146 @@ class TestHeatsSailedIgnoresPhantomHeats:
         card = next(s for s in slides if s.get("type") == "recap_rider")
         wins = next(st for st in card["stats"] if "WON" in st["label"].upper())
         assert wins["value"] == "5/5"
+
+
+# --- Freestyle -------------------------------------------------------------
+
+from pipeline.finals_recap import freestyle_aggregates
+
+
+def _fs_heat(place, total, moves):
+    return {"round": "R1", "heat": "1", "place": place, "total": total,
+            "scores": [{"type": "Freestyle", "score": s, "move_type": m,
+                        "counting": c} for s, m, c in moves]}
+
+
+class TestFreestyleAggregates:
+    def test_reads_heat_and_move_stats_off_the_history(self):
+        history = [
+            _fs_heat(1, 30.0, [(7.0, "Air Bob Culo", True), (6.0, "Bongka", True),
+                               (8.0, "Shaka", False), (0, "Spock", False)]),
+            _fs_heat(2, 20.0, [(5.0, "Culo", True)]),
+        ]
+
+        agg = freestyle_aggregates(history)
+
+        assert agg["best_heat"] == 30.0
+        assert agg["avg_heat"] == 25.0
+        assert agg["heat_wins"] == 1
+        # Best is the highest scored, counting or not; the average is counting only.
+        assert agg["best_move"] == 8.0
+        assert agg["best_move_name"] == "Shaka"
+
+
+def _fs_rider(athlete_id, name, place, final_total):
+    return {
+        "athlete_id": athlete_id, "name": name, "nationality": "German",
+        "photo_url": "", "place": place, "final_total": final_total,
+        "final_moves": [7.0, 6.0] if final_total else [],
+        "final_best_move_name": "Air Bob Culo" if final_total else "",
+        "best_heat": 30.0, "avg_heat": 24.0, "heat_wins": 2,
+        "best_move": 8.0, "best_move_name": "Shaka", "avg_move": 6.0,
+        "history": [_fs_heat(1, 30.0, []), _fs_heat(1, 18.0, [])],
+    }
+
+
+def _fs_data():
+    return {
+        "discipline": "Freestyle",
+        "division": "Men",
+        "riders": [
+            _fs_rider(75, "Lennart Neubauer", 1, 38.18),
+            _fs_rider(70, "Dieter Van Der Eyken", 2, 35.0),
+            _fs_rider(492, "Takumi Moriya", 3, None),
+            _fs_rider(884, "Balz Muller", 4, None),
+        ],
+        "event_meta": {"event_name": "Sylt Grand Slam", "year": 2026},
+    }
+
+
+class TestFreestyleSlides:
+    def test_rider_slides_carry_move_stats_and_no_wave_or_jump(self):
+        labels = [s["label"] for s in _rider_slides(build_slides(_fs_data()))[0]["stats"]]
+
+        assert labels == ["BEST HEAT", "AVG HEAT", "HEATS WON",
+                          "BEST MOVE", "AVG DIFFICULTY", "MAKE RATE"]
+
+    def test_best_move_carries_its_name(self):
+        stats = _rider_slides(build_slides(_fs_data()))[0]["stats"]
+
+        assert next(s for s in stats if s["label"] == "BEST MOVE")["note"] == "Shaka"
+
+    def test_counting_note_explains_difficulty_and_make_rate(self):
+        slide = _rider_slides(build_slides(_fs_data()))[0]
+
+        assert slide["counting_note"].startswith("Difficulty averages counting moves")
+
+    def test_compare_final_rows_are_score_and_best_move(self):
+        rows = _compare_slide(build_slides(_fs_data()))["rows"]
+        final_rows = [r["label"] for r in rows if r["group"] != "AT THIS EVENT"]
+
+        assert final_rows == ["FINAL SCORE", "BEST MOVE"]
+        assert rows[1]["cells"][0]["note"] == "Air Bob Culo"
+
+
+def test_an_unnamed_trick_reads_new_move_without_its_slot():
+    agg = freestyle_aggregates([_fs_heat(1, 30.0, [(7.83, "New Move high 1", True)])])
+
+    assert agg["best_move"] == 7.83
+    assert agg["best_move_name"] == "New Move"
+
+
+
+class TestFreestyleDifficultyAndMakeRate:
+    def _history(self):
+        return [_fs_heat(1, 30.0, [(7.0, "Bongka", True), (8.0, "Shaka", False),
+                                   (0, "Culo", False), (6.0, "New Move high 1", True)])]
+
+    def test_difficulty_averages_rated_counting_moves_only(self):
+        """Shaka did not count and the placeholder has no rating."""
+        agg = freestyle_aggregates(self._history(), {"Bongka": 6.0, "Shaka": 9.0})
+
+        assert agg["avg_difficulty"] == 6.0
+
+    def test_make_rate_is_landed_over_attempted(self):
+        assert freestyle_aggregates(self._history())["make_rate"] == 75.0
+
+    def test_make_rate_prints_as_a_percentage_and_leads(self):
+        data = _fs_data()
+        data["riders"][3]["make_rate"] = 96.1
+        for r in data["riders"][:3]:
+            r["make_rate"] = 85.0
+        stats = _rider_slides(build_slides(data))[0]["stats"]
+
+        cell = next(s for s in stats if s["label"] == "MAKE RATE")
+        assert (cell["value"], cell["is_leader"]) == ("96%", True)
+
+
+def test_freestyle_cover_names_the_discipline():
+    cover = build_slides(_fs_data())[0]
+
+    assert cover["title_lines"] == ["MEN'S FREESTYLE", "TOP 4"]
+
+
+class TestCoverCrop:
+    def _riders(self):
+        riders = _riders()
+        for r in riders:
+            r["action_url"] = f"file:///photos/events/124/{r['athlete_id']}.jpg"
+        return riders
+
+    def test_the_cover_uses_its_own_crop_when_there_is_one(self):
+        riders = self._riders()
+        riders[0]["cover_url"] = "file:///photos/events/124/97-cover.jpg"
+        riders[0]["hero_focus"] = "9% 58%"
+
+        photo = build_slides(_data(riders=riders))[0]["hero_photos"][0]
+
+        # Already cut to the cell's shape, so the card's anchor no longer applies.
+        assert photo["url"].endswith("97-cover.jpg")
+        assert photo["focus"] == "50% 50%"
+
+    def test_without_one_the_cover_falls_back_to_the_card_photo(self):
+        photos = build_slides(_data(riders=self._riders()))[0]["hero_photos"]
+
+        assert photos[1]["url"].endswith("/49.jpg")

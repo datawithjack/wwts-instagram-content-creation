@@ -499,11 +499,73 @@ def build_fantasy_session_pick_pct_query(
     return sql, (event_id, discipline, event_id, discipline)
 
 
+def build_event_podium_query(event_id: int, division_fragment: str,
+                             top: int = 3) -> tuple[str, tuple]:
+    """Top-3 finishers for one discipline at an event, from PWA_IWT_RESULTS.
+
+    The same join the app's ``_fleet_places`` uses. One event row hosts several
+    disciplines, so ``division_fragment`` ("Freestyle", "Slalom Foil") picks the
+    one the post is about out of ``division_label``.
+
+    Returns:
+        (sql, params) tuple ready for db.run_query().
+    """
+    sql = """
+        SELECT asi.athlete_id AS athlete_id, r.place, r.sex
+        FROM PWA_IWT_RESULTS r
+        JOIN PWA_IWT_EVENTS e
+          ON r.event_id = e.event_id AND r.year = e.year AND r.source = e.source
+        JOIN ATHLETE_SOURCE_IDS asi
+          ON r.athlete_id = asi.source_id AND r.source = asi.source
+        WHERE e.id = %s AND r.division_label LIKE %s
+          AND CAST(r.place AS UNSIGNED) BETWEEN 1 AND %s
+    """
+    return sql, (event_id, f"%{division_fragment}%", top)
+
+
 # A slalom heat_id is ``{ladder}_r{round}_h{name}``. This MySQL REGEXP isolates
 # slalom heats and excludes wave/freestyle heats (which use a ``{n}_{round}{a/b}``
 # format with no ``_r..._h``). Mirrors SLALOM_HEAT_REGEX in the app's
 # slalom_session_db_scoring engine, verified 100% on prod.
 SLALOM_HEAT_REGEX = r"_r[0-9]+_h"
+
+
+def build_slalom_recap_query(event_id: int, division_label: str) -> tuple[str, tuple]:
+    """Each rider's overall place in every completed elimination of a division.
+
+    Incomplete eliminations (a ladder abandoned after the quarters) are left
+    out: they produced no placings and do not count towards the result.
+    """
+    sql = """
+        SELECT athlete_id, athlete_name, elimination_no, place
+        FROM SLALOM_ELIMINATION_VIEW
+        WHERE event_id = %s AND division_label = %s AND status = 'complete'
+        ORDER BY elimination_no
+    """
+    return sql, (event_id, division_label)
+
+
+def build_slalom_heat_wins_query(event_id: int, division_label: str) -> tuple[str, tuple]:
+    """Heats sailed and heats won per rider, across completed eliminations."""
+    sql = """
+        SELECT asi.athlete_id,
+               COUNT(*) AS heats_sailed,
+               SUM(hr.place = 1) AS heat_wins
+        FROM PWA_IWT_HEAT_RESULTS hr
+        JOIN PWA_IWT_EVENTS e
+            ON hr.pwa_event_id = e.event_id
+           AND hr.pwa_year     = e.year
+           AND hr.source       = e.source
+        JOIN ATHLETE_SOURCE_IDS asi
+            ON hr.athlete_id = asi.source_id
+           AND hr.source     = asi.source
+        WHERE e.id = %s AND hr.heat_id REGEXP %s
+          AND SUBSTRING_INDEX(hr.heat_id, '_r', 1) IN (
+              SELECT ladder_id FROM SLALOM_ELIMINATION_VIEW
+              WHERE event_id = %s AND division_label = %s AND status = 'complete')
+        GROUP BY asi.athlete_id
+    """
+    return sql, (event_id, SLALOM_HEAT_REGEX, event_id, division_label)
 
 
 def build_slalom_mvp_heats_query(event_id: int) -> tuple[str, tuple]:

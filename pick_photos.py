@@ -72,6 +72,41 @@ def _athlete_index(event_id, sex):
     return {a["athlete_id"]: a for a in resp.json().get("athletes", [])}
 
 
+def _slalom_index(event_id, athlete_ids):
+    """Sail and name for slalom riders, which the API's athlete list omits.
+
+    Read off the event's own elimination results, so it is the sail used on
+    the water. Needs the DB tunnel; returns {} without it.
+    """
+    if not athlete_ids:
+        return {}
+    try:
+        from pipeline.db import run_query
+        marks = ",".join(["%s"] * len(athlete_ids))
+        rows = run_query(
+            f"SELECT DISTINCT v.athlete_id, v.athlete_name, v.sail_number, a.country_code "
+            f"FROM SLALOM_ELIMINATION_VIEW v JOIN ATHLETES a ON a.id = v.athlete_id "
+            f"WHERE v.event_id = %s AND v.athlete_id IN ({marks})",
+            (event_id, *athlete_ids))
+    except Exception as exc:
+        print(f"  slalom sail lookup unavailable ({exc})")
+        return {}
+    return {r["athlete_id"]: {"name": r["athlete_name"], "sail_number": r["sail_number"],
+                              "country": r["country_code"] or _sail_country(r["sail_number"])}
+            for r in rows}
+
+
+# Single-letter PWA sail prefixes, for riders with no country on record.
+# Photographers file them under the three-letter code (Mortefon F-14 -> FRA14).
+_SAIL_LETTER_COUNTRY = {"F": "France", "E": "Spain", "I": "Italy",
+                        "G": "Germany", "H": "Netherlands", "K": "United Kingdom"}
+
+
+def _sail_country(sail):
+    prefix = (sail or "").split("-")[0].upper()
+    return _SAIL_LETTER_COUNTRY.get(prefix, "")
+
+
 def _event_dir(event_id):
     """The Drive folder holding this event's photos, plus its name and year."""
     event = fetch_event(event_id)
@@ -474,6 +509,7 @@ def main():
     index = _athlete_index(args.event, args.sex)
     if args.athletes:
         wanted = [int(x) for x in args.athletes.split(",")]
+        index.update(_slalom_index(args.event, [a for a in wanted if a not in index]))
         riders = [{"athlete_id": a, "name": index.get(a, {}).get("name", str(a)),
                    "score": 0.0, "rank_label": "", "metric": args.score_type.upper()}
                   for a in wanted]

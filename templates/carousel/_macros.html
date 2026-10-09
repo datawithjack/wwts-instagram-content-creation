@@ -73,3 +73,31 @@
 <div class="pill-muted">{{ pill_text }}</div>
 {% endif %}
 {% endmacro %}
+
+{# Headshot with the flag over its bottom-right corner, as on the top 10 and
+   Sylt Kings tables. Needs thumb_styles() in the slide's head. #}
+{% macro thumb_cell(row) %}
+<div class="col-thumb">{% if row.thumb_url %}<img src="{{ row.thumb_url }}" alt="{{ row.athlete }}" onerror="this.outerHTML='<div class=&quot;thumb-placeholder&quot;>{{ row.athlete[:1] }}</div>'">{% else %}<div class="thumb-placeholder">{{ row.athlete[:1] }}</div>{% endif %}{% if row.country %}<img class="thumb-flag" src="https://flagcdn.com/w40/{{ row.country | lower }}.png" alt="{{ row.country }}">{% endif %}</div>
+{% endmacro %}
+
+{% macro thumb_styles() %}
+<style>
+    .col-thumb { width: 96px; flex-shrink: 0; position: relative; }
+    .col-thumb > img:not(.thumb-flag),
+    .col-thumb .thumb-placeholder {
+        width: 64px; height: 64px; border-radius: 8px;
+        object-fit: cover; display: block;
+        background: rgba(10, 14, 26, 0.6);
+    }
+    .col-thumb .thumb-flag {
+        position: absolute; bottom: -4px; left: 42px;
+        width: 32px; height: 22px; border-radius: 3px;
+        border: 2px solid #0a0e1a; object-fit: cover;
+    }
+    .col-thumb .thumb-placeholder {
+        display: flex; align-items: center; justify-content: center;
+        font-family: var(--font-display); font-size: 30px;
+        color: rgba(255, 255, 255, 0.30);
+    }
+</style>
+{% endmacro %}

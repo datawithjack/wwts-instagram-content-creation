@@ -47,6 +47,18 @@
         z-index: 1;
     }
 
+    /* Raised fade, for a busy frame where the name would sit on the photo. */
+    .photo-bg.raised::after {
+        background: linear-gradient(
+            to bottom,
+            rgba(8, 20, 40, 0.00) 0%,
+            rgba(10, 14, 26, 0.00) 36%,
+            rgba(10, 14, 26, 0.66) 52%,
+            rgba(10, 14, 26, 0.95) 66%,
+            rgba(10, 14, 26, 1.00) 100%
+        );
+    }
+
     /* ── Portrait fallback ──
        Same hero footprint and the same gradient as the action shot, so the
        slide reads as one design either way. The photo is a face crop, so it
@@ -273,6 +285,68 @@
         overflow: hidden;
     }
 
+    /* ── Slalom: finish in each elimination ── */
+    .elim-label {
+        font-family: var(--font-body);
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.40);
+        margin: 26px 0 8px;
+    }
+
+    .elim-strip { display: flex; gap: 8px; }
+
+    .elim-chip {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 8px 0 6px;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--color-text-primary);
+    }
+
+    .elim-chip.place-1 { background: var(--color-rank-1st); color: var(--color-bg); }
+    .elim-chip.place-2 { background: var(--color-rank-2nd); color: var(--color-bg); }
+    .elim-chip.place-3 { background: var(--color-rank-3rd); color: var(--color-bg); }
+    /* Muted so the strip supports the stats rather than outshining them. */
+    .elim-chip.place-1, .elim-chip.place-2, .elim-chip.place-3 { filter: saturate(0.55) brightness(0.8); }
+
+    .elim-no {
+        font-family: var(--font-body);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        opacity: 0.6;
+        margin-bottom: 5px;
+    }
+
+    .elim-place {
+        font-family: var(--font-display);
+        font-size: 40px;
+        line-height: 1;
+    }
+
+    .elim-suffix { font-size: 20px; margin-left: 1px; }
+
+    /* Discarded results: dimmed, with a diagonal strike across the chip. */
+    .elim-chip { position: relative; overflow: hidden; }
+    .elim-chip.discarded { opacity: 0.45; }
+    .elim-chip.discarded::after {
+        content: '';
+        position: absolute;
+        left: 8%; right: 8%; top: 50%;
+        height: 3px;
+        background: currentColor;
+        transform: rotate(-20deg);
+    }
+
+    /* A little air between each slalom value and its bar. */
+    .stat-grid.slalom .stat-value { margin-bottom: 8px; }
+
     .stat-cell .stat-bar .fill {
         display: block;
         height: 100%;
@@ -285,7 +359,7 @@
 {% block carousel_content %}
 <div class="container">
     {% if photo_mode == 'action' and photo_url %}
-    <div class="photo-bg">
+    <div class="photo-bg{% if raise_gradient %} raised{% endif %}">
         <img src="{{ photo_url }}" alt="{{ name }}"
              style="object-position: {{ photo_focus | default('center 35%') }}">
     </div>
@@ -310,7 +384,7 @@
         </div>
 
         <div class="stat-note">{{ source_note }}</div>
-        <div class="stat-grid">
+        <div class="stat-grid{% if elim_strip %} slalom{% endif %}">
             {% for stat in stats %}
             <div class="stat-cell{% if stat.row_break %} row-break{% endif %}">
                 <div class="stat-label">{{ stat.label }}</div>
@@ -320,6 +394,18 @@
             </div>
             {% endfor %}
         </div>
+
+        {% if elim_strip %}
+        <div class="elim-label">Finish in each elimination &middot; struck through = discarded</div>
+        <div class="elim-strip">
+            {% for p in elim_strip %}
+            <div class="elim-chip{% if p.place and p.place <= 3 %} place-{{ p.place }}{% endif %}{% if p.discarded %} discarded{% endif %}">
+                <span class="elim-no">E{{ loop.index }}</span>
+                <span class="elim-place">{{ p.place or '-' }}<span class="elim-suffix">{{ p.suffix }}</span></span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
 
         {% if counting_note %}<div class="counting-note">{{ counting_note }}</div>{% endif %}
     </div>

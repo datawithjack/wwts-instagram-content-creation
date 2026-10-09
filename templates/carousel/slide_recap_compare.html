@@ -149,6 +149,16 @@
         padding: 6px 14px;
     }
 
+    .compare-row .row-sublabel {
+        display: block;
+        margin-top: 4px;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: none;
+        color: rgba(255, 255, 255, 0.34);
+    }
+
     .compare-row .row-label {
         width: 154px;
         flex-shrink: 0;
@@ -233,7 +243,7 @@
         <div class="group-head">{{ row.group }}</div>
         {% endif %}
         <div class="compare-row">
-            <div class="row-label">{{ row.label }}</div>
+            <div class="row-label">{{ row.label }}{% if row.sublabel %}<span class="row-sublabel">{{ row.sublabel }}</span>{% endif %}</div>
             {% for cell in row.cells %}
             <div class="cell {% if cell.is_leader %}leader{% endif %}">
                 <div class="value">{{ cell.value }}</div>
