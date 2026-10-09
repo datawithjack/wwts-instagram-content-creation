@@ -750,7 +750,7 @@ def build_sylt_kings_query(sex: str, discipline: str = "Wave") -> tuple[str, tup
 # Venues the Kings/Queens post can be built for besides Sylt, as the text their
 # events carry in event_name. "Aloha" and not "Maui": the Maui Pro-Am and the
 # 2026 Maui Pro are different events on the same island.
-VENUE_EVENT_PATTERNS = {"Aloha": "Aloha"}
+VENUE_EVENT_PATTERNS = {"Aloha": "Aloha", "Yokosuka": "Yokosuka"}
 
 # One rider stored twice, once per source, so the view hands each half its
 # own id and the record splits across two cards. Merged onto the PWA id,
@@ -769,43 +769,76 @@ def build_venue_kings_query(venue: str, sex: str,
     rider one id across PWA and LiveHeats, and from 2024 the WWT events are
     LiveHeats rows. Same columns, winner test, inclusion rule and order as the
     Sylt query, so the slides and caption take either.
+
+    Slalom reads every ``SLALOM_RESULT_LABELS`` spelling and adds the era
+    columns of ``build_sylt_slalom_query``, so the slides draw the same fin and
+    foil split. The era is read off the label, plus ``SYLT_FOIL_SLALOM_YEARS``:
+    the tour stored its 2022 and 2023 foil races as plain "Slalom". A title is
+    one event *and* label, because 2017 and 2018 ran a fin and a foil race.
+    Unlike Sylt there is no rankings table behind it, so a venue's record
+    starts where its results rows do.
     """
     pattern = f"%{VENUE_EVENT_PATTERNS[venue]}%"
+    slalom = discipline == "Slalom"
+    labels = (tuple(d.format(sex=sex) for d in SLALOM_RESULT_LABELS) if slalom
+              else (f"{discipline} {sex}",))
+    marks = ", ".join(["%s"] * len(labels))
     merged_id = ("CASE r.athlete_id "
                  + " ".join(f"WHEN {old} THEN {new}"
                             for old, new in VENUE_ATHLETE_ID_MERGE.items())
                  + " ELSE r.athlete_id END")
+    place = "CAST(r.placement AS UNSIGNED)"
+    era = ("CASE WHEN r.division_label LIKE 'Foil%%'"
+           " OR r.division_label LIKE 'Slalom Foil%%'"
+           " OR r.division_label LIKE 'Slalom X%%'"
+           " OR r.event_year IN ("
+           + ", ".join(str(y) for y in SYLT_FOIL_SLALOM_YEARS)
+           + ") THEN 'foil' ELSE 'fin' END")
+    if slalom:
+        placings = f"CONCAT(r.event_year, ':', {place}, ':', {era})"
+        era_cols = f"""
+               SUM({place} = 1 AND {era} = 'fin') AS fin_wins,
+               SUM({place} = 1 AND {era} = 'foil') AS foil_wins,
+               SUM({place} BETWEEN 2 AND 3 AND {era} = 'fin') AS fin_podiums,
+               SUM({place} BETWEEN 2 AND 3 AND {era} = 'foil') AS foil_podiums,
+               SUM({era} = 'fin') AS fin_starts,
+               SUM({era} = 'foil') AS foil_starts,
+               GROUP_CONCAT(DISTINCT CASE WHEN {era} = 'foil' THEN r.event_year END
+                            ORDER BY r.event_year) AS foil_years,
+               GROUP_CONCAT(DISTINCT CASE WHEN {era} = 'fin' THEN r.event_year END
+                            ORDER BY r.event_year) AS fin_years,"""
+    else:
+        placings = f"CONCAT(r.event_year, ':', {place})"
+        era_cols = ""
     sql = f"""
         SELECT MAX(r.athlete_name) AS athlete,
                MAX(r.nationality) AS nationality,
                {merged_id} AS athlete_id,
                MAX(r.liveheats_picture_url) AS photo_url,
-               SUM(CAST(r.placement AS UNSIGNED) = 1) AS wins,
-               SUM(CAST(r.placement AS UNSIGNED) BETWEEN 2 AND 3) AS podiums,
-               COUNT(*) AS starts,
-               MIN(CAST(r.placement AS UNSIGNED)) AS best_finish,
-               ROUND(AVG(CAST(r.placement AS UNSIGNED)), 1) AS avg_finish,
-               GROUP_CONCAT(DISTINCT CONCAT(r.event_year, ':',
-                                            CAST(r.placement AS UNSIGNED))
+               SUM({place} = 1) AS wins,
+               SUM({place} BETWEEN 2 AND 3) AS podiums,
+               COUNT(*) AS starts,{era_cols}
+               MIN({place}) AS best_finish,
+               ROUND(AVG({place}), 1) AS avg_finish,
+               GROUP_CONCAT(DISTINCT {placings}
                             ORDER BY r.event_year) AS placings
         FROM ATHLETE_RESULTS_VIEW r
-        WHERE r.division_label = %s
+        WHERE r.division_label IN ({marks})
           AND r.event_name LIKE %s
-          AND CAST(r.placement AS UNSIGNED) > 0
-          AND r.event_db_id IN (
-              SELECT r2.event_db_id
+          AND {place} > 0
+          AND (r.event_db_id, r.division_label) IN (
+              SELECT r2.event_db_id, r2.division_label
               FROM ATHLETE_RESULTS_VIEW r2
-              WHERE r2.division_label = %s
+              WHERE r2.division_label IN ({marks})
                 AND r2.event_name LIKE %s
-              GROUP BY r2.event_db_id
+              GROUP BY r2.event_db_id, r2.division_label
               HAVING SUM(CAST(r2.placement AS UNSIGNED) = 1) BETWEEN 1 AND 2
           )
         GROUP BY {merged_id}
         HAVING wins >= 1 OR podiums >= 2
         ORDER BY wins DESC, podiums DESC, avg_finish ASC, athlete
     """
-    division = f"{discipline} {sex}"
-    return sql, (division, pattern, division, pattern)
+    return sql, labels + (pattern,) + labels + (pattern,)
 
 
 def build_sylt_editions_query(sex: str, discipline: str = "Wave") -> tuple[str, tuple]:

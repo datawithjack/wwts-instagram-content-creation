@@ -85,9 +85,47 @@ def test_sylt_is_still_the_default():
     assert cover["eyebrow_venue"] == "Sylt, Germany"
 
 
-def test_slalom_is_sylt_only():
-    with pytest.raises(ValueError):
-        build_sylt_kings_slides(ROWS, "Men", discipline="Slalom", venue="Aloha")
+# ── A second venue and discipline: Yokosuka slalom ──
+
+def test_wave_query_carries_no_era_columns():
+    """Wave never split by equipment; an era column would put FIN on cards."""
+    sql, _ = build_venue_kings_query("Aloha", "Men")
+    assert "foil_wins" not in sql
+
+
+def test_slalom_query_reads_every_slalom_spelling_with_the_era():
+    """Yokosuka is 'Slalom Men' on a fin, 'Foil Men' 2017-2019 and
+    'Slalom Foil Men' from 2024, so one label would drop most of the record."""
+    sql, params = build_venue_kings_query("Yokosuka", "Men", "Slalom")
+    for label in ("Slalom Men", "Foil Men", "Slalom Foil Men"):
+        assert label in params
+    assert "Slalom Foil Women" not in params
+    assert "%Yokosuka%" in params
+    for col in ("fin_wins", "foil_wins", "fin_years", "foil_years"):
+        assert f"AS {col}" in sql
+    # 2017 and 2018 ran a fin and a foil race each: two titles, not one.
+    assert "GROUP BY r2.event_db_id, r2.division_label" in sql
+
+
+YOKO_ROWS = [
+    dict(_row("Fin Rider", 11, 2, 0, "2017:1:fin,2018:1:fin"),
+         fin_wins=2, foil_wins=0, fin_podiums=0, foil_podiums=0,
+         fin_starts=2, foil_starts=0, fin_years="2017,2018", foil_years=None),
+    dict(_row("Foil Rider", 12, 2, 0, "2018:1:foil,2024:1:foil"),
+         fin_wins=0, foil_wins=2, fin_podiums=0, foil_podiums=0,
+         fin_starts=0, foil_starts=2, fin_years=None, foil_years="2018,2024"),
+]
+
+
+def test_yokosuka_slalom_builds_the_slalom_post():
+    slides = build_sylt_kings_slides(YOKO_ROWS, "Men", discipline="Slalom",
+                                     venue="Yokosuka")
+    assert slides[0]["title_lines"] == ("FASTEST", "MEN IN", "YOKOSUKA")
+    assert slides[0]["eyebrow_venue"] == "Yokosuka, Japan"
+    assert any(s["type"] == "sylt_eras" for s in slides)
+    card = next(s for s in slides if s.get("athlete_name") == "Foil Rider")
+    assert "at Yokosuka World Cup" in card["years_line"]
+    assert all("Sylt" not in str(s) for s in slides)
 
 
 # ── Credits and caption ──

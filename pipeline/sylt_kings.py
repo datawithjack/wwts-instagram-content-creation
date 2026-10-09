@@ -232,6 +232,14 @@ VENUES = {
         "photo_events": (128, 134, 29),
         "tour_handle": None,
     },
+    "Yokosuka": {
+        "place": "Yokosuka, Japan",
+        "title": "YOKOSUKA",
+        "event": "Yokosuka World Cup",
+        # 2026 by API event id; earlier editions have no folder yet.
+        "photo_events": (131,),
+        "tour_handle": None,
+    },
 }
 
 # How a discipline is named on the slides, where that differs from the name
@@ -280,10 +288,6 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
     Returns:
         List of slide dicts: cover, one per rider, chart, cta.
     """
-    # The slalom record is built from the rankings table, which only Sylt's
-    # query reads (``build_sylt_slalom_query``).
-    if discipline == "Slalom" and venue != "Sylt":
-        raise ValueError("The slalom Kings post is Sylt-only")
     title_word = "KINGS" if sex == "Men" else "QUEENS"
     title_lines = _title_lines(sex, discipline, venue)
     eyebrow = _eyebrow(discipline, venue)
@@ -294,7 +298,7 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
     # equipment, and a fin/foil count on those posts draws a distinction they
     # do not make.
     slalom = discipline == "Slalom"
-    sample = (_sample_line(editions, fin, foil) if slalom
+    sample = (_sample_line(editions, fin, foil, venue) if slalom
               else _sample_line(editions, venue=venue))
     shared = _shared_years(rows, fin & foil)
     criteria = _criteria_note(shared, foil, discipline)
