@@ -17,7 +17,7 @@ from pipeline.api import fetch_head_to_head, fetch_site_stats, fetch_athlete_eve
 from pipeline.captions import build_caption
 from pipeline.db import run_query
 from pipeline.helpers import nationality_to_iso, clean_event_name, heat_label_from_id, short_round_name, full_round_name
-from pipeline.queries import build_top10_query, build_freestyle_top10_query, build_canary_kings_query, build_athlete_rise_query, build_wave_count_query, build_fantasy_mvp_points_query, build_fantasy_session_pick_pct_query, build_sylt_kings_query, build_sylt_editions_query, build_sylt_slalom_query, build_sylt_slalom_editions_query
+from pipeline.queries import build_top10_query, build_freestyle_top10_query, build_canary_kings_query, build_athlete_rise_query, build_wave_count_query, build_fantasy_mvp_points_query, build_fantasy_session_pick_pct_query, build_sylt_kings_query, build_sylt_editions_query, build_venue_kings_query, build_sylt_slalom_query, build_sylt_slalom_editions_query
 from pipeline.post_options import apply_post_options
 from pipeline.templates import render_template, get_dummy_data, resolve_action_url, resolve_hero_url, resolve_hero_focus, resolve_cover_url, resolve_photo_credit
 from pipeline.renderer import render_to_png, render_to_video, render_carousel, render_h2h_carousel, render_rp_carousel, render_analysis_carousel, render_athlete_rise_carousel, render_picks_carousel, render_wave_count_carousel, render_fuerte_fantasy_mvps_carousel, render_slalom_mvps_carousel, render_finals_preview_carousel, render_finals_recap_carousel, render_sylt_kings_carousel
@@ -704,6 +704,7 @@ def fetch_live_data(template_name: str, args) -> dict:
         # to nineteen slides combined.
         sex = args.sex or "Men"
         discipline = getattr(args, "discipline", None) or "Wave"
+        venue = getattr(args, "venue", None) or "Sylt"
         # Slalom comes from a different table. The results the wave and
         # freestyle records are built from carry no slalom before 2016, which
         # leaves Sylt three editions and no repeat winner; the rankings carry
@@ -711,18 +712,23 @@ def fetch_live_data(template_name: str, args) -> dict:
         if discipline == "Slalom":
             rows_sql, rows_params = build_sylt_slalom_query(sex)
             ed_sql, ed_params = build_sylt_slalom_editions_query(sex)
+        # Other venues read both sources and state no edition count (#35).
+        elif venue != "Sylt":
+            rows_sql, rows_params = build_venue_kings_query(venue, sex, discipline)
+            ed_sql = None
         else:
             rows_sql, rows_params = build_sylt_kings_query(sex, discipline)
             ed_sql, ed_params = build_sylt_editions_query(sex, discipline)
-        editions = run_query(ed_sql, ed_params)
+        editions = run_query(ed_sql, ed_params) if ed_sql else None
         rows = run_query(rows_sql, rows_params)
         from pipeline.sylt_kings import sylt_photo_credits
         return {
             "rows": rows,
             "sex": sex,
             "discipline": discipline,
+            "venue": venue,
             "editions": editions[0] if editions else None,
-            "photo_credits": sylt_photo_credits(rows, discipline),
+            "photo_credits": sylt_photo_credits(rows, discipline, venue),
         }
 
     if template_name == "wave_count":
@@ -1026,6 +1032,8 @@ def main():
     parser.add_argument("--sex", choices=["Men", "Women"], help="Sex filter for top 10 / athlete rise / sylt kings")
     parser.add_argument("--discipline", choices=["Wave", "Freestyle", "Slalom"], default="Wave",
                         help="Discipline for sylt_kings and finals_recap (default Wave)")
+    parser.add_argument("--venue", choices=["Sylt", "Aloha"], default="Sylt",
+                        help="Venue for sylt_kings (default Sylt)")
     parser.add_argument("--location", help="Location pattern for athlete rise (e.g. 'Gran Canaria')")
     parser.add_argument("--picks-data", help="Path to event picks JSON file (event_picks template)")
     parser.add_argument("--men", help="Finals preview: comma-separated men's finalist athlete IDs, in draw order")
@@ -1109,7 +1117,8 @@ def main():
         elif template_name == "sylt_kings":
             from pipeline.sylt_kings import build_sylt_kings_slides
             slides = build_sylt_kings_slides(data["rows"], data["sex"], data.get("editions"),
-                                             data.get("discipline", "Wave"))
+                                             data.get("discipline", "Wave"),
+                                             data.get("venue", "Sylt"))
         elif template_name == "athlete_rise":
             from pipeline.athlete_rise_carousel import build_athlete_rise_slides
             slides = build_athlete_rise_slides(data)
@@ -1216,9 +1225,10 @@ def main():
         elif template_name == "sylt_kings":
             result_paths = render_sylt_kings_carousel(
                 data["rows"], data["sex"], carousel_dir,
-                base_name=f"sylt_kings_{data.get('discipline', 'wave').lower()}_{data['sex'].lower()}_{timestamp}",
+                base_name=f"{data.get('venue', 'Sylt').lower()}_kings_{data.get('discipline', 'wave').lower()}_{data['sex'].lower()}_{timestamp}",
                 editions=data.get("editions"),
                 discipline=data.get("discipline", "Wave"),
+                venue=data.get("venue", "Sylt"),
                 width=width, height=height, dpr=dpr,
             )
         elif template_name == "event_picks":

@@ -246,7 +246,7 @@ def test_the_png_render_builds_the_discipline_it_was_asked_for():
     sig = inspect.signature(renderer.render_sylt_kings_carousel)
     assert "discipline" in sig.parameters
     src = inspect.getsource(renderer.render_sylt_kings_carousel)
-    assert "build_sylt_kings_slides(rows, sex, editions, discipline)" in src
+    assert "build_sylt_kings_slides(rows, sex, editions, discipline, venue)" in src
 
 
 def test_the_best_result_names_the_race_it_was_sailed_in():

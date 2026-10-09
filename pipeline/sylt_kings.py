@@ -105,12 +105,13 @@ DISCIPLINE_PHOTO_FOLDER = {
 }
 
 
-def _photo_events(discipline: str) -> tuple:
-    """``SYLT_PHOTO_EVENTS`` with this discipline's own folder searched first."""
+def _photo_events(discipline: str, venue: str = "Sylt") -> tuple:
+    """The venue's photo folders with this discipline's own folder searched first."""
+    folders = VENUES[venue]["photo_events"]
     own = DISCIPLINE_PHOTO_FOLDER.get(discipline)
-    if not own:
-        return SYLT_PHOTO_EVENTS
-    return (own,) + tuple(f for f in SYLT_PHOTO_EVENTS if f != own)
+    if own not in folders:
+        return folders
+    return (own,) + tuple(f for f in folders if f != own)
 
 
 # Riders the ATHLETES table does not carry cleanly. The freestyle list is old
@@ -190,7 +191,7 @@ def _nationality(row: dict) -> str:
             or row.get("nationality") or "")
 
 
-def _title_lines(sex: str, discipline: str = "Wave") -> tuple:
+def _title_lines(sex: str, discipline: str = "Wave", venue: str = "Sylt") -> tuple:
     """The cover headline, as the three lines it is set on.
 
     Slalom is the exception to the KINGS/QUEENS headline. A slalom record is
@@ -202,12 +203,36 @@ def _title_lines(sex: str, discipline: str = "Wave") -> tuple:
     instead: "MOST STYLISH" took the cover from 898px to 1197px. SYLT stays
     on its own last line in both headlines, so the venue lands the same way.
     """
+    title = VENUES[venue]["title"]
     if discipline == "Slalom":
-        return ("FASTEST", "MEN IN" if sex == "Men" else "WOMEN IN", "SYLT")
-    return ("KINGS" if sex == "Men" else "QUEENS", "OF", "SYLT")
+        return ("FASTEST", "MEN IN" if sex == "Men" else "WOMEN IN", title)
+    return ("KINGS" if sex == "Men" else "QUEENS", "OF", title)
 
 
-VENUE = "Sylt, Germany"
+# What changes when the post is built for another venue. ``place`` heads the
+# eyebrow, ``title`` ends the cover headline, ``event`` closes each card's
+# years line. ``tour_handle`` is the library the venue's photos come from;
+# None where that is not known, because a guessed credit is worse than none.
+VENUES = {
+    "Sylt": {
+        "place": "Sylt, Germany",
+        "title": "SYLT",
+        "event": "Sylt World Cup",
+        "photo_events": SYLT_PHOTO_EVENTS,
+        # Every Sylt folder is filled from the PWA library, so the tour is
+        # owed a credit on any post built from those photos, including one
+        # where no individual photographer is tagged.
+        "tour_handle": "@pwaworldtour",
+    },
+    "Aloha": {
+        "place": "Maui, Hawaii",
+        "title": "ALOHA",
+        "event": "Aloha Classic",
+        # 2026, 2025, 2024 by API event id, newest first as for Sylt.
+        "photo_events": (128, 134, 29),
+        "tour_handle": None,
+    },
+}
 
 # How a discipline is named on the slides, where that differs from the name
 # the query is built on. Nothing needs renaming while the slalom post ranks
@@ -228,10 +253,10 @@ DISCIPLINE_LABELS = {}
 ERA_LABELS = {"fin": "FIN", "foil": "FOIL"}
 
 
-def _eyebrow(discipline: str) -> str:
+def _eyebrow(discipline: str, venue: str = "Sylt") -> str:
     """Venue and discipline. Sylt runs wave and freestyle at the same event,
     so a post that names only the venue does not say which record it ranks."""
-    return f"{VENUE} · {_discipline_label(discipline)}"
+    return f"{VENUES[venue]['place']} · {_discipline_label(discipline)}"
 
 
 def _discipline_label(discipline: str) -> str:
@@ -240,7 +265,8 @@ def _discipline_label(discipline: str) -> str:
 
 
 def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
-                            discipline: str = "Wave") -> list[dict]:
+                            discipline: str = "Wave",
+                            venue: str = "Sylt") -> list[dict]:
     """Build the carousel for one division.
 
     Args:
@@ -254,9 +280,13 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
     Returns:
         List of slide dicts: cover, one per rider, chart, cta.
     """
+    # The slalom record is built from the rankings table, which only Sylt's
+    # query reads (``build_sylt_slalom_query``).
+    if discipline == "Slalom" and venue != "Sylt":
+        raise ValueError("The slalom Kings post is Sylt-only")
     title_word = "KINGS" if sex == "Men" else "QUEENS"
-    title_lines = _title_lines(sex, discipline)
-    eyebrow = _eyebrow(discipline)
+    title_lines = _title_lines(sex, discipline, venue)
+    eyebrow = _eyebrow(discipline, venue)
     common = {"accent_color": ACCENT_COLOR}
     foil = _foil_years(rows)
     fin = _fin_years(rows)
@@ -265,7 +295,7 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
     # do not make.
     slalom = discipline == "Slalom"
     sample = (_sample_line(editions, fin, foil) if slalom
-              else _sample_line(editions))
+              else _sample_line(editions, venue=venue))
     shared = _shared_years(rows, fin & foil)
     criteria = _criteria_note(shared, foil, discipline)
 
@@ -277,7 +307,7 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
         "eyebrow": eyebrow,
         # The cover styles the discipline on its own, so it gets the two parts
         # separately as well as the joined line.
-        "eyebrow_venue": VENUE,
+        "eyebrow_venue": VENUES[venue]["place"],
         # No tag on the slalom cover: FASTEST MEN IN SYLT already says which
         # race this is, and a SLALOM tag above it says it twice. KINGS OF
         # SYLT does not, so the wave and freestyle covers keep theirs. The
@@ -319,12 +349,14 @@ def build_sylt_kings_slides(rows: list[dict], sex: str, editions: dict = None,
     dual = _dual_era_winners(rows)
     dual_label = "ONLY {} TO WIN ON FIN AND FOIL".format(
         "MAN" if sex == "Men" else "WOMAN")
-    events = _photo_events(discipline)
+    events = _photo_events(discipline, venue)
     for i, (rank, row) in reversed(list(enumerate(ranked))):
         slides.append(_rider_slide(row, rank, sample, shared, foil,
                                    foil_leader=i in leaders,
                                    dual_era_label=dual_label if i in dual else "",
-                                   events=events, **common))
+                                   events=events,
+                                   event_label=VENUES[venue]["event"],
+                                   **common))
 
     slides.extend(_table_slides(
         _table_rows(rows, shared, foil), criteria,
@@ -398,7 +430,7 @@ def _table_slides(table: list[dict], criteria: str, **fields) -> list[dict]:
     } for i, chunk in enumerate(chunks)]
 
 
-def _sample_line(editions: dict, fin=None, foil=None) -> str:
+def _sample_line(editions: dict, fin=None, foil=None, venue: str = "Sylt") -> str:
     """State the sample the ranking is drawn from, e.g. "10 editions, 2008-2025".
 
     Six Sylt editions are missing from the data and three more are unusable,
@@ -415,7 +447,9 @@ def _sample_line(editions: dict, fin=None, foil=None) -> str:
     started: the venue has run since 1984 and we hold none of it.
     """
     if not editions or not editions.get("editions"):
-        return "Sylt, Germany"
+        # Other venues state no sample yet (#35), and their place is already
+        # in the eyebrow above this line, so repeating it says nothing.
+        return VENUES[venue]["place"] if venue == "Sylt" else ""
     total = int(editions["editions"])
     first, last = editions.get("first_year"), editions.get("last_year")
     if fin is not None and foil is not None and first:
@@ -640,7 +674,8 @@ def _dual_era_winners(rows: list[dict]) -> set:
 def _rider_slide(row: dict, rank: int, sample: str, shared: set,
                  foil: set = frozenset(), foil_leader: bool = False,
                  dual_era_label: str = "",
-                 events: tuple = SYLT_PHOTO_EVENTS, **common) -> dict:
+                 events: tuple = SYLT_PHOTO_EVENTS,
+                 event_label: str = "Sylt World Cup", **common) -> dict:
     """One rider's card.
 
     ``photo_mode`` picks the layout: a landscape action shot goes full bleed,
@@ -690,7 +725,8 @@ def _rider_slide(row: dict, rank: int, sample: str, shared: set,
         "photo_focus": focus,
         "is_champion": wins > 0,
         "years_line": _years_line(win_years, podiums,
-                                  [y for y, _, _ in placings], shared),
+                                  [y for y, _, _ in placings], shared,
+                                  event_label),
         # Only the riders whose own years carry a mark explain it. A note on
         # all eight cards would raise a question seven of them do not answer.
         "shared_note": _card_note(win_years, shared),
@@ -794,13 +830,8 @@ def _hero(athlete_id, events: tuple = SYLT_PHOTO_EVENTS) -> tuple[str, str, obje
     return resolve_hero_url(athlete_id, None), DEFAULT_FOCUS, None
 
 
-# Every Sylt folder is filled from the PWA library, so the tour is owed a
-# credit on any post built from those photos, including one where no individual
-# photographer is tagged.
-TOUR_HANDLE = "@pwaworldtour"
-
-
-def sylt_photo_credits(rows: list[dict], discipline: str = "Wave") -> list[str]:
+def sylt_photo_credits(rows: list[dict], discipline: str = "Wave",
+                       venue: str = "Sylt") -> list[str]:
     """Photographer handles for the rider cards, in slide order.
 
     Every rider on the list gets a card, so slide order is row order and every
@@ -818,7 +849,7 @@ def sylt_photo_credits(rows: list[dict], discipline: str = "Wave") -> list[str]:
     """
     credits = []
     used_sylt_photo = False
-    events = _photo_events(discipline)
+    events = _photo_events(discipline, venue)
     for row in rows:
         athlete_id = row.get("athlete_id")
         _, _, event_id = _hero(athlete_id, events)
@@ -839,8 +870,9 @@ def sylt_photo_credits(rows: list[dict], discipline: str = "Wave") -> list[str]:
             if handle not in credits:
                 credits.append(handle)
 
-    if used_sylt_photo and TOUR_HANDLE not in credits:
-        credits.append(TOUR_HANDLE)
+    tour_handle = VENUES[venue]["tour_handle"]
+    if used_sylt_photo and tour_handle and tour_handle not in credits:
+        credits.append(tour_handle)
     return credits
 
 
@@ -911,7 +943,8 @@ def _best_years_note(best_years: list, shared: set) -> str:
 
 
 def _years_line(win_years: list[int], podiums: int, years: list[int],
-                shared: set = frozenset()) -> str:
+                shared: set = frozenset(),
+                event_label: str = "Sylt World Cup") -> str:
     """The years won, or what the rider has instead, and the span behind it.
 
     A rider on the list without a title is there on podiums, so saying nothing
@@ -926,10 +959,10 @@ def _years_line(win_years: list[int], podiums: int, years: list[int],
     head = ("Won " + ", ".join(_mark(y, shared) for y in win_years)
             if win_years else f"{podiums} podiums")
     if not years:
-        return f"{head} at Sylt World Cup"
+        return f"{head} at {event_label}"
     first, last = min(years), max(years)
     span = first if first == last else f"{first}-{last}"
-    return f"{head} at Sylt World Cup, {span}"
+    return f"{head} at {event_label}, {span}"
 
 
 def _place_label(place) -> str:

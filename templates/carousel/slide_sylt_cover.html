@@ -86,7 +86,7 @@
 
     <div class="divider"></div>
 
-    <div class="cover-sample">{{ sample_line }}</div>
+    {% if sample_line %}<div class="cover-sample">{{ sample_line }}</div>{% endif %}
     <div class="cover-criteria">{{ criteria_note }}</div>
 </div>
 <script>

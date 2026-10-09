@@ -256,7 +256,7 @@
     <div class="table-head-block">
         <div class="sylt-eyebrow">{{ eyebrow }}{% if label %} · {{ label }}{% endif %}</div>
         <div class="sylt-title">{{ slide_title }}</div>
-        <div class="sylt-subtitle">{{ sample_line }}</div>
+        {% if sample_line %}<div class="sylt-subtitle">{{ sample_line }}</div>{% endif %}
     </div>
 
     <div class="sylt-table">

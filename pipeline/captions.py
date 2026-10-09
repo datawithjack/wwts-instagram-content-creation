@@ -272,15 +272,16 @@ def _caption_sylt_kings(data: dict, site_url: str) -> str:
     # The cards clean these names up (a nickname stored in brackets, a surname
     # with no first name); the caption has to read the same, or the post names
     # the rider one way on the slide and another underneath it.
-    from pipeline.sylt_kings import _athlete_name
+    from pipeline.sylt_kings import VENUES, _athlete_name
 
     rows = [dict(r, athlete=_athlete_name(r)) for r in data.get("rows", [])]
     sex = data.get("sex", "Men")
     editions = data.get("editions") or {}
     title_word = "King" if sex == "Men" else "Queen"
+    venue = VENUES[data.get("venue", "Sylt")]["title"].title()
     # The caption asks the question the cover asks, so this follows the cover
     # headline rather than the discipline.
-    headline = f"Who is the {title_word} of Sylt?"
+    headline = f"Who is the {title_word} of {venue}?"
 
     leader = rows[0]["athlete"] if rows else "?"
     span = ""
