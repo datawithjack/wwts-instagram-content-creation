@@ -94,7 +94,7 @@
 
 {% block carousel_content %}
 <div class="container">
-    <div class="opt-eyebrow">{{ event.location }} {{ event.year | default('') }} &middot; Freestyle Fantasy</div>
+    <div class="opt-eyebrow">{{ event.location }} {{ event.year | default('') }} &middot; {{ discipline_label | default('Freestyle') }} Fantasy</div>
     <div class="opt-title">OPTIMAL <span class="accent">TEAM</span></div>
     <div class="opt-subtitle">Every point that was on offer</div>
 

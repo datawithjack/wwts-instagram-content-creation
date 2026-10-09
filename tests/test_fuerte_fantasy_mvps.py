@@ -383,3 +383,12 @@ class TestTierView:
         assert opt["team_total"] == 100.0 + 80.0 + 70.0 + 62.5
         assert opt["podium_total"] == 25
         assert opt["total"] == opt["team_total"] + 25
+
+
+def test_a_wildcards_total_is_his_team_points_plus_his_podium_bonus():
+    # Wolf at Sylt foil 2026: 270 heat points as a wildcard, and 2nd overall.
+    men = [{"athlete_id": 1338, "athlete": "Fabian Wolf", "country": "de",
+            "single_pts": 270.0, "double_pts": 0.0, "podium_pts": 15}]
+    row = assemble_tier_view(men, {}, {}, {"outside": 1})["tiers"][2]["rows"][0]
+    assert row["team_pts"] == 337.5
+    assert row["total_pts"] == 352.5
