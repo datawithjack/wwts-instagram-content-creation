@@ -344,3 +344,42 @@ class TestTemplateRendering:
             html = render_template(f"carousel/slide_{slide['type']}", slide)
             assert "1080" in html
             assert "1350" in html
+
+
+# ── Tier view: top picks per tier and the optimal team ──
+
+from pipeline.fuerte_fantasy_mvps import assemble_tier_view
+
+
+def _man(aid, name, single, podium=0):
+    return {"athlete_id": aid, "athlete": name, "country": "de",
+            "single_pts": single, "double_pts": 0.0, "podium_pts": podium}
+
+
+class TestTierView:
+    men = [_man(1, "Top A", 100.0, podium=25), _man(2, "Top B", 90.0),
+           _man(3, "Mid A", 80.0), _man(4, "Mid B", 70.0), _man(5, "Mid C", 60.0),
+           _man(6, "Wild A", 50.0), _man(7, "Wild B", 40.0)]
+    tiers = {1: "top5", 2: "top5", 3: "6to15", 4: "6to15", 5: "6to15"}
+    slots = {"top5": 1, "6to15": 2, "outside": 1}
+
+    def view(self):
+        return assemble_tier_view(self.men, self.tiers, {1: 40, 6: 12}, self.slots)
+
+    def test_unlisted_riders_are_wildcards_with_the_multiplier(self):
+        wild = self.view()["tiers"][2]["rows"]
+        assert [r["athlete"] for r in wild] == ["Wild A", "Wild B"]
+        assert wild[0]["heat_pts"] == 50.0
+        assert wild[0]["team_pts"] == 62.5
+
+    def test_total_adds_the_podium_bonus(self):
+        top = self.view()["tiers"][0]["rows"][0]
+        assert top["total_pts"] == 125.0
+        assert top["pct_picked"] == 40
+
+    def test_optimal_team_fills_each_tiers_slots_from_the_best(self):
+        opt = self.view()["optimal"]
+        assert [t["athlete"] for t in opt["team"]] == ["Top A", "Mid A", "Mid B", "Wild A"]
+        assert opt["team_total"] == 100.0 + 80.0 + 70.0 + 62.5
+        assert opt["podium_total"] == 25
+        assert opt["total"] == opt["team_total"] + 25

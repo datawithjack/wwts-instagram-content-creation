@@ -881,3 +881,76 @@ class TestCoverCrop:
         photos = build_slides(_data(riders=self._riders()))[0]["hero_photos"]
 
         assert photos[1]["url"].endswith("/49.jpg")
+
+
+# ── Foil slalom: place-based stats off the eliminations ──
+
+from pipeline.finals_recap import slalom_aggregates
+from pipeline.queries import build_event_podium_query, build_slalom_recap_query
+
+
+class TestSlalomAggregates:
+    # Iachino at Sylt 2026: 2 2 2 2 1 1 6 3
+    agg = slalom_aggregates([2, 2, 2, 2, 1, 1, 6, 3], heats_sailed=24, heat_wins=13)
+
+    def test_counts(self):
+        assert self.agg["elim_wins"] == 2
+        assert self.agg["top3s"] == 7
+        assert self.agg["finals_made"] == 8
+        assert self.agg["avg_finish"] == 2.4
+
+    def test_the_two_worst_are_discarded(self):
+        dropped = [e["place"] for e in self.agg["elim_places"] if e["discarded"]]
+        assert sorted(dropped) == [3, 6]
+
+    def test_net_total_scores_a_win_as_point_seven(self):
+        # 2+2+2+2+0.7+0.7 after dropping the 6th and 3rd
+        assert self.agg["net_total"] == 9.4
+
+    def test_strip_carries_the_ordinal_suffix(self):
+        assert [e["suffix"] for e in self.agg["elim_places"][4:]] == ["st", "st", "th", "rd"]
+
+    def test_a_missed_kept_result_leaves_no_net_total(self):
+        assert slalom_aggregates([1, None, None, 2], discards=1)["net_total"] is None
+
+
+def _slalom_rider(aid, name, place, places):
+    return {"athlete_id": aid, "name": name, "place": place,
+            **slalom_aggregates(places, heats_sailed=24, heat_wins=place)}
+
+
+class TestSlalomSlides:
+    riders = [_slalom_rider(1, "Matteo Iachino", 1, [2, 2, 2, 2, 1, 1, 6, 3]),
+              _slalom_rider(2, "Fabian Wolf", 2, [1, 4, 1, 4, 3, 2, 1, 9])]
+    slides = build_slides({"riders": riders, "division": "Men", "discipline": "Slalom",
+                           "event_meta": {"event_name": "Sylt", "year": 2026}})
+
+    def test_shape_is_cover_riders_compare_cta(self):
+        assert [s["type"] for s in self.slides] == [
+            "recap_cover", "recap_rider", "recap_rider", "recap_compare", "cta"]
+        assert self.slides[0]["title_lines"] == ["MEN'S FOIL SLALOM", "TOP 2"]
+
+    def test_runner_up_shows_the_gap_to_first(self):
+        wolf = self.slides[1]
+        net = next(s for s in wolf["stats"] if s["label"] == "NET TOTAL")
+        assert net["value"] == "11.1"
+        assert net["note"] == "+1.7 to 1st"
+        assert len(wolf["elim_strip"]) == 8
+
+    def test_lower_place_stats_lead_when_lowest(self):
+        compare = self.slides[3]
+        avg = next(r for r in compare["rows"] if r["label"] == "AVG FINISH")
+        assert [c["is_leader"] for c in avg["cells"]] == [True, False]
+        assert avg["sublabel"] == "Incl. discards"
+
+
+def test_podium_query_takes_a_top_n():
+    sql, params = build_event_podium_query(126, "Slalom Foil Men", top=4)
+    assert "BETWEEN 1 AND %s" in sql
+    assert params == (126, "%Slalom Foil Men%", 4)
+
+
+def test_slalom_recap_query_skips_incomplete_eliminations():
+    sql, params = build_slalom_recap_query(126, "Slalom Foil Men")
+    assert "status = 'complete'" in sql
+    assert params == (126, "Slalom Foil Men")
