@@ -304,33 +304,7 @@ def build_slides(data: dict) -> list[dict]:
     badge = {"partner_badge": partner} if partner else {}
     slides = [{"type": "mvp_cover", "event": event, "partner": partner, **common}]
     if data.get("tier_view"):
-        for t in data["tier_view"]["tiers"]:
-            wildcard = t["tier"] == "outside"
-            table = {
-                "type": "mvp_table", "event": event, "rows": t["rows"],
-                "title": t["title"], "title_accent": t["accent"], "subtitle": "Top 5 riders in the tier, ranked by total",
-                "col_1_label": "Points", "col_3_label": "Total", "show_thumbs": True,
-                **badge, **common,
-            }
-            if wildcard:
-                # Show what the rider scored, then the bonus the wildcard slot
-                # added on top, so the x1.25 is visible rather than baked in.
-                table["col_2_label"] = "x1.25"
-                table["footnote"] = ("Points = total heat scores &middot; x1.25 = wildcard bonus"
-                                     " &middot; Picked = % who had them on their team")
-            else:
-                table["col_2_label"] = "Podium"
-                table["footnote"] = ("Points = total heat scores &middot; Podium = bonus for calling"
-                                     " their exact place &middot; Picked = % who had them on their team")
-            for r in t["rows"]:
-                r["col_1"] = "%.1f" % r["heat_pts"]
-                if wildcard:
-                    r["col_2"] = "+%.1f" % (r["team_pts"] - r["heat_pts"])
-                else:
-                    r["col_2"] = f"+{r['podium_pts']}" if r["podium_pts"] else ""
-            slides.append(table)
-        slides.append({"type": "mvp_optimal", "event": event,
-                       "optimal": data["tier_view"]["optimal"], **badge, **common})
+        slides += tier_slides(data["tier_view"], event, common, badge)
     else:
         slides += _fleet_tables(data, event, common)
     slides.append({"type": "mvp_cta", "event": event, "partner": partner, **common})
@@ -340,4 +314,42 @@ def build_slides(data: dict) -> list[dict]:
         slide["slide_number"] = i
         slide["total_slides"] = total
 
+    return slides
+
+
+def tier_slides(tier_view: dict, event: dict, common: dict, badge: dict) -> list[dict]:
+    """One table per men's tier, then the optimal team. Shared with slalom_mvps."""
+    slides = []
+    for t in tier_view["tiers"]:
+        wildcard = t["tier"] == "outside"
+        table = {
+            "type": "mvp_table", "event": event, "rows": t["rows"],
+            "title": t["title"], "title_accent": t["accent"], "subtitle": "Top 5 riders in the tier, ranked by total",
+            "col_1_label": "Points", "col_3_label": "Total", "show_thumbs": True,
+            **badge, **common,
+        }
+        if wildcard:
+            # Show what the rider scored, then the bonus the wildcard slot
+            # added on top, so the x1.25 is visible rather than baked in.
+            table["col_2_label"] = "x1.25"
+            table["col_4_label"] = "Podium"
+            table["footnote"] = ("Points = total heat scores &middot; x1.25 = wildcard bonus"
+                                 " &middot; Podium = bonus for calling their exact place"
+                                 " &middot; Picked = % who had them on their team")
+        else:
+            table["col_2_label"] = "Podium"
+            table["footnote"] = ("Points = total heat scores &middot; Podium = bonus for calling"
+                                 " their exact place &middot; Picked = % who had them on their team")
+        for r in t["rows"]:
+            r["col_1"] = "%.1f" % r["heat_pts"]
+            podium = f"+{r['podium_pts']}" if r["podium_pts"] else ""
+            if wildcard:
+                r["col_2"] = "+%.1f" % (r["team_pts"] - r["heat_pts"])
+                r["col_4"] = podium
+            else:
+                r["col_2"] = podium
+            r["col_3"] = "%.1f" % r["total_pts"]
+        slides.append(table)
+    slides.append({"type": "mvp_optimal", "event": event,
+                   "optimal": tier_view["optimal"], **badge, **common})
     return slides

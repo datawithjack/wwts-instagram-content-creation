@@ -649,7 +649,7 @@ def build_slalom_elimination_view_query(event_id: int) -> tuple[str, tuple]:
         (sql, params) tuple ready for db.run_query().
     """
     sql = """
-        SELECT athlete_id, ladder_id, elimination_no, elimination_name, place
+        SELECT athlete_id, ladder_id, elimination_no, elimination_name, place, sex
         FROM SLALOM_ELIMINATION_VIEW
         WHERE event_id = %s
     """

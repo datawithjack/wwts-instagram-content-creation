@@ -195,6 +195,62 @@ def _fetch_slalom_recap(args) -> dict:
             "event_meta": event_meta, "photo_credits": credits}
 
 
+def _fantasy_tier_view(event_id, year, discipline, team_prefix, men):
+    """The men's field split by fantasy tier, with the optimal team, or None.
+
+    None when the season has no tiers seeded. ``men`` rows need athlete_id,
+    athlete, country, single_pts, double_pts and podium_pts; they gain a
+    thumb_url. ``team_prefix`` picks the team slots ("s_fm_", "s_slm_") out of
+    the picks, so a podium call does not count as having him on the team.
+    """
+    from pipeline.fuerte_fantasy_mvps import assemble_tier_view
+    from pipeline.templates import resolve_thumb_url
+
+    tier_rows = run_query(
+        "SELECT ft.athlete_id, ft.tier FROM FANTASY_TIERS ft "
+        "JOIN FANTASY_SEASONS fs ON fs.id = ft.season_id "
+        "WHERE fs.year = %s AND fs.discipline = %s AND ft.sex = 'Men'",
+        (year, discipline),
+    )
+    if not tier_rows:
+        return None
+
+    picks = run_query(
+        "SELECT slot, athlete_id, user_id FROM FANTASY_SESSION_PICKS "
+        "WHERE event_id = %s AND discipline = %s AND confirmed = TRUE",
+        (event_id, discipline),
+    )
+    players = len({p["user_id"] for p in picks})
+    team = [p for p in picks if p["slot"].startswith(team_prefix)]
+    team_pct = {}
+    for aid in {int(p["athlete_id"]) for p in team}:
+        n = len({p["user_id"] for p in team if int(p["athlete_id"]) == aid})
+        team_pct[aid] = round(n / players * 100)
+    slots = {p["slot"] for p in team}
+    slot_counts = {
+        "top5": sum("_top" in s for s in slots),
+        "6to15": sum("_mid" in s for s in slots),
+        "outside": sum("_wc" in s for s in slots),
+    }
+
+    # Headshots: local faces/ first, then whatever the site shows. The view
+    # carries the site's own chain (R2 athlete-photos, LiveHeats, PWA).
+    ids = [r["athlete_id"] for r in men]
+    site_img = {
+        r["athlete_id"]: r["profile_picture_url"] or ""
+        for r in run_query(
+            "SELECT DISTINCT athlete_id, profile_picture_url FROM ATHLETE_RESULTS_VIEW "
+            "WHERE athlete_id IN (%s)" % ",".join(["%s"] * len(ids)),
+            tuple(ids),
+        )
+    } if ids else {}
+    for r in men:
+        r["thumb_url"] = resolve_thumb_url(r["athlete_id"], site_img.get(r["athlete_id"], ""))
+
+    return assemble_tier_view(
+        men, {int(r["athlete_id"]): r["tier"] for r in tier_rows}, team_pct, slot_counts)
+
+
 def fetch_live_data(template_name: str, args) -> dict:
     """Fetch live data from API or DB based on template type."""
     if template_name == "tour_availability_reel":
@@ -787,56 +843,11 @@ def fetch_live_data(template_name: str, args) -> dict:
             (event_id,),
         ):
             podium_rows = run_query(*build_event_podium_query(event_id, "Freestyle"))
-        tier_rows = run_query(
-            "SELECT ft.athlete_id, ft.tier FROM FANTASY_TIERS ft "
-            "JOIN FANTASY_SEASONS fs ON fs.id = ft.season_id "
-            "WHERE fs.year = %s AND fs.discipline = 'freestyle' AND ft.sex = 'Men'",
-            (event_meta["year"],),
-        )
-        if not tier_rows:
-            return assemble_mvp_data(points_rows, pct_rows, event_meta, podium_rows=podium_rows)
-
-        # Tier view: the whole men's field, split by the tier the app seeded.
-        from pipeline.fuerte_fantasy_mvps import assemble_tier_view
         data = assemble_mvp_data(points_rows, pct_rows, event_meta, top_n=1000, podium_rows=podium_rows)
-        picks = run_query(
-            "SELECT slot, athlete_id, user_id FROM FANTASY_SESSION_PICKS "
-            "WHERE event_id = %s AND discipline = 'freestyle' AND confirmed = TRUE",
-            (event_id,),
-        )
-        players = len({p["user_id"] for p in picks})
-        # Team slots only (s_fm_*): a podium call is not having him on the team.
-        team = [p for p in picks if p["slot"].startswith("s_fm_")]
-        team_pct = {}
-        for aid in {int(p["athlete_id"]) for p in team}:
-            n = len({p["user_id"] for p in team if int(p["athlete_id"]) == aid})
-            team_pct[aid] = round(n / players * 100)
-        slots = {p["slot"] for p in team}
-        slot_counts = {
-            "top5": sum("_top" in s for s in slots),
-            "6to15": sum("_mid" in s for s in slots),
-            "outside": sum("_wc" in s for s in slots),
-        }
-        # Headshots: local faces/ first, then whatever the site shows. The view
-        # carries the site's own chain (R2 athlete-photos, LiveHeats, PWA).
-        from pipeline.templates import resolve_thumb_url
-        ids = [r["athlete_id"] for r in data["men"]]
-        site_img = {
-            r["athlete_id"]: r["profile_picture_url"] or ""
-            for r in run_query(
-                "SELECT DISTINCT athlete_id, profile_picture_url FROM ATHLETE_RESULTS_VIEW "
-                "WHERE athlete_id IN (%s)" % ",".join(["%s"] * len(ids)),
-                tuple(ids),
-            )
-        } if ids else {}
-        for r in data["men"]:
-            r["thumb_url"] = resolve_thumb_url(r["athlete_id"], site_img.get(r["athlete_id"], ""))
-        data["tier_view"] = assemble_tier_view(
-            data["men"],
-            {int(r["athlete_id"]): r["tier"] for r in tier_rows},
-            team_pct,
-            slot_counts,
-        )
+        tier_view = _fantasy_tier_view(event_id, event_meta["year"], "freestyle", "s_fm_", data["men"])
+        if not tier_view:
+            return assemble_mvp_data(points_rows, pct_rows, event_meta, podium_rows=podium_rows)
+        data["tier_view"] = tier_view
         return data
 
     if template_name == "slalom_mvps":
@@ -847,17 +858,19 @@ def fetch_live_data(template_name: str, args) -> dict:
             build_slalom_elimination_view_query,
         )
         # Fuerteventura 2026 is app/DB event 123 (multi-discipline: freestyle +
-        # Slalom X). Picks are stored under discipline 'slalom_x'.
+        # Slalom X). Picks are stored under discipline 'slalom_x', or
+        # 'slalom_foil' at a foil event such as Sylt 2026 (126).
         event_id = args.event or 123
         heats_sql, heats_params = build_slalom_mvp_heats_query(event_id)
         classify_sql, classify_params = build_slalom_mvp_classify_query(event_id)
         elim_sql, elim_params = build_slalom_elimination_view_query(event_id)
-        pct_sql, pct_params = build_fantasy_session_pick_pct_query(event_id, "slalom_x")
 
         heat_rows = run_query(heats_sql, heats_params)
         classify_rows = run_query(classify_sql, classify_params)
         elim_rows = run_query(elim_sql, elim_params)
-        pct_rows = run_query(pct_sql, pct_params)
+        foil = any("foil" in (r.get("elimination_name") or "").lower() for r in elim_rows)
+        discipline = "slalom_foil" if foil else "slalom_x"
+        pct_rows = run_query(*build_fantasy_session_pick_pct_query(event_id, discipline))
 
         event_meta = {"location": "Fuerteventura", "year": 2026}
         event_row = run_query(
@@ -876,8 +889,11 @@ def fetch_live_data(template_name: str, args) -> dict:
             if start:
                 event_meta["year"] = start.year
 
+        event_meta["discipline_label"] = "Foil Slalom" if foil else "Slalom X"
+        from pipeline.fuerte_fantasy_mvps import PRIZE_PARTNERS
+        event_meta["partner"] = PRIZE_PARTNERS.get(event_id)
         data = assemble_slalom_mvp_data(
-            heat_rows, classify_rows, elim_rows, pct_rows, event_meta
+            heat_rows, classify_rows, elim_rows, pct_rows, event_meta, top_n=1000
         )
 
         # The scoring rules here are a port of the app's engine (see
@@ -887,7 +903,7 @@ def fetch_live_data(template_name: str, args) -> dict:
         breakdown_rows = run_query(
             "SELECT breakdown_json FROM FANTASY_SESSION_SCORES "
             "WHERE event_id = %s AND discipline = %s",
-            (event_id, "slalom_x"),
+            (event_id, discipline),
         )
         problems = verify_against_app_scores(data, breakdown_rows)
         if problems:
@@ -912,6 +928,23 @@ def fetch_live_data(template_name: str, args) -> dict:
             f"ranked athletes matched exactly "
             f"({len(ranked) - verified} unpicked, so the app never scored them)."
         )
+
+        # Tier view, as the freestyle post: slalom points stand in for heat
+        # points, plus the bonus for calling the exact podium.
+        from pipeline.fuerte_fantasy_mvps import PODIUM_POINTS
+        from pipeline.queries import build_event_podium_query
+        podium = {int(r["athlete_id"]): PODIUM_POINTS[int(r["place"])]
+                  for r in run_query(*build_event_podium_query(
+                      event_id, "Slalom Foil" if foil else "Slalom X"))
+                  if r["sex"] == "Men"}
+        for r in data["men"]:
+            r.update(single_pts=r["total_pts"], double_pts=0.0,
+                     podium_pts=podium.get(r["athlete_id"], 0))
+        tier_view = _fantasy_tier_view(event_id, event_meta["year"], discipline, "s_slm_", data["men"])
+        if tier_view:
+            data["tier_view"] = tier_view
+        else:
+            data["men"], data["women"] = data["men"][:10], data["women"][:10]
         return data
 
     print(f"Live data not implemented for template: {template_name}")
