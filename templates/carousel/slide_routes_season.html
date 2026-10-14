@@ -1,0 +1,72 @@
+{% extends "carousel/base_carousel.html" %}
+
+{#
+  The season so far: world ranking after each 4 and 5-star event as a bump
+  chart, then one line per rider (a lead fact and their results in order).
+  Geometry comes from pipeline/title_routes.py so the SVG and the faces line up.
+#}
+
+{% block carousel_head %}
+<style>
+    .container { padding: 128px 60px 90px; }
+
+    .eyebrow { font-size: 26px; letter-spacing: 0.16em; margin-bottom: 14px; }
+    .title { font-family: var(--font-display); font-size: 112px; line-height: 0.92; color: #fff; margin-bottom: 12px; }
+    .lede { font-family: var(--font-body); font-size: 24px; font-weight: 500; color: rgba(255, 255, 255, 0.55);
+        margin-bottom: 26px; }
+
+    .chart { position: relative; }
+    .chart svg { display: block; overflow: visible; }
+    .face { position: absolute; width: 88px; height: 88px; margin: -44px 0 0 -44px; border-radius: 50%;
+        object-fit: cover; border: 3px solid; background: #0a0e1a; }
+
+    .riders { display: flex; flex-direction: column; gap: 26px; margin-top: 34px; }
+    .r { display: grid; grid-template-columns: 14px 1fr; gap: 18px; align-items: start; }
+    .r .sw { width: 14px; height: 52px; border-radius: 4px; margin-top: 2px; }
+    .r .top { display: flex; align-items: baseline; gap: 14px; }
+    .r .nm { font-family: var(--font-display); font-size: 36px; line-height: 1; color: #fff; }
+    .r .lead { font-family: var(--font-body); font-size: 22px; font-weight: 700; }
+    .r .res { font-family: var(--font-body); font-size: 19px; color: rgba(255, 255, 255, 0.50); margin-top: 6px; }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="eyebrow">The season so far</div>
+    <div class="title">HOW THEY GOT HERE</div>
+    <div class="lede">World ranking after each 4 and 5-star event</div>
+
+    <div class="chart" style="width: {{ chart_w }}px; height: {{ chart_h }}px">
+        <svg width="{{ chart_w }}" height="{{ chart_h }}" viewBox="0 0 {{ chart_w }} {{ chart_h }}">
+            {% for l in levels %}
+            <line x1="62" x2="{{ chart_w - 60 }}" y1="{{ l.y }}" y2="{{ l.y }}" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
+            <text x="0" y="{{ l.y + 7 }}" fill="rgba(255,255,255,0.40)" font-family="Inter" font-size="20" font-weight="600">{{ l.label }}</text>
+            {% endfor %}
+            {% for c in columns %}
+            <text x="{{ c.x }}" y="{{ chart_h - 8 }}" text-anchor="middle" fill="rgba(255,255,255,0.55)"
+                  font-family="Inter" font-size="20" font-weight="600">{{ c.label }}</text>
+            {% endfor %}
+            {% for ln in lines %}
+            <polyline points="{{ ln.points }}" fill="none" stroke="{{ ln.color }}" stroke-width="6"
+                      stroke-linejoin="round" stroke-linecap="round"/>
+            {% for d in ln.dots %}<circle cx="{{ d.x }}" cy="{{ d.y }}" r="9" fill="{{ ln.color }}"/>{% endfor %}
+            {% endfor %}
+        </svg>
+        {% for ln in lines %}
+        <img class="face" src="{{ ln.face }}" style="left: {{ ln.end_x + 58 }}px; top: {{ ln.end_y }}px; border-color: {{ ln.color }}">
+        {% endfor %}
+    </div>
+
+    <div class="riders">
+        {% for r in rows %}
+        <div class="r">
+            <div class="sw" style="background: {{ r.color }}"></div>
+            <div>
+                <div class="top"><span class="nm">{{ r.name | upper }}</span><span class="lead" style="color: {{ r.color }}">{{ r.lead }}</span></div>
+                <div class="res">{{ r.results }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

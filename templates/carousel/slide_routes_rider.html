@@ -1,0 +1,174 @@
+{% extends "carousel/base_carousel.html" %}
+
+{#
+  One rider's routes. Photo on top, then where they start and how far they can
+  go, then three routes: each either wins outright or names what the rivals
+  have to be held to.
+#}
+
+{% block carousel_head %}
+<style>
+    .container { padding: 0; position: relative; }
+
+    /* Full 1080x1350 frame, so it matches adjust_photos.py's preview one to one:
+       what sits in the top ~40% of that frame is what shows. Masked rather than
+       overlaid, so it fades into the slide background with no seam. */
+    .photo { position: absolute; top: 0; left: 0; width: 1080px; height: 1350px; overflow: hidden;
+        -webkit-mask-image: linear-gradient(to bottom, #000 22%, transparent 44%);
+        mask-image: linear-gradient(to bottom, #000 22%, transparent 44%); }
+    .photo img { width: 100%; height: 100%; object-fit: cover; }
+    .photo.portrait { display: flex; justify-content: center; align-items: flex-start; padding-top: 50px; }
+    .photo.portrait img { width: 340px; height: 340px; border-radius: 50%; }
+
+    .body { position: relative; z-index: 2; margin-top: 300px; padding: 0 56px; }
+
+    .name { font-family: var(--font-display); line-height: 0.9; color: #fff; }
+    .name .first { display: flex; align-items: center; gap: 18px; font-size: 48px;
+        letter-spacing: 0.05em; color: rgba(255, 255, 255, 0.65); }
+    .name .first img { width: 44px; height: 31px; border-radius: 4px; object-fit: cover; }
+    .name .rk { color: var(--color-discipline); }
+    /* Room above the surname for accents: the Ö in Köster reached into the first-name line. */
+    .name .last { display: block; font-size: 112px; padding-top: 22px; }
+
+    .tag { display: inline-block; font-family: var(--font-display); font-size: 32px; letter-spacing: 0.06em;
+        line-height: 1; padding: 9px 16px 6px; border-radius: 5px; margin-bottom: 18px;
+        background: var(--color-discipline); color: #0a0e1a; }
+
+    .ranking { display: flex; align-items: baseline; gap: 16px; margin: 16px 0 22px;
+        font-family: var(--font-body); font-size: 22px; font-weight: 700; letter-spacing: 0.1em;
+        text-transform: uppercase; color: rgba(255, 255, 255, 0.45); }
+    .ranking b { font-family: var(--font-display); font-size: 50px; font-weight: 400;
+        letter-spacing: 0.02em; color: #fff; }
+    .ranking .pts { color: var(--color-discipline); }
+
+    /* What the start total is made of, so the number on the card can be checked. */
+    .counting { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 22px;
+        margin: -14px 0 26px; font-family: var(--font-body); font-size: 21px; color: rgba(255, 255, 255, 0.55); }
+    .counting .lbl { font-size: 17px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.38); }
+    .counting b { color: #fff; font-weight: 700; }
+    .counting .empty { color: var(--color-discipline); font-style: italic; }
+    .counting .empty b { color: var(--color-discipline); }
+
+    .routes { display: flex; flex-direction: column; gap: 14px; }
+    .route { display: grid; grid-template-columns: 250px 1fr; gap: 24px; align-items: start;
+        padding: 18px 24px; border-radius: 10px;
+        background: rgba(30, 41, 59, 0.45); border: 1px solid rgba(255, 255, 255, 0.06); }
+    .route.outright { border-color: rgba(224, 176, 74, 0.55); background: rgba(224, 176, 74, 0.10); }
+    .route .label { font-family: var(--font-display); font-size: 46px; line-height: 1; color: #fff; }
+    .route .pts { font-family: var(--font-body); font-size: 20px; font-weight: 600;
+        color: rgba(255, 255, 255, 0.45); margin-top: 6px; letter-spacing: 0.04em; }
+
+    .verdict { font-family: var(--font-body); font-size: 25px; line-height: 1.35; color: rgba(255, 255, 255, 0.82); }
+    .verdict .champ { font-family: var(--font-display); font-size: 40px; line-height: 1;
+        color: var(--color-discipline); letter-spacing: 0.03em; }
+    .verdict .whatever { font-size: 21px; color: rgba(255, 255, 255, 0.55); margin-top: 4px; }
+    .verdict .if { font-size: 18px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.40); margin-bottom: 4px; }
+    .verdict .cond b { color: #fff; font-weight: 700; }
+
+    .settle { margin-top: 18px; padding: 16px 22px; border-left: 4px solid var(--color-discipline);
+        font-family: var(--font-body); font-size: 24px; font-weight: 600; line-height: 1.4; color: #fff;
+        background: rgba(224, 176, 74, 0.08); border-radius: 0 8px 8px 0; }
+
+    .fine { position: absolute; left: 56px; right: 56px; bottom: 58px;
+        font-family: var(--font-body); font-size: 17px; font-style: italic; color: rgba(255, 255, 255, 0.34); }
+    /* On-form cards run longer, so the key follows the boxes instead of sitting on them. */
+    .fine.flow { position: relative; left: auto; right: auto; bottom: auto; margin: 14px 56px 0; }
+    /* On-form version: what they need, and what their record suggests. */
+    .fbox { padding: 24px 26px; border-radius: 10px; margin-bottom: 16px;
+        background: rgba(30, 41, 59, 0.45); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .fbox.need { border-color: rgba(224, 176, 74, 0.55); background: rgba(224, 176, 74, 0.10); }
+    .flbl { font-family: var(--font-body); font-size: 18px; font-weight: 700; letter-spacing: 0.12em;
+        text-transform: uppercase; color: rgba(255, 255, 255, 0.45); margin-bottom: 8px; }
+    .fhead { font-family: var(--font-display); font-size: 56px; line-height: 1; color: #fff; }
+    .fbox.need .fhead { color: var(--color-discipline); }
+    .fsub { font-family: var(--font-body); font-size: 22px; line-height: 1.4; color: rgba(255, 255, 255, 0.70); margin-top: 10px; }
+    .fedge { font-family: var(--font-body); font-size: 20px; font-style: italic; color: rgba(255, 255, 255, 0.55); margin-top: 8px; }
+    .fhist { font-family: var(--font-body); font-size: 21px; color: rgba(255, 255, 255, 0.55); margin-top: 8px; }
+    .fhist b { color: rgba(255, 255, 255, 0.85); }
+    .fverdict { font-family: var(--font-display); font-size: 40px; line-height: 1; color: #fff; margin-top: 16px; }
+    .fbox.champ .fverdict { color: var(--color-discipline); }
+    .ftable { display: grid; grid-template-columns: 1fr 120px 120px 150px; margin-top: 14px;
+        font-family: var(--font-display); font-size: 32px; line-height: 1; color: rgba(255, 255, 255, 0.65); }
+    .ftable > span { padding: 5px 0; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+    .ftable .th { font-family: var(--font-body); font-size: 16px; font-weight: 700; letter-spacing: 0.12em;
+        text-transform: uppercase; color: rgba(255, 255, 255, 0.40); border-top: none; padding-bottom: 4px; }
+    .ftable .c { text-align: center; }
+    .ftable .r { text-align: right; }
+    .ftable .me { color: var(--color-discipline); }
+    .fpara { font-family: var(--font-body); font-size: 23px; line-height: 1.45; color: rgba(255, 255, 255, 0.80); }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="photo {{ photo_mode }}">
+        {% if photo_url %}<img src="{{ photo_url }}" style="object-position: {{ photo_focus }}">{% endif %}
+    </div>
+
+    <div class="body">
+        <div class="tag">{{ tag | upper }}</div>
+        <div class="name">
+            <span class="first">{{ first_name | upper }}{% if country %}<img src="https://flagcdn.com/w40/{{ country }}.png">{% endif %}</span>
+            <span class="last">{{ last_name | upper }}</span>
+        </div>
+
+        <div class="ranking">World ranking <b>#{{ rank }}</b><b class="pts">{{ official }}</b> pts</div>
+
+        <div class="counting">
+            <span class="lbl">Counting now</span>
+            {% for r in counting if not r.joins %}<span><b>{{ r.place }}</b> {{ r.event }} &middot; {{ r.points }}</span>{% endfor %}
+        </div>
+
+        {% if form %}
+        <div class="fbox need">
+            <div class="flbl">World champion if</div>
+            <div class="fhead">{{ form.need_head }}</div>
+            {% if form.table %}
+            <div class="ftable">
+                <span class="th"></span><span class="th c">Aloha</span><span class="th c">Chile</span><span class="th r">Total</span>
+                {% for r in form.table %}
+                <span class="nm {% if r.me %}me{% endif %}">{{ loop.index }}. {{ r.name | upper }}</span>
+                <span class="c {% if r.me %}me{% endif %}">{{ r.aloha | upper }}</span>
+                <span class="c {% if r.me %}me{% endif %}">{{ r.chile | upper }}</span>
+                <span class="r {% if r.me %}me{% endif %}">{{ r.total }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if form.need_edge %}<div class="fedge">{{ form.need_edge }}</div>{% endif %}
+        </div>
+        <div class="fbox {% if form.champion %}champ{% endif %}">
+            <div class="flbl">What we think will happen</div>
+            <div class="fpara">{{ form.paragraph }}</div>
+        </div>
+        {% else %}
+        <div class="routes">
+            {% for r in routes %}
+            <div class="route {% if r.outright %}outright{% endif %}">
+                <div>
+                    <div class="label">{{ r.label }}</div>
+                    <div class="pts">{{ r.points }} pts</div>
+                </div>
+                <div class="verdict">
+                    {% if r.outright %}
+                    <div class="champ">WORLD CHAMPION</div>
+                    <div class="whatever">whatever anyone else does</div>
+                    {% else %}
+                    <div class="if">Champion if</div>
+                    {% for c in r.conditions %}
+                    <div class="cond"><b>{{ c.name }}</b> {{ c.text }}</div>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if settle_line %}<div class="settle">{{ settle_line }}</div>{% endif %}
+        {% endif %}
+    </div>
+
+    <div class="fine{% if form %} flow{% endif %}">{% if form %}On form = median finish over the last 3 editions. Not official.{% else %}Finishes in either order across Aloha and Chile. Level on points goes to the tour's tie-break.{% endif %}</div>
+</div>
+{% endblock %}

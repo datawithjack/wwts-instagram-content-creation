@@ -1,0 +1,63 @@
+{% extends "carousel/base_carousel.html" %}
+
+{#
+  On-form version only: the final table if every rider lands on their median
+  finish at Aloha and Chile. Built in pipeline/title_routes.py (_form_slides).
+#}
+
+{% block carousel_head %}
+<style>
+    .container { padding: 120px 60px 90px; }
+    .eyebrow { font-size: 26px; letter-spacing: 0.16em; margin-bottom: 14px; }
+    .title { font-family: var(--font-display); font-size: 112px; line-height: 0.92; color: #fff; margin-bottom: 20px; }
+    .lede { font-family: var(--font-body); font-size: 26px; font-weight: 500; line-height: 1.4;
+        color: rgba(255, 255, 255, 0.65); margin-bottom: 50px; }
+
+    .head, .row { display: grid; grid-template-columns: 70px 110px 1fr 110px 110px 190px; align-items: center; gap: 12px; }
+    .head { padding: 0 24px 14px; font-family: var(--font-body); font-size: 18px; font-weight: 700;
+        letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255, 255, 255, 0.40); }
+    .head .c, .row .c { text-align: center; }
+    .head .r, .row .r { text-align: right; }
+    .rows { display: flex; flex-direction: column; gap: 14px; }
+    .row { padding: 22px 24px; border-radius: 10px; background: rgba(30, 41, 59, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.06); }
+    .row.first { border-color: rgba(224, 176, 74, 0.6); background: rgba(224, 176, 74, 0.10); }
+    .pos { font-family: var(--font-display); font-size: 60px; line-height: 1; color: rgba(255, 255, 255, 0.5); }
+    .row.first .pos { color: var(--color-discipline); }
+    .row img { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.22); }
+    .nm { font-family: var(--font-display); font-size: 46px; line-height: 1; color: #fff; }
+    .fin { font-family: var(--font-display); font-size: 40px; line-height: 1; color: rgba(255, 255, 255, 0.85); }
+    .tot { font-family: var(--font-display); font-size: 48px; line-height: 1; color: #fff; }
+    .row.first .tot { color: var(--color-discipline); }
+    .gap { font-family: var(--font-body); font-size: 20px; font-weight: 600; color: rgba(255, 255, 255, 0.45); }
+    .crown { font-family: var(--font-body); font-size: 18px; font-weight: 700; letter-spacing: 0.1em;
+        text-transform: uppercase; color: var(--color-discipline); }
+
+    .fine { margin-top: 36px; font-family: var(--font-body); font-size: 19px; font-style: italic;
+        line-height: 1.5; color: rgba(255, 255, 255, 0.38); }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="eyebrow">On form</div>
+    <div class="title">IF EVERYONE<br>RIDES TO FORM</div>
+    <div class="lede">Each rider's median finish at Aloha and in Chile over the last three editions, added to their season.</div>
+
+    <div class="head"><span></span><span></span><span>Rider</span><span class="c">Aloha</span><span class="c">Chile</span><span class="r">Total</span></div>
+    <div class="rows">
+        {% for r in rows %}
+        <div class="row {% if loop.first %}first{% endif %}">
+            <span class="pos">{{ r.position }}</span>
+            <img src="{{ r.face }}" alt="{{ r.name }}">
+            <span class="nm">{{ r.name | upper }}</span>
+            <span class="fin c">{{ r.aloha | upper }}</span>
+            <span class="fin c">{{ r.chile | upper }}</span>
+            <span class="r"><div class="tot">{{ r.total }}</div>{% if r.gap %}<div class="gap">{{ r.gap }}</div>{% else %}<div class="crown">Champion</div>{% endif %}</span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="fine">Not official. Our own projection from past results, which can't account for conditions, draws or form on the day. Only the top 4 are modelled.</div>
+</div>
+{% endblock %}

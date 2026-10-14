@@ -1,0 +1,80 @@
+{% extends "carousel/base_carousel.html" %}
+
+{#
+  Title race cover. The leader's action shot full bleed under a heavy gradient,
+  the headline, and the four riders the post walks through as a row of faces.
+#}
+
+{% block carousel_head %}
+<style>
+    .container { padding: 0; position: relative; justify-content: flex-end; }
+
+    .photo-bg { position: absolute; inset: 0; z-index: 0;
+        background: linear-gradient(160deg, #16243f 0%, #0a0e1a 100%); }
+    .photo-bg img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-bg::after { content: ''; position: absolute; inset: 0; z-index: 1;
+        background: linear-gradient(to bottom,
+            rgba(10, 14, 26, 0.10) 0%, rgba(10, 14, 26, 0.35) 35%,
+            rgba(10, 14, 26, 0.88) 58%, rgba(10, 14, 26, 1.00) 74%); }
+
+    .cover-block { position: relative; z-index: 2; padding: 0 60px 84px; }
+
+    .eyebrow { font-size: 26px; letter-spacing: 0.16em; margin-bottom: 18px; }
+
+    .headline { font-family: var(--font-display); line-height: 0.88;
+        letter-spacing: 0.01em; color: var(--color-text-primary); }
+    .headline .count { color: var(--color-discipline); }
+    .headline .l1 { display: block; font-size: 190px; }
+    .headline .l2 { display: block; font-size: 128px; }
+
+    .hook { font-family: var(--font-display); font-size: 58px; line-height: 1;
+        letter-spacing: 0.03em; color: #fff; margin: 30px 0 10px; }
+    .hook .n { color: var(--color-discipline); }
+    .swipe { font-family: var(--font-body); font-size: 28px; font-weight: 700;
+        letter-spacing: 0.06em; color: var(--color-discipline); margin-bottom: 40px; }
+
+    .riders { display: grid; grid-template-columns: repeat({{ riders | length }}, 1fr);
+        gap: 18px; border-top: 1px solid rgba(255, 255, 255, 0.14); padding-top: 30px; }
+    .rider { display: flex; flex-direction: column; align-items: center; gap: 12px;
+        min-width: 0; text-align: center; }
+    .rider img { width: 150px; height: 150px; border-radius: 50%; object-fit: cover;
+        border: 3px solid rgba(255, 255, 255, 0.30); flex-shrink: 0; }
+    .rider .rk { font-family: var(--font-display); font-size: 28px; line-height: 1;
+        color: var(--color-discipline); }
+    .rider .nm { font-family: var(--font-display); font-size: 36px; line-height: 1; max-width: 100%;
+        letter-spacing: 0.02em; color: var(--color-text-primary);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    {% if photo_url %}
+    <div class="photo-bg">
+        <img src="{{ photo_url }}" style="object-position: {{ photo_focus }}">
+    </div>
+    {% endif %}
+
+    <div class="cover-block">
+        <div class="eyebrow">{{ year }} Wave World Tour</div>
+        <div class="headline">
+            <span class="l1"><span class="count">{{ count }}</span> ROUTES</span>
+            <span class="l2">TO THE WORLD TITLE</span>
+        </div>
+        <div class="hook"><span class="n">2</span> EVENTS. <span class="n">{{ count }}</span> RIDERS. <span class="n">1</span> WORLD TITLE.</div>
+        <div class="swipe">Swipe to see what your rider needs &rarr;</div>
+
+        <div class="riders">
+            {% for r in riders %}
+            <div class="rider">
+                <img src="{{ r.face }}" alt="{{ r.name }}">
+                <div>
+                    <div class="rk">#{{ r.rank }}</div>
+                    <div class="nm">{{ r.name | upper }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "carousel/base_carousel.html" %}
+
+{% block carousel_head %}
+<style>
+    .cta-url { font-size: 150px; line-height: 0.9; color: var(--color-discipline); }
+    .link { font-family: var(--font-body); font-size: 30px; font-weight: 600; color: #fff; }
+    .note { font-family: var(--font-body); font-size: 20px; font-style: italic; line-height: 1.5;
+        color: rgba(255, 255, 255, 0.40); max-width: 820px; }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container cta-container">
+    <div class="cta-accent-line"></div>
+    <div class="cta-headline">WHO DO YOU THINK<br>WINS IT?</div>
+    <div class="cta-subtitle">Pick every result at Aloha and Chile and watch the world title move.</div>
+    <div class="cta-url">ROAD TO<br>FINALS</div>
+    <div class="link">windsurfworldtourstats.com/road-to-finals</div>
+    <div class="cta-accent-line"></div>
+    <div class="note">Not official. This is our own assessment: Aloha and Chile points are estimated from the points paid at previous 5-star events this season. Only the top 4 are modelled on this post.</div>
+</div>
+{% endblock %}

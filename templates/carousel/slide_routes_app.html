@@ -1,0 +1,52 @@
+{% extends "carousel/base_carousel.html" %}
+
+{#
+  Road to Finals in two phone shots: pick the order, see who it crowns.
+  The picks are an example to show the tool, not our prediction, and the slide
+  says so.
+#}
+
+{% block carousel_head %}
+<style>
+    .container { padding: 96px 56px 90px; }
+
+    .eyebrow { font-size: 26px; letter-spacing: 0.16em; margin-bottom: 14px; }
+    .title { font-family: var(--font-display); font-size: 112px; line-height: 0.92; color: #fff; margin-bottom: 20px; }
+    .lede { font-family: var(--font-body); font-size: 28px; font-weight: 500; line-height: 1.4;
+        color: rgba(255, 255, 255, 0.72); margin-bottom: 44px; }
+
+    .phones { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+    .phone { display: flex; flex-direction: column; gap: 18px; }
+    .step { display: flex; align-items: center; gap: 14px; font-family: var(--font-display);
+        font-size: 36px; line-height: 1; color: #fff; }
+    .step .n { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center;
+        justify-content: center; background: var(--color-discipline); color: #0a0e1a; font-size: 30px; }
+    .frame { height: 720px; border-radius: 28px; overflow: hidden;
+        border: 3px solid rgba(255, 255, 255, 0.18); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55); background: #0f1626; }
+    .frame img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+
+    .fine { margin-top: 26px; font-family: var(--font-body); font-size: 19px; font-style: italic;
+        color: rgba(255, 255, 255, 0.38); }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="eyebrow">Road to Finals</div>
+    <div class="title">PLAY IT OUT<br>YOURSELF</div>
+    <div class="lede">Pick the finishing order at Aloha and Chile. The table recounts every rider's best results and crowns your champion.</div>
+
+    <div class="phones">
+        <div class="phone">
+            <div class="step"><span class="n">1</span>PICK THE ORDER</div>
+            <div class="frame">{% if pick_url %}<img src="{{ pick_url }}">{% endif %}</div>
+        </div>
+        <div class="phone">
+            <div class="step"><span class="n">2</span>SEE WHO WINS</div>
+            <div class="frame outcome">{% if outcome_url %}<img src="{{ outcome_url }}">{% endif %}</div>
+        </div>
+    </div>
+
+    <div class="fine">Example picks to show the tool, not our prediction.</div>
+</div>
+{% endblock %}

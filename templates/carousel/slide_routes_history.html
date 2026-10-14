@@ -1,0 +1,58 @@
+{% extends "carousel/base_carousel.html" %}
+
+{#
+  On-form version only: each rider's last three finishes at Aloha and in Chile,
+  and the median we project for this season. Sets up the rider cards after it.
+#}
+
+{% block carousel_head %}
+<style>
+    .container { padding: 110px 60px 90px; }
+    .eyebrow { font-size: 26px; letter-spacing: 0.16em; margin-bottom: 14px; }
+    .title { font-family: var(--font-display); font-size: 104px; line-height: 0.92; color: #fff; margin-bottom: 18px; }
+    .lede { font-family: var(--font-body); font-size: 25px; font-weight: 500; line-height: 1.4;
+        color: rgba(255, 255, 255, 0.65); margin-bottom: 40px; }
+
+    .venue { margin-bottom: 34px; }
+    .vname { font-family: var(--font-display); font-size: 44px; line-height: 1; color: #fff; margin-bottom: 12px; }
+    .grid { display: grid; grid-template-columns: 1fr repeat({{ years | length }}, 120px) 150px; align-items: center; }
+    .hd { font-family: var(--font-body); font-size: 18px; font-weight: 700; letter-spacing: 0.1em;
+        color: rgba(255, 255, 255, 0.40); text-align: center; padding-bottom: 8px; }
+    .hd.proj { color: var(--color-discipline); }
+    .cell { font-family: var(--font-display); font-size: 36px; line-height: 1; text-align: center; color: rgba(255, 255, 255, 0.80);
+        padding: 12px 0; border-top: 1px solid rgba(255, 255, 255, 0.07); }
+    .cell.none { color: rgba(255, 255, 255, 0.25); }
+    .cell.proj { color: #0a0e1a; background: var(--color-discipline); border-top-color: transparent; font-size: 38px; }
+    .who { display: flex; align-items: center; gap: 14px; padding: 6px 0; border-top: 1px solid rgba(255, 255, 255, 0.07); }
+    .who img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.2); }
+    .who span { font-family: var(--font-display); font-size: 34px; line-height: 1; color: #fff; }
+
+    .fine { font-family: var(--font-body); font-size: 19px; font-style: italic; line-height: 1.5; color: rgba(255, 255, 255, 0.38); }
+</style>
+{% endblock %}
+
+{% block carousel_content %}
+<div class="container">
+    <div class="eyebrow">On form</div>
+    <div class="title">THEIR RECORD AT<br>ALOHA AND CHILE</div>
+    <div class="lede">The last three editions of each event, and the median finish we project for {{ season_year }}.</div>
+
+    {% for v in venues %}
+    <div class="venue">
+        <div class="vname">{{ v.name | upper }}</div>
+        <div class="grid">
+            <span class="hd"></span>
+            {% for y in years %}<span class="hd">{{ y }}</span>{% endfor %}
+            <span class="hd proj">{{ season_year }} ON FORM</span>
+            {% for r in v.rows %}
+            <span class="who"><img src="{{ r.face }}" alt="{{ r.name }}"><span>{{ r.name | upper }}</span></span>
+            {% for c in r.cells %}<span class="cell {% if c == '–' %}none{% endif %}">{{ c | upper }}</span>{% endfor %}
+            <span class="cell proj">{{ r.projected | upper }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+
+    <div class="fine">– did not sail. On form is the median finish, shown as the place it scores as: 8th pays the same as 7th, so it shows as 7th.</div>
+</div>
+{% endblock %}
