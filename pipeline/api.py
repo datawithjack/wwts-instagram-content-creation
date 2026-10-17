@@ -304,6 +304,7 @@ def fetch_athlete_event_stats(event_id: int, athlete_id: int, division: str) -> 
 # ATHLETES row; drop an entry once it is populated.
 COUNTRY_OVERRIDES = {
     1725: "fr",  # Kilian Couedic, F-777
+    1845: "gb",  # Izzy Adcock, no sail or nationality on record
 }
 
 

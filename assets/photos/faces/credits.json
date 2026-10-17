@@ -388,5 +388,29 @@
     "confirmed": false,
     "via": "api profile_image",
     "note": "UNTAGGED - LiveHeats profile photo, photographer unknown"
+  },
+  "145": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "cori head.jpg",
+    "confirmed": false,
+    "via": "",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "154": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "emma head.jpg",
+    "confirmed": false,
+    "via": "",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "164": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "frida head.jpg",
+    "confirmed": false,
+    "via": "",
+    "note": "UNTAGGED - credit unconfirmed"
   }
 }

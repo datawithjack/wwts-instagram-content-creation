@@ -21,9 +21,10 @@
     "source_file": "TI26_wv_K800_1.jpg"
   },
   "145": {
-    "photographer": "john carter",
-    "handle": "@jcwindsurf",
-    "source_file": "TI26_wv_K649_1.jpg"
+    "photographer": "",
+    "handle": "",
+    "source_file": "TI26_wv_K649_cori.jpg",
+    "note": "UNTAGGED - credit unconfirmed"
   },
   "154": {
     "photographer": "john carter",
@@ -38,7 +39,7 @@
   "1845": {
     "photographer": "john carter",
     "handle": "@jcwindsurf",
-    "source_file": "TI26_wv_K1845_1.jpg"
+    "source_file": "TI26_wv_K1845_izzy1.jpg"
   },
   "46-2": {
     "photographer": "john carter",
@@ -49,5 +50,15 @@
     "photographer": "john carter",
     "handle": "@jcwindsurf",
     "source_file": "TI26_wv_E99_miguel2.jpg"
+  },
+  "1845-2": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "TI26_wv_K1845_izzy2.jpg"
+  },
+  "1845-3": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "TI26_wv_K1845_oct15.jpg"
   }
-}
+}

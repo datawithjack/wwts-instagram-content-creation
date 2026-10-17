@@ -773,6 +773,30 @@ posts:
     notes: >
       Top 10 waves, Tiree Wave Classic 2026 (API id 279), photo mode. Heroes in assets/photos/events/279/; Chapuis has three top-5 cards so 46, 46-2, 46-3. Photos John Carter, from frames downloaded by hand: the Drive album is untagged so pick_photos needed sail-tagged copies. Table headshots fall back to the API's profile_image. Published locally via generate.py --publish now (poller billing-locked), media ID 18105423359623906.
 
+  - id: tiree2026-womens-waves-top10
+    template: top_10_carousel
+    params:
+      score_type: Wave
+      sex: Women
+      event: 279
+      photos: true
+    caption: |-
+      🌊 Now the women: the top 10 waves from the Tiree Wave Classic.
+
+      Frida Miron's 7.22 in the final tops the list. Izzy Adcock put four waves in the ten, a 6.88 in the final and two from her seeding heat among them. Three of the top four came in the final.
+
+      Swipe for the countdown.
+
+      Full stats → windsurfworldtourstats.com
+
+      📸 @jcwindsurf | @pwaworldtour
+    category: seasonal
+    scheduled_date: "2026-10-17T11:41:00"
+    published: true
+    published_at: "2026-10-17T11:41:00"
+    notes: >
+      Top 10 waves, Tiree Wave Classic 2026 (API id 279), photo mode. Izzy Adcock has three top-5 cards (1845, 1845-2, 1845-3) and no sail number on record, so the picker cannot find her: installed by hand. 1845-2 (izzy (2).jpg) has no photographer tag; credited to John Carter by assumption, unconfirmed. Headshots for 145/154/164 are untagged, credit unconfirmed. Izzy's flag comes from COUNTRY_OVERRIDES (gb). Published locally via generate.py --publish now (poller billing-locked), media ID 18025832102872987.
+
   # ── Week of April 7 ─────────────────────────────────────────
   # - id:
   #   template:
