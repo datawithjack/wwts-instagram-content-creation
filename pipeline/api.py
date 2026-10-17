@@ -336,10 +336,11 @@ def fetch_event_top_scores(event_id: int, score_type: str, sex: str = None, limi
         params=stats_params,
         timeout=30,
     )
-    country_map = {}
+    country_map, image_map = {}, {}
     if athletes_resp.ok:
         for a in athletes_resp.json().get("athletes", []):
             country_map[a["athlete_id"]] = a.get("country", "")
+            image_map[a["athlete_id"]] = a.get("profile_image") or ""
 
     event = fetch_event(event_id)
     event_name = clean_event_name(stats.get("event_name", ""))
@@ -359,6 +360,8 @@ def fetch_event_top_scores(event_id: int, score_type: str, sex: str = None, limi
             "country": (nationality_to_iso(country_map.get(r.get("athlete_id"), ""))
                         or COUNTRY_OVERRIDES.get(r.get("athlete_id"), "")),
             "score": float(r.get("score", 0)),
+            # Site headshot, the table thumb's fallback when faces/ has none.
+            "photo_url": image_map.get(r.get("athlete_id"), ""),
             "event": event_name,
             "round": r.get("round_name", ""),
             "heat": heat_label_from_id(heat_id) if heat_id else "",

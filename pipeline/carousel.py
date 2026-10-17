@@ -238,11 +238,12 @@ def _build_photo_slides(common: dict, rows: list[dict], event_id=None) -> list[d
     slides.append({
         "type": "table",
         # A headshot per row, so the recap reads as faces as well as names.
-        "rows": [{**r, "thumb_url": resolve_thumb_url(r.get("athlete_id"), "")}
+        "rows": [{**r, "thumb_url": resolve_thumb_url(r.get("athlete_id"), r.get("photo_url", ""))}
                  for r in rows],
         "label": f"Positions {rows[0]['rank']}–{rows[-1]['rank']}",
         "compact": True,
         **common,
+        "show_round": True,
     })
     return slides
 
@@ -315,6 +316,9 @@ def build_slides(data: dict) -> list[dict]:
     cover = {"type": "cover", **common}
     if data.get("photo_mode"):
         cover.update(_cover_photo(rows, data.get("photo_event_id")))
+        # The cover keeps "TOP 10": the photo slides' "5TH BEST WAVE" chip now
+        # says what is counted, so the countdown no longer reads as a restart.
+        cover["show_count"] = True
 
     slides = [cover]
     if common["perfect_10s_mode"]:

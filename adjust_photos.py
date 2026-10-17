@@ -21,6 +21,7 @@ import argparse
 import glob
 import json
 import os
+import re
 import sys
 import threading
 import webbrowser
@@ -113,9 +114,10 @@ def _collect(folder: Path, credits: dict, kind: str, source_dir,
     items = []
     for path in sorted(glob.glob(str(folder / "*.jpg"))):
         athlete_id = Path(path).stem
-        if not athlete_id.isdigit():
+        # "46-2" is the same rider's second card in a top 10 carousel.
+        if not re.fullmatch(r"\d+(-\d+)?", athlete_id):
             continue
-        if only is not None and int(athlete_id) not in only:
+        if only is not None and int(athlete_id.split("-")[0]) not in only:
             continue
         entry = credits.get(athlete_id) or {}
         original = _original_for(entry, source_dir)
@@ -128,7 +130,7 @@ def _collect(folder: Path, credits: dict, kind: str, source_dir,
             # the same element and only the first was ever drawn.
             "key": ("a" if kind == "hero" else "f") + athlete_id,
             "kind": kind,
-            "id": int(athlete_id),
+            "id": int(athlete_id.split("-")[0]),
             "installed": path,
             "display": str(display),
             "from_original": original is not None,

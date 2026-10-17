@@ -749,6 +749,30 @@ posts:
     notes: >
       Top 10 waves, Wissant Wave Classic 2026 (API id 278), photo mode. Sylt wind-wait filler. Heroes in assets/photos/events/278/, a rider's second card uses {id}-2 etc. Photos Olivier Caenen and Nicolas Peltier; headshots for 10, 14, 61, 64 are LiveHeats profile photos. Published manually via schedule.py --publish now with PYTHONUTF8=1 (poller blocked by a GitHub billing lock), media ID 18083124881324452.
 
+  - id: tiree2026-mens-waves-top10
+    template: top_10_carousel
+    params:
+      score_type: Wave
+      sex: Men
+      event: 279
+      photos: true
+    caption: |-
+      🌊 Before Aloha gets going, here are the top 10 waves from the Tiree Wave Classic.
+
+      Miguel Chapuis owned the list: the top three scores are all his, a 9.15 and a 9.00 in the quarterfinals and an 8.88 in the semis. Five of the ten are his. Philip Köster put two in, both in the Round of 16.
+
+      Swipe for the countdown.
+
+      Full stats → windsurfworldtourstats.com
+
+      📸 @jcwindsurf | @pwaworldtour
+    category: seasonal
+    scheduled_date: "2026-10-17T08:33:00"
+    published: true
+    published_at: "2026-10-17T08:33:00"
+    notes: >
+      Top 10 waves, Tiree Wave Classic 2026 (API id 279), photo mode. Heroes in assets/photos/events/279/; Chapuis has three top-5 cards so 46, 46-2, 46-3. Photos John Carter, from frames downloaded by hand: the Drive album is untagged so pick_photos needed sail-tagged copies. Table headshots fall back to the API's profile_image. Published locally via generate.py --publish now (poller billing-locked), media ID 18105423359623906.
+
   # ── Week of April 7 ─────────────────────────────────────────
   # - id:
   #   template:

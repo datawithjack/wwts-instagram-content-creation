@@ -206,9 +206,12 @@ class TestCoverPhoto:
         data["photo_mode"] = False
         assert "cover_photo_url" not in build_slides(data)[0]
 
-    def test_show_count_drives_the_covers_own_title_stack(self):
-        """The cover assembles its own lines rather than using `title`."""
-        assert build_slides(_data())[0]["show_count"] is False
+    def test_cover_says_top_10_in_both_modes(self):
+        """The cover assembles its own lines rather than using `title`, and
+        keeps the 10 in photo mode while the photo slides drop it."""
+        slides = build_slides(_data())
+        assert slides[0]["show_count"] is True
+        assert slides[1]["show_count"] is False
 
         default = _data()
         default["photo_mode"] = False

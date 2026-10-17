@@ -1,0 +1,53 @@
+{
+  "_comment": "Photographer per photo, resolved from the filename then the file's own XMP. Entries marked unconfirmed carry no credit tag anywhere: confirm before crediting them.",
+  "46": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "TI26_wv_E99_miguel3.jpg"
+  },
+  "48": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "TI26_wv_E959_1.jpg"
+  },
+  "97": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "TI26_wv_E334_1.jpg"
+  },
+  "125": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "TI26_wv_K800_1.jpg"
+  },
+  "145": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "TI26_wv_K649_1.jpg"
+  },
+  "154": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "TI26_wv_G508_1.jpg"
+  },
+  "164": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "TI26_wv_G129_1.jpg"
+  },
+  "1845": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "TI26_wv_K1845_1.jpg"
+  },
+  "46-2": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "TI26_wv_E99_miguel1.jpg"
+  },
+  "46-3": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "TI26_wv_E99_miguel2.jpg"
+  }
+}
