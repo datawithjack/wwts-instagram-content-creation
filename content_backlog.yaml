@@ -797,6 +797,32 @@ posts:
     notes: >
       Top 10 waves, Tiree Wave Classic 2026 (API id 279), photo mode. Izzy Adcock has three top-5 cards (1845, 1845-2, 1845-3) and no sail number on record, so the picker cannot find her: installed by hand. 1845-2 (izzy (2).jpg) has no photographer tag; credited to John Carter by assumption, unconfirmed. Headshots for 145/154/164 are untagged, credit unconfirmed. Izzy's flag comes from COUNTRY_OVERRIDES (gb). Published locally via generate.py --publish now (poller billing-locked), media ID 18025832102872987.
 
+  - id: tiree2026-fantasy-mvps
+    template: fuerte_fantasy_mvps
+    params:
+      event: 279
+      discipline: Wave
+    caption: |-
+      🏆 The Fantasy MVPs of Tiree: the riders who won you the points at the Tiree Wave Classic.
+
+      Izzy Adcock led the women's wildcards on 61.6, with the x1.25 wildcard bonus and 25 more for anyone who called her win.
+
+      Miguel Chapuis was the pick of the men's tiers: 81.4 from his heats and another 25 for calling the win. 65% had him on their team.
+
+      Ben Proffitt was the wildcard of the week, 94.4 points after the bonus.
+
+      Swipe for the top picks in every tier and the optimal teams: every point that was on offer.
+
+      Thank you to our Tiree prize partner BHALLS 🙌
+
+      Get your team in for the Aloha Classic. Play free, link in bio.
+    category: seasonal
+    scheduled_date: "2026-10-18T04:20:00"
+    published: true
+    published_at: "2026-10-18T04:20:00"
+    notes: >
+      Fantasy top picks, Tiree Wave Classic 2026 (app/API id 279), wave. Women's wildcards and their optimal team first (women played two wildcard slots only), then the men's tiers and optimal team. BHALLS prize partner, logo from R2 email/bhalls-logo.png at 1.5x. Headshots for 145/154/164 untagged, credit unconfirmed. Published locally via generate.py --publish now (poller billing-locked), media ID 18108808153911098.
+
   # ── Week of April 7 ─────────────────────────────────────────
   # - id:
   #   template:
