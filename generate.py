@@ -195,22 +195,26 @@ def _fetch_slalom_recap(args) -> dict:
             "event_meta": event_meta, "photo_credits": credits}
 
 
-def _fantasy_tier_view(event_id, year, discipline, team_prefix, men):
+def _fantasy_tier_view(event_id, year, discipline, team_prefix, men, sex="Men"):
     """The men's field split by fantasy tier, with the optimal team, or None.
+
+    ``sex="Women"`` is the women's wildcard-only team (Tiree 2026): ``men`` is
+    then the women's rows, and a woman with a tier scores x1.0 in a wildcard
+    slot, as the app does it.
 
     None when the season has no tiers seeded. ``men`` rows need athlete_id,
     athlete, country, single_pts, double_pts and podium_pts; they gain a
     thumb_url. ``team_prefix`` picks the team slots ("s_fm_", "s_slm_") out of
     the picks, so a podium call does not count as having him on the team.
     """
-    from pipeline.fuerte_fantasy_mvps import assemble_tier_view
+    from pipeline.fuerte_fantasy_mvps import assemble_tier_view, WOMEN_TIERS
     from pipeline.templates import resolve_thumb_url
 
     tier_rows = run_query(
         "SELECT ft.athlete_id, ft.tier FROM FANTASY_TIERS ft "
         "JOIN FANTASY_SEASONS fs ON fs.id = ft.season_id "
-        "WHERE fs.year = %s AND fs.discipline = %s AND ft.sex = 'Men'",
-        (year, discipline),
+        "WHERE fs.year = %s AND fs.discipline = %s AND ft.sex = %s",
+        (year, discipline, sex),
     )
     if not tier_rows:
         return None
@@ -222,6 +226,8 @@ def _fantasy_tier_view(event_id, year, discipline, team_prefix, men):
     )
     players = len({p["user_id"] for p in picks})
     team = [p for p in picks if p["slot"].startswith(team_prefix)]
+    if not team:
+        return None
     team_pct = {}
     for aid in {int(p["athlete_id"]) for p in team}:
         n = len({p["user_id"] for p in team if int(p["athlete_id"]) == aid})
@@ -247,8 +253,11 @@ def _fantasy_tier_view(event_id, year, discipline, team_prefix, men):
     for r in men:
         r["thumb_url"] = resolve_thumb_url(r["athlete_id"], site_img.get(r["athlete_id"], ""))
 
-    return assemble_tier_view(
-        men, {int(r["athlete_id"]): r["tier"] for r in tier_rows}, team_pct, slot_counts)
+    tiers = {int(r["athlete_id"]): r["tier"] for r in tier_rows}
+    if sex == "Women":
+        return assemble_tier_view(men, {}, team_pct, slot_counts,
+                                  tier_spec=WOMEN_TIERS, seeded=set(tiers))
+    return assemble_tier_view(men, tiers, team_pct, slot_counts)
 
 
 def fetch_live_data(template_name: str, args) -> dict:
@@ -813,12 +822,14 @@ def fetch_live_data(template_name: str, args) -> dict:
         from pipeline.fuerte_fantasy_mvps import assemble_mvp_data
         # Fuerteventura 2026 freestyle Session is app/DB event 123 (multi-discipline).
         event_id = args.event or 123
-        points_sql, points_params = build_fantasy_mvp_points_query(event_id)
-        pct_sql, pct_params = build_fantasy_session_pick_pct_query(event_id, "freestyle")
+        # --discipline defaults to Wave: re-running Fuerteventura or Sylt needs Freestyle.
+        discipline = args.discipline.lower()
+        points_sql, points_params = build_fantasy_mvp_points_query(event_id, discipline)
+        pct_sql, pct_params = build_fantasy_session_pick_pct_query(event_id, discipline)
         points_rows = run_query(points_sql, points_params)
         pct_rows = run_query(pct_sql, pct_params)
         # Event metadata for the cover/eyebrows.
-        event_meta = {"location": "Fuerteventura", "year": 2026}
+        event_meta = {"location": "Fuerteventura", "year": 2026, "discipline_label": args.discipline}
         event_row = run_query(
             "SELECT event_name, start_date FROM PWA_IWT_EVENTS WHERE id = %s LIMIT 1",
             (event_id,),
@@ -826,8 +837,9 @@ def fetch_live_data(template_name: str, args) -> dict:
         if event_row:
             ev = event_row[0]
             event_meta["name"] = clean_event_name(ev.get("event_name", ""))
-            # "Sylt, Germany Grand Slam" -> "Sylt"
-            event_meta["location"] = event_meta["name"].split(",")[0].strip() or event_meta["location"]
+            # "Sylt, Germany Grand Slam" -> "Sylt", "Tiree Wave Classic" -> "Tiree"
+            location = event_meta["name"].split(",")[0].removesuffix(" Wave Classic").strip()
+            event_meta["location"] = location or event_meta["location"]
             start = ev.get("start_date")
             if isinstance(start, str):
                 from datetime import date as dt_date
@@ -839,15 +851,21 @@ def fetch_live_data(template_name: str, args) -> dict:
         event_meta["partner"] = PRIZE_PARTNERS.get(event_id)
         podium_rows = None
         if run_query(
-            "SELECT 1 FROM FANTASY_SESSION_PICKS WHERE event_id = %s AND discipline = 'freestyle' AND LEFT(slot, 3) = 'rp_' LIMIT 1",
-            (event_id,),
+            "SELECT 1 FROM FANTASY_SESSION_PICKS WHERE event_id = %s AND discipline = %s AND LEFT(slot, 3) = 'rp_' LIMIT 1",
+            (event_id, discipline),
         ):
-            podium_rows = run_query(*build_event_podium_query(event_id, "Freestyle"))
+            podium_rows = run_query(*build_event_podium_query(event_id, args.discipline))
         data = assemble_mvp_data(points_rows, pct_rows, event_meta, top_n=1000, podium_rows=podium_rows)
-        tier_view = _fantasy_tier_view(event_id, event_meta["year"], "freestyle", "s_fm_", data["men"])
+        # Team slots: s_fm_* freestyle men, s_m_*/s_w_* wave men and women.
+        men_prefix, women_prefix = ("s_fm_", "s_fw_") if discipline == "freestyle" else ("s_m_", "s_w_")
+        tier_view = _fantasy_tier_view(event_id, event_meta["year"], discipline, men_prefix, data["men"])
         if not tier_view:
             return assemble_mvp_data(points_rows, pct_rows, event_meta, podium_rows=podium_rows)
         data["tier_view"] = tier_view
+        women_view = _fantasy_tier_view(event_id, event_meta["year"], discipline, women_prefix,
+                                        data["women"], sex="Women")
+        if women_view:
+            data["women_tier_view"] = women_view
         return data
 
     if template_name == "slalom_mvps":

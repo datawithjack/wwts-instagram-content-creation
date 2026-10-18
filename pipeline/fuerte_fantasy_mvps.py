@@ -22,9 +22,11 @@ SESSION_COLOR = "#2dd4bf"
 
 # Events with a prize partner, keyed on app/DB event id. The CTA thanks them in
 # place of the "next event" push. `logo` is a file in assets/logos/; until it is
-# there the CTA sets the partner's name in type instead.
+# there the CTA sets the partner's name in type instead. `logo_scale` sizes a
+# logo up from the default heights (a compact mark reads small next to a wordmark).
 PRIZE_PARTNERS = {
     126: {"name": "SURF Magazin", "logo": "surf-magazin.svg", "scope": "Sylt"},
+    279: {"name": "BHALLS", "logo": "bhalls.png", "scope": "Tiree", "logo_scale": 1.5},
 }
 
 # What calling a rider's exact podium place was worth, from the app's
@@ -41,6 +43,11 @@ MEN_TIERS = [
 ]
 WILDCARD_MULTIPLIER = 1.25
 
+# Women's team at a wave 4-star (Tiree 2026): wildcard slots only, no tiers.
+WOMEN_TIERS = [
+    ("outside", "WOMEN'S", "WILDCARDS", "Wildcard"),
+]
+
 # Freestyle-only riders whose ATHLETES row has EVERY country column NULL — an
 # upstream data gap. Keyed on the unified ATHLETES.id (athlete_id), ISO2 values
 # derived from each rider's PWA sail-number prefix (Ryoma Sugi has no sail → JP
@@ -52,6 +59,7 @@ COUNTRY_OVERRIDES = {
     982: "it", 951: "it", 967: "gb", 977: "at", 981: "cw", 966: "pl", 975: "gr",
     971: "it", 969: "se", 576: "jp", 896: "fr", 973: "de", 963: "nl", 974: "nl",
     890: "be", 892: "be", 882: "bq",
+    1845: "gb",  # Izzy Adcock (Tiree 2026), no sail or nationality on record
 }
 
 
@@ -154,6 +162,8 @@ def assemble_mvp_data(
     for r in points_rows:
         aid = int(r["athlete_id"])
         sex, elim = parse_elimination(r.get("elimination_name", ""))
+        # LiveHeats wave heats leave elimination_name blank; the heat carries sex.
+        sex = sex or r.get("sex")
         if sex is None:
             continue  # skip rows we can't attribute to a fleet (e.g. slalom leak)
         entry = athletes.setdefault(
@@ -212,6 +222,8 @@ def assemble_tier_view(
     team_pct: dict[int, int],
     slot_counts: dict[str, int],
     top_n: int = 5,
+    tier_spec: list[tuple] = MEN_TIERS,
+    seeded: set[int] = frozenset(),
 ) -> dict:
     """The men's field split by fantasy tier, plus the best team that could be picked.
 
@@ -221,27 +233,30 @@ def assemble_tier_view(
         team_pct: athlete_id -> % of players with him in a team slot (podium
             calls excluded, so the number means "had him on their team").
         slot_counts: tier -> how many team slots that tier had.
+        tier_spec: the fleet's tiers, MEN_TIERS or WOMEN_TIERS.
+        seeded: riders with a tier who could still sit in a wildcard slot (the
+            women at Tiree); the app withholds their x1.25.
 
     Returns:
         {"tiers": [{tier, title, rows}], "optimal": {...}}. Wildcard rows carry
         their points with the multiplier applied, as the app scores them.
     """
     view, team = [], []
-    for tier, title, accent, slot_label in MEN_TIERS:
-        mult = WILDCARD_MULTIPLIER if tier == "outside" else 1.0
+    for tier, title, accent, slot_label in tier_spec:
         rows = []
         for a in men:
             if tiers.get(a["athlete_id"], "outside") != tier:
                 continue
+            mult = WILDCARD_MULTIPLIER if tier == "outside" and a["athlete_id"] not in seeded else 1.0
             heat_pts = round(a["single_pts"] + a["double_pts"], 2)
             team_pts = round(heat_pts * mult, 2)
-            rows.append({**a, "heat_pts": heat_pts, "team_pts": team_pts,
+            rows.append({**a, "heat_pts": heat_pts, "team_pts": team_pts, "multiplier": mult,
                          "total_pts": round(team_pts + a["podium_pts"], 2),
                          "pct_picked": team_pct.get(a["athlete_id"], 0)})
         # The optimal team fills each slot on team points; the podium is its own pick.
         for a in sorted(rows, key=lambda r: r["team_pts"], reverse=True)[: slot_counts.get(tier, 0)]:
             team.append({"athlete": a["athlete"], "country": a["country"], "thumb_url": a.get("thumb_url", ""), "tier": slot_label,
-                         "multiplier": mult, "heat_pts": a["heat_pts"], "points": a["team_pts"]})
+                         "multiplier": a["multiplier"], "heat_pts": a["heat_pts"], "points": a["team_pts"]})
         rows.sort(key=lambda r: r["total_pts"], reverse=True)
         for i, r in enumerate(rows[:top_n], 1):
             r["rank"] = i
@@ -294,17 +309,25 @@ def _fleet_tables(data: dict, event: dict, common: dict) -> list[dict]:
 def build_slides(data: dict) -> list[dict]:
     """Build the MVP carousel.
 
-    With a tier view: cover → one table per men's tier → optimal team → cta.
+    With a tier view: cover → one table per men's tier → optimal team → cta,
+    led by the women's wildcards and their optimal team when they had a team.
     Without: cover → men table → women table → cta (empty fleets dropped).
     """
     common = {"accent_color": SESSION_COLOR}
     event = data.get("event", {})
+    if event.get("discipline_label"):
+        common["discipline_label"] = event["discipline_label"]
 
     partner = _partner(event.get("partner"))
     badge = {"partner_badge": partner} if partner else {}
     slides = [{"type": "mvp_cover", "event": event, "partner": partner, **common}]
     if data.get("tier_view"):
-        slides += tier_slides(data["tier_view"], event, common, badge)
+        women = data.get("women_tier_view")
+        if women:
+            slides += tier_slides(women, event, common, badge, fleet="WOMEN'S ",
+                                  subtitle="Top 5 women, ranked by total")
+        slides += tier_slides(data["tier_view"], event, common, badge,
+                              fleet="MEN'S " if women else "")
     else:
         slides += _fleet_tables(data, event, common)
     slides.append({"type": "mvp_cta", "event": event, "partner": partner, **common})
@@ -317,14 +340,18 @@ def build_slides(data: dict) -> list[dict]:
     return slides
 
 
-def tier_slides(tier_view: dict, event: dict, common: dict, badge: dict) -> list[dict]:
-    """One table per men's tier, then the optimal team. Shared with slalom_mvps."""
+def tier_slides(tier_view: dict, event: dict, common: dict, badge: dict, fleet: str = "",
+                subtitle: str = "Top 5 riders in the tier, ranked by total") -> list[dict]:
+    """One table per tier, then the optimal team. Shared with slalom_mvps.
+
+    ``fleet`` ("MEN'S ", "WOMEN'S ") heads the optimal team when both fleets had one.
+    """
     slides = []
     for t in tier_view["tiers"]:
         wildcard = t["tier"] == "outside"
         table = {
             "type": "mvp_table", "event": event, "rows": t["rows"],
-            "title": t["title"], "title_accent": t["accent"], "subtitle": "Top 5 riders in the tier, ranked by total",
+            "title": t["title"], "title_accent": t["accent"], "subtitle": subtitle,
             "col_1_label": "Points", "col_3_label": "Total", "show_thumbs": True,
             **badge, **common,
         }
@@ -344,12 +371,13 @@ def tier_slides(tier_view: dict, event: dict, common: dict, badge: dict) -> list
             r["col_1"] = "%.1f" % r["heat_pts"]
             podium = f"+{r['podium_pts']}" if r["podium_pts"] else ""
             if wildcard:
-                r["col_2"] = "+%.1f" % (r["team_pts"] - r["heat_pts"])
+                # A seeded rider in a wildcard slot got no bonus: leave it blank.
+                r["col_2"] = "+%.1f" % (r["team_pts"] - r["heat_pts"]) if r["team_pts"] != r["heat_pts"] else ""
                 r["col_4"] = podium
             else:
                 r["col_2"] = podium
             r["col_3"] = "%.1f" % r["total_pts"]
         slides.append(table)
-    slides.append({"type": "mvp_optimal", "event": event,
+    slides.append({"type": "mvp_optimal", "event": event, "fleet": fleet,
                    "optimal": tier_view["optimal"], **badge, **common})
     return slides

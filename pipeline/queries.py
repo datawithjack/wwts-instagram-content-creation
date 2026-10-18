@@ -417,7 +417,7 @@ def build_perfect_10s_wave_query() -> tuple[str, tuple]:
     return sql, ()
 
 
-def build_fantasy_mvp_points_query(event_id: int) -> tuple[str, tuple]:
+def build_fantasy_mvp_points_query(event_id: int, discipline: str = "freestyle") -> tuple[str, tuple]:
     """Fantasy points per athlete at a freestyle Session event, split by elimination.
 
     An athlete's fantasy points = the "heat aggregate" the Session scoring engine
@@ -433,18 +433,25 @@ def build_fantasy_mvp_points_query(event_id: int) -> tuple[str, tuple]:
     same multi-discipline event (e.g. Fuerteventura hosts freestyle + slalom)
     never leak in.
 
+    A wave event flips the scoping to ``NOT EXISTS``, the app's own rule. Its
+    ``elimination_name`` is blank on LiveHeats heats, so ``hr.sex`` comes back
+    too for the caller to fall back on.
+
     Args:
         event_id: App/DB event id (``PWA_IWT_EVENTS.id``).
+        discipline: "freestyle" or "wave".
 
     Returns:
         (sql, params) tuple ready for db.run_query().
     """
-    sql = """
+    exists = "NOT EXISTS" if discipline == "wave" else "EXISTS"
+    sql = f"""
         SELECT a.primary_name AS athlete,
                a.nationality AS country,
                a.country_code AS country_code,
                asi.athlete_id AS athlete_id,
                hp.elimination_name,
+               hr.sex,
                SUM(hr.result_total) AS points
         FROM PWA_IWT_HEAT_RESULTS hr
         JOIN PWA_IWT_EVENTS e
@@ -459,12 +466,12 @@ def build_fantasy_mvp_points_query(event_id: int) -> tuple[str, tuple]:
             ON hp.heat_id = hr.heat_id AND hp.source = hr.source
         WHERE e.id = %s
           AND hr.result_total IS NOT NULL
-          AND EXISTS (
+          AND {exists} (
               SELECT 1 FROM PWA_IWT_FREESTYLE_HEAT_SCORES f
               WHERE f.pwa_event_id = hr.pwa_event_id
                 AND f.heat_id = hr.heat_id
           )
-        GROUP BY asi.athlete_id, a.primary_name, a.nationality, a.country_code, hp.elimination_name
+        GROUP BY asi.athlete_id, a.primary_name, a.nationality, a.country_code, hp.elimination_name, hr.sex
         ORDER BY points DESC
     """
     return sql, (event_id,)

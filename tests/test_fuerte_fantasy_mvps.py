@@ -392,3 +392,59 @@ def test_a_wildcards_total_is_his_team_points_plus_his_podium_bonus():
     row = assemble_tier_view(men, {}, {}, {"outside": 1})["tiers"][2]["rows"][0]
     assert row["team_pts"] == 337.5
     assert row["total_pts"] == 352.5
+
+
+# ── Wave events (Tiree 2026): no elimination split, women play wildcards ──
+
+from pipeline.fuerte_fantasy_mvps import WOMEN_TIERS
+from pipeline.queries import build_fantasy_mvp_points_query
+
+
+def test_wave_points_query_keeps_freestyle_heats_out_and_returns_sex():
+    sql, params = build_fantasy_mvp_points_query(279, "wave")
+    assert "NOT EXISTS" in sql
+    assert "hr.sex" in sql
+    assert params == (279,)
+
+
+def test_freestyle_points_query_is_unchanged_by_default():
+    sql, _ = build_fantasy_mvp_points_query(126)
+    assert "NOT EXISTS" not in sql
+    assert "EXISTS" in sql
+
+
+def test_a_blank_elimination_name_falls_back_to_the_heat_sex():
+    # Tiree is a LiveHeats event: elimination_name is '' on every heat.
+    rows = [{"athlete": "Emma Miron", "country": "", "country_code": "GB", "athlete_id": 154,
+             "elimination_name": "", "sex": "Women", "points": 31.28}]
+    data = assemble_mvp_data(rows, [], {"location": "Tiree", "year": 2026})
+    assert [r["athlete"] for r in data["women"]] == ["Emma Miron"]
+    assert data["women"][0]["single_pts"] == 31.28
+
+
+def test_women_wildcards_withhold_the_bonus_from_a_seeded_rider():
+    # The app gives a seeded rider in a wildcard slot x1.0 (wildcard_tier_conflict).
+    women = [{"athlete_id": 154, "athlete": "Emma Miron", "country": "gb",
+              "single_pts": 31.28, "double_pts": 0.0, "podium_pts": 10},
+             {"athlete_id": 11, "athlete": "Justyna Sniady", "country": "pl",
+              "single_pts": 19.5, "double_pts": 0.0, "podium_pts": 0}]
+    view = assemble_tier_view(women, {}, {154: 30}, {"outside": 2},
+                              tier_spec=WOMEN_TIERS, seeded={11})
+    rows = view["tiers"][0]["rows"]
+    assert rows[0]["team_pts"] == 39.1
+    assert rows[1]["team_pts"] == 19.5
+    assert [t["multiplier"] for t in view["optimal"]["team"]] == [1.25, 1.0]
+    assert view["optimal"]["podium_total"] == 10
+
+
+def test_build_slides_adds_the_womens_wildcards_and_their_own_optimal_team():
+    men = [_man(1, "Top A", 100.0)]
+    women = [{"athlete_id": 154, "athlete": "Emma Miron", "country": "gb",
+              "single_pts": 31.28, "double_pts": 0.0, "podium_pts": 0}]
+    data = {"event": {"location": "Tiree", "year": 2026},
+            "tier_view": assemble_tier_view(men, {1: "top5"}, {}, {"top5": 1}),
+            "women_tier_view": assemble_tier_view(women, {}, {}, {"outside": 2}, tier_spec=WOMEN_TIERS)}
+    types = [s["type"] for s in build_slides(data)]
+    assert types == ["mvp_cover", "mvp_table", "mvp_optimal",
+                     "mvp_table", "mvp_table", "mvp_table", "mvp_optimal", "mvp_cta"]
+    assert build_slides(data)[2]["fleet"] == "WOMEN'S "

@@ -312,7 +312,7 @@
 <div class="source-note">* Based on all PWA/IWT 5★ events since 2016</div>
 {% endif %}
 {% if partner_badge %}
-<div class="partner-badge">Prizes by {% if partner_badge.logo_url %}<img src="{{ partner_badge.logo_url }}" alt="{{ partner_badge.name }}">{% else %}{{ partner_badge.name }}{% endif %}</div>
+<div class="partner-badge">Prizes by {% if partner_badge.logo_url %}<img src="{{ partner_badge.logo_url }}" alt="{{ partner_badge.name }}"{% if partner_badge.logo_scale %} style="height: {{ (34 * partner_badge.logo_scale) | int }}px"{% endif %}>{% else %}{{ partner_badge.name }}{% endif %}</div>
 {% endif %}
 {% if not hide_footer %}
 <div class="carousel-footer">windsurfworldtourstats.com</div>
