@@ -27,6 +27,7 @@ SESSION_COLOR = "#2dd4bf"
 PRIZE_PARTNERS = {
     126: {"name": "SURF Magazin", "logo": "surf-magazin.svg", "scope": "Sylt"},
     279: {"name": "BHALLS", "logo": "bhalls.png", "scope": "Tiree", "logo_scale": 1.5},
+    128: {"name": "BHALLS", "logo": "bhalls.png", "scope": "Aloha", "logo_scale": 1.5},
 }
 
 # What calling a rider's exact podium place was worth, from the app's
@@ -43,8 +44,11 @@ MEN_TIERS = [
 ]
 WILDCARD_MULTIPLIER = 1.25
 
-# Women's team at a wave 4-star (Tiree 2026): wildcard slots only, no tiers.
+# Women's tiers. Only the ones the game had slots for get a slide: Tiree 2026
+# women played wildcards only, Aloha 2026 had all three.
 WOMEN_TIERS = [
+    ("top5", "WOMEN'S", "TOP 5", "Top 5"),
+    ("6to15", "WOMEN'S", "6-15", "6-15"),
     ("outside", "WOMEN'S", "WILDCARDS", "Wildcard"),
 ]
 
@@ -233,14 +237,20 @@ def assemble_tier_view(
         team_pct: athlete_id -> % of players with him in a team slot (podium
             calls excluded, so the number means "had him on their team").
         slot_counts: tier -> how many team slots that tier had.
-        tier_spec: the fleet's tiers, MEN_TIERS or WOMEN_TIERS.
-        seeded: riders with a tier who could still sit in a wildcard slot (the
-            women at Tiree); the app withholds their x1.25.
+        tier_spec: the fleet's tiers, MEN_TIERS or WOMEN_TIERS. Only tiers
+            with slots in ``slot_counts`` are kept.
+        seeded: riders with a tier who could still sit in a wildcard slot; the
+            app withholds their x1.25. Riders whose tier had no slots (the
+            women at Tiree) are added: they could only be picked as wildcards.
 
     Returns:
         {"tiers": [{tier, title, rows}], "optimal": {...}}. Wildcard rows carry
         their points with the multiplier applied, as the app scores them.
     """
+    tier_spec = [t for t in tier_spec if slot_counts.get(t[0])]
+    in_play = {t[0] for t in tier_spec}
+    seeded = set(seeded) | {aid for aid, t in tiers.items() if t not in in_play}
+    tiers = {aid: t for aid, t in tiers.items() if t in in_play}
     view, team = [], []
     for tier, title, accent, slot_label in tier_spec:
         rows = []

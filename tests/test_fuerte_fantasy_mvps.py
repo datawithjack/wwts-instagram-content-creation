@@ -389,7 +389,7 @@ def test_a_wildcards_total_is_his_team_points_plus_his_podium_bonus():
     # Wolf at Sylt foil 2026: 270 heat points as a wildcard, and 2nd overall.
     men = [{"athlete_id": 1338, "athlete": "Fabian Wolf", "country": "de",
             "single_pts": 270.0, "double_pts": 0.0, "podium_pts": 15}]
-    row = assemble_tier_view(men, {}, {}, {"outside": 1})["tiers"][2]["rows"][0]
+    row = assemble_tier_view(men, {}, {}, {"outside": 1})["tiers"][0]["rows"][0]
     assert row["team_pts"] == 337.5
     assert row["total_pts"] == 352.5
 
@@ -442,9 +442,35 @@ def test_build_slides_adds_the_womens_wildcards_and_their_own_optimal_team():
     women = [{"athlete_id": 154, "athlete": "Emma Miron", "country": "gb",
               "single_pts": 31.28, "double_pts": 0.0, "podium_pts": 0}]
     data = {"event": {"location": "Tiree", "year": 2026},
-            "tier_view": assemble_tier_view(men, {1: "top5"}, {}, {"top5": 1}),
+            "tier_view": assemble_tier_view(men, {1: "top5"}, {}, {"top5": 1, "6to15": 2, "outside": 2}),
             "women_tier_view": assemble_tier_view(women, {}, {}, {"outside": 2}, tier_spec=WOMEN_TIERS)}
     types = [s["type"] for s in build_slides(data)]
     assert types == ["mvp_cover", "mvp_table", "mvp_optimal",
                      "mvp_table", "mvp_table", "mvp_table", "mvp_optimal", "mvp_cta"]
     assert build_slides(data)[2]["fleet"] == "WOMEN'S "
+
+
+# ── Tiers come from the game: a tier with no slots gets no slide ──
+
+def test_only_tiers_with_slots_get_a_table():
+    men = [_man(1, "Top A", 100.0), _man(6, "Wild A", 50.0)]
+    view = assemble_tier_view(men, {1: "top5"}, {}, {"top5": 1, "outside": 2})
+    assert [t["tier"] for t in view["tiers"]] == ["top5", "outside"]
+
+
+def test_a_seeded_rider_whose_tier_had_no_slots_is_a_wildcard_at_x1():
+    # Tiree 2026 women: wildcard slots only, so the seeded riders sit there at x1.0.
+    women = [_man(154, "Emma Miron", 31.28), _man(11, "Justyna Sniady", 19.5)]
+    view = assemble_tier_view(women, {11: "top5"}, {}, {"outside": 2}, tier_spec=WOMEN_TIERS)
+    assert [t["tier"] for t in view["tiers"]] == ["outside"]
+    assert [r["team_pts"] for r in view["tiers"][0]["rows"]] == [39.1, 19.5]
+
+
+def test_womens_tiers_follow_their_slots_when_they_had_tiers():
+    # Aloha 2026 women: 1 top 5, 2 from 6-15, 2 wildcards.
+    women = [_man(1, "Top", 50.0), _man(2, "Mid", 40.0), _man(3, "Wild", 30.0)]
+    view = assemble_tier_view(women, {1: "top5", 2: "6to15"}, {},
+                              {"top5": 1, "6to15": 2, "outside": 2}, tier_spec=WOMEN_TIERS)
+    assert [(t["title"], t["accent"]) for t in view["tiers"]] == [
+        ("WOMEN'S", "TOP 5"), ("WOMEN'S", "6-15"), ("WOMEN'S", "WILDCARDS")]
+    assert view["tiers"][2]["rows"][0]["team_pts"] == 37.5
