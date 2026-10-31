@@ -198,9 +198,8 @@ def _fetch_slalom_recap(args) -> dict:
 def _fantasy_tier_view(event_id, year, discipline, team_prefix, men, sex="Men"):
     """The men's field split by fantasy tier, with the optimal team, or None.
 
-    ``sex="Women"`` is the women's wildcard-only team (Tiree 2026): ``men`` is
-    then the women's rows, and a woman with a tier scores x1.0 in a wildcard
-    slot, as the app does it.
+    ``sex="Women"``: ``men`` is then the women's rows. Each fleet gets the
+    tiers its game had slots for.
 
     None when the season has no tiers seeded. ``men`` rows need athlete_id,
     athlete, country, single_pts, double_pts and podium_pts; they gain a
@@ -255,8 +254,7 @@ def _fantasy_tier_view(event_id, year, discipline, team_prefix, men, sex="Men"):
 
     tiers = {int(r["athlete_id"]): r["tier"] for r in tier_rows}
     if sex == "Women":
-        return assemble_tier_view(men, {}, team_pct, slot_counts,
-                                  tier_spec=WOMEN_TIERS, seeded=set(tiers))
+        return assemble_tier_view(men, tiers, team_pct, slot_counts, tier_spec=WOMEN_TIERS)
     return assemble_tier_view(men, tiers, team_pct, slot_counts)
 
 
