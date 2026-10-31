@@ -1,0 +1,9 @@
+{
+  "_comment": "Photographer per photo, resolved from the filename then the file's own XMP. Entries marked unconfirmed carry no credit tag anywhere: confirm before crediting them.",
+  "45": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "AC26_wv_US1113_0572.jpg",
+    "note": "UNTAGGED - credit unconfirmed"
+  }
+}
