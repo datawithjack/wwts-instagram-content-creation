@@ -113,6 +113,9 @@
     /* A headshot column takes the flag's place and 44px more; give it back from the name. */
     .with-thumbs .col-thumb { width: 84px; }
     .with-thumbs .col-athlete { font-size: 31px; }
+    /* A fourth number column (wildcards: Points, x1.25, Podium) narrows them all. */
+    .four-cols .col-num { width: 98px; font-size: 26px; }
+    .four-cols .col-athlete { font-size: 28px; }
 
     .table-footnote {
         font-family: var(--font-body);
@@ -136,7 +139,7 @@
     {% endif %}
     <div class="mvp-subtitle">{{ subtitle | default('Top 10 fantasy point scorers') }}</div>
 
-    <div class="mvp-table{% if show_thumbs %} with-thumbs{% endif %}">
+    <div class="mvp-table{% if show_thumbs %} with-thumbs{% endif %}{% if col_4_label %} four-cols{% endif %}">
         <div class="mvp-row head">
             <span class="col-rank">#</span>
             {% if show_thumbs %}<span class="col-thumb"></span>{% else %}<span class="col-flag"></span>{% endif %}
@@ -150,6 +153,7 @@
             {% if col_2_label is not defined or col_2_label %}
             <span class="col-num">{{ col_2_label | default('Double') }}</span>
             {% endif %}
+            {% if col_4_label %}<span class="col-num">{{ col_4_label }}</span>{% endif %}
             <span class="col-total">{{ col_3_label | default('Total') }}</span>
             <span class="col-picked">Picked</span>
         </div>
@@ -167,6 +171,7 @@
                 {% if col_2_label is not defined or col_2_label %}
                 <div class="col-num">{% if row.col_2 is defined %}{{ row.col_2 }}{% else %}{{ "%.1f" | format(row.double_pts) }}{% endif %}</div>
                 {% endif %}
+                {% if col_4_label %}<div class="col-num">{{ row.col_4 }}</div>{% endif %}
                 <div class="col-total">{% if row.col_3 is defined %}{{ row.col_3 }}{% else %}{{ "%.1f" | format(row.total_pts) }}{% endif %}</div>
                 <div class="col-picked">{{ row.pct_picked }}%</div>
             </div>

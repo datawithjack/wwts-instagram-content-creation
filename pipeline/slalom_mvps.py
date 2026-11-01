@@ -373,7 +373,8 @@ def assemble_slalom_mvp_data(
     wins: dict[int, int] = defaultdict(int)
     for r in elim_rows or []:
         aid = int(r["athlete_id"])
-        fleet = parse_fleet(r.get("elimination_name", ""))
+        # Sylt foil names its eliminations "Foil Slalom 3", with no fleet.
+        fleet = parse_fleet(r.get("elimination_name", "")) or r.get("sex")
         if fleet and aid not in fleet_of:
             fleet_of[aid] = fleet
         try:
@@ -474,6 +475,9 @@ def verify_against_app_scores(data: dict, breakdown_rows: list[dict]) -> list[st
         except (ValueError, TypeError):
             continue
         for slot in slots:
+            # A podium call carries no heat points (heat_aggregate 0).
+            if slot.get("part") == "podium":
+                continue
             aid = slot.get("athlete_id")
             agg = slot.get("heat_aggregate")
             if aid is not None and agg is not None:
@@ -501,8 +505,9 @@ def build_slides(data: dict) -> list[dict]:
     """
     # discipline_label rides on every slide: the cover eyebrow and the table
     # eyebrow both default to "Freestyle" for the original MVP carousel.
-    common = {"accent_color": SLALOM_COLOR, "discipline_label": "Slalom X"}
     event = data.get("event", {})
+    common = {"accent_color": SLALOM_COLOR,
+              "discipline_label": event.get("discipline_label", "Slalom X")}
     # Slalom has no single/double split — see the module docstring. These
     # override the mvp_table template's freestyle defaults.
     columns = {
@@ -516,7 +521,12 @@ def build_slides(data: dict) -> list[dict]:
         ),
     }
 
-    slides = [{"type": "mvp_cover", "event": event, **common}]
+    from pipeline.fuerte_fantasy_mvps import _partner, tier_slides
+
+    partner = _partner(event.get("partner"))
+    badge = {"partner_badge": partner} if partner else {}
+    tier_view = data.get("tier_view")
+    slides = [{"type": "mvp_cover", "event": event, "partner": partner, **common}]
 
     # The key comes BEFORE the tables: slalom points are unreadable without it. A
     # men's rider can bank ~46 in ONE elimination (four heats plus a doubled
@@ -531,25 +541,33 @@ def build_slides(data: dict) -> list[dict]:
              "text": "1st = 10 points, 2nd = 9, down to 10th = 1"},
             {"label": "The final",
              "text": "Points in an elimination's final count double"},
-        ],
+        ] + ([
+            {"label": "Wildcards",
+             "text": "Riders outside the top 15 score x1.25"},
+            {"label": "Podium",
+             "text": "Call the exact top 3: +25 for 1st, +15 for 2nd, +10 for 3rd"},
+        ] if tier_view else []),
         # A real run from this event, not an invented one.
         "example": data.get("example"),
         **common,
     })
 
-    for label, key in (("MEN", "men"), ("WOMEN", "women")):
-        rows = data.get(key, [])
-        if not rows:
-            continue
-        slides.append({
-            "type": "mvp_table",
-            "sex_label": label,
-            "event": event,
-            "rows": rows,
-            **columns,
-            **common,
-        })
-    slides.append({"type": "mvp_cta", "event": event, **common})
+    if tier_view:
+        slides += tier_slides(tier_view, event, common, badge)
+    else:
+        for label, key in (("MEN", "men"), ("WOMEN", "women")):
+            rows = data.get(key, [])
+            if not rows:
+                continue
+            slides.append({
+                "type": "mvp_table",
+                "sex_label": label,
+                "event": event,
+                "rows": rows,
+                **columns,
+                **common,
+            })
+    slides.append({"type": "mvp_cta", "event": event, "partner": partner, **common})
 
     total = len(slides)
     for i, slide in enumerate(slides, 1):

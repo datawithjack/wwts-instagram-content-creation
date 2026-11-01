@@ -361,6 +361,12 @@ class TestAssembleSlalomMvpData:
         assert [r["athlete"] for r in data["men"]] == ["Fast Rider"]
         assert [r["athlete"] for r in data["women"]] == ["Slow Rider"]
 
+    def test_a_foil_elimination_takes_its_fleet_from_sex(self, heat_rows, elim_rows, pct_rows):
+        # Sylt 2026 names its eliminations "Foil Slalom 3", with no fleet in it.
+        foil = [dict(r, elimination_name="Foil Slalom 1", sex="Men") for r in elim_rows]
+        data = assemble_slalom_mvp_data(heat_rows, [], foil, pct_rows, {})
+        assert [r["athlete"] for r in data["men"]] == ["Fast Rider", "Slow Rider"]
+
     def test_drops_athletes_who_scored_nothing(self, heat_rows, elim_rows, pct_rows):
         zeroed = [dict(r, place=20) for r in heat_rows if r["athlete_id"] == 2]
         kept = [r for r in heat_rows if r["athlete_id"] == 1]

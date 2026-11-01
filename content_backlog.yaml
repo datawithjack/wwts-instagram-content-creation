@@ -701,6 +701,153 @@ posts:
       falls back to a dark gradient). Add a scheduled_date (ISO UTC) once the event
       finishes (after Jun 14) and data is final, then push to main to publish.
 
+  - id: wissant2026-mens-waves-top10
+    template: top_10_carousel
+    params:
+      score_type: Wave
+      sex: Men
+      event: 278
+      photos: true
+    caption: |-
+      🌊 While we wait for the wind in Sylt, here are the top 10 waves from Wissant.
+
+      Jules Denel set the high mark in the very first round: a 9.00 in Seeding R1 that nobody touched for the rest of the event. Marc Paré Rico put four waves in the top 10, two of them in the final.
+
+      Swipe for the countdown.
+
+      Full stats → windsurfworldtourstats.com
+
+      📸 @oliviercaenen | @pwaworldtour
+    category: seasonal
+    scheduled_date: "2026-09-29T17:55:00"
+    published: true
+    published_at: "2026-09-29T18:09:08"
+    notes: >
+      Top 10 waves, Wissant Wave Classic 2026 (API id 278), photo mode. Sylt wind-wait filler. Heroes in assets/photos/events/278/, a rider's second card uses {id}-2 etc. Photos Olivier Caenen and Nicolas Peltier; headshots for 10, 14, 61, 64 are LiveHeats profile photos. Published manually via schedule.py --publish now (poller blocked by a GitHub billing lock), media ID 18152448691481980. The local run read the backlog as cp1252 and garbled the emoji, so the caption was fixed by hand on Instagram and differs from the one above (riders and @wissantwaveclassic tagged).
+
+  - id: wissant2026-womens-waves-top10
+    template: top_10_carousel
+    params:
+      score_type: Wave
+      sex: Women
+      event: 278
+      photos: true
+    caption: |-
+      🌊 While we wait for the wind in Sylt, here are the top 10 waves from Wissant.
+
+      Sol Degrieck owned the list: six of the top 10, including the best wave of the event, a 6.50 in the final. Lisa Wermeister and Alice Arutkin took the other four.
+
+      Swipe for the countdown.
+
+      Full stats → windsurfworldtourstats.com
+
+      📸 @oliviercaenen | @nicolaspeltierphotographie | @pwaworldtour
+    category: seasonal
+    scheduled_date: "2026-09-29T18:00:00"
+    published: true
+    published_at: "2026-09-29T18:33:32"
+    notes: >
+      Top 10 waves, Wissant Wave Classic 2026 (API id 278), photo mode. Sylt wind-wait filler. Heroes in assets/photos/events/278/, a rider's second card uses {id}-2 etc. Photos Olivier Caenen and Nicolas Peltier; headshots for 10, 14, 61, 64 are LiveHeats profile photos. Published manually via schedule.py --publish now with PYTHONUTF8=1 (poller blocked by a GitHub billing lock), media ID 18083124881324452.
+
+  - id: tiree2026-mens-waves-top10
+    template: top_10_carousel
+    params:
+      score_type: Wave
+      sex: Men
+      event: 279
+      photos: true
+    caption: |-
+      🌊 Before Aloha gets going, here are the top 10 waves from the Tiree Wave Classic.
+
+      Miguel Chapuis owned the list: the top three scores are all his, a 9.15 and a 9.00 in the quarterfinals and an 8.88 in the semis. Five of the ten are his. Philip Köster put two in, both in the Round of 16.
+
+      Swipe for the countdown.
+
+      Full stats → windsurfworldtourstats.com
+
+      📸 @jcwindsurf | @pwaworldtour
+    category: seasonal
+    scheduled_date: "2026-10-17T08:33:00"
+    published: true
+    published_at: "2026-10-17T08:33:00"
+    notes: >
+      Top 10 waves, Tiree Wave Classic 2026 (API id 279), photo mode. Heroes in assets/photos/events/279/; Chapuis has three top-5 cards so 46, 46-2, 46-3. Photos John Carter, from frames downloaded by hand: the Drive album is untagged so pick_photos needed sail-tagged copies. Table headshots fall back to the API's profile_image. Published locally via generate.py --publish now (poller billing-locked), media ID 18105423359623906.
+
+  - id: tiree2026-womens-waves-top10
+    template: top_10_carousel
+    params:
+      score_type: Wave
+      sex: Women
+      event: 279
+      photos: true
+    caption: |-
+      🌊 Now the women: the top 10 waves from the Tiree Wave Classic.
+
+      Frida Miron's 7.22 in the final tops the list. Izzy Adcock put four waves in the ten, a 6.88 in the final and two from her seeding heat among them. Three of the top four came in the final.
+
+      Swipe for the countdown.
+
+      Full stats → windsurfworldtourstats.com
+
+      📸 @jcwindsurf | @pwaworldtour
+    category: seasonal
+    scheduled_date: "2026-10-17T11:41:00"
+    published: true
+    published_at: "2026-10-17T11:41:00"
+    notes: >
+      Top 10 waves, Tiree Wave Classic 2026 (API id 279), photo mode. Izzy Adcock has three top-5 cards (1845, 1845-2, 1845-3) and no sail number on record, so the picker cannot find her: installed by hand. 1845-2 (izzy (2).jpg) has no photographer tag; credited to John Carter by assumption, unconfirmed. Headshots for 145/154/164 are untagged, credit unconfirmed. Izzy's flag comes from COUNTRY_OVERRIDES (gb). Published locally via generate.py --publish now (poller billing-locked), media ID 18025832102872987.
+
+  - id: tiree2026-fantasy-mvps
+    template: fuerte_fantasy_mvps
+    params:
+      event: 279
+      discipline: Wave
+    caption: |-
+      🏆 The Fantasy MVPs of Tiree: the riders who won you the points at the Tiree Wave Classic.
+
+      Izzy Adcock led the women's wildcards on 61.6, with the x1.25 wildcard bonus and 25 more for anyone who called her win.
+
+      Miguel Chapuis was the pick of the men's tiers: 81.4 from his heats and another 25 for calling the win. 65% had him on their team.
+
+      Ben Proffitt was the wildcard of the week, 94.4 points after the bonus.
+
+      Swipe for the top picks in every tier and the optimal teams: every point that was on offer.
+
+      Thank you to our Tiree prize partner BHALLS 🙌
+
+      Get your team in for the Aloha Classic. Play free, link in bio.
+    category: seasonal
+    scheduled_date: "2026-10-18T04:20:00"
+    published: true
+    published_at: "2026-10-18T04:20:00"
+    notes: >
+      Fantasy top picks, Tiree Wave Classic 2026 (app/API id 279), wave. Women's wildcards and their optimal team first (women played two wildcard slots only), then the men's tiers and optimal team. BHALLS prize partner, logo from R2 email/bhalls-logo.png at 1.5x. Headshots for 145/154/164 untagged, credit unconfirmed. Published locally via generate.py --publish now (poller billing-locked), media ID 18108808153911098.
+  - id: aloha2026-fantasy-mvps
+    template: fuerte_fantasy_mvps
+    params:
+      event: 128
+      discipline: Wave
+    caption: |-
+      🏆 The Fantasy MVPs of Maui: the riders who won you the points at the Aloha Classic.
+
+      Marine Hunter came out of the women's 6-15 tier to take the win: 33.7 from her heats and 25 more for calling it. Only 35% had her on their team.
+
+      Marc Paré Rico won the men's event from the top 5 tier, 76.3 with the podium bonus, yet he was on just 28% of teams. Bernd Roediger scored the most heat points of anyone, 57.3, and 79% of you had him.
+
+      Thomas Traversa was the wildcard of the week on 51.0 after the bonus. Cesar Filippi made the optimal team on 46.7, and nobody picked him.
+
+      Swipe for the top picks in every tier and the optimal teams: every point that was on offer.
+
+      Thank you to our Aloha prize partner BHALLS 🙌
+
+      Get your team in for Chile. Play free, link in bio.
+    category: seasonal
+    scheduled_date: "2026-10-31T12:40:00"
+    published: true
+    published_at: "2026-10-31T12:40:00"
+    notes: >
+      Fantasy top picks, Aloha Classic 2026 (app/API id 128), wave. Women played 1 top 5, 2 from 6-15 and 2 wildcard slots, so both fleets get all three tier tables plus their optimal team, women first. BHALLS prize partner, logo at 1.5x. Sarah Kenyon's headshot is the new R2 upload. Published locally via generate.py --publish now, media ID 18074669453726295.
+
   # ── Week of April 7 ─────────────────────────────────────────
   # - id:
   #   template:

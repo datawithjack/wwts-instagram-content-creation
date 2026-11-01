@@ -48,6 +48,7 @@ FILENAME_MARKERS = {
     "RAFASOULART": ("Rafa Soulart", "@rafasoulart"),
     "PHOTOMEDANO": ("Photo Medano", ""),
     "JOHNCARTER": ("John Carter", "@jcwindsurf"),
+    "INNABRU": ("Inna Bru", ""),   # Fuerteventura 2025 freestyle, "_Inna_Bru__"
     "TOMBRENDT": ("Tom Brendt", ""),
 }
 
@@ -268,7 +269,7 @@ def match_event_folder(event_name: str, folder_names) -> str:
 
     best, best_len = "", 0
     for folder in folder_names:
-        stripped = _FOLDER_PREFIX.sub("", folder).strip().upper()
+        stripped = re.sub(r"[^A-Z ]", "", _FOLDER_PREFIX.sub("", folder).upper()).strip()
         if not stripped:
             continue
         if stripped in haystack and len(stripped) > best_len:
@@ -347,7 +348,12 @@ def merge_json_entry(path, key: str, value, comment: str = "") -> dict:
         data["_comment"] = comment
     data[str(key)] = value
 
+    # Written LF, not os.linesep. In text mode Python translates every "\n"
+    # json.dumps produced into the platform ending, so on Windows one new
+    # entry rewrote all 200 lines of the file as CRLF and the diff buried
+    # the single line that changed. These files are hand-edited and their
+    # comments carry decisions, so the diff has to stay readable.
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + os.linesep,
-                    encoding="utf-8")
+    with open(path, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
     return data

@@ -818,3 +818,26 @@ class TestParseScheduledDateTolerance:
         ]
         due = filter_posts_due(posts, datetime(2026, 8, 16, 14, 0, tzinfo=timezone.utc))
         assert {p["id"] for p in due} == {"unquoted", "quoted"}
+
+
+class TestCalendarIsUtf8:
+    """Wissant 2026 men's top 10: published from Windows, where open() defaults
+    to cp1252, and the 🌊 went out as mojibake. The poller on Linux never hit it."""
+
+    CAPTION = "\U0001f30a Par\u00e9 \u2192 \U0001f4f8"
+
+    def _calendar(self, tmp_path):
+        path = tmp_path / "backlog.yaml"
+        path.write_text(
+            "posts:\n  - id: a\n    template: top_10_carousel\n"
+            f"    caption: \"{self.CAPTION}\"\n"
+            "    scheduled_date: \"2026-09-29T18:00:00\"\n", encoding="utf-8")
+        return path
+
+    def test_load_reads_emoji_intact(self, tmp_path):
+        assert load_calendar(str(self._calendar(tmp_path)))["posts"][0]["caption"] == self.CAPTION
+
+    def test_marking_published_keeps_them(self, tmp_path):
+        path = self._calendar(tmp_path)
+        mark_post_published(str(path), "a")
+        assert self.CAPTION in path.read_text(encoding="utf-8")

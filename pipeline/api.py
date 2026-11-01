@@ -300,6 +300,14 @@ def fetch_athlete_event_stats(event_id: int, athlete_id: int, division: str) -> 
     return data
 
 
+# Riders whose API country is missing ("Unknown"). The fix belongs in the DB's
+# ATHLETES row; drop an entry once it is populated.
+COUNTRY_OVERRIDES = {
+    1725: "fr",  # Kilian Couedic, F-777
+    1845: "gb",  # Izzy Adcock, no sail or nationality on record
+}
+
+
 def fetch_event_top_scores(event_id: int, score_type: str, sex: str = None, limit: int = 10) -> dict:
     """Fetch top scores for a specific event from the /events/{id}/stats API.
 
@@ -329,10 +337,11 @@ def fetch_event_top_scores(event_id: int, score_type: str, sex: str = None, limi
         params=stats_params,
         timeout=30,
     )
-    country_map = {}
+    country_map, image_map = {}, {}
     if athletes_resp.ok:
         for a in athletes_resp.json().get("athletes", []):
             country_map[a["athlete_id"]] = a.get("country", "")
+            image_map[a["athlete_id"]] = a.get("profile_image") or ""
 
     event = fetch_event(event_id)
     event_name = clean_event_name(stats.get("event_name", ""))
@@ -349,8 +358,11 @@ def fetch_event_top_scores(event_id: int, score_type: str, sex: str = None, limi
             # here. Photo mode resolves a rider's hero shot from it, and
             # pick_photos finds their candidate frames; table slides ignore it.
             "athlete_id": r.get("athlete_id"),
-            "country": nationality_to_iso(country_map.get(r.get("athlete_id"), "")),
+            "country": (nationality_to_iso(country_map.get(r.get("athlete_id"), ""))
+                        or COUNTRY_OVERRIDES.get(r.get("athlete_id"), "")),
             "score": float(r.get("score", 0)),
+            # Site headshot, the table thumb's fallback when faces/ has none.
+            "photo_url": image_map.get(r.get("athlete_id"), ""),
             "event": event_name,
             "round": r.get("round_name", ""),
             "heat": heat_label_from_id(heat_id) if heat_id else "",
@@ -493,6 +505,12 @@ def _wave_finishers(event_id: int, division: str, candidates: list,
     event whose double elimination was abandoned part-run, the last wave heat
     sailed is not the final, and ordering on depth would rank whoever sailed
     it above the winner.
+
+    A tie is where a borrowed position does give itself away: of two wave
+    riders sharing a position, one who went out in an earlier round than the
+    other holds it from another discipline, and is dropped. Julien Quentel is
+    3rd at Sylt 2016 alongside Jaeger Stone, out of the wave in round 1, and
+    kept he pushed Victor Fernandez off 4th.
     """
     resp = requests.get(
         f"{API_BASE_URL}/events/{event_id}/athletes",
@@ -504,6 +522,12 @@ def _wave_finishers(event_id: int, division: str, candidates: list,
     depth = _wave_depth(candidates, score_type)
     riders = [a for a in resp.json().get("athletes", [])
               if a.get("athlete_id") in depth]
+    furthest = {}
+    for a in riders:
+        position = a.get("overall_position")
+        furthest[position] = max(furthest.get(position, 0), depth[a["athlete_id"]][0])
+    riders = [a for a in riders
+              if depth[a["athlete_id"]][0] == furthest[a.get("overall_position")]]
     riders.sort(key=lambda a: (a.get("overall_position") or 99,
                                -depth[a["athlete_id"]][0]))
     return riders

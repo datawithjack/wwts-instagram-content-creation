@@ -19,7 +19,7 @@
     {% if partner %}
     <div class="cta-subtitle">Thank you to our {{ partner.scope }} prize partner</div>
     {% if partner.logo_url %}
-    <div class="partner-logo"><img src="{{ partner.logo_url }}" alt="{{ partner.name }}"></div>
+    <div class="partner-logo"><img src="{{ partner.logo_url }}" alt="{{ partner.name }}"{% if partner.logo_scale %} style="height: {{ (140 * partner.logo_scale) | int }}px"{% endif %}></div>
     {% else %}
     <div class="partner-name">{{ partner.name }}</div>
     {% endif %}

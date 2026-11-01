@@ -90,7 +90,7 @@
     <div class="cover-partner">
         <div class="cover-partner-label">Prizes by</div>
         {% if partner.logo_url %}
-        <img src="{{ partner.logo_url }}" alt="{{ partner.name }}">
+        <img src="{{ partner.logo_url }}" alt="{{ partner.name }}"{% if partner.logo_scale %} style="height: {{ (62 * partner.logo_scale) | int }}px"{% endif %}>
         {% else %}
         <div class="cover-partner-name">{{ partner.name }}</div>
         {% endif %}
