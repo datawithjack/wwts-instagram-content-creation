@@ -848,6 +848,25 @@ posts:
     notes: >
       Fantasy top picks, Aloha Classic 2026 (app/API id 128), wave. Women played 1 top 5, 2 from 6-15 and 2 wildcard slots, so both fleets get all three tier tables plus their optimal team, women first. BHALLS prize partner, logo at 1.5x. Sarah Kenyon's headshot is the new R2 upload. Published locally via generate.py --publish now, media ID 18074669453726295.
 
+  - id: wissant2026-mens-finals-recap
+    template: finals_recap
+    params:
+      event: 278
+      division: Men
+    caption: |-
+      🌊 Marc Paré did not lose a heat at Wissant.
+
+      Four heats sailed, four heats won, and the last one was the closest of them: 29.26 to Philip Köster's 28.87. Köster landed the bigger jump in that final, a double forward at 9.00 against Paré's 8.38, but Paré's waves carried it. Kilian Couedic took third. Morgan Noireaux finished fourth with the best single wave of the four finalists, an 8.00.
+
+      That result puts Paré outright top of the rankings, and next up is Sylt, where he has won the last two editions.
+
+      Swipe from 4th up to 1st, then see all four compared across the scores from the final itself.
+
+      Full stats → windsurfworldtourstats.com
+    category: seasonal
+    notes: >
+      Wissant Wave Classic 2026 men's final. event is the API id 278. Photos are Olivier Caenen's final-day set, installed to assets/photos/events/278/ via pick_photos --athletes 97,49,1725,52. NOT READY: one headshot still to add, and Caenen has no handle in pipeline/photo_picker.HANDLES so the credit posts as a name only. Crop anchors are all 50% 50%, unchecked. No scheduled_date on purpose: the poller skips undated entries, so this cannot publish until a date is added.
+
   # ── Week of April 7 ─────────────────────────────────────────
   # - id:
   #   template:
