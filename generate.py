@@ -3,6 +3,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 import webbrowser
 import tempfile
@@ -1033,6 +1034,26 @@ def write_caption_file(result_paths: list, caption: str):
     return path
 
 
+def commits_behind_main() -> int:
+    """Commits on origin/main that this checkout doesn't have (0 if git can't say)."""
+    subprocess.run(["git", "fetch", "-q", "origin", "main"], capture_output=True, text=True)
+    out = subprocess.run(["git", "rev-list", "--count", "HEAD..origin/main"],
+                         capture_output=True, text=True).stdout.strip()
+    return int(out) if out.isdigit() else 0
+
+
+def check_not_behind_main(publishing: bool) -> None:
+    """A branch behind main renders whatever main has fixed since, the old way.
+    Previews warn; publishing stops."""
+    behind = commits_behind_main()
+    if not behind:
+        return
+    print(f"WARNING: this branch is {behind} commits behind main, so fixes made "
+          f"there since are missing from this render. Merge main first.")
+    if publishing:
+        sys.exit("Not publishing from a branch behind main.")
+
+
 def main():
     parser = argparse.ArgumentParser(description="WWT Instagram content generator")
     parser.add_argument(
@@ -1089,6 +1110,7 @@ def main():
     parser.add_argument("--caption", help="Custom caption override")
 
     args = parser.parse_args()
+    check_not_behind_main(publishing=args.publish is not None)
     config = load_config()
 
     template_name = args.template
