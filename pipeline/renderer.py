@@ -178,6 +178,7 @@ def render_sylt_kings_carousel(
     base_name: str = "sylt_kings",
     editions: dict = None,
     discipline: str = "Wave",
+    venue: str = "Sylt",
     width: int = 1080,
     height: int = 1350,
     dpr: int = 2,
@@ -196,7 +197,7 @@ def render_sylt_kings_carousel(
     Returns list of PNG file paths.
     """
     from pipeline.sylt_kings import build_sylt_kings_slides
-    slides = build_sylt_kings_slides(rows, sex, editions, discipline)
+    slides = build_sylt_kings_slides(rows, sex, editions, discipline, venue)
     os.makedirs(output_dir, exist_ok=True)
     paths = []
     for i, slide in enumerate(slides, 1):
