@@ -482,6 +482,10 @@ def get_dummy_data(template_name: str) -> dict:
     if template_name == "fourstar_session":
         from pipeline.fourstar_session import build_fourstar_session_slides
         return {"slides": build_fourstar_session_slides()}
+
+    if template_name == "fourstar_picks_open":
+        from pipeline.fourstar_picks_open import build_fourstar_picks_open_slides
+        return {"slides": build_fourstar_picks_open_slides()}
     if template_name == "tour_rules_reel":
         from pipeline.tour_rules import build_tour_rules_reel_data
         return build_tour_rules_reel_data()
