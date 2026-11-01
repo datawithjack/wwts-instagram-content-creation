@@ -304,30 +304,19 @@ def _event_label(meta: dict) -> str:
 
 def _cover(division: str, riders: list, common: dict, freestyle: bool = False,
            discipline_label: str = "") -> dict:
-    """Cover slide, backed by a grid of the four riders' own hero shots.
+    """Cover slide: the winner's hero shot full-bleed, title bottom-left.
 
-    Only riders with a real landscape shot count towards the grid: a headshot
-    dropped into a quarter of a full-bleed background reads as a mistake, and
-    a half-filled grid is worse than none. With nothing to show the template
-    falls back to the plain cover.
+    The same layout as the top 10 photo cover. Only a real landscape shot is
+    used, never a headshot; with none the template falls back to the plain
+    cover.
     """
     # "Finalists" is only true where they all sailed the final. Elsewhere the
     # carousel is a placings countdown and has to say so.
     subject = "FINALISTS" if _shared_final(riders) else f"TOP {len(riders)}"
     if freestyle:
         discipline_label = "FREESTYLE"
-    # A rider's cover crop is cut to the grid cell, so it needs no anchor;
-    # without one the cell borrows the rider card's photo and its anchor.
-    hero_photos = [
-        {
-            "place": r.get("place"),
-            "url": r.get("cover_url") or r.get("action_url"),
-            "focus": "50% 50%" if r.get("cover_url")
-                     else r.get("hero_focus") or DEFAULT_FOCUS,
-        }
-        for r in riders
-        if r.get("action_url")
-    ]
+    # Riders arrive sorted by place, so the first is the winner.
+    winner = riders[0]
     # Three short lines, the same shape finals_preview uses ("MEN'S / ROAD TO
     # THE / FINAL"). One long line renders at a different size to every other
     # cover in the set, which is what breaks the family resemblance.
@@ -339,7 +328,8 @@ def _cover(division: str, riders: list, common: dict, freestyle: bool = False,
                         if discipline_label
                         else [f"{division}'S {subject}".strip()]),
         "title_accent": "THE STATS",
-        "hero_photos": hero_photos,
+        "cover_photo_url": winner.get("action_url") or "",
+        "cover_photo_focus": winner.get("hero_focus") or DEFAULT_FOCUS,
         **common,
     }
 

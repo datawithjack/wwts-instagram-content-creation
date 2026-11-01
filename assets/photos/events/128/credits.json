@@ -1,9 +1,56 @@
 {
   "_comment": "Photographer per photo, resolved from the filename then the file's own XMP. Entries marked unconfirmed carry no credit tag anywhere: confirm before crediting them.",
   "45": {
+    "photographer": "Fish Bowl Diaries",
+    "handle": "@fishbowldiaries",
+    "source_file": "AC26_wv_US1113_0572.jpg"
+  },
+  "52": {
+    "photographer": "Fish Bowl Diaries",
+    "handle": "@fishbowldiaries",
+    "source_file": "AC26_wv_HI101_0520.jpg"
+  },
+  "64": {
+    "photographer": "Fish Bowl Diaries",
+    "handle": "@fishbowldiaries",
+    "source_file": "AC26_wv_F193_Fish-Bowl-Diaries-0014.jpg"
+  },
+  "97": {
+    "photographer": "Fish Bowl Diaries",
+    "handle": "@fishbowldiaries",
+    "source_file": "AC26_wv_E334_0512.jpg"
+  },
+  "7": {
     "photographer": "",
     "handle": "",
-    "source_file": "AC26_wv_US1113_0572.jpg",
+    "source_file": "AC26_wv_G209_Fish-Bowl-Diaries-0138.jpg",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "16": {
+    "photographer": "Fish Bowl Diaries",
+    "handle": "@fishbowldiaries",
+    "source_file": "AC26_wv_G3_Fish-Bowl-Diaries-0058.jpg"
+  },
+  "92": {
+    "photographer": "Fish Bowl Diaries",
+    "handle": "@fishbowldiaries",
+    "source_file": "AC26_wv_US21_Fish-Bowl-Diaries-0177.jpg"
+  },
+  "95": {
+    "photographer": "Fish Bowl Diaries",
+    "handle": "@fishbowldiaries",
+    "source_file": "AC26_wv_F181_Fish-Bowl-Diaries-0063.jpg"
+  },
+  "10": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "AC26_wv_B5_Fish-Bowl-Diaries-0162.jpg",
+    "note": "UNTAGGED - credit unconfirmed"
+  },
+  "7-2": {
+    "photographer": "",
+    "handle": "",
+    "source_file": "AC26_wv_G209_Fish-Bowl-Diaries-0141.jpg",
     "note": "UNTAGGED - credit unconfirmed"
   }
 }

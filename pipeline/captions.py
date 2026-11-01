@@ -56,6 +56,7 @@ def build_caption_body(
             "fantasy_league_announce": _caption_fantasy_league,
             "fantasy_rules": _caption_fantasy_rules,
             "fourstar_session": _caption_fourstar_session,
+            "fourstar_picks_open": _caption_fourstar_picks_open,
             "how_to_pick_reel": _caption_how_to_pick_reel,
         }
         builder = builders.get(template_name, _caption_default)
@@ -456,17 +457,27 @@ def _caption_finals_recap(data: dict, site_url: str) -> str:
     else:
         division += "'s"
     heading = f"\U0001f30a How the {where} {division} final unfolded."
-    if name and total:
-        heading += f"\n\n{name} took it with {float(total):.2f}."
-    elif name:
-        heading += f"\n\n{name} took it."
-
     # Where the final was man on man, third and fourth never shared water
     # with the winner. The slides say so; the caption has to agree, or the
     # post contradicts itself underneath its own images.
     from pipeline.finals_recap import _shared_final
+    shared = _shared_final(riders)
 
-    if _shared_final(riders):
+    # The margins are the story, not the winning total: Aloha 2026 men was
+    # decided by 0.05. The four-way spread is only worth saying when all four
+    # sailed the same heat and it was close (Aloha 2026 women: 7.00 apart).
+    second = next((r for r in riders if r.get("place") == 2), None)
+    runner_up = (second or {}).get("final_total")
+    if name and total and runner_up:
+        heading += (f"\n\n{name} took it by {float(total) - float(runner_up):.2f} "
+                    f"over {second.get('name', '')} in 2nd.")
+        totals = [float(r["final_total"]) for r in riders if r.get("final_total")]
+        if shared and len(totals) >= 4 and max(totals) - min(totals) < 2:
+            heading += f" Just {max(totals) - min(totals):.2f} split all four finalists."
+    elif name:
+        heading += f"\n\n{name} took it."
+
+    if shared:
         swipe = ("Swipe from 4th up to 1st, then see all four compared "
                  "across the scores from the final itself.")
     else:
@@ -644,6 +655,34 @@ def _caption_fourstar_session(data: dict, site_url: str) -> str:
         "You will not need to sit refreshing the page. We will email you the "
         "moment picks open, and nudge you as the start list grows.\n\n"
         f"\U0001f449 Sign up free: link in bio ({site_url})"
+    )
+
+
+def _caption_fourstar_picks_open(data: dict, site_url: str) -> str:
+    """The follow-up to _caption_fourstar_session, once both its gates moved.
+
+    The threshold is read off the same constant as the cover slide, so the
+    caption and the picture cannot drift apart.
+    """
+    from pipeline.fourstar_picks_open import ENTRY_THRESHOLD
+
+    return (
+        "⚡ Wissant picks are open.\n\n"
+        f"The 4-star at Wissant (12 to 20 Sept) has the {ENTRY_THRESHOLD} riders "
+        "it needed on the start list, so The Session is live. Log in and "
+        "start drafting your team.\n\n"
+        "Not every slot is open yet. The wildcards are ready to fill, and the "
+        "ranked slots unlock as more riders enter, so the team you build today "
+        "will grow.\n\n"
+        "\U0001f4dd Which is why you should save a draft and NOT confirm it. "
+        "Confirm and lock now and you freeze a part-built team, with the slots "
+        "that open later gone. A draft stays editable to the deadline and "
+        "enters you automatically at 06:00 on day one, so there is nothing to "
+        "lose by leaving it open.\n\n"
+        "You will not need to sit refreshing the page. We will send updates by "
+        "email and here on Instagram when new slots open.\n\n"
+        "⏰ Picks close 06:00 local, 12 September.\n\n"
+        f"\U0001f449 Play free: link in bio ({site_url})"
     )
 
 

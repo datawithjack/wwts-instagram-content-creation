@@ -412,5 +412,12 @@
     "confirmed": false,
     "via": "",
     "note": "UNTAGGED - credit unconfirmed"
+  },
+  "492": {
+    "photographer": "john carter",
+    "handle": "@jcwindsurf",
+    "source_file": "SY26_ls_J171_0056 copy.jpg",
+    "confirmed": true,
+    "via": "exif"
   }
 }

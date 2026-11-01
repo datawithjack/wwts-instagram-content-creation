@@ -513,44 +513,33 @@ class TestHeroFocus:
         assert winner["photo_focus"] == "center 35%"
 
 
-class TestCoverHeroGrid:
-    """The cover previews the countdown with the four riders' own shots."""
+class TestCoverPhoto:
+    """One full-bleed photo, the winner's, like the top 10 photo cover."""
 
     def _cover(self, riders=None):
         return build_slides(_data(riders=riders))[0]
 
-    def test_cover_carries_a_photo_per_rider(self):
+    def _riders(self):
         riders = _riders()
         for r in riders:
             r["action_url"] = f"file:///photos/events/124/{r['athlete_id']}.jpg"
-        cover = self._cover(riders)
-        assert len(cover["hero_photos"]) == 4
+        return riders
 
-    def test_photos_run_first_to_fourth(self):
-        riders = _riders()
-        for r in riders:
-            r["action_url"] = f"file:///photos/events/124/{r['athlete_id']}.jpg"
+    def test_cover_uses_the_winners_photo(self):
+        riders = self._riders()
+        winner = next(r for r in riders if r["place"] == 1)
         cover = self._cover(riders)
-        assert [p["place"] for p in cover["hero_photos"]] == [1, 2, 3, 4]
+        assert cover["cover_photo_url"] == winner["action_url"]
 
-    def test_each_photo_keeps_its_own_focal_point(self):
-        riders = _riders()
-        riders[0]["action_url"] = "file:///photos/events/124/97.jpg"
-        riders[0]["hero_focus"] = "9% 58%"
-        cover = self._cover(riders)
-        assert cover["hero_photos"][0]["focus"] == "9% 58%"
+    def test_cover_keeps_the_winners_crop(self):
+        riders = self._riders()
+        next(r for r in riders if r["place"] == 1)["hero_focus"] = "9% 58%"
+        assert self._cover(riders)["cover_photo_focus"] == "9% 58%"
 
-    def test_riders_without_an_action_shot_are_skipped(self):
-        """A half-filled grid is worse than none, so only real hero shots
-        count towards it."""
-        riders = _riders()
-        riders[0]["action_url"] = "file:///photos/events/124/97.jpg"
-        cover = self._cover(riders)
-        assert len(cover["hero_photos"]) == 1
-
-    def test_no_photos_leaves_the_plain_cover(self):
-        cover = self._cover()
-        assert cover["hero_photos"] == []
+    def test_no_winner_photo_leaves_the_plain_cover(self):
+        riders = self._riders()
+        next(r for r in riders if r["place"] == 1)["action_url"] = ""
+        assert not self._cover(riders)["cover_photo_url"]
 
     def test_cover_still_carries_its_title(self):
         cover = self._cover()
@@ -857,30 +846,6 @@ def test_freestyle_cover_names_the_discipline():
     cover = build_slides(_fs_data())[0]
 
     assert cover["title_lines"] == ["MEN'S FREESTYLE", "TOP 4"]
-
-
-class TestCoverCrop:
-    def _riders(self):
-        riders = _riders()
-        for r in riders:
-            r["action_url"] = f"file:///photos/events/124/{r['athlete_id']}.jpg"
-        return riders
-
-    def test_the_cover_uses_its_own_crop_when_there_is_one(self):
-        riders = self._riders()
-        riders[0]["cover_url"] = "file:///photos/events/124/97-cover.jpg"
-        riders[0]["hero_focus"] = "9% 58%"
-
-        photo = build_slides(_data(riders=riders))[0]["hero_photos"][0]
-
-        # Already cut to the cell's shape, so the card's anchor no longer applies.
-        assert photo["url"].endswith("97-cover.jpg")
-        assert photo["focus"] == "50% 50%"
-
-    def test_without_one_the_cover_falls_back_to_the_card_photo(self):
-        photos = build_slides(_data(riders=self._riders()))[0]["hero_photos"]
-
-        assert photos[1]["url"].endswith("/49.jpg")
 
 
 # ── Foil slalom: place-based stats off the eliminations ──

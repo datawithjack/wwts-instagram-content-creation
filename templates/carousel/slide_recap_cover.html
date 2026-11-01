@@ -2,12 +2,11 @@
 
 {#
   Recap cover. Same event block and title treatment as slide_finals_cover, so
-  the two carousels still read as a set, but backed by a 2x2 grid of the four
-  riders' own hero shots in finishing order.
+  the two carousels still read as a set.
 
-  The grid previews the countdown that follows. It is heavily scrimmed on
-  purpose: this is a background, and the title has to stay first read. With no
-  hero shots the grid is simply absent and the plain cover shows through.
+  With the winner's hero shot it switches to the top 10 photo cover layout
+  (slide_cover.html): one full-bleed photo, dark from the bottom, event block
+  and title stacked bottom-left. Without one the plain centred cover shows.
 #}
 
 {% block carousel_head %}
@@ -18,53 +17,6 @@
         text-align: center;
         padding: 60px 48px 64px;
         position: relative;
-    }
-
-    /* ── Hero grid background ── */
-    .hero-grid {
-        position: absolute;
-        top: 0; left: 0; right: 0; bottom: 0;
-        z-index: 0;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        grid-template-rows: 1fr 1fr;
-        gap: 3px;
-    }
-
-    .hero-grid .cell {
-        overflow: hidden;
-        position: relative;
-    }
-
-    .hero-grid .cell img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-    }
-
-    /* A single shot fills the frame rather than sitting in one quarter with
-       three empty cells beside it. */
-    .hero-grid.count-1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
-    .hero-grid.count-2 { grid-template-rows: 1fr; }
-    .hero-grid.count-3 .cell:first-child { grid-column: span 2; }
-
-    /* Scrim: dark enough that white display type holds over any photo, with
-       the centre pushed hardest because that is where the title sits. */
-    .hero-scrim {
-        position: absolute;
-        top: 0; left: 0; right: 0; bottom: 0;
-        z-index: 1;
-        background:
-            radial-gradient(ellipse 70% 46% at 50% 54%,
-                rgba(10, 14, 26, 0.78) 0%,
-                rgba(10, 14, 26, 0.52) 55%,
-                rgba(10, 14, 26, 0.20) 100%),
-            linear-gradient(to bottom,
-                rgba(10, 14, 26, 0.52) 0%,
-                rgba(10, 14, 26, 0.24) 30%,
-                rgba(10, 14, 26, 0.24) 68%,
-                rgba(10, 14, 26, 0.62) 100%);
     }
 
     /* Event block sits at the top; the title is centred on the slide itself,
@@ -160,22 +112,102 @@
         letter-spacing: 0.08em;
         text-transform: uppercase;
     }
+
+    /* The plain cover positions its blocks against .container, so the
+       wrapper the photo layout needs has to vanish from layout here. */
+    .cover-content {
+        display: contents;
+    }
+
+    /* ── Photo cover: matches slide_cover.html's has-photo layout ── */
+    .container.has-photo {
+        padding: 0;
+        justify-content: flex-end;
+        text-align: left;
+        align-items: stretch;
+    }
+
+    .cover-photo {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 0;
+    }
+
+    .cover-photo img {
+        display: block;   /* inline leaves a baseline gap that overflows 1350 */
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* Dark at the bottom for the type, near-clear at the top. */
+    .cover-photo::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(
+            to bottom,
+            rgba(8, 20, 40, 0.30) 0%,
+            rgba(10, 14, 26, 0.34) 26%,
+            rgba(10, 14, 26, 0.62) 48%,
+            rgba(10, 14, 26, 0.88) 66%,
+            rgba(10, 14, 26, 0.98) 82%,
+            rgba(10, 14, 26, 1.00) 100%
+        );
+        z-index: 1;
+    }
+
+    /* Bottom padding keeps the title inside Instagram's centre-square grid
+       crop, which cuts the top and bottom 135px. */
+    .has-photo .cover-content {
+        display: block;
+        position: relative;
+        z-index: 2;
+        padding: 0 52px 152px;
+    }
+
+    .has-photo .title-block {
+        position: static;
+        transform: none;
+        padding: 0;
+    }
+
+    .has-photo .event-year {
+        font-size: 44px;
+        letter-spacing: 0.1em;
+        color: rgba(255, 255, 255, 0.66);
+        margin-bottom: 2px;
+    }
+
+    .has-photo .event-name {
+        font-size: 58px;
+        line-height: 1.02;
+        margin-bottom: 6px;
+    }
+
+    .has-photo .event-meta {
+        font-size: 25px;
+        letter-spacing: 0.08em;
+        margin-bottom: 30px;
+    }
+
+    .has-photo .cover-title {
+        font-size: 176px;
+        line-height: 0.92;
+        text-shadow: 0 3px 24px rgba(0, 0, 0, 0.55);
+    }
 </style>
 {% endblock %}
 
 {% block carousel_content %}
-<div class="container">
-    {% if hero_photos %}
-    <div class="hero-grid count-{{ hero_photos | length }}">
-        {% for photo in hero_photos %}
-        <div class="cell">
-            <img src="{{ photo.url }}" alt="" style="object-position: {{ photo.focus }}">
-        </div>
-        {% endfor %}
+<div class="container{% if cover_photo_url %} has-photo{% endif %}">
+    {% if cover_photo_url %}
+    <div class="cover-photo">
+        <img src="{{ cover_photo_url }}" alt="" style="object-position: {{ cover_photo_focus }}">
     </div>
-    <div class="hero-scrim"></div>
     {% endif %}
 
+    <div class="cover-content">
     <div class="cover-body">
         {% if event_year %}<div class="event-year">{{ event_year }}</div>{% endif %}
         <div class="event-name" data-autofit>{{ event_name | upper }}</div>
@@ -198,6 +230,7 @@
             <span class="line metric">{{ title_accent }}</span>
         </div>
         {% if subtitle %}<div class="cover-subtitle">{{ subtitle }}</div>{% endif %}
+    </div>
     </div>
 </div>
 {% include "carousel/_autofit.html" %}

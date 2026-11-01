@@ -633,10 +633,22 @@ class TestFinalsRecapCaptionSplitFinal:
         assert "all four compared across the scores from the final itself" not in caption
         assert "top two" in caption.lower()
 
-    def test_the_winner_line_is_unchanged_either_way(self):
+    def test_the_winner_line_gives_the_margin_to_second(self):
         caption = build_caption("finals_recap",
                                 self._data([19.0, 17.5, None, None]), {})
-        assert "Rider 1 took it with 19.00." in caption
+        assert "Rider 1 took it by 1.50 over Rider 2 in 2nd." in caption
+        assert "split all four" not in caption
+
+    def test_a_shared_final_gives_the_four_way_spread(self):
+        caption = build_caption("finals_recap",
+                                self._data([13.45, 13.4, 12.94, 11.98]), {})
+        assert "took it by 0.05 over Rider 2 in 2nd." in caption
+        assert "Just 1.47 split all four finalists." in caption
+
+    def test_a_wide_spread_is_not_called_close(self):
+        caption = build_caption("finals_recap",
+                                self._data([19.0, 17.2, 14.0, 12.0]), {})
+        assert "split all four" not in caption
 
     def test_no_em_dashes(self):
         caption = build_caption("finals_recap",
