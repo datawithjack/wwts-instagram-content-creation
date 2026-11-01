@@ -22,6 +22,11 @@ SLIDE_GRADIENT = (
 )
 
 
+def _key(rider) -> str:
+    """The hero slot's key: ``{id}``, or ``{id}-2`` for a rider's second score."""
+    return str(rider.get("key", rider["athlete_id"]))
+
+
 def _card(rider, cand) -> str:
     credit = cand["credit"]
     tagged = credit["confirmed"]
@@ -30,9 +35,9 @@ def _card(rider, cand) -> str:
     kind = "ACTION" if cand["kind"] == "wv" else cand["kind"].upper()
 
     return f"""
-    <label class="card" data-athlete="{rider['athlete_id']}"
+    <label class="card" data-athlete="{_key(rider)}"
            data-file="{html.escape(cand['path'])}">
-      <input type="radio" name="pick-{rider['athlete_id']}"
+      <input type="radio" name="pick-{_key(rider)}"
              value="{html.escape(cand['path'])}">
       <div class="crop">
         <img src="/thumbs/{cand['thumb']}" style="object-position:50% 50%">
@@ -133,13 +138,13 @@ def _rider_block(rider) -> str:
         cards = "".join(_card(rider, c) for c in rider["candidates"])
 
     return f"""
-  <section class="rider" id="rider-{rider['athlete_id']}">
+  <section class="rider" id="rider-{_key(rider)}">
     <header>
       <h2>{html.escape(rider['name'])}</h2>
       <span class="sub">{html.escape(rider['rank_label'])} &middot;
         {rider['score']:.2f} &middot; sail {html.escape(str(rider['sail']))} &middot;
         {len(rider['candidates'])} frames</span>
-      <label class="skip"><input type="radio" name="pick-{rider['athlete_id']}"
+      <label class="skip"><input type="radio" name="pick-{_key(rider)}"
              value="" checked> leave as is</label>
     </header>
     {note}
@@ -398,7 +403,7 @@ document.getElementById('tobacklog').addEventListener('click', async () => {
 def render_sheet(riders, event_label: str) -> str:
     """The whole sheet as one HTML string."""
     blocks = "".join(_rider_block(r) + _face_block(r) for r in riders)
-    slots = {r["athlete_id"]: len(r["candidates"]) for r in riders}
+    slots = {_key(r): len(r["candidates"]) for r in riders}
     slots.update({f"face-{r['athlete_id']}": len(r["face_candidates"])
                   for r in riders if r.get("face_candidates")})
     counts = json.dumps(slots)

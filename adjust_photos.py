@@ -19,6 +19,7 @@ The originals are never modified, so any rider can be re-adjusted later.
 
 import argparse
 import glob
+import re
 import json
 import os
 import re
@@ -134,8 +135,9 @@ def _collect(folder: Path, credits: dict, kind: str, source_dir,
             "installed": path,
             "display": str(display),
             "from_original": original is not None,
-            "source_file": entry.get("source_file") or Path(path).name,
-            "handle": (entry.get("handle") if isinstance(entry, dict) else "") or "",
+            # Hand-written entries are a bare handle ("@rafasoulart"), not a record.
+            "source_file": (entry.get("source_file") if isinstance(entry, dict) else None) or Path(path).name,
+            "handle": (entry.get("handle") if isinstance(entry, dict) else entry) or "",
             "nw": nw,
             "nh": nh,
             "fw": fw,

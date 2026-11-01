@@ -288,3 +288,13 @@ def test_a_jump_card_names_the_move_beside_the_score():
     html = render_template("carousel/slide_wave_photo", card)
     assert "JUMP SCORE" not in html
     assert html.count("DOUBLE FORWARD") + html.count("Double Forward") == 1
+
+
+def test_a_rider_with_no_local_headshot_falls_back_to_the_api_photo(monkeypatch):
+    """Aloha 2026 women: five of six table riders had no faces/{id}."""
+    import pipeline.carousel as carousel
+    data = _data()
+    data["entries"][0]["photo_url"] = "https://www.liveheats.com/images/x.webp"
+    monkeypatch.setattr(carousel, "resolve_thumb_url", lambda aid, url: url)
+    table = next(s for s in build_slides(data) if s["type"] == "table")
+    assert table["rows"][0]["thumb_url"] == "https://www.liveheats.com/images/x.webp"

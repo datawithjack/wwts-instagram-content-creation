@@ -139,16 +139,22 @@ def _event_dir(event_id):
 
 
 def _riders_from_scores(event_id, score_type, sex, top):
-    """The riders behind the top N scores, in slide order, deduped."""
+    """One slot per top-N score, in slide order.
+
+    A rider with two top scores gets two slots, keyed ``{id}`` then ``{id}-2``:
+    the carousel gives each score its own slide and looks for those keys
+    (``pipeline/carousel.py``), so each can carry a different photo.
+    """
     data = fetch_event_top_scores(event_id=event_id, score_type=score_type, sex=sex)
     metric = data["title_metric"][:-1].upper()
-    seen, riders = set(), []
+    seen, riders = {}, []
     for entry in data["entries"][:top]:
         aid = entry.get("athlete_id")
-        if aid is None or aid in seen:
+        if aid is None:
             continue
-        seen.add(aid)
+        seen[aid] = seen.get(aid, 0) + 1
         riders.append({
+            "key": str(aid) if seen[aid] == 1 else f"{aid}-{seen[aid]}",
             "athlete_id": aid,
             "name": entry["athlete"],
             "score": entry["score"],
@@ -187,7 +193,8 @@ def _collect(riders, event_dir, index):
         # summary-card thumbnail rather than the hero. Only offered where one
         # is missing: a face is timeless, so a rider who has one is not asked
         # about again. Lifestyle frames first -- that is where the faces are.
-        if _face_missing(rider["athlete_id"]):
+        first_slot = rider.get("key", str(rider["athlete_id"])) == str(rider["athlete_id"])
+        if first_slot and _face_missing(rider["athlete_id"]):
             rider["face_candidates"] = _face_pool(rider["candidates"], lifestyle)[:MAX_FRAMES]
         else:
             rider["face_candidates"] = []

@@ -211,3 +211,52 @@ class TestTheAdjuster:
         monkeypatch.setattr(pick_photos.subprocess, "Popen", boom)
         pick_photos._open_adjuster(278, None)
         assert "adjust_photos.py yourself" in capsys.readouterr().out
+
+
+class TestARiderWithSeveralTopWaves:
+    """The carousel gives each top-5 wave its own slide, so a rider with two
+    of them needs two photos: ``7`` and ``7-2``, in rank order, the same keys
+    ``pipeline/carousel.py`` looks for. Aloha 2026 women: Behrens."""
+
+    def _rows(self, monkeypatch):
+        entries = [
+            {"athlete_id": 95, "athlete": "Marine Hunter", "score": 8.0, "rank": 1},
+            {"athlete_id": 7, "athlete": "Maria Behrens", "score": 7.5, "rank": 2},
+            {"athlete_id": 7, "athlete": "Maria Behrens", "score": 7.0, "rank": 3},
+            {"athlete_id": 95, "athlete": "Marine Hunter", "score": 6.9, "rank": 4},
+            {"athlete_id": 7, "athlete": "Maria Behrens", "score": 6.5, "rank": 5},
+        ]
+        monkeypatch.setattr(pick_photos, "fetch_event_top_scores",
+                            lambda **kw: {"title_metric": "Waves", "entries": entries})
+        return pick_photos._riders_from_scores(128, "Wave", "Women", 5)
+
+    def test_one_slot_per_score_keyed_like_the_carousel(self, monkeypatch):
+        slots = self._rows(monkeypatch)
+        assert [s["key"] for s in slots] == ["95", "7", "7-2", "95-2", "7-3"]
+        assert [s["rank_label"] for s in slots] == ["1ST", "2ND", "3RD", "4TH", "5TH"]
+
+    def test_the_headshot_is_asked_once_per_rider(self, tmp_path, monkeypatch):
+        slots = self._rows(monkeypatch)
+        monkeypatch.setattr(pick_photos, "PHOTOS_DIR", tmp_path)
+        _frame(tmp_path, "AC26_wv_G209_1.jpg")
+        index = {7: {"sail_number": "G-209", "country": "Germany"},
+                 95: {"sail_number": "F-181", "country": "France"}}
+        pick_photos._collect(slots, tmp_path, index)
+        asked = [s["key"] for s in slots if s["face_candidates"]]
+        assert asked == ["7"]
+        assert all(s["candidates"] for s in slots if s["athlete_id"] == 7)
+
+    def test_each_slot_is_its_own_pick_on_the_sheet(self, tmp_path):
+        first = {**_rider(7, [_candidate(_frame(tmp_path))]), "key": "7"}
+        second = {**_rider(7, [_candidate(_frame(tmp_path))], faces=False), "key": "7-2"}
+        page = render_sheet([first, second], "Aloha")
+        assert 'name="pick-7"' in page and 'name="pick-7-2"' in page
+        assert 'data-athlete="7-2"' in page
+        assert 'name="pick-face-7"' in page
+
+    def test_a_second_pick_installs_as_dash_two(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(pick_photos, "PHOTOS_DIR", tmp_path)
+        src = _frame(tmp_path)
+        pick_photos._install({"7": {"file": str(src)}, "7-2": {"file": str(src)}}, 128)
+        assert (tmp_path / "events" / "128" / "7.jpg").exists()
+        assert (tmp_path / "events" / "128" / "7-2.jpg").exists()
