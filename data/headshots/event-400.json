@@ -1,0 +1,19 @@
+{
+  "_comment": "Headshot decisions per athlete id (#32), filed under the rider's latest event. approve = faces/{id}.jpg is the photo to publish. Published by upload_headshots.py.",
+  "15": {
+    "name": "Sarah Kenyon",
+    "action": "approve",
+    "decided": "2026-10-31",
+    "source_file": "faces/15.jpg (supplied by owner, replaces LiveHeats photo)",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/15_1793439106.jpg",
+    "published": "2026-10-31"
+  },
+  "438": {
+    "name": "Natsuki Wakasa",
+    "action": "approve",
+    "decided": "2026-10-31",
+    "source_file": "faces/438.jpg (supplied by owner; replaces PWA sail-number guess)",
+    "published_url": "https://img.windsurfworldtourstats.com/athlete-photos/438_1793439461.jpg",
+    "published": "2026-10-31"
+  }
+}
