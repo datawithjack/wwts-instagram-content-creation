@@ -17,6 +17,14 @@
         -webkit-mask-image: linear-gradient(to bottom, #000 22%, transparent 44%);
         mask-image: linear-gradient(to bottom, #000 22%, transparent 44%); }
     .photo img { width: 100%; height: 100%; object-fit: cover; }
+    /* Decider cards: a second fade from the top right keeps the photo going
+       down the right-hand side, clear of the name block on the left. */
+    .container:has(.decide) .photo {
+        -webkit-mask-image: linear-gradient(to bottom, #000 22%, transparent 44%),
+            radial-gradient(ellipse 70% 58% at 100% 0%, #000 55%, transparent 100%);
+        mask-image: linear-gradient(to bottom, #000 22%, transparent 44%),
+            radial-gradient(ellipse 70% 58% at 100% 0%, #000 55%, transparent 100%);
+        -webkit-mask-composite: source-over; mask-composite: add; }
     .photo.portrait { display: flex; justify-content: center; align-items: flex-start; padding-top: 50px; }
     .photo.portrait img { width: 340px; height: 340px; border-radius: 50%; }
 
@@ -47,6 +55,8 @@
     .counting .lbl { font-size: 17px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
         color: rgba(255, 255, 255, 0.38); }
     .counting b { color: #fff; font-weight: 700; }
+    /* The label on its own line, the events under it. */
+    .counting .lbl { flex-basis: 100%; }
     .counting .empty { color: var(--color-discipline); font-style: italic; }
     .counting .empty b { color: var(--color-discipline); }
 
@@ -66,6 +76,20 @@
     .verdict .if { font-size: 18px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
         color: rgba(255, 255, 255, 0.40); margin-bottom: 4px; }
     .verdict .cond b { color: #fff; font-weight: 700; }
+    /* Four routes (one event left, a close race) need the boxes tighter to clear the footer. */
+    .routes.compact { gap: 8px; }
+    .routes.compact .route { padding: 10px 24px; }
+
+    /* Everything stacks from the bottom up, so a card with fewer routes gives
+       the hero shot the room rather than leaving a gap above the boxes. */
+    .body:has(.decide) { position: absolute; inset: 0; margin-top: 0; padding: 0 56px 116px;
+        display: flex; flex-direction: column; justify-content: flex-end; }
+    .body:has(.decide) > * { flex: none; }
+    .body:has(.decide) .tag { align-self: flex-start; }
+    .decide { margin-top: 12px; }
+    .heads { display: grid; grid-template-columns: 250px 1fr; gap: 24px; padding: 0 25px 10px;
+        font-family: var(--font-body); font-size: 18px; font-weight: 700; letter-spacing: 0.12em;
+        text-transform: uppercase; color: rgba(255, 255, 255, 0.40); }
 
     .settle { margin-top: 18px; padding: 16px 22px; border-left: 4px solid var(--color-discipline);
         font-family: var(--font-body); font-size: 24px; font-weight: 600; line-height: 1.4; color: #fff;
@@ -118,7 +142,7 @@
 
         <div class="counting">
             <span class="lbl">Counting now</span>
-            {% for r in counting if not r.joins %}<span><b>{{ r.place }}</b> {{ r.event }} &middot; {{ r.points }}</span>{% endfor %}
+            {% for r in counting if not r.joins %}<span><b>{{ r.place }}</b> {{ r.event }}{% if r.star %} {{ r.star }}&#9733;{% endif %} &middot; {{ r.points }}</span>{% endfor %}
         </div>
 
         {% if form %}
@@ -143,9 +167,11 @@
             <div class="fpara">{{ form.paragraph }}</div>
         </div>
         {% else %}
-        <div class="routes">
+        <div class="decide">
+        <div class="heads"><span>Result</span><span>Outcome</span></div>
+        <div class="routes{% if compact %} compact{% endif %}">
             {% for r in routes %}
-            <div class="route {% if r.outright %}outright{% endif %}">
+            <div class="route {% if r.outright %}outright{% endif %} {{ r.kind }}">
                 <div>
                     <div class="label">{{ r.label }}</div>
                     <div class="pts">{{ r.points }} pts</div>
@@ -154,21 +180,27 @@
                     {% if r.outright %}
                     <div class="champ">WORLD CHAMPION</div>
                     <div class="whatever">whatever anyone else does</div>
+                    {% elif r.kind == "out" %}
+                    <div class="champ">OUT</div>
+                    <div class="whatever">someone else is champion</div>
                     {% else %}
-                    <div class="if">Champion if</div>
+                    <div class="if">{% if r.kind == "level" %}Level on points if{% else %}Champion if{% endif %}</div>
                     {% for c in r.conditions %}
                     <div class="cond"><b>{{ c.name }}</b> {{ c.text }}</div>
                     {% endfor %}
+                    {% if r.kind == "level" %}<div class="cond">then a countback decides it</div>{% endif %}
+                    {% if r.tie_line %}<div class="cond">If not, level on points: countback</div>{% endif %}
                     {% endif %}
                 </div>
             </div>
             {% endfor %}
+        </div>
         </div>
 
         {% if settle_line %}<div class="settle">{{ settle_line }}</div>{% endif %}
         {% endif %}
     </div>
 
-    <div class="fine{% if form %} flow{% endif %}">{% if form %}On form = median finish over the last 3 editions. Not official.{% else %}Finishes in either order across Aloha and Chile. Level on points goes to the tour's tie-break.{% endif %}</div>
+    <div class="fine{% if form %} flow{% endif %}">{% if form %}On form = median finish over the last 3 editions. Not official.{% else %}{{ fine }}{% endif %}</div>
 </div>
 {% endblock %}

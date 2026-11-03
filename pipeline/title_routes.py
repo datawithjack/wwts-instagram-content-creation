@@ -47,7 +47,10 @@ ROUTES = ((1, 1), (1, 2), (2, 2))
 # installs into these, so a shot picked for this post lands where it is read.
 # Tenerife leads: its frames came in at full quality (2-2.5MB) where the
 # Wissant ones are visibly soft on a full-width band.
-PHOTO_EVENTS = (124, 278, 122, 277, 134, 133)
+# Aloha leads for the Chile decider: the last event sailed, and the freshest frames.
+PHOTO_EVENTS = (128, 124, 278, 122, 277, 134, 133)
+# Riders whose card shot comes from a chosen event instead: athlete id -> folder.
+HERO_EVENT = {16: 124}  # Erpenstein: a Tenerife frame
 DEFAULT_FOCUS = "center 35%"
 
 # The tag over each rider's name, by current world ranking. Our read of the race.
@@ -94,53 +97,58 @@ def total(points: list, extra: tuple, window: int) -> float:
 
 
 class Race:
-    """The top riders' results and the two events left, ready to ask questions of."""
+    """The top riders' results and the events left, ready to ask questions of."""
 
-    def __init__(self, riders: list[dict], scale: dict, window: int):
+    def __init__(self, riders: list[dict], scale: dict, window: int, left: int = 2, widens: bool = True):
         self.riders = riders          # [{id, name, rank, points: [...]}]
         self.scale = scale
         self.window = window
+        self.left = left              # 5-star events still to sail
+        self.widens = widens          # does the next event add a counting slot?
         self.places = sorted(p for p in scale if p)
 
-    def score(self, rider: dict, a: int, c: int) -> float:
-        return total(rider["points"], (self.scale[a], self.scale[c]), self.window)
+    def score(self, rider: dict, *finishes: int) -> float:
+        return total(rider["points"], tuple(self.scale[f] for f in finishes), self.window)
 
     def counting(self, rider: dict) -> list[dict]:
         """The results behind ``start``: the best ``window`` the rider holds."""
         return sorted(rider["results"], key=lambda r: -r["points"])[:self.window]
 
     def start(self, rider: dict) -> float:
-        return self.score(rider, 0, 0)
+        return self.score(rider, *[0] * self.left)
 
     def ceiling(self, rider: dict) -> float:
-        return self.score(rider, 1, 1)
+        return self.score(rider, *[1] * self.left)
 
     def _rival_pairs(self, held: tuple):
-        """Every (aloha, chile) a rival can finish, given the places 1-4 the
-        rider on the card already holds. Below 4th places are shared."""
+        """Every set of finishes a rival can post, given the places the rider on
+        the card holds. Only 1st and 2nd are never shared: under single
+        elimination 3rd is, and below that places are shared in either format."""
         options = self.places + [0]
-        for a, c in product(options, options):
-            if (a and a <= 4 and a == held[0]) or (c and c <= 4 and c == held[1]):
+        for combo in product(options, repeat=len(held)):
+            if any(f and f <= 2 and f == h for f, h in zip(combo, held)):
                 continue
-            yield a, c
+            yield combo
 
-    def conditions(self, rider: dict, route: tuple) -> list[dict]:
+    def conditions(self, rider: dict, route: tuple, tie_ok: bool = False) -> list[dict]:
         """For each rival who could match this route, the best they may finish.
 
         Returns [{rival, limits: [(p, q), ...]}], empty when the route wins
         outright. Pairs are sorted best place first and only the maximal ones
         are kept, so "1st + 4th or 2nd + 2nd" rather than every pair below them.
+        With ``tie_ok`` a rival finishing level counts as held off.
         """
         target = self.score(rider, *route)
+        below = (lambda x: x <= target) if tie_ok else (lambda x: x < target)
         out = []
         for rival in self.riders:
             if rival is rider:
                 continue
             pairs = list(self._rival_pairs(route))
-            if all(self.score(rival, a, c) < target for a, c in pairs):
+            if all(below(self.score(rival, *p)) for p in pairs):
                 continue
             allowed = {tuple(sorted(p, key=lambda x: x or 999))
-                       for p in pairs if self.score(rival, *p) < target}
+                       for p in pairs if below(self.score(rival, *p))}
             # Order-free domination: smaller place is better, 0 (no score) worst.
             key = lambda p: tuple(x or 999 for x in p)
             maximal = [p for p in allowed
@@ -171,9 +179,9 @@ class Race:
 
 
 def build_race(season: dict, top: int = RIDERS, sex: str = "Men") -> Race:
-    standings = season["standings"][sex][:top]
     breakdown = {b["athlete_id"]: b["results"] for b in season["breakdown"][sex]}
     event_names = {e["event_id"]: short_event(e["name"]) for e in season["events"]}
+    event_stars = {e["event_id"]: e.get("star") for e in season["events"]}
     riders = [{
         "id": s["athlete_id"],
         "name": _fix_mojibake(s["athlete_name"]),
@@ -182,10 +190,23 @@ def build_race(season: dict, top: int = RIDERS, sex: str = "Men") -> Race:
         "country": (s.get("country_code") or "").lower(),
         "image_url": s.get("image_url") or "",
         "points": [r["points"] for r in breakdown.get(s["athlete_id"], [])],
-        "results": [{"event": event_names.get(r["event_id"], ""), "place": r["place"], "points": r["points"]}
+        "results": [{"event": event_names.get(r["event_id"], ""), "star": event_stars.get(r["event_id"]),
+                     "place": r["place"], "points": r["points"]}
                     for r in breakdown.get(s["athlete_id"], [])],
-    } for s in standings]
-    return Race(riders, _scale(season), _window_after_next(season))
+    } for s in season["standings"][sex]]
+    sailed = sum(1 for e in season["events"]
+                 if e.get("star", 0) >= PREMIER_STAR and e.get("status") == "completed")
+    race = Race(riders, _scale(season), _window_after_next(season),
+                left=len(remaining_events(season)), widens=sailed < MAX_COUNTING)
+    # Only riders who can still at least draw level with the leader's banked total.
+    leader = max(race.start(r) for r in riders)
+    race.riders = [r for r in riders if race.ceiling(r) >= leader][:top]
+    return race
+
+
+def remaining_events(season: dict) -> list[dict]:
+    return [e for e in season["events"]
+            if e.get("star", 0) >= PREMIER_STAR and e.get("status") not in ("completed", "cancelled")]
 
 
 # ── Words ──────────────────────────────────────────────────────────────────
@@ -194,7 +215,7 @@ def build_race(season: dict, top: int = RIDERS, sex: str = "Men") -> Race:
 # Matanzas before Chile: it is a 3-star in Chile, and "Chile" on its own reads
 # as the Chile World Cup still to come.
 VENUES = ("Margaret River", "Gran Canaria", "Tenerife", "Maui", "Fiji", "Wissant",
-          "Puerto Rico", "Israel", "Morocco", "Matanzas", "Chile", "Peru", "Cornwall", "Sylt",
+          "Puerto Rico", "Israel", "Morocco", "Matanzas", "Chile", "Peru", "Cornwall", "Sylt", "Tiree",
           "Aloha", "Mar del Plata", "Pacasmayo", "Dominican Republic", "Brazil")
 
 
@@ -241,7 +262,8 @@ def _points(x: float) -> str:
 
 def _hero(athlete_id) -> tuple[str, str, object]:
     """Action shot, crop anchor and folder, searched newest 2026 event first."""
-    for event_id in PHOTO_EVENTS:
+    order = ((HERO_EVENT[athlete_id],) if athlete_id in HERO_EVENT else ()) + PHOTO_EVENTS
+    for event_id in order:
         url = resolve_hero_url(athlete_id, event_id)
         if url and f"/events/{event_id}/" in url.replace("\\", "/"):
             return url, resolve_hero_focus(athlete_id, event_id, DEFAULT_FOCUS), event_id
@@ -368,10 +390,83 @@ def _season_slide(season: dict, race: Race, sex: str, common: dict) -> dict:
 
 # ── Slides ─────────────────────────────────────────────────────────────────
 
+def _decider_text(race: Race, held: int, limit: int) -> str:
+    """'doesn't win' when the limit is the best place left once 1st is gone."""
+    open_places = [p for p in race.places if not (p <= 2 and p == held)]
+    if held != 1 and limit == open_places[1]:
+        return "doesn't win"
+    return f"{_place(limit)} or worse"
+
+
+def decider_routes(race: Race, rider: dict) -> list[dict]:
+    """One event left: every finish the rider can post, grouped where the
+    verdict is the same. Each group is a route on the card, best first.
+
+    kind is "outright", "champion" (if the listed rivals finish no better),
+    "level" (best case is a tie on points) or "out".
+    """
+    rows = []
+    for f in race.places + [0]:
+        def conds_for(tie_ok):
+            conds = race.conditions(rider, (f,), tie_ok=tie_ok)
+            if any(not c["limits"] for c in conds):
+                return None  # some rival beats it even without scoring
+            return [(_surname(c["rival"]["name"]), _decider_text(race, f, c["limits"][0][0])) for c in conds]
+        strict, level = conds_for(False), conds_for(True)
+        if strict is not None:
+            kind = "outright" if not strict else "champion"
+            conds = strict
+            # The rivals listed only draw level when they break the limit.
+            tie_line = level is not None and len(level) < len(strict)
+        elif level is not None:
+            kind, conds, tie_line = "level", level, False
+        else:
+            kind, conds, tie_line = "out", [], False
+        key = (kind, tuple(conds), tie_line)
+        if rows and rows[-1]["key"] == key:
+            rows[-1]["finishes"].append(f)
+        else:
+            rows.append({"key": key, "finishes": [f]})
+
+    out = []
+    for i, r in enumerate(rows):
+        kind, conds, tie_line = r["key"]
+        fs = r["finishes"]
+        last = i == len(rows) - 1
+        if fs[0] == 0:
+            label = "NO SCORE"
+        elif last and len(fs) > 1:
+            label = f"{_place(fs[0])} OR WORSE".upper()
+        elif len(fs) == 1:
+            label = "WIN" if fs[0] == 1 else _place(fs[0]).upper()
+        else:
+            last_scoring = [x for x in fs if x][-1]
+            label = ("WIN" if fs[0] == 1 else _place(fs[0]).upper()) + " TO " + _place(last_scoring).upper()
+        pts = [race.score(rider, x) for x in fs]
+        out.append({
+            "label": label,
+            "points": _points(max(pts)) if max(pts) == min(pts) else f"up to {_points(max(pts))}",
+            "kind": kind,
+            "outright": kind == "outright",
+            "conditions": [{"name": n, "text": t} for n, t in conds],
+            "tie_line": tie_line,
+        })
+    return out
+
+
+def _fine_print(race: Race, routes: list[dict], next_event: str) -> str:
+    if race.left == 2:
+        return "Finishes in either order across Aloha and Chile. Level on points goes to the tour's tie-break."
+    text = f"Places are {next_event} finishes, at full 5-star points."
+    if any(r["kind"] == "level" or r["tie_line"] for r in routes):
+        text += " Level on points goes to a countback, and we are not sure how the tour applies it."
+    return text
+
+
 def _rider_slide(race: Race, rider: dict, next_event: str) -> dict:
     hero_url, focus, _ = _hero(rider["id"])
     routes = []
-    for route in ROUTES:
+    for route in (ROUTES if race.left == 2 else ()):
         conds = race.conditions(rider, route)
         routes.append({
             "label": route_label(route),
@@ -381,7 +476,13 @@ def _rider_slide(race: Race, rider: dict, next_event: str) -> dict:
                             "text": _limits_text(c["limits"])} for c in conds],
         })
 
-    settle = race.settle_at_first(rider)
+    out_note = ""
+    if race.left == 1:
+        routes = decider_routes(race, rider)
+        # A fifth box does not fit the card: the "out" row becomes a line of small print.
+        if len(routes) > 4 and routes[-1]["kind"] == "out":
+            out_note = routes.pop()["label"].capitalize().replace("Or worse", "or worse") + ": out. "
+    settle = race.settle_at_first(rider) if race.left == 2 else None
     if settle is not None:
         needs = [f"{_surname(s['rival']['name'])} {ordinal(s['place'])} or worse" for s in settle]
         needs = " and ".join([", ".join(needs[:-1]), needs[-1]] if len(needs) > 1 else needs)
@@ -405,14 +506,18 @@ def _rider_slide(race: Race, rider: dict, next_event: str) -> dict:
         "start": _points(race.start(rider)),
         # The results behind the official total, then the one that joins the
         # count at Aloha (or an empty slot), so the card's numbers add up.
-        "counting": [{"place": ordinal(r["place"]), "event": r["event"], "points": _points(r["points"]),
-                      "joins": i >= race.window - 1}
+        "counting": [{"place": ordinal(r["place"]), "event": r["event"], "star": r["star"],
+                      "points": _points(r["points"]),
+                      "joins": race.widens and i >= race.window - 1}
                      for i, r in enumerate(race.counting(rider))],
         "next_event": next_event,
         "empty_slots": race.window - len(race.counting(rider)),
         "ceiling": _points(race.ceiling(rider)),
         "routes": routes,
         "settle_line": settle_line,
+        "left": race.left,
+        "fine": out_note + _fine_print(race, routes, next_event),
+        "compact": len(routes) > 3,
     }
 
 
@@ -587,6 +692,28 @@ def form_paragraph(rider: dict, p: dict, leader: dict) -> str:
     return f"Previous results point to {leg('Aloha')} and {leg('Chile')}. {outcome}"
 
 
+def _record_slide(season: dict, race: Race, sex: str, venue: str, common: dict) -> dict:
+    """Each contender's finishes at the last event over its last three editions."""
+    years = list(range(season["year"] - FORM_EDITIONS, season["year"]))
+    rows = []
+    for r in race.riders:
+        rec = venue_record(fetch_results(r["id"]), venue, season["year"], sex)
+        rows.append({
+            "name": _surname(r["name"]),
+            "face": resolve_thumb_url(r["id"], r["image_url"]),
+            "cells": [next((ordinal(pl) for y, pl in rec if y == yr), "–") for yr in years],
+        })
+    return {
+        "type": "routes_history",
+        "record_only": True,
+        "venue_short": venue,
+        "years": years,
+        "season_year": season["year"],
+        "venues": [{"name": f"{venue} World Cup", "rows": rows}],
+        **common,
+    }
+
+
 def _form_slides(season: dict, race: Race, sex: str, common: dict) -> tuple[list, dict]:
     """Rider cards and the projected table for the on-form version."""
     proj = {}
@@ -646,13 +773,17 @@ def _form_slides(season: dict, race: Race, sex: str, common: dict) -> tuple[list
 
 def build_title_routes_slides(season: dict, sex: str = "Men", mode: str = None) -> list[dict]:
     race = build_race(season, sex=sex)
-    remaining = [e for e in season["events"] if e.get("predictable")]
-    next_event = "Aloha" if remaining and "Aloha" in remaining[0]["name"] else "the next event"
-    common = {"accent_color": ACCENT_COLOR}
+    remaining = remaining_events(season)
+    next_event = short_event(remaining[0]["name"]) if remaining else "the next event"
+    common = {"accent_color": ACCENT_COLOR,
+              "events_named": " and ".join(short_event(e["name"]) for e in remaining)}
 
     slides = [{
         "type": "routes_cover",
         "count": len(race.riders),
+        "left": race.left,
+        "headline": "ROUTES" if race.left == 2 else "IN THE RUNNING",
+        "sex": sex,
         "year": season["year"],
         "events_left": " + ".join("Aloha" if "Aloha" in e["name"] else "Chile" if "Chile" in e["name"] else e["name"]
                                   for e in remaining),
@@ -663,6 +794,8 @@ def build_title_routes_slides(season: dict, sex: str = "Men", mode: str = None) 
         "photo_focus": "center 30%" if os.path.exists(COVER_PHOTO) else _hero(race.riders[0]["id"])[1],
         **common,
     }, _season_slide(season, race, sex, common)]
+    if race.left == 1 and mode != "form" and next_event in VENUE_EVENTS:
+        slides.append(_record_slide(season, race, sex, next_event, common))
     proj, table, history = _form_slides(season, race, sex, common) if mode == "form" else ({}, None, None)
     if proj:
         top = min(race.riders, key=lambda r: proj[r["id"]]["position"])

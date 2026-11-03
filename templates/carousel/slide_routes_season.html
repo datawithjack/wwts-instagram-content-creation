@@ -12,7 +12,7 @@
 
     .eyebrow { font-size: 26px; letter-spacing: 0.16em; margin-bottom: 14px; }
     .title { font-family: var(--font-display); font-size: 112px; line-height: 0.92; color: #fff; margin-bottom: 12px; }
-    .lede { font-family: var(--font-body); font-size: 24px; font-weight: 500; color: rgba(255, 255, 255, 0.55);
+    .lede { font-family: var(--font-body); font-size: 28px; font-weight: 500; color: rgba(255, 255, 255, 0.55);
         margin-bottom: 26px; }
 
     .chart { position: relative; }
@@ -24,9 +24,9 @@
     .r { display: grid; grid-template-columns: 14px 1fr; gap: 18px; align-items: start; }
     .r .sw { width: 14px; height: 52px; border-radius: 4px; margin-top: 2px; }
     .r .top { display: flex; align-items: baseline; gap: 14px; }
-    .r .nm { font-family: var(--font-display); font-size: 36px; line-height: 1; color: #fff; }
-    .r .lead { font-family: var(--font-body); font-size: 22px; font-weight: 700; }
-    .r .res { font-family: var(--font-body); font-size: 19px; color: rgba(255, 255, 255, 0.50); margin-top: 6px; }
+    .r .nm { font-family: var(--font-display); font-size: 44px; line-height: 1; color: #fff; }
+    .r .lead { font-family: var(--font-body); font-size: 26px; font-weight: 700; }
+    .r .res { font-family: var(--font-body); font-size: 23px; color: rgba(255, 255, 255, 0.50); margin-top: 6px; }
 </style>
 {% endblock %}
 
@@ -40,7 +40,7 @@
         <svg width="{{ chart_w }}" height="{{ chart_h }}" viewBox="0 0 {{ chart_w }} {{ chart_h }}">
             {% for l in levels %}
             <line x1="62" x2="{{ chart_w - 60 }}" y1="{{ l.y }}" y2="{{ l.y }}" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>
-            <text x="0" y="{{ l.y + 7 }}" fill="rgba(255,255,255,0.40)" font-family="Inter" font-size="20" font-weight="600">{{ l.label }}</text>
+            <text x="0" y="{{ l.y + 7 }}" fill="rgba(255,255,255,0.40)" font-family="Inter" font-size="24" font-weight="600">{{ l.label }}</text>
             {% endfor %}
             {% for c in columns %}
             <text x="{{ c.x }}" y="{{ chart_h - 8 }}" text-anchor="middle" fill="rgba(255,255,255,0.55)"

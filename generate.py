@@ -264,7 +264,7 @@ def fetch_live_data(template_name: str, args) -> dict:
     if template_name == "title_routes":
         from pipeline.title_routes import build_title_routes_slides, fetch_season
         return {"slides": build_title_routes_slides(fetch_season(args.year or datetime.now().year),
-                                                    mode=getattr(args, "mode", None))}
+                                                    sex=args.sex or "Men", mode=getattr(args, "mode", None))}
 
     if template_name == "tour_availability_reel":
         from pipeline.tour_availability import build_tour_availability_live

@@ -15,7 +15,7 @@
 
     .venue { margin-bottom: 34px; }
     .vname { font-family: var(--font-display); font-size: 44px; line-height: 1; color: #fff; margin-bottom: 12px; }
-    .grid { display: grid; grid-template-columns: 1fr repeat({{ years | length }}, 120px) 150px; align-items: center; }
+    .grid { display: grid; grid-template-columns: 1fr repeat({{ years | length }}, 120px){% if not record_only %} 150px{% endif %}; align-items: center; }
     .hd { font-family: var(--font-body); font-size: 18px; font-weight: 700; letter-spacing: 0.1em;
         color: rgba(255, 255, 255, 0.40); text-align: center; padding-bottom: 8px; }
     .hd.proj { color: var(--color-discipline); }
@@ -27,15 +27,32 @@
     .who img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.2); }
     .who span { font-family: var(--font-display); font-size: 34px; line-height: 1; color: #fff; }
 
+    /* One venue, two or three riders: the table gets the whole slide. */
+    .record .lede { font-size: 30px; margin-bottom: 70px; }
+    .record .vname { display: none; }
+    .record .grid { grid-template-columns: 1fr repeat({{ years | length }}, 170px); }
+    .record .hd { font-size: 26px; padding-bottom: 16px; }
+    .record .cell { font-size: 64px; padding: 34px 0; }
+    .record .who { padding: 22px 0; gap: 22px; }
+    .record .who img { width: 96px; height: 96px; }
+    .record .who span { font-size: 56px; }
+    .record .fine { font-size: 24px; margin-top: 20px; }
+
     .fine { font-family: var(--font-body); font-size: 19px; font-style: italic; line-height: 1.5; color: rgba(255, 255, 255, 0.38); }
 </style>
 {% endblock %}
 
 {% block carousel_content %}
-<div class="container">
+<div class="container{% if record_only %} record{% endif %}">
+    {% if record_only %}
+    <div class="eyebrow">The decider</div>
+    <div class="title">THEIR RECORD<br>IN {{ venue_short | upper }}</div>
+    <div class="lede">Finishes at the last three editions.</div>
+    {% else %}
     <div class="eyebrow">On form</div>
     <div class="title">THEIR RECORD AT<br>ALOHA AND CHILE</div>
     <div class="lede">The last three editions of each event, and the median finish we project for {{ season_year }}.</div>
+    {% endif %}
 
     {% for v in venues %}
     <div class="venue">
@@ -43,16 +60,16 @@
         <div class="grid">
             <span class="hd"></span>
             {% for y in years %}<span class="hd">{{ y }}</span>{% endfor %}
-            <span class="hd proj">{{ season_year }} ON FORM</span>
+            {% if not record_only %}<span class="hd proj">{{ season_year }} ON FORM</span>{% endif %}
             {% for r in v.rows %}
             <span class="who"><img src="{{ r.face }}" alt="{{ r.name }}"><span>{{ r.name | upper }}</span></span>
             {% for c in r.cells %}<span class="cell {% if c == '–' %}none{% endif %}">{{ c | upper }}</span>{% endfor %}
-            <span class="cell proj">{{ r.projected | upper }}</span>
+            {% if not record_only %}<span class="cell proj">{{ r.projected | upper }}</span>{% endif %}
             {% endfor %}
         </div>
     </div>
     {% endfor %}
 
-    <div class="fine">– did not sail. On form is the median finish, shown as the place it scores as: 8th pays the same as 7th, so it shows as 7th.</div>
+    <div class="fine">– did not sail.{% if not record_only %} On form is the median finish, shown as the place it scores as: 8th pays the same as 7th, so it shows as 7th.{% endif %}</div>
 </div>
 {% endblock %}
