@@ -56,12 +56,12 @@
     {% endif %}
 
     <div class="cover-block">
-        <div class="eyebrow">{{ year }} Wave World Tour</div>
+        <div class="eyebrow">{{ year }} {{ "Women's" if sex == "Women" else "Men's" }} World Wave Title</div>
         <div class="headline">
-            <span class="l1"><span class="count">{{ count }}</span> ROUTES</span>
+            <span class="l1"><span class="count">{{ count }}</span> {{ headline }}</span>
             <span class="l2">TO THE WORLD TITLE</span>
         </div>
-        <div class="hook"><span class="n">2</span> EVENTS. <span class="n">{{ count }}</span> RIDERS. <span class="n">1</span> WORLD TITLE.</div>
+        <div class="hook"><span class="n">{{ left }}</span> EVENT{% if left != 1 %}S{% endif %}. <span class="n">{{ count }}</span> RIDERS. <span class="n">1</span> WORLD TITLE.</div>
         <div class="swipe">Swipe to see what your rider needs &rarr;</div>
 
         <div class="riders">
